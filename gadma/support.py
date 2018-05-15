@@ -80,8 +80,12 @@ def ensure_dir_existence(dirname, check_emptiness=False):
     if not os.path.exists(dirname):
         os.makedirs(dirname)
     if os.listdir(dirname) != [] and check_emptiness:
-        error("directory " + dirname + " is not empty\nYou can write:  rm -rf " +
-              dirname + "\t to remove directory")
+        error(
+            "directory " +
+            dirname +
+            " is not empty\nYou can write:  rm -rf " +
+            dirname +
+            "\t to remove directory")
     return dirname
 
 
@@ -101,7 +105,7 @@ def get_home_dir():
     return os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 
 
-def float_representation(value, precision,  min_precision=2):
+def float_representation(value, precision, min_precision=2):
     return ("%10." + str(max(min_precision, precision)) + "f") % value
 
 
@@ -113,7 +117,8 @@ def sample_from_truncated_normal(mean, std=None, from_=0.0, to_=1.0):
     my_std = mean if std is None else std
 
     a, b = (myclip_a - my_mean) / my_std, (myclip_b - my_mean) / my_std
-    return truncnorm.rvs(a, b, loc = my_mean, scale = my_std)
+    return truncnorm.rvs(a, b, loc=my_mean, scale=my_std)
+
 
 def get_dadi_or_moments():
     try:
@@ -128,10 +133,13 @@ def get_dadi_or_moments():
 def read_fs_file(filename, proj, pop_labels):
     dadi_or_moments = get_dadi_or_moments()
     data = dadi_or_moments.Spectrum.from_file(filename)
-    ns = np.array(data.shape) - 1 
+    ns = np.array(data.shape) - 1
     if data.pop_ids is None:
         if pop_labels is not None:
-            warning("Spectrum file is in old format - without population labels, so they will be taken from corresponding parameter: " + ', '.join(pop_labels) + ".")
+            warning(
+                "Spectrum file is in old format - without population labels, so they will be taken from corresponding parameter: " +
+                ', '.join(pop_labels) +
+                ".")
             data.pop_ids = pop_labels
         else:
             data.pop_ids = ['pop ' + str(i) for i in xrange(len(data.shape))]
@@ -139,7 +147,7 @@ def read_fs_file(filename, proj, pop_labels):
     if proj is not None and not list(ns) == list(proj):
         try:
             data = data.project(proj)
-        except Exception, e:
+        except Exception as e:
             error("Wrong Projections parameter: " + str(e))
 
     if pop_labels is not None and data.pop_ids != pop_labels:
@@ -147,7 +155,10 @@ def read_fs_file(filename, proj, pop_labels):
         try:
             d = [d[x] for x in pop_labels]
         except:
-            error("Wrong Population labels parameter, list of population labels is: " + ', '.join(data.pop_ids))
+            error(
+                "Wrong Population labels parameter, list of population labels is: " +
+                ', '.join(
+                    data.pop_ids))
         data = np.transpose(data, d)
         data.pop_ids = pop_labels
     return data, np.array(data.shape) - 1, data.pop_ids
@@ -157,7 +168,7 @@ def read_dadi_file(filename, proj, pop_labels):
     dadi_or_moments = get_dadi_or_moments()
     try:
         dd = dadi_or_moments.Misc.make_data_dict(filename)
-    except Exception, e:
+    except Exception as e:
         error("Wrong input file: " + str(e))
     polarized = True
     with open(filename) as f:
@@ -187,9 +198,10 @@ def read_dadi_file(filename, proj, pop_labels):
                 polarized = False
             if proj is None:
                 for x in xrange(number_of_pops):
-                    sum_of_ind = int(splited_line[3 + x]) + int(splited_line[4 + number_of_pops + x])
+                    sum_of_ind = int(
+                        splited_line[3 + x]) + int(splited_line[4 + number_of_pops + x])
                     if sum_of_ind > proj[x]:
-                            proj[x] = sum_of_ind
+                        proj[x] = sum_of_ind
     data = dadi_or_moments.Spectrum.from_data_dict(
         dd, pop_ids=pop_ids, projections=proj, polarized=polarized)
     return data, proj, pop_ids
@@ -213,7 +225,7 @@ def timeout(timeout):
             def new_func():
                 try:
                     res[0] = func(*args, **kwargs)
-                except Exception, e:
+                except Exception as e:
                     res[0] = e
 
             t = Thread(target=new_func)
@@ -221,7 +233,7 @@ def timeout(timeout):
             try:
                 t.start()
                 t.join(timeout)
-            except Exception, je:
+            except Exception as je:
                 error('Error starting thread to timeout model drawing')
             ret = res[0]
             if isinstance(ret, BaseException):

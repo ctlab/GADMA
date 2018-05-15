@@ -27,11 +27,13 @@ READ_ALLOWED_EXTENSIONS = {
 START_MODEL_NUMBER_OF_PERIODS = 1
 FINAL_MODEL_NUMBER_OF_PERIODS = 2
 
+
 class Options_storage:
     '''
     Class to handle great amount of options for
     genetic algorithm and Demographic model.
     '''
+
     def __init__(self):
         # All parameters with default values
 
@@ -42,7 +44,7 @@ class Options_storage:
         self.number_of_populations = None
         self.pop_labels = None
         self.ns = None
-        
+
         # Pipeline
         self.theta = None
         self.gen_time = None
@@ -51,7 +53,7 @@ class Options_storage:
         self.moments_scenario = False
         self.relative_params = False
         self.no_mig = False
-        
+
         # Structure of models
         self.initial_structure = None
         self.final_structure = None
@@ -75,7 +77,7 @@ class Options_storage:
 
         self.stop_iter = 100
         self.epsilon = 1e-2
-        
+
         # Local search
         self.optimize_name = 'optimize_powell'
 
@@ -117,13 +119,12 @@ class Options_storage:
         self.multinom_mutate = False
 
         # Options of printing summary information about repeats
-        self.time_for_bootstrap = 60 # min
-        self.time_for_print = 1 # min
+        self.time_for_bootstrap = 60  # min
+        self.time_for_print = 1  # min
 
         # Options of distributions
-        self.distribution = 'normal' # can be 'uniform'
-        self.std = None # std for normal dist
-
+        self.distribution = 'normal'  # can be 'uniform'
+        self.std = None  # std for normal dist
 
     def from_file(self, input_filename):
         with open(input_filename) as f:
@@ -137,7 +138,10 @@ class Options_storage:
                     continue
 
                 if len(line.split(':')) > 2:
-                    support.warning("In parameters file in line number " + str(line_number) + " two ':'. May be error? Everything after second ':' was ignored.")
+                    support.warning(
+                        "In parameters file in line number " +
+                        str(line_number) +
+                        " two ':'. May be error? Everything after second ':' was ignored.")
 
                 identity = line.split(':')[0].strip().lower()
                 value = line.split(':')[1].strip()
@@ -152,9 +156,11 @@ class Options_storage:
                 elif identity == 'projections':
                     self.ns = value if value.lower() != 'none' else None
                 elif identity == 'theta':
-                    self.theta = float(value) if value.lower() != 'none' else None
+                    self.theta = float(
+                        value) if value.lower() != 'none' else None
                 elif identity == 'time for generation':
-                    self.gen_time = float(value) if value.lower() != 'none' else None
+                    self.gen_time = float(
+                        value) if value.lower() != 'none' else None
                 elif identity == 'initial structure':
                     self.initial_structure = value
                 elif identity == 'final structure':
@@ -191,7 +197,8 @@ class Options_storage:
                 elif identity == "print models' code every n iteration":
                     self.code_iter = int(value)
                 elif identity == 'units of time in drawing':
-                    self.time_units = 1 if value.lower() == 'years' else 1000 if value.lower() == 'kya' or value.lower() == 'thousand years' else support.warning('Cannot understand units of time in line ' + str(line_number) + ' in parameters file. Years were taken.')
+                    self.time_units = 1 if value.lower() == 'years' else 1000 if value.lower() == 'kya' or value.lower() == 'thousand years' else support.warning(
+                        'Cannot understand units of time in line ' + str(line_number) + ' in parameters file. Years were taken.')
                 elif identity == 'silence':
                     self.silence = value.lower() == 'true'
                 elif identity == 'number of repeats':
@@ -199,17 +206,28 @@ class Options_storage:
                 elif identity == 'number of processes':
                     self.processes = int(value)
                 elif identity == 'upper bound of first split':
-                    self.split_1_lim = float(value) if value.lower() != 'none' else None
+                    self.split_1_lim = float(
+                        value) if value.lower() != 'none' else None
                 elif identity == 'upper bound of second split':
-                    self.split_2_lim = float(value) if value.lower() != 'none' else None
+                    self.split_2_lim = float(
+                        value) if value.lower() != 'none' else None
                 elif identity == 'name of local optimization':
                     self.optimize_name = value
-                    names = ['optimize', 'optimize_log', 'optimize_powell', 'optimize_lbfgsb', 'optimize_log_lbfgsb', 'optimize_log_fmin', 'hill_climbing']
+                    names = [
+                        'optimize',
+                        'optimize_log',
+                        'optimize_powell',
+                        'optimize_lbfgsb',
+                        'optimize_log_lbfgsb',
+                        'optimize_log_fmin',
+                        'hill_climbing']
                     if value not in names:
-                        support.error("Can't parse name of local search. Acceptable names are: " + ', '.join(names))
+                        support.error(
+                            "Can't parse name of local search. Acceptable names are: " +
+                            ', '.join(names))
                     else:
                         pass
-                #now extra args
+                # now extra args
                 elif identity == 'min_n':
                     self.min_N = float(value)
                 elif identity == 'max_n':
@@ -253,7 +271,9 @@ class Options_storage:
                 elif identity == 'std':
                     self.std = None if value.lower() == 'none' else float(value)
                 else:
-                    support.error('Cannot recognize identifier: ' + str(identity))
+                    support.error(
+                        'Cannot recognize identifier: ' +
+                        str(identity))
 
                 line_number += 1
 
@@ -264,78 +284,78 @@ class Options_storage:
             if len(l) == 1:
                 return str(l[0])
             return ', '.join([str(x) for x in l])
-        
-        home_dir = support.get_home_dir()
-        with open( os.path.join(home_dir, "params_template")) as t:
-            string = t.readlines()
-        string = ''.join(string)
-        
-        with open(output_filename, 'w') as out:
-            out.write(
-                    string.format(
-                        self.output_dir,
-                        self.input_file,
-                        comma_sep_repr(self.pop_labels),
-                        comma_sep_repr(self.ns),
-                        str(self.theta),
-                        str(self.gen_time),
-                        'moments' if self.moments_scenario else 'dadi',
-                        comma_sep_repr(self.dadi_pts),
-                        comma_sep_repr(self.initial_structure),
-                        comma_sep_repr(self.final_structure),
-                        str(self.split_1_lim),
-                        str(self.split_2_lim),
-                        str(self.relative_params),
-                        str(self.no_mig),
-                        str(self.size_of_population),
-                        comma_sep_repr(self.fracs),
-                        str(self.mutation_strength),
-                        str(self.const_for_mut_strength),
-                        str(self.mutation_rate),
-                        str(self.const_for_mut_rate),
-                        str(self.epsilon),
-                        str(self.stop_iter),
-                        str(self.optimize_name),
-                        str(self.draw_iter),
-                        str(self.code_iter),
-                        'Thousand Years' if self.time_units == 1000 else 'Years',
-                        str(self.silence),
-                        str(self.repeats),
-                        str(self.processes)
-                        ))
 
-    def to_file_extra(self, output_filename):        
         home_dir = support.get_home_dir()
-        with open( os.path.join(home_dir, 'extra_params_template')) as t:
+        with open(os.path.join(home_dir, "params_template")) as t:
             string = t.readlines()
         string = ''.join(string)
-        
+
         with open(output_filename, 'w') as out:
             out.write(
-                    string.format(
-                        str(self.min_N),
-                        str(self.max_N),
-                        str(self.min_T),
-                        str(self.max_T),
-                        str(self.min_M),
-                        str(self.max_M),
-                        str(self.ls_verbose),
-                        str(self.ls_flush_delay),
-                        str(self.ls_epsilon),
-                        str(self.ls_gtol),
-                        str(self.ls_maxiter),
-                        str(self.hc_mutation_rate),
-                        str(self.hc_const_for_mutation_rate),
-                        str(self.hc_stop_iter),
-                        str(self.random_N_A),
-                        str(self.multinom_cross),
-                        str(self.multinom_mutate),
-                        str(self.time_for_bootstrap),
-                        str(self.time_for_print),
-                        str(self.distribution),
-                        str(self.std)
-                        ))
-    
+                string.format(
+                    self.output_dir,
+                    self.input_file,
+                    comma_sep_repr(self.pop_labels),
+                    comma_sep_repr(self.ns),
+                    str(self.theta),
+                    str(self.gen_time),
+                    'moments' if self.moments_scenario else 'dadi',
+                    comma_sep_repr(self.dadi_pts),
+                    comma_sep_repr(self.initial_structure),
+                    comma_sep_repr(self.final_structure),
+                    str(self.split_1_lim),
+                    str(self.split_2_lim),
+                    str(self.relative_params),
+                    str(self.no_mig),
+                    str(self.size_of_population),
+                    comma_sep_repr(self.fracs),
+                    str(self.mutation_strength),
+                    str(self.const_for_mut_strength),
+                    str(self.mutation_rate),
+                    str(self.const_for_mut_rate),
+                    str(self.epsilon),
+                    str(self.stop_iter),
+                    str(self.optimize_name),
+                    str(self.draw_iter),
+                    str(self.code_iter),
+                    'Thousand Years' if self.time_units == 1000 else 'Years',
+                    str(self.silence),
+                    str(self.repeats),
+                    str(self.processes)
+                ))
+
+    def to_file_extra(self, output_filename):
+        home_dir = support.get_home_dir()
+        with open(os.path.join(home_dir, 'extra_params_template')) as t:
+            string = t.readlines()
+        string = ''.join(string)
+
+        with open(output_filename, 'w') as out:
+            out.write(
+                string.format(
+                    str(self.min_N),
+                    str(self.max_N),
+                    str(self.min_T),
+                    str(self.max_T),
+                    str(self.min_M),
+                    str(self.max_M),
+                    str(self.ls_verbose),
+                    str(self.ls_flush_delay),
+                    str(self.ls_epsilon),
+                    str(self.ls_gtol),
+                    str(self.ls_maxiter),
+                    str(self.hc_mutation_rate),
+                    str(self.hc_const_for_mutation_rate),
+                    str(self.hc_stop_iter),
+                    str(self.random_N_A),
+                    str(self.multinom_cross),
+                    str(self.multinom_mutate),
+                    str(self.time_for_bootstrap),
+                    str(self.time_for_print),
+                    str(self.distribution),
+                    str(self.std)
+                ))
+
     def save(self, out_dir):
         self.to_file(os.path.join(out_dir, 'params'))
         self.to_file_extra(os.path.join(out_dir, 'extra_params'))
@@ -378,8 +398,10 @@ class Options_storage:
         support.check_file_existence(self.input_file)
         ext = "." + os.path.splitext(self.input_file)[1][1:]
         if ext not in READ_ALLOWED_EXTENSIONS.keys():
-            parser.error("File " + self.input_file + " doesn't end with one of {}".
-                         format(ALLOWED_READS_EXTENSIONS))
+            parser.error(
+                "File " +
+                self.input_file +
+                " doesn't end with one of {}". format(ALLOWED_READS_EXTENSIONS))
 
         if self.resume_dir is not None:
             self.resume_dir = support.check_dir_existence(self.resume_dir)
@@ -409,7 +431,8 @@ class Options_storage:
 
         self.fracs = [float(x) for x in self.fracs.split(",")]
         if len(self.fracs) != 3:
-            support.error("length of `Fractions` (Parameters of genetic algorithm) must be 3")
+            support.error(
+                "length of `Fractions` (Parameters of genetic algorithm) must be 3")
         self.frac_of_old_models = self.fracs[0]
         self.frac_of_mutated_models = self.fracs[1]
         self.frac_of_crossed_models = self.fracs[2]
@@ -417,7 +440,8 @@ class Options_storage:
         if (self.frac_of_old_models +
                 self.frac_of_crossed_models +
                 self.frac_of_mutated_models) > 1:
-            support.error("Sum of Fractions (Parameters of genetic algorithm) must be less than or equal to 1")
+            support.error(
+                "Sum of Fractions (Parameters of genetic algorithm) must be less than or equal to 1")
         if (self.frac_of_old_models +
                 self.frac_of_crossed_models +
                 self.frac_of_mutated_models) == 1:
@@ -431,13 +455,13 @@ class Options_storage:
             self.dadi_pts = [max_n, max_n + 10, max_n + 20]
         else:
             self.dadi_pts = support.check_comma_sep_list(self.dadi_pts)
-        
+
         self.put_default_structures()
 
         if len(self.initial_structure
                ) != self.number_of_populations:
-            support.error("Wrong length of initial model structure: must be " + str(
-                self.number_of_populations))
+            support.error("Wrong length of initial model structure: must be " +
+                          str(self.number_of_populations))
         for n in self.initial_structure:
             if n < 0:
                 support.error('Elements in comma-separated list ' + ','.join(
@@ -445,8 +469,8 @@ class Options_storage:
                     ' must be positive (`Initial structure` parameter)')
         if len(self.final_structure
                ) != self.number_of_populations:
-            support.error("Wrong length of final model structure: must be " + str(
-                self.number_of_populations))
+            support.error("Wrong length of final model structure: must be " +
+                          str(self.number_of_populations))
         for n in self.final_structure:
             if n < 0:
                 support.error('Elements in comma-separated list ' + ','.join(
@@ -488,44 +512,53 @@ class Options_storage:
         if self.repeats <= 0:
             support.error("Repeats (Parameters of pipeline) must be positive")
         if self.processes <= 0:
-            support.error("Processes (Parameters of pipeline) must be positive")
+            support.error(
+                "Processes (Parameters of pipeline) must be positive")
 
         if self.number_of_populations < 3 and self.split_2_lim is not None:
-            support.warning("There is no second split in case of " + str(self.number_of_populations) + " populations. Upper bound for it will be ignored.")
+            support.warning("There is no second split in case of " +
+                            str(self.number_of_populations) +
+                            " populations. Upper bound for it will be ignored.")
             self.split_2_lim = None
         if self.number_of_populations < 2 and self.split_1_lim is not None:
-            support.warning("There is no first split in case of 1 populations. Upper bound for it will be ignored.")
+            support.warning(
+                "There is no first split in case of 1 populations. Upper bound for it will be ignored.")
             self.split_1_lim = None
 
         if self.optimize_name == 'optimize_powell' and not self.moments_scenario:
             try:
                 import moments
             except:
-                support.error("To use Powell optimization you need moments installed.")
+                support.error(
+                    "To use Powell optimization you need moments installed.")
         if not self.draw_iter == 0:
             packages = []
             try:
                 import matplotlib
-            except ImportError, e:
+            except ImportError as e:
                 packages.append('matplotlib')
             try:
                 import PIL
-            except ImportError, e:
+            except ImportError as e:
                 packages.append('Pillow')
             try:
                 import moments
-            except ImportError, e:
+            except ImportError as e:
                 packages.append('moments')
             if len(packages) > 0:
                 support.warning(
-                    "To draw models you should install: " + ', '.join(packages))
+                    "To draw models you should install: " +
+                    ', '.join(packages))
         if self.distribution != 'normal' and self.distribution != 'uniform':
-            support.error("Distribution in extra parameters must be `normal` or `uniform`.")
+            support.error(
+                "Distribution in extra parameters must be `normal` or `uniform`.")
         if self.distribution == 'uniform' and self.std is not None:
-            support.warning('Std in extra parameters will be ignored as uniform distribution was chosen.')
+            support.warning(
+                'Std in extra parameters will be ignored as uniform distribution was chosen.')
 
 # options
 options_storage = Options_storage()
+
 
 def version():
     '''
@@ -584,7 +617,8 @@ def test_args():
     options_storage.initial_structure = np.array([1])
     options_storage.final_structure = np.array([2])
     options_storage.size_of_population = 5
-    options_storage.fracs = [float(x) for x in options_storage.fracs.split(",")]
+    options_storage.fracs = [float(x)
+                             for x in options_storage.fracs.split(",")]
     options_storage.frac_of_old_models = options_storage.fracs[0]
     options_storage.frac_of_mutated_models = options_storage.fracs[1]
     options_storage.frac_of_crossed_models = options_storage.fracs[2]
@@ -599,20 +633,20 @@ def test_args():
             options_storage.moments_scenario = False
         except:
             support.error("None of the dadi or the moments are installed")
-    
+
     options_storage.draw_iter = 0
     packages = []
     try:
         import matplotlib
-    except ImportError, e:
+    except ImportError as e:
         packages.append('matplotlib')
     try:
         import PIL
-    except ImportError, e:
+    except ImportError as e:
         packages.append('Pillow')
     try:
         import moments
-    except ImportError, e:
+    except ImportError as e:
         packages.append('moments')
     if len(packages) > 0:
         support.warning(
@@ -633,21 +667,33 @@ def parse_args():
     '''
 
     global options_storage
-    
+
     usage = str(sys.argv[0]) + " -p <params_file>"
     parser = ArgParser(add_help=False)
 
     parser.add_argument(
-        '-p', '--params', metavar="<params_file>", required=False, default=None)
+        '-p',
+        '--params',
+        metavar="<params_file>",
+        required=False,
+        default=None)
     parser.add_argument(
-        '-e', '--extra', metavar="<extra_params_file>", required=False, default=None)
+        '-e',
+        '--extra',
+        metavar="<extra_params_file>",
+        required=False,
+        default=None)
 
     parser.add_argument(
         '--resume', metavar="<dir>", required=False, default=None)
     parser.add_argument(
         '-o', '--output', metavar="<dir>", required=False, default=None)
     parser.add_argument(
-        '-i', '--input', metavar="<filename.fs>/<filename.txt>", required=False, default=None)
+        '-i',
+        '--input',
+        metavar="<filename.fs>/<filename.txt>",
+        required=False,
+        default=None)
 
     parser.add_argument(
         '-v',
@@ -681,15 +727,18 @@ def parse_args():
     if args.params is not None:
         options_storage.from_file(args.params)
     elif args.output is None and args.input is None and args.resume is None:
-        support.error("-p/--params or --resume or -o/output and -i/--input options are requered.")
+        support.error(
+            "-p/--params or --resume or -o/output and -i/--input options are requered.")
 
     if args.extra is not None:
         options_storage.from_file(args.extra)
 
     if args.output is not None and options_storage.output_dir != args.output:
-        support.error("Output directory in parameters file doesn't match to one from -o/--output option")
+        support.error(
+            "Output directory in parameters file doesn't match to one from -o/--output option")
     if args.input is not None and options_storage.input_file != args.input:
-        support.error("Input file in parameters file doesn't match to one from -i/--input option")
+        support.error(
+            "Input file in parameters file doesn't match to one from -i/--input option")
 
     if options_storage.resume_dir is not None:
         resume_dir = options_storage.resume_dir
@@ -707,7 +756,12 @@ def parse_args():
         if args.resume is not None:
             options_storage.resume_dir = args.resume
 
-    if args.resume is not None and os.path.abspath(os.path.expanduser(options_storage.resume_dir)) != os.path.abspath(os.path.expanduser(args.resume)):
-        support.error("Resume directory in parameters file doesn't match to one from --resume option")
+    if args.resume is not None and os.path.abspath(
+        os.path.expanduser(
+            options_storage.resume_dir)) != os.path.abspath(
+            os.path.expanduser(
+                args.resume)):
+        support.error(
+            "Resume directory in parameters file doesn't match to one from --resume option")
 
     options_storage.check()
