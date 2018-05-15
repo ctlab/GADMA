@@ -1,0 +1,116 @@
+#	It is extra parameters file for GADMA software.
+
+#	Lines started from # are ignored.
+#	Also comments at the end of a line are ignored too.
+#	Every line contains: Identificator of parameter : value.
+#	If you want to change some default parameters, you need to 
+#	remove # at the begining of line and change corresponding parameter.
+
+
+#	Lower and upper bounds on N - sizes of populations, 
+#	T - time of time periods, M - migration rates.
+#	All bounds are relative to N_A: N is in N_A units, 
+#	T in 2 * N_A units and M in 1 / (2 * N_A).
+#	Default:	min_N = 0.01, max_N = 100.0, min_T = 0.0, 
+#				max_T = 5.0, min_M = 0.0, max_M = 10.0
+min_N : {0}
+max_N : {1}
+min_T : {2}
+max_T : {3}
+min_M : {4}
+max_M : {5}
+
+
+
+#	Parameters for local search algorithms (exclude hill climbing)
+
+#	If > 0, print optimization status every <verbose> steps.
+#	Default: None = number of parameters. (i. e. len(p0))
+Verbose : {6}
+
+#	Standard output will be flushed once every <flush_delay>
+#	minutes. This is useful to avoid overloading I/O on clusters.
+#	Default: 0.5
+Flush delay : {7}
+
+#	Step-size to use for finite-difference derivatives.
+#	Ignored if local search is optimize_log_fmin.
+#	Default: 0.001
+Epsilon for ls : {8}
+
+#	Convergence criterion for optimization. For more info, 
+#	see help(scipy.optimize.fmin_bfgs)
+#	(pgtol for optimize_lbfgsb and optimize_log_lbfgsb)
+#	Ignored if local search is optimize_log_fmin.
+#	Default : 1e-05
+Gtol : {9}
+
+#	Maximum iterations to run for.
+#	Default : 100
+Maxiter : {10}
+
+
+#	Special for hill climbing optimization
+
+#	Mean mutation rate.
+#	Default: None (equal for GA mutation_rate)
+Mean mutation rate for hc : {11}
+
+#	Const for adaptive mutation rate
+#	Default: None (equal to GA const for mutation rate)
+Const for mutation rate for hc : {12}
+
+#	Number of iterations without improvement to stop.
+#	Epsilon is equal to GA epsilon.
+#	Default: None (equal to GA stop iteration)
+Stop iteration for hc : {13}
+
+
+
+#	Options of mutation, crossing and random generating.
+#	Multinomial option make ga convergence faster, but
+#	it can find worse solutions than without multinomial.
+
+#	Mutation can be multinomial: we change paraneters and then
+#	scale all(!) parameters with optimal_sfs_scaling.
+#	Default: False
+Multinomial mutation : {14}
+
+#	Crossing can be multinomial too: we scale parameters of eash
+#	model to get N_A = 1, then cross such models and scale back
+#	with optimal_sfs_scaling.
+#	Default: False
+Multinomial crossing : {15}
+
+#	To get random model we sample number between bounds (min_N, 
+#	max_N, min_T, etc.) and then scale them with optimal_sfs_scaling.
+#	We can choose N_A random between min_N and max_N or we can always
+#	take it as 1.0.
+#	Default: True
+Random N_A : {16}
+
+
+
+#	Options of printing summary information about repeats 
+#	in parent process.
+
+#	How often do bootstrap analysis of current best models.
+#	Take into account that it is rather time-consuming.
+#	Default: 60 (minutes)
+Time to run bootstrap : {17}
+
+#	How often print all best by likelihood and by BIC models.
+#	Default: 1 (minute)
+Time to print summary : {18}
+
+
+
+#	Options of distributions
+#	Note that normal is actually truncated normal.
+
+#	Distribution for generating mutation rate.
+#	Mean mutation rate is parameter. So we can shoose here
+#	Distribution and std (in case of normal distribution).
+#	Default: 'normal', None (std = mean)
+Distribution : {19}
+Std : {20}
