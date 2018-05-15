@@ -358,6 +358,7 @@ When all GA finishes picture and code of best model among their ones are saved i
 ∂a∂i and *moments* simulate the allele frequency spectrum $M$ from the proposed demographic model as the expected values of Poisson random variables.
 
 For observed spectrum `S` and spectrum `M` for our demographic model, we can calculate likelihood to obtain matrix `S` if  `M` is the expected one:
+
 ![formula for likelihood](doc/formula_for_likelihood.gif)
 
 We compare demographic models by `log(L(M | S))`. It is our fitness function of genetic algorithm.

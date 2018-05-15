@@ -53,7 +53,7 @@ popt = gadma.Inference.optimize_ga(len(p0), data, func_ex, pts_l, #p0=p0,
                                    upper_bound=upper_bound,
                                    size_of_population_in_ga=10)
 
-popt = dadi.Inference.optimize_log(p0, data, func_ex, pts_l,
+popt = dadi.Inference.optimize_log(popt, data, func_ex, pts_l,
                                    lower_bound=lower_bound,
                                    upper_bound=upper_bound,
                                    verbose=len(p0), maxiter=3)

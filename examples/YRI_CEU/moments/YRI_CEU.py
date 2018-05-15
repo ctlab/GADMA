@@ -35,6 +35,7 @@ p0 = [2,0.1,2,1,0.2,0.2]
 # parameter a up to a factor of two up or down.
 p0 = moments.Misc.perturb_params(p0, fold=1, upper_bound=upper_bound,
                               lower_bound=lower_bound)
+
 # Do the optimization. By default we assume that theta is a free parameter,
 # since it's trivial to find given the other parameters. If you want to fix
 # theta, add a multinom=False to the call.
@@ -49,7 +50,7 @@ popt = gadma.Inference.optimize_ga(len(p0), data, func, #p0=p0,
                                    size_of_population_in_ga=10, 
                                    stop_iter=50)
 # after genetic we can run local optimization
-popt = moments.Inference.optimize_powell(p0, data, func,
+popt = moments.Inference.optimize_powell(popt, data, func,
                                    lower_bound=lower_bound,
                                    upper_bound=upper_bound,
                                    verbose=len(p0), maxiter=100)
