@@ -9,7 +9,32 @@ In contrast, GADMA is **a command-line tool**. It presents a series of launches 
 GADMA is developed by Ekaterina Noskova (ekaterina.e.noskova@gmail.com)
 
 # Table of contents
-[TOC]
+- [GADMA](#gadma)
+- [Table of contents](#table-of-contents)
+- [Dependencies](#dependencies)
+- [Installation](#installation)
+  * [∂a∂i](#-a-i)
+  * [*moments*](#-moments-)
+  * [GADMA](#gadma-1)
+    + [Verifying installation](#verifying-installation)
+- [Usage](#usage)
+  * [Command line interface](#command-line-interface)
+  * [Python package](#python-package)
+- [Parameters files](#parameters-files)
+  * [Main parameters file](#main-parameters-file)
+  * [Extra parameters file](#extra-parameters-file)
+- [Input files](#input-files)
+- [Output](#output)
+  * [Model representation](#model-representation)
+  * [Bootstrap analysis](#bootstrap-analysis)
+  * [Model drawing](#model-drawing)
+  * [Output directory content](#output-directory-content)
+- [LogLL (Log likelihood)](#logll--log-likelihood-)
+- [BIC](#bic)
+- [Theta](#theta)
+  * [Changing theta](#changing-theta)
+- [Structure of demographic model](#structure-of-demographic-model)
+- [Resume launch](#resume-launch)
 
 # Dependencies
 
