@@ -96,7 +96,7 @@ $ python
 ## GADMA
 To download GADMA, go to the work directory and run:
 ```console
-$ git clone https://bitbucket.org/noscode/gadma
+$ git clone https://github.com/ctlab/GADMA
 ```
 Then go to the `GADMA` directory and install GADMA:
 ```console
