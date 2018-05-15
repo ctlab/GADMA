@@ -10,8 +10,8 @@ There best parameters are pertrubed and then local search (optimize_log, optimiz
 Here we use global search - Genetic Algorithm (optimize_ga) from [GADMA](https://github.com/ctlab/GADMA) software.
 
 You can find python code:
-* [for ∂a∂i](https://github.com/ctlab/GADMA/blob/master/examples/YRI_CEU/dadi/YRI_CEU.py)
-* [for *moments*](https://github.com/ctlab/GADMA/blob/master/examples/YRI_CEU/moments/YRI_CEU.py)
+* [for ∂a∂i](https://github.com/ctlab/GADMA/blob/master/examples/YRI_CEU/dadi/YRI_CEU.py) (`./dadi/YRI_CEU.py` file)
+* [for *moments*](https://github.com/ctlab/GADMA/blob/master/examples/YRI_CEU/moments/YRI_CEU.py) (`./moments/YRI_CEU.py` file)
 
 ## Usage
 
@@ -33,8 +33,8 @@ $ python YRI_CEU.py
 
 You can also look at the finished launches instead running them:
 
-* [for ∂a∂i](https://github.com/ctlab/GADMA/blob/master/examples/YRI_CEU/dadi/cmd_output)
-* [for *moments*](https://github.com/ctlab/GADMA/blob/master/examples/YRI_CEU/moments/cmd_output)
+* [for ∂a∂i](https://github.com/ctlab/GADMA/blob/master/examples/YRI_CEU/dadi/cmd_output) (`./dadi/cmd_output` file)
+* [for *moments*](https://github.com/ctlab/GADMA/blob/master/examples/YRI_CEU/moments/cmd_output) (`./moements/cmd_output` file)
 
 ## Summary tables
 
