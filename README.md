@@ -266,7 +266,7 @@ At the end of the string, that corresponds to the model, there is information ab
 **Example:**
 
 ```
-[ [144.38] ][ 0.16%, [23.10, 121.28] ][ 375.77, [143.31, 30.07], [2, 2], [[None, 3.33e-03][7.53e-04, None]] ]	cmm
+[ [144.38] ][ 16.00%, [23.10, 121.28] ][ 375.77, [143.31, 30.07], [2, 2], [[None, 3.33e-03][7.53e-04, None]] ]	cmm
 ```
 
 ## Bootstrap analysis
@@ -301,7 +301,7 @@ Models are drawn with *moments* library. In the top left corner there is size of
 
 **Note:** You can disable drawing if you ask to draw every **0** iteration.
 
-**Note:** Time units are `Thousand years` usually or `Genetic units`, if you don't specify `-g/--gen_time` option, but you can ask for years in parameters file.
+**Note:** Time units are `Thousand years` usually or `Genetic units`, if you don't specify `Time for generation` parameter, but you can ask for years in parameters file.
 
 **Note:** You can draw model again with generated python code in `<output_dir>`:
 
