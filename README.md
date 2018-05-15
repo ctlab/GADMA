@@ -29,7 +29,7 @@ GADMA is developed by Ekaterina Noskova (ekaterina.e.noskova@gmail.com)
   * [Bootstrap analysis](#bootstrap-analysis)
   * [Model drawing](#model-drawing)
   * [Output directory content](#output-directory-content)
-- [LogLL (Log likelihood)](#logll-log-likelihood-)
+- [LogLL (Log likelihood)](#logll-log-likelihood)
 - [BIC](#bic)
 - [Theta](#theta)
   * [Changing theta](#changing-theta)
@@ -355,7 +355,7 @@ When all GA finishes picture and code of best model among their ones are saved i
 
 # LogLL (Log likelihood)
 
-∂a∂i and *moments* simulate the allele frequency spectrum $M$ from the proposed demographic model as the expected values of Poisson random variables.
+∂a∂i and *moments* simulate the allele frequency spectrum `M` from the proposed demographic model as the expected values of Poisson random variables.
 
 For observed spectrum `S` and spectrum `M` for our demographic model, we can calculate likelihood to obtain matrix `S` if  `M` is the expected one:
 
