@@ -1,3 +1,11 @@
+#!/usr/bin/env python
+
+############################################################################
+# Copyright (c) 2018 Noskova Ekaterina
+# All Rights Reserved
+# See the LICENSE file for details
+############################################################################
+
 # First we make matplotlib backend as Agg
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')

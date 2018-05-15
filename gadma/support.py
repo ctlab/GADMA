@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ############################################################################
-# Copyright (c) 2017 Noskova Ekaterina
+# Copyright (c) 2018 Noskova Ekaterina
 # All Rights Reserved
 # See the LICENSE file for details
 ############################################################################

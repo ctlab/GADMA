@@ -339,7 +339,7 @@ class GA(object):
         Check if we have best by BIC model on current iteration.
         If so, we print it to file.
         '''
-        if self.best_model_by_bic is None or self.best_model_by_bic.get_bic_score() - self.best_model().get_bic_score() < 1e-8:
+        if self.best_model_by_bic is None or self.best_model_by_bic.get_bic_score() - self.best_model().get_bic_score() > 1e-8:
             self.best_model_by_bic = copy.deepcopy(self.best_model())
             if not self.chromosomes_only:
                 self.best_model_by_bic.dadi_code_to_file(
