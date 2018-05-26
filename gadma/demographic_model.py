@@ -1124,7 +1124,7 @@ class Demographic_model:
         while not take_from_other.any():
             take_from_other = np.array(
                 [random.random() for _ in xrange(self.get_number_of_params())]) > 0.5
-        print take_from_other
+
         # create child
         child = copy.deepcopy(self)
         cur_ind = 0
