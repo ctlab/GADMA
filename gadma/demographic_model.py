@@ -437,7 +437,7 @@ class Demographic_model:
 
         self.check_time_and_correct_it()
 
-    def construct_from_vector(self, vector, normalize=False):
+    def construct_from_vector(self, vector):
         """The model can change its parameters to parameters from vector.
 
         N_A is missed. It is equal to 1.0. Structure of model doesn't
@@ -479,8 +479,8 @@ class Demographic_model:
                     cur_index += 6
 
         self.has_changed()
-        if normalize:
-            self.normalize_by_Nref()
+        self.normalize_by_Nref()
+        self.check_time_and_correct_it()
 
     def get_lower_and_upper_bounds(self):
         lower_bound = []
@@ -587,9 +587,9 @@ class Demographic_model:
                                   func_ex, self.params.dadi_pts, **func_kwargs)
 
         if not np.isnan(p_opt).any() and not (p_opt < 0).any():
-            self.construct_from_vector(p_opt, normalize=True)
+            self.construct_from_vector(p_opt)
         else:
-            self.construct_from_vector(p0, normalize=True)
+            self.construct_from_vector(p0)
 
     def has_changed(self):
         """If the model has been changed, then old spectra and fitness function
@@ -612,8 +612,7 @@ class Demographic_model:
             if self.split_1_pos is None:
                 self.split_1_pos = len(self.periods) - 1
             elif self.split_2_pos is None:
-                self.split_2_pos = self.split_1_pos
-                self.split_1_pos = len(self.periods) - 1
+                self.split_2_pos = len(self.periods) - 1
 
         else:
             self.cur_structure[-1] += 1
@@ -910,11 +909,11 @@ class Demographic_model:
                         period_to_divide.migration_rates),
                     growth_types=pops_exp))
         self.number_of_periods += 1
-        if period_index_to_divide < self.split_2_pos:
+        if period_index_to_divide < self.split_1_pos:
             self.split_2_pos += 1
             self.split_1_pos += 1
-        elif period_index_to_divide < self.split_1_pos:
-            self.split_1_pos += 1
+        elif period_index_to_divide < self.split_2_pos:
+            self.split_2_pos += 1
 
         self.cur_structure[structure_index] += 1
 
@@ -973,19 +972,19 @@ class Demographic_model:
         self.fitness_func_value = None
 
     def check_time_and_correct_it(self):
-        if self.params.split_1_lim is not None:
-            sum_of_time = sum(
-                [p.time for p in self.periods[self.split_1_pos:]])
-            if sum_of_time > self.params.split_1_lim:
-                for p in self.periods[self.split_1_pos:]:
-                    p.time *= self.params.split_1_lim / sum_of_time
-                self.has_changed()
         if self.params.split_2_lim is not None:
             sum_of_time = sum(
                 [p.time for p in self.periods[self.split_2_pos:]])
             if sum_of_time > self.params.split_2_lim:
                 for p in self.periods[self.split_2_pos:]:
                     p.time *= self.params.split_2_lim / sum_of_time
+                self.has_changed()
+        if self.params.split_1_lim is not None:
+            sum_of_time = sum(
+                [p.time for p in self.periods[self.split_1_pos:]])
+            if sum_of_time > self.params.split_1_lim:
+                for p in self.periods[self.split_1_pos:]:
+                    p.time *= self.params.split_1_lim / sum_of_time
                 self.has_changed()
 
     def generate_migration_rates(self, sizes_of_pops):
@@ -1123,6 +1122,7 @@ class Demographic_model:
         while not take_from_other.any():
             take_from_other = np.array(
                 [random.random() for _ in xrange(self.get_number_of_params())]) > 0.5
+        print take_from_other
         # create child
         child = copy.deepcopy(self)
         cur_ind = 0
@@ -1805,7 +1805,7 @@ class Demographic_model:
             fig_title=title,
             pop_labels=self.params.pop_labels,
             nref=int(size_of_first_pop),
-            draw_scale=True,
+            draw_scale=self.params.theta is not None,
             gen_time=float(self.params.gen_time) /
             1000 if self.params.gen_time is not None else 1.0,
             gen_time_units=(
