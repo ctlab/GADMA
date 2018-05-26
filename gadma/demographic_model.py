@@ -406,8 +406,9 @@ class Demographic_model:
                 continue
             if params[0].endswith('%'):
                 sizes = params[1][:-1].split(',')
-                proportion = max(self.params.min_N, float(
-                    sizes[-2])) / self.periods[-1].get_sizes_of_populations()[-1]
+                proportion = float(sizes[-2]) / self.periods[-1].get_sizes_of_populations()[-1]
+                if proportion == 1.0:
+                    proportion = 1.0 - float(sizes[-1]) / self.periods[-1].get_sizes_of_populations()[-1]
                 if float(sizes[-1]) == 0:
                     proportion = 1 - 1 / NA
                 if float(sizes[-2]) == 0:
@@ -417,6 +418,7 @@ class Demographic_model:
                         proportion,
                         -1,
                         self.periods[-1].get_sizes_of_populations()))
+                self.periods[-1].update(self.periods[-2].get_sizes_of_populations(), N_A=NA)
                 continue
             sizes = ast.literal_eval('[' + params[1])
             self.add_period(
