@@ -418,7 +418,7 @@ class Demographic_model:
                         proportion,
                         -1,
                         self.periods[-1].get_sizes_of_populations()))
-                self.periods[-1].update(self.periods[-2].get_sizes_of_populations(), N_A=NA)
+                self.periods[-1].update(self.periods[-2].get_sizes_of_populations(), self.params.min_N, N_A=NA)
                 continue
             sizes = ast.literal_eval('[' + params[1])
             self.add_period(
