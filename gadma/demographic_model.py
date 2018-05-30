@@ -178,7 +178,7 @@ class Period(object):
             mig_str = migr_float_representation(self.migration_rates)
         return '[ ' + float_representation(self.time) + ', ' + \
             list_float_representation(self.get_sizes_of_populations()) + ', ' + \
-            str(self.growth_types) + mig_str + ' ]'
+            str(self.growth_types) + ', ' + mig_str + ' ]'
 
 
 class Split(Period):

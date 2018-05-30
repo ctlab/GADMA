@@ -165,7 +165,8 @@ class GA(object):
             if line == '':
                 break
             pos_of_empty_str += 1
-
+        
+        # if there is no empty line then we need prev iteration
         if len(iter_out) == pos_of_empty_str:
             iter_out = prev_iter_out
             pos_of_empty_str = 0
@@ -176,7 +177,13 @@ class GA(object):
         size = pos_of_empty_str - 5
         restore_iteration_state(iter_out, size)
 
-        if len(iter_out) - 13 > size:
+        pos_of_last_empty_str = len(iter_out)
+        for line in reversed(iter_out):
+                if line != '':
+                    break
+                pos_of_last_empty_str -= 1
+
+        if pos_of_last_empty_str - 11 > size:
             if iter_out[-1].startswith(
                     'BEST') and iter_out[-2].startswith('Try to improve'):
                 # when we don't print final result
