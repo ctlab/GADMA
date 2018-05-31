@@ -524,6 +524,7 @@ class Demographic_model:
         else:
             verbose = len(p0)
         func_kwargs = {
+            'multinom': False,
             'output_file': filename,
             'lower_bound': lower_bound,
             'upper_bound': upper_bound,
