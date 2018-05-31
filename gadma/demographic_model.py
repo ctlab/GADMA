@@ -913,10 +913,13 @@ class Demographic_model:
                     growth_types=pops_exp))
         self.number_of_periods += 1
         if period_index_to_divide < self.split_1_pos:
-            self.split_2_pos += 1
-            self.split_1_pos += 1
+            if self.split_2_pos is not None:
+                self.split_2_pos += 1
+            if self.split_1_pos is not None:
+                self.split_1_pos += 1
         elif period_index_to_divide < self.split_2_pos:
-            self.split_2_pos += 1
+            if self.split_2_pos is not None:
+                self.split_2_pos += 1
 
         self.cur_structure[structure_index] += 1
 
