@@ -139,9 +139,10 @@ Usage:
 
 
 Instead/With -p/--params and -e/--extra option you can set:
-	-o/--output <output_dir>		output directory.
+	-o/--output <output_dir>	output directory.
 	-i/--input <in.fs>/<in.txt>	input file with AFS or in dadi format.
 	--resume <resume_dir>		resume another launch from <resume_dir>.
+	--only_models			flag to take models only from another launch (--resume option).
 
 
 	-h/--help		show this help message and exit.
@@ -383,12 +384,10 @@ BIC helps us to find out overfitting of observed spectrum and choose optimal num
 
 GADMA remembers best BIC model and shows it for every genetic algorithm.
 
-# Theta
-total mutation flux.
+# Theta0
+Scaled mutation rate, equal to:
 
-It is equal to:
-
-![`\theta = 4 * μ * L`](doc/formula_for_theta.png)
+![`\theta0 = 4 * μ * L`](doc/formula_for_theta.png)
 
 where `μ` - mutation rate per site per generation and `L` - effective sequenced length, which accounts for losses in alignment and missed calls.
 

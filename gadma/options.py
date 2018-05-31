@@ -163,7 +163,7 @@ class Options_storage:
                     self.pop_labels = value if value.lower() != 'none' else None
                 elif identity == 'projections':
                     self.ns = value if value.lower() != 'none' else None
-                elif identity == 'theta':
+                elif identity == 'theta0':
                     self.theta = float(
                         value) if value.lower() != 'none' else None
                 elif identity == 'time for generation':
@@ -435,7 +435,7 @@ class Options_storage:
                 "Parameter `Input file` is required")
         if self.theta is None:
             support.warning(
-                "`Theta` is not specified. It would be 1.0.")
+                "`Theta0` is not specified. It would be 1.0.")
         if self.gen_time is None:
             support.warning(
                 "`Time for one generation` is not specified. Time will be in genetic units.")
@@ -593,10 +593,10 @@ def usage():
         "Usage: \n\tgadma -p/--params <params_file> -e/--extra <extra_params_file>\n"\
         "\n\n"\
         "Instead/With -p/--params and -e/--extra option you can set:\n"\
-        "\t-o/--output <output_dir>\t\toutput directory.\n"\
+        "\t-o/--output <output_dir>\toutput directory.\n"\
         "\t-i/--input <in.fs>/<in.txt>\tinput file with AFS or in dadi format.\n"\
         "\t--resume <resume_dir>\t\tresume another launch from <resume_dir>.\n"\
-        "\t--only_models\t\tflag to take models only from another launch (--resume option).\n"\
+        "\t--only_models\t\t\tflag to take models only from another launch (--resume option).\n"\
         "\n\n"\
         "\t-h/--help\t\tshow this help message and exit.\n"\
         "\t-v/--version\t\tshow version and exit.\n"\

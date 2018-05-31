@@ -47,14 +47,16 @@ Projections : {5}
 
 #	Now all main parameters:
 #
-#	Total mutation flux - theta.
-#	It is equal to:
-#	theta = 4 * μ * L
-#	where μ - mutation rate per site per generation and L - effective sequenced length, which accounts for losses in alignment and missed calls.
+#	Scaled mutation rate, equal to theta0 = 4 * μ * L.
+#	
+#	(In Gutenkunst et al theta0 = 4 * N_ref * u, where u (= μ * L) is the mutation event rate per generation for the simulated locus.
+#	However, we can consider N_ref = 1 and get formula above.)
+#	
+#	μ - mutation rate per site per generation
+#	L - effective sequenced length, which accounts for losses in alignment and missed calls.
 #	Note: you should estimate μ based on generation time.
-#	Here there theta as in Gutenkunst et al, 2009.
 #	Default: 1.0
-Theta : {6}
+Theta0 : {6}
 
 #	Time (number of years) for one generation. Can be float. For human it can be (Gutenkunst et al, 2009):
 #	Is important for drawing models. If you don't want to draw, you can pass it.
