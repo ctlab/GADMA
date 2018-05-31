@@ -103,12 +103,16 @@ class GA(object):
                     'New final structure is less than current structure.')
 
         def restore_iteration_state(iter_out, size):
-            self.cur_iteration = int(iter_out[0].split('#')[-1][:-1])
-            self.first_iteration = self.cur_iteration
+            if not self.params.only_models:
+                self.cur_iteration = int(iter_out[0].split('#')[-1][:-1])
+                self.first_iteration = self.cur_iteration
 
             start_ind = 3
             end_ind = 3 + size
             restore_from_cur_pop_of_models(iter_out[start_ind: end_ind])
+            
+            if self.params.only_models:
+                return
 
             if not iter_out[end_ind].startswith('Current mean mutation rate:'):
                 raise RuntimeError(

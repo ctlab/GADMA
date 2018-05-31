@@ -30,7 +30,9 @@ Temporary Items
 *.swp
 *.swo
 *.swn
-*.svm
+*.swm
+*.swk
+*.swl
 
 # Python files
 *.pyc

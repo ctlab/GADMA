@@ -91,6 +91,7 @@ class Options_storage:
         self.processes = 1
         self.test = False
         self.resume_dir = None
+        self.only_models = None
 
         # Extra parameters
 
@@ -149,6 +150,13 @@ class Options_storage:
                     self.output_dir = value
                 elif identity == 'resume from':
                     self.resume_dir = value if value.lower() != 'none' else None
+                elif identity == 'only models':
+                    if value.lower() == 'true':
+                        self.only_models = True
+                    elif  value.lower() == 'false':
+                        self.only_models = False
+                    else:
+                        self.only_models = None
                 elif identity == 'input file':
                     self.input_file = value
                 elif identity == 'population labels':
@@ -197,8 +205,14 @@ class Options_storage:
                 elif identity == "print models' code every n iteration":
                     self.code_iter = int(value)
                 elif identity == 'units of time in drawing':
-                    self.time_units = 1 if value.lower() == 'years' else 1000 if value.lower() == 'kya' or value.lower() == 'thousand years' else support.warning(
-                        'Cannot understand units of time in line ' + str(line_number) + ' in parameters file. Years were taken.')
+                    if value.lower() == 'years':
+                        self.time_units = 1
+                    elif value.lower() == 'kya' or value.lower() == 'thousand years':
+                        self.time_units = 1000
+                    else:
+                        support.warning(
+                        'Cannot understand units of time in line ' +\
+                                str(line_number) + ' in parameters file. Years were taken.')
                 elif identity == 'silence':
                     self.silence = value.lower() == 'true'
                 elif identity == 'number of repeats':
@@ -294,6 +308,8 @@ class Options_storage:
             out.write(
                 string.format(
                     self.output_dir,
+                    self.resume_dir,
+                    self.only_models,
                     self.input_file,
                     comma_sep_repr(self.pop_labels),
                     comma_sep_repr(self.ns),
@@ -580,6 +596,7 @@ def usage():
         "\t-o/--output <output_dir>\t\toutput directory.\n"\
         "\t-i/--input <in.fs>/<in.txt>\tinput file with AFS or in dadi format.\n"\
         "\t--resume <resume_dir>\t\tresume another launch from <resume_dir>.\n"\
+        "\t--only_models\t\tflag to take models only from another launch (--resume option).\n"\
         "\n\n"\
         "\t-h/--help\t\tshow this help message and exit.\n"\
         "\t-v/--version\t\tshow version and exit.\n"\
@@ -687,6 +704,9 @@ def parse_args():
     parser.add_argument(
         '--resume', metavar="<dir>", required=False, default=None)
     parser.add_argument(
+        '--only_models', action='store_true')
+
+    parser.add_argument(
         '-o', '--output', metavar="<dir>", required=False, default=None)
     parser.add_argument(
         '-i',
@@ -717,12 +737,17 @@ def parse_args():
         test_args()
         return
 
+    if args.only_models and args.resume is None:
+        support.error("Option --only_models  must be used with --resume option.")
+
     if args.output is not None:
         options_storage.output_dir = args.output
     if args.input is not None:
         options_storage.input_file = args.input
     if args.resume is not None:
         options_storage.resume_dir = args.resume
+    if args.only_models:
+        options_storage.only_models = True
 
     if args.params is not None:
         options_storage.from_file(args.params)
@@ -755,6 +780,8 @@ def parse_args():
             options_storage.input_file = args.input
         if args.resume is not None:
             options_storage.resume_dir = args.resume
+        if args.only_models:
+            options_storage.only_models = True
 
     if args.resume is not None and os.path.abspath(
         os.path.expanduser(
