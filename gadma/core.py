@@ -338,7 +338,10 @@ def main():
         support.write_log(log_file, 'Thank you for using GADMA!')
 
     except KeyboardInterrupt:
-        pool.terminate()
+        try:
+            pool.terminate()
+        except:
+            pass
         support.error('KeyboardInterrupt')
 
 
