@@ -262,39 +262,37 @@ def print_best_solution_now(start_time, shared_dict,
 
 
 def main():
-    try:
-        options.parse_args()
+    options.parse_args()
 
-        log_file = os.path.join(
-            options.options_storage.output_dir, 'GADMA.log')
-        open(log_file, 'w').close()
+    log_file = os.path.join(
+        options.options_storage.output_dir, 'GADMA.log')
+    open(log_file, 'w').close()
 
-        support.write_log(log_file, "--Successful arguments' parsing--\n")
-        params_filepath = os.path.join(
-            options.options_storage.output_dir, 'params')
-        options.options_storage.save(options.options_storage.output_dir)
-        if not options.options_storage.test:
-            support.write_log(
-                log_file, 'You can find all parameters of this run in:\t\t' + params_filepath + '\n')
-            support.write_log(log_file, 'All output is saved (without warnings and errors) in:\t' +
-                              os.path.join(options.options_storage.output_dir, 'GADMA.log\n'))
+    support.write_log(log_file, "--Successful arguments' parsing--\n")
+    params_filepath = os.path.join(
+        options.options_storage.output_dir, 'params')
+    options.options_storage.save(options.options_storage.output_dir)
+    if not options.options_storage.test:
+        support.write_log(
+            log_file, 'You can find all parameters of this run in:\t\t' + params_filepath + '\n')
+        support.write_log(log_file, 'All output is saved (without warnings and errors) in:\t' +
+                          os.path.join(options.options_storage.output_dir, 'GADMA.log\n'))
 
-        support.write_log(log_file, '--Start pipeline--\n')
+    support.write_log(log_file, '--Start pipeline--\n')
 
-        # For debug
+    # For debug
 #        run_genetic_algorithm((1, log_file, None))
 
-        # Create shared dictionary
-        m = Manager()
-        shared_dict = m.dict()
+    # Create shared dictionary
+    m = Manager()
+    shared_dict = m.dict()
 
-        # Start pool of processes
-        start_time = datetime.now()
-        from contextlib import closing
-
-        pool = Pool(processes=options.options_storage.processes,
-                    initializer=worker_init)
-
+    # Start pool of processes
+    start_time = datetime.now()
+    
+    pool = Pool(processes=options.options_storage.processes,
+                initializer=worker_init)
+    try:
         pool_map = pool.map_async(
             run_genetic_algorithm,
             [(i + 1, log_file, shared_dict)
@@ -338,10 +336,7 @@ def main():
         support.write_log(log_file, 'Thank you for using GADMA!')
 
     except KeyboardInterrupt:
-        try:
-            pool.terminate()
-        except:
-            pass
+        pool.terminate()
         support.error('KeyboardInterrupt')
 
 
