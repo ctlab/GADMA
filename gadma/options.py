@@ -169,6 +169,8 @@ class Options_storage:
                 elif identity == 'time for generation':
                     self.gen_time = float(
                         value) if value.lower() != 'none' else None
+                elif identity == 'multinom':
+                    self.multinom = True if value.lower() != 'true' else False
                 elif identity == 'initial structure':
                     self.initial_structure = value
                 elif identity == 'final structure':
@@ -316,6 +318,7 @@ class Options_storage:
                     str(self.theta),
                     str(self.gen_time),
                     'moments' if self.moments_scenario else 'dadi',
+                    str(self.multinom),
                     comma_sep_repr(self.dadi_pts),
                     comma_sep_repr(self.initial_structure),
                     comma_sep_repr(self.final_structure),

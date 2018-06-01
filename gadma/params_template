@@ -70,9 +70,15 @@ Time for generation : {7}
 #	Default: dadi
 Use moments or dadi : {8}
 
+#	Use multinom cheme: N_A is not parameter for search, it is calculated through optimal_sfs_scaling.
+#	Multinom cheme increase number of parameter by one and is usually faster, however non multinom cheme 
+#	usually finds better solutions.
+#	Default: False
+Multinom : {9}
+
 #	If you choose to use dadi, please set pts parameter - number of points in grid
 #	Default: Let n = max number of individuals in one population, then pts = n, n+10, n+20
-Pts : {9}
+Pts : {10}
 
 #	Sructure of model for one population - number of time periods (e.g. 5).
 #	Sructure of model for two populations - number of time periods before split of ancestral population and after it (e.g. 2,2).
@@ -80,11 +86,11 @@ Pts : {9}
 #
 #	Sructure of initial model:
 #	Default: all 1s - 1 or 1,1 or 1,1,1
-Initial structure : {10}
+Initial structure : {11}
 
 #	Structure of final model:
 #	Default: equals to initial structure
-Final structure : {11}
+Final structure : {12}
 
 #	It is possible to limit time of splits.
 #	Split 1 is the most ancient split.
@@ -94,20 +100,20 @@ Final structure : {11}
 #
 #	Upper bound for split 1 (in case of 2 or 3 populations).
 #	Default: None
-Upper bound of first split : {12}
+Upper bound of first split : {13}
 
 #	Upper bound for split 2 (in case of 3 populations).
 #	Default: None
-Upper bound of second split : {13}
+Upper bound of second split : {14}
 
 #	Print parameters of model in units of N_ref = N_A.
 #	N_A will be placed in brackets at the end of string.
 #	Default: False
-Relative parameters : {14}
+Relative parameters : {15}
 
 #	Disable migrations in demographic models.
 #	Default: False
-No migrations : {15}
+No migrations : {16}
 
 
 
@@ -116,40 +122,40 @@ No migrations : {15}
 #
 #	Size of population of demographic models in GA:
 #	Default: 10
-Size of population in GA : {16}
+Size of population in GA : {17}
 
 #	Fractions of current models, mutated models and crossed models to be taken to new population.
 #	Sum of fractions should be <= 1, the remaining fraction is fraction of random models.
 #	Default: 0.2,0.3,0.3
-Fractions in GA : {17}
+Fractions in GA : {18}
 
 #	Mutation strength - fraction of parameters in model to mutate during global mutation process of model.
 #	Number of parameters to mutate is sampled from binomial distribution, so we need to set mean.
 #	Default: 0.2
-Mean mutation strength : {18}
+Mean mutation strength : {19}
 #
 #	Mutation strength can be adaptive: if mutation is good, i.e. has the best fitness function (log likelihood),
 #	then mutation strength is increased multiplying by const otherwise it decreases dividing by (1/4)^const.
 #	When const is 1.0 it is not adaptive.
 #	Default: 1.0
-Const for mutation strength : {19}
+Const for mutation strength : {20}
 
 #	Mutation rate - fraction of any parameter to change during its mutation.
 #	Mutation rate is sampled from truncated normal disstribution, so we need mean (std in extra param).
 #	Default 0.2
-Mean mutation rate : {20}
+Mean mutation rate : {21}
 #
 #	Mutation rate also can be adaptive as mutation strength.
 #	Default: 1.02
-Const for mutation rate : {21}
+Const for mutation rate : {22}
 
 #	Genetic algorithm stops when it couldn't improve model more that epsilon
 #	Default: 1e-2
-Epsilon : {22}
+Epsilon : {23}
 #	
 #	and it happens during N iterations:
 #	Default: 100
-Stop iteration : {23}
+Stop iteration : {24}
 
 
 #	Local optimization.
@@ -176,7 +182,7 @@ Stop iteration : {23}
 #	*	hill_climbing
 #	
 #	Default: optimize_powell
-Name of local optimization : {24}
+Name of local optimization : {25}
 
 
 
@@ -185,31 +191,31 @@ Name of local optimization : {24}
 #	You can automatically draw models every N iteration. If 0 then never.
 #	Pictures are saved in GA's directory in picture folder.
 #	Default: 0
-Draw models every N iteration : {25}
+Draw models every N iteration : {26}
 
 #	You can automatically generate dadi and moments code for models.
 #	If 0 then only current best model will be printed in GA's working directory.
 #	Also result model will be saved there. 
 #	If specified (not 0) then every N iteration model will be saved in python code folder.
 #	Default: 0
-Print models' code every N iteration : {26}
+Print models' code every N iteration : {27}
 
 #	You can choose time units in models' plots: years or thousand years (kya, KYA).
 #	If time for one generation isn't specified then time is in genetic units.
 #	Default: years
-Units of time in drawing : {27}
+Units of time in drawing : {28}
 
 #	No std output.
 #	Default: False
-Silence : {28}
+Silence : {29}
 
 #	How many times launch gadma with this parameters.
 #	Default: 1
-Number of repeats : {29}
+Number of repeats : {30}
 
 #	How many processes to use for this repeats.
 #	Note that one repeat isn't parallelized, so increasing number of processes
 #	doesn't effect on time of one repeat.
 #	It is desirable that the number of repeats is a multiple of the number of processes.
 #	Default: 1
-Number of processes : {30}
+Number of processes : {31}
