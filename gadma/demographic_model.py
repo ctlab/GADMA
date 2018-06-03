@@ -175,10 +175,10 @@ class Period(object):
         if self.migration_rates is None:
             mig_str = ''
         else:
-            mig_str = migr_float_representation(self.migration_rates)
+            mig_str = ', ' + migr_float_representation(self.migration_rates)
         return '[ ' + float_representation(self.time) + ', ' + \
             list_float_representation(self.get_sizes_of_populations()) + ', ' + \
-            str(self.growth_types) + ', ' + mig_str + ' ]'
+            str(self.growth_types)  + mig_str + ' ]'
 
 
 class Split(Period):
@@ -210,18 +210,6 @@ class Split(Period):
         self.number_of_parameters = 1
         self.number_of_changes = [0]
 
-    def mutate(self, change, sign, min_N, N_A):
-        """Change split_prop by mutation_rate.
-
-        N_A is for right scaling and limitations.
-        """
-        self.split_prop *= 1 + sign * change
-
-        min_split_prop = min_N * N_A / \
-            self.sizes_of_pops_before[self.population_to_split]
-        self.split_prop = min(self.split_prop, 1 - min_split_prop)
-        self.split_prop = max(self.split_prop, min_split_prop)
-
     def get_sizes_of_populations(self):
         sizes_of_pops = copy.deepcopy(self.sizes_of_pops_before)
         sizes_of_pops.append(sizes_of_pops[-1])
@@ -229,12 +217,32 @@ class Split(Period):
         sizes_of_pops[-2] *= self.split_prop
         return sizes_of_pops
 
-    def update(self, new_size_of_population_before_split, min_N, N_A=None):
+    def check_prop(min_N, N_A):
+        min_split_prop = min_N * N_A / \
+            self.sizes_of_pops_before[self.population_to_split]
+        return_flag = False
+        if self.split_prop > 1 - min_split_prop:
+            self.split_prop = 1 - min_split_prop
+            return_flag = True
+        if self.split_prop < min_split_prop:
+            self.split_prop = min_split_prop
+            return_flag = True
+        return return_flag
+
+    def mutate(self, change, sign, min_N, N_A):
+        """Change split_prop by mutation_rate.
+
+        N_A is for right scaling and limitations.
+        """
+        self.split_prop *= 1 + sign * change
+        self.check_prop(min_N, N_A)
+        
+    def update(self, new_size_of_population_before_split, min_N=None, N_A=None):
         """Update sizes of populations of previous period."""
         self.sizes_of_pops_before = copy.deepcopy(
             new_size_of_population_before_split)
-        if N_A is not None:
-            self.mutate(0, 1, min_N, N_A)
+        if min_N is not None and N_A is not None:
+            self.check_prop(min_N, N_A)
 
 
 class Demographic_model:
@@ -912,14 +920,12 @@ class Demographic_model:
                         period_to_divide.migration_rates),
                     growth_types=pops_exp))
         self.number_of_periods += 1
-        if period_index_to_divide < self.split_1_pos:
+        if self.split_1_pos is not None and period_index_to_divide < self.split_1_pos:
             if self.split_2_pos is not None:
                 self.split_2_pos += 1
-            if self.split_1_pos is not None:
-                self.split_1_pos += 1
-        elif period_index_to_divide < self.split_2_pos:
-            if self.split_2_pos is not None:
-                self.split_2_pos += 1
+            self.split_1_pos += 1
+        elif self.split_2_pos is not None and period_index_to_divide < self.split_2_pos:
+            self.split_2_pos += 1
 
         self.cur_structure[structure_index] += 1
 
@@ -992,6 +998,25 @@ class Demographic_model:
                 for p in self.periods[self.split_1_pos:]:
                     p.time *= self.params.split_1_lim / sum_of_time
                 self.has_changed()
+        #check split props
+        def check_split_props(split_pos):
+            if split_pos is not None:
+                sizes_of_pop = self.periods[split_pos-1].sizes_of_populations[-1]
+                min_size = 2 * self.params.min_N * self.get_N_A()
+                if size_of_pop < min_size:
+                    self.periods[split_pos-1].sizes_of_populations[-1] = min_size
+                    self.periods[split_pos].update(self.periods[split_pos-1].get_sizes_of_populations(), self.min_N, self.get_N_A())
+                    self.has_changed()
+                elif size_of_pop > self.params.max_N * self.get_N_A() - min_size:
+                    self.periods[split_pos-1].sizes_of_populations[-1] = self.params.max_N * self.get_N_A() - min_size
+                    self.periods[split_pos].update(self.periods[split_pos-1].get_sizes_of_populations(), self.min_N, self.get_N_A())
+                    self.has_changed()
+                else:
+                    if self.periods[split_pos].check_prop(self.params.min_N, 
+                            self.get_N_A()):
+                        self.has_changed()
+        check_split_props(self.split_1_pos)
+        check_split_props(self.split_2_pos)
 
     def generate_migration_rates(self, sizes_of_pops):
         """Generate migration rates from number_of_populations.
