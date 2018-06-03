@@ -1001,7 +1001,7 @@ class Demographic_model:
         #check split props
         def check_split_props(split_pos):
             if split_pos is not None:
-                sizes_of_pop = self.periods[split_pos-1].sizes_of_populations[-1]
+                size_of_pop = self.periods[split_pos-1].sizes_of_populations[-1]
                 min_size = 2 * self.params.min_N * self.get_N_A()
                 if size_of_pop < min_size:
                     self.periods[split_pos-1].sizes_of_populations[-1] = min_size
