@@ -217,7 +217,7 @@ class Split(Period):
         sizes_of_pops[-2] *= self.split_prop
         return sizes_of_pops
 
-    def check_prop(min_N, N_A):
+    def check_prop(self, min_N, N_A):
         min_split_prop = min_N * N_A / \
             self.sizes_of_pops_before[self.population_to_split]
         return_flag = False
