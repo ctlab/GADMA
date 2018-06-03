@@ -1005,11 +1005,11 @@ class Demographic_model:
                 min_size = 2 * self.params.min_N * self.get_N_A()
                 if size_of_pop < min_size:
                     self.periods[split_pos-1].sizes_of_populations[-1] = min_size
-                    self.periods[split_pos].update(self.periods[split_pos-1].get_sizes_of_populations(), self.min_N, self.get_N_A())
+                    self.periods[split_pos].update(self.periods[split_pos-1].get_sizes_of_populations(), self.params.min_N, self.get_N_A())
                     self.has_changed()
                 elif size_of_pop > self.params.max_N * self.get_N_A() - min_size:
                     self.periods[split_pos-1].sizes_of_populations[-1] = self.params.max_N * self.get_N_A() - min_size
-                    self.periods[split_pos].update(self.periods[split_pos-1].get_sizes_of_populations(), self.min_N, self.get_N_A())
+                    self.periods[split_pos].update(self.periods[split_pos-1].get_sizes_of_populations(), self.params.min_N, self.get_N_A())
                     self.has_changed()
                 else:
                     if self.periods[split_pos].check_prop(self.params.min_N, 
