@@ -170,7 +170,7 @@ class Options_storage:
                     self.gen_time = float(
                         value) if value.lower() != 'none' else None
                 elif identity == 'multinom':
-                    self.multinom = True if value.lower() != 'true' else False
+                    self.multinom = True if value.lower() == 'true' else False
                 elif identity == 'initial structure':
                     self.initial_structure = value
                 elif identity == 'final structure':
