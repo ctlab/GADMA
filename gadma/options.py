@@ -196,7 +196,7 @@ class Options_storage:
                 elif identity == 'stop iteration':
                     self.stop_iter = int(value)
                 elif identity == 'pts':
-                    self.pts = value if value.lower() != 'none' else None
+                    self.dadi_pts = value if value.lower() != 'none' else None
                 elif identity == 'use moments or dadi':
                     if value == 'moments':
                         self.moments_scenario = True
