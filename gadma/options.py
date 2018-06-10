@@ -469,7 +469,7 @@ class Options_storage:
         if self.moments_scenario and self.dadi_pts is not None:
             support.warning(
                 "Moments doesn't use --pts argument, so it would be ignored")
-        elif self.dadi_pts is None:
+        if self.dadi_pts is None:
             max_n = max(self.ns)
             self.dadi_pts = [max_n, max_n + 10, max_n + 20]
         else:
