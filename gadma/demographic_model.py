@@ -521,9 +521,14 @@ class Demographic_model:
                         upper_bound.append(self.params.max_M)
         return lower_bound, upper_bound
 
-    def run_local_search(self, name_of_search, filename):
+    def run_local_search(self, name_of_search, filename, data_sample=None):
+        if data_sample is None:
+            data = self.params.input_data
+        else:
+            data = data_sample
         if len(self.get_param_ids()) == int(not self.params.multinom):
             return
+        old_func_value = self.get_fitness_func_value(data_sample)
         self.normalize_by_Nref(1 / self.get_N_A())
         lower_bound, upper_bound = self.get_lower_and_upper_bounds()
         p0 = self.as_vector()[1:]
@@ -580,7 +585,7 @@ class Demographic_model:
                 optimize_func = dadi.Inference.optimize_log_fmin
 
         if self.params.moments_scenario:
-            p_opt = optimize_func(p0, self.params.input_data,
+            p_opt = optimize_func(p0, data,
                                   self.moments_code, **func_kwargs)
         elif name_of_search == 'optimize_powell':
             # we need to run moments function with dadi's one, so we create
@@ -591,13 +596,13 @@ class Demographic_model:
                 kwargs['pts'] = self.params.dadi_pts
                 return func_ex(*args, **kwargs)
             p_opt = optimize_func(
-                p0, self.params.input_data, my_func, **func_kwargs)
+                p0, data, my_func, **func_kwargs)
         else:
             func_ex = dadi.Numerics.make_extrap_log_func(self.dadi_code)
-            p_opt = optimize_func(p0, self.params.input_data,
+            p_opt = optimize_func(p0, data,
                                   func_ex, self.params.dadi_pts, **func_kwargs)
 
-        if not np.isnan(p_opt).any() and not (p_opt < 0).any():
+        if not np.isnan(p_opt).any() and not (p_opt < 0).any() and self.get_fitness_func_value(data_sample) < old_func_value:
             self.construct_from_vector(p_opt)
         else:
             self.construct_from_vector(p0)
@@ -752,13 +757,15 @@ class Demographic_model:
         # if we change N_A we need to update split percent
         if not self.params.multinom and param_index == 0:
             N_A = self.get_N_A()
+            k = 0
             for i, j in enumerate(self.get_structure()[:-1]):
+                k += j
                 self.periods[
                     i +
-                    j].update(
+                    k].update(
                     self.periods[
                         i +
-                        j -
+                        k -
                         1].get_sizes_of_populations(),
                     self.params.min_N,
                     N_A=N_A)
