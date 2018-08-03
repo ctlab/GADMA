@@ -208,7 +208,7 @@ class Split(Period):
             sizes_of_populations=self.get_sizes_of_populations(),
             is_split_of_population=True)
         self.number_of_parameters = 1
-        self.number_of_changes = [0]
+        self.number_of_changes = [0.0]
 
     def get_sizes_of_populations(self):
         sizes_of_pops = copy.deepcopy(self.sizes_of_pops_before)
@@ -636,7 +636,7 @@ class Demographic_model:
         if not (period.is_first_period and self.params.multinom):
             for i in xrange(period.number_of_parameters):
                 self.param_ids.append((self.number_of_periods - 1, i))
-                self.number_of_changes = np.append(self.number_of_changes, 0)
+                self.number_of_changes = np.append(self.number_of_changes, 0.0)
         self.has_changed()
 
     def add_list_of_periods(self, list_of_periods):
@@ -812,7 +812,7 @@ class Demographic_model:
 
         if inds_and_signs is None:
             # calculate probabilities and choose parameter
-            p = max(self.number_of_changes) + 1 - self.number_of_changes
+            p = (max(self.number_of_changes) + 1.0) - self.number_of_changes
             p /= sum(p)
 
             # choose parameters
@@ -864,18 +864,21 @@ class Demographic_model:
             final_index_to_divide = start_index_to_divide + \
                 self.cur_structure[structure_index]
             p = []
+            
+            if final_index_to_divide == start_index_to_divide + 1:
+                period_index_to_divide = 0
+            else:
+                for i in xrange(start_index_to_divide, final_index_to_divide):
+                    p.append(self.periods[i].time)
 
-            for i in xrange(start_index_to_divide, final_index_to_divide):
-                p.append(self.periods[i].time)
+                if self.periods[
+                        start_index_to_divide].is_first_period and len(p) > 1:
+                    p[0] = min(p[1:])
+                p = np.array(p)
+                p /= sum(p)
 
-            if self.periods[
-                    start_index_to_divide].is_first_period and len(p) > 1:
-                p[0] = min(p[1:])
-            p = np.array(p)
-            p /= sum(p)
-
-            period_index_to_divide = np.random.choice(
-                range(start_index_to_divide, final_index_to_divide), p=p)
+                period_index_to_divide = np.random.choice(
+                    range(start_index_to_divide, final_index_to_divide), p=p)
 
         # add new period by spliting chosen period to two periods
         total_time = self.get_total_time()
