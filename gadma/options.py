@@ -49,6 +49,7 @@ class Options_storage:
         self.theta = None
         self.gen_time = None
         self.multinom = False
+        self.only_sudden = False
         self.dadi_pts = None
         self.moments_scenario = False
         self.relative_params = False
@@ -70,7 +71,7 @@ class Options_storage:
         self.frac_of_crossed_models = None
 
         self.mutation_strength = 0.2
-        self.const_for_mut_strength = 1.0
+        self.const_for_mut_strength = 1.01
 
         self.mutation_rate = 0.2
         self.const_for_mut_rate = 1.02
@@ -273,9 +274,9 @@ class Options_storage:
                 elif identity == 'stop iteration for hc':
                     self.hc_stop_iter = None if value.lower() == 'none' else float(value)
                 elif identity == 'multinomial mutation':
-                    self.multinom_mutation = value.lower == 'true'
+                    self.multinom_mutation = value.lower() == 'true'
                 elif identity == 'multinomial crossing':
-                    self.multinom_mutation = value.lower == 'true'
+                    self.multinom_mutation = value.lower() == 'true'
                 elif identity == 'random n_a':
                     self.random_N_A = value.lower == 'true'
                 elif identity == 'time to run bootstrap':
@@ -286,6 +287,8 @@ class Options_storage:
                     self.distribution = value.lower()
                 elif identity == 'std':
                     self.std = None if value.lower() == 'none' else float(value)
+                elif identity == 'only sudden':
+                    self.only_sudden = value.lower() == 'true'
                 else:
                     support.error(
                         'Cannot recognize identifier: ' +
@@ -340,7 +343,8 @@ class Options_storage:
                     'Thousand Years' if self.time_units == 1000 else 'Years',
                     str(self.silence),
                     str(self.repeats),
-                    str(self.processes)
+                    str(self.processes),
+                    str(self.only_sudden)
                 ))
 
     def to_file_extra(self, output_filename):

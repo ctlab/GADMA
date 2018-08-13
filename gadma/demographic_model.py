@@ -58,6 +58,7 @@ class Period(object):
         self.time = time
         self.sizes_of_populations = copy.deepcopy(sizes_of_populations)
         self.number_of_populations = len(sizes_of_populations)
+        self.only_sudden = growth_types is None
         if growth_types is None:
             if not is_first_period and not is_split_of_population:
                 self.growth_types = [0] * self.number_of_populations
@@ -75,7 +76,7 @@ class Period(object):
         elif self.is_split_of_population:
             self.number_of_parameters = 1
         else:
-            self.number_of_parameters = 1 + self.number_of_populations * 2 + (
+            self.number_of_parameters = 1 + self.number_of_populations * (2 - self.only_sudden) + (
                 0 if self.migration_rates is None else
                 (2 if self.number_of_populations == 2 else 6))
 
@@ -118,7 +119,7 @@ class Period(object):
                 self.get_sizes_of_populations()[param_index - 1],
                 bounds.max_N * N_A)
 
-        elif param_index <= 2 * self.number_of_populations:
+        elif param_index <= 2 * self.number_of_populations and not self.only_sudden:
             self.growth_types[param_index -
                               self.number_of_populations - 1] += sign
             self.growth_types[param_index -
@@ -331,7 +332,7 @@ class Demographic_model:
                         self.params.min_T, self.params.max_T),
                     sizes_of_populations=[np.random.uniform(
                         self.params.min_N, self.params.max_N)],
-                    growth_types=[random.choice([0, 1, 2])]))
+                    growth_types= None if self.params.only_sudden else [random.choice([0, 1, 2])]))
         for num_of_pops, number_of_periods in enumerate(structure[1:]):
             num_of_pops += 2
             self.add_period(
@@ -351,7 +352,7 @@ class Demographic_model:
                         time=np.random.uniform(
                             self.params.min_T, self.params.max_T),
                         sizes_of_populations=sizes_of_pops,
-                        growth_types=[
+                        growth_types= None if self.params.only_sudden else [
                             random.choice([0, 1, 2])
                             for x in xrange(num_of_pops)
                         ],
@@ -431,13 +432,12 @@ class Demographic_model:
             sizes = ast.literal_eval('[' + params[1])
             self.add_period(
                 Period(
-                    float(
-                        params[0]),
-                    sizes,
-                    ast.literal_eval(
+                    time=float(params[0]),
+                    sizes_of_populations=sizes,
+                    growth_types=None if params[2] == "None]" else ast.literal_eval(
                         '[' +
                         params[2]),
-                    None if len(params) < 4 or self.params.no_mig else ast.literal_eval(
+                    migration_rates= None if len(params) < 4 or self.params.no_mig else ast.literal_eval(
                         ('[' +
                          params[3]).replace(
                             '][',
@@ -662,7 +662,7 @@ class Demographic_model:
 
     def get_number_of_params(self):
         return sum([p.number_of_parameters for p in self.periods]
-                   ) - (1 if self.params.multinom else 0)
+                   ) - self.params.multinom
 
     def get_param_ids(self):
         """Returns a list of pairs: (number of period, number of parameter of
@@ -894,7 +894,7 @@ class Demographic_model:
                     time=time,
                     sizes_of_populations=copy.deepcopy(
                         self.periods[0].get_sizes_of_populations()),
-                    growth_types=[0]))
+                    growth_types=None if self.params.only_sudden else [0]))
             period_index_to_divide = 0
         else:
             period_to_divide = self.periods[period_index_to_divide]
@@ -928,7 +928,7 @@ class Demographic_model:
                     sizes_of_populations=pops_sizes,
                     migration_rates=copy.deepcopy(
                         period_to_divide.migration_rates),
-                    growth_types=pops_exp))
+                    growth_types=None if self.params.only_sudden else pops_exp))
         self.number_of_periods += 1
         if self.split_1_pos is not None and period_index_to_divide < self.split_1_pos:
             if self.split_2_pos is not None:
@@ -1200,7 +1200,7 @@ class Demographic_model:
                 if take_from_other[cur_ind]:
                     period.sizes_of_populations[p] = other.periods[
                         i].sizes_of_populations[p]
-                if take_from_other[cur_ind + period.number_of_populations]:
+                if not self.params.only_sudden and take_from_other[cur_ind + period.number_of_populations]:
                     period.growth_types[p] = other.periods[i].growth_types[p]
                 period.sizes_of_populations[p] = min(
                     period.sizes_of_populations[p], self.params.max_N * N_A)
@@ -1213,7 +1213,8 @@ class Demographic_model:
                         period.sizes_of_populations[p] = max(
                             period.sizes_of_populations[p], 2 * self.params.min_N * N_A)
                 cur_ind += 1
-            cur_ind += period.number_of_populations
+            if not self.params.only_sudden:
+                cur_ind += period.number_of_populations
             if period.migration_rates is None:
                 continue
             for p1 in xrange(period.number_of_populations):
@@ -1228,7 +1229,6 @@ class Demographic_model:
                     period.migration_rates[p1][p2] = max(
                         period.migration_rates[p1][p2], self.params.min_M / N_A)
                     cur_ind += 1
-
         child.number_of_changes = np.array(child.number_of_changes)
         child.number_of_changes[
             take_from_other] = other.number_of_changes[take_from_other]
