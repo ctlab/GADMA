@@ -390,11 +390,10 @@ class Demographic_model:
 
     def from_string(self, string):
         """read the model from string, out of __str__ function."""
-        NA = None
         string = string.strip()
         if string.endswith(')'):
             last_occ = string.rfind('(')
-            NA = float(string[last_occ + len('N_A = '): -1])
+            real_NA = float(string[last_occ + len('N_A = '): -1])
             string = string[:last_occ - 1]
         periods = string.split(' ][ ')
         periods[0] = periods[0][2:]
@@ -403,7 +402,7 @@ class Demographic_model:
         for p in periods:
             params = p.split(', [')
 
-            if len(self.periods) == 0 and NA is None:
+            if len(self.periods) == 0:
                 NA = float(params[0][1:-1])
 
             if len(params) == 1:
@@ -443,7 +442,7 @@ class Demographic_model:
                             '][',
                             '], ['))))
         if self.params.relative_params:
-            self.normalize_by_Nref(NA)
+            self.normalize_by_Nref(real_NA)
 
         self.check_time_and_correct_it()
 
