@@ -125,7 +125,7 @@ class Period(object):
             self.growth_types[param_index -
                               self.number_of_populations - 1] %= 3
         else:
-            i = param_index - 2 * self.number_of_populations - 1
+            i = param_index - (1 + int(not self.only_sudden)) * self.number_of_populations - 1
 
             def find_pos(i):
                 x = 0
