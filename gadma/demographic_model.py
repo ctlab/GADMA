@@ -352,7 +352,7 @@ class Demographic_model:
                         time=np.random.uniform(
                             self.params.min_T, self.params.max_T),
                         sizes_of_populations=sizes_of_pops,
-                        growth_types= None if self.params.only_sudden else [
+                        growth_types=None if self.params.only_sudden else [
                             random.choice([0, 1, 2])
                             for x in xrange(num_of_pops)
                         ],
@@ -433,7 +433,7 @@ class Demographic_model:
                 Period(
                     time=float(params[0]),
                     sizes_of_populations=sizes,
-                    growth_types=None if params[2] == "None]" else ast.literal_eval(
+                    growth_types=None if params[2] == "None]" or self.params.only_sudden else ast.literal_eval(
                         '[' +
                         params[2]),
                     migration_rates= None if len(params) < 4 or self.params.no_mig else ast.literal_eval(
