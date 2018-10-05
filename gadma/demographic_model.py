@@ -864,20 +864,17 @@ class Demographic_model:
                 self.cur_structure[structure_index]
             p = []
             
-            if final_index_to_divide == start_index_to_divide + 1:
-                period_index_to_divide = 0
-            else:
-                for i in xrange(start_index_to_divide, final_index_to_divide):
-                    p.append(self.periods[i].time)
+            for i in xrange(start_index_to_divide, final_index_to_divide):
+                p.append(self.periods[i].time)
 
-                if self.periods[
-                        start_index_to_divide].is_first_period and len(p) > 1:
-                    p[0] = min(p[1:])
-                p = np.array(p)
-                p /= sum(p)
+            if self.periods[
+                    start_index_to_divide].is_first_period and len(p) > 1:
+                p[0] = min(p[1:])
+            p = np.array(p)
+            p /= sum(p)
 
-                period_index_to_divide = np.random.choice(
-                    range(start_index_to_divide, final_index_to_divide), p=p)
+            period_index_to_divide = np.random.choice(
+                range(start_index_to_divide, final_index_to_divide), p=p)
 
         # add new period by spliting chosen period to two periods
         total_time = self.get_total_time()
