@@ -48,7 +48,7 @@ Projections : None # will be 20, 20
 #	Note: you should estimate μ based on generation time.
 #	Here there theta as in Gutenkunst et al, 2009.
 #	Default: 1.0
-Theta : 0.37976 # the same as in Gutenkunst et al 2009
+Theta0 : 0.37976 # the same as in Gutenkunst et al 2009
 
 #	Time (number of years) for one generation. Can be float. For human it can be (Gutenkunst et al, 2009):
 #	Is important for drawing models. If you don't want to draw, you can pass it.
