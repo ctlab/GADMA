@@ -3,36 +3,57 @@
 #	Lines started from # are ignored.
 #	Also comments at the end of a line are ignored too.
 #	Every line contains: Identificator of parameter : value.
-#	If you want to change some default parameters, you need to remove # at the begining of line and change corresponding parameter.
+#	If one want to change some default parameters, one need to
+#	remove # at the begining of line and change corresponding
+#	parameter.
 
 
 #	Output directory to write all GADMA out.
-#	You need to set it to not existing or empty directory.
-#	If you resume from other directory and doesn't set output directory,
-#	GADMA will add '_resumed' for previous output directory.
+#	One need to set it to not existing or empty directory.
+#	If it is resumed from other directory and output directory 
+#	isn't set, GADMA will add '_resumed' for previous output 
+#	directory.
 Output directory : my_example_run
 
 
-#	You can resume from some other launch of gadma, so you need to set output directory of it to Resume from parameter.
+#	One can resume from some other launch of GADMA by setting
+#	output directory of it to 'Resume from' parameter.
 #	You can set again new parameters of resumed launch.
 #Resume from : another_output_dir
+#
+#	If you want to take only models from previous run set this 
+#	flag.  Then iterations of GA will start from 0 and values of
+#	mutation rate and strength will be initial.
+#	Default: None
+#Only models : None
 
 
-#	Input file can be sfs file (should end with .fs) or file of SNP's in dadi format (should end with .txt).
+
+#	Input file can be sfs file (should end with .fs) or 
+#	file of SNP's in dadi format (should end with .txt).
 Input file : fs_examples/YRI_CEU.fs
 
-#	Population labels is sequence of population names (the same names as in input file)
-#	If .fs file is in old format then it would rename population labels that are abcent.
-#	It is nessesary to put them in order from most ancient to less. (It is important in case of more than two populations)
-#	It is important, because the last of formed populations take part in next split.
-#	For example, if we have YRI - African population, CEU - European population and CHB - Chineese populaion,
-#	then we can write YRI, CEU, CHB or YRI, CHB, CEU (YRI must be at the first place)
+#	'Population labels' is sequence of population names (the same
+#	names as in input file)
+#	If .fs file is in old format then it would rename population 
+#	labels that are absent.
+#	It is necessary to put them in order from most ancient to less. 
+#	(In case of more than two populations)
+#	It is important, because the last of formed populations take
+#	part in next split.
+#	For example, if we have YRI - African population,
+#	CEU - European population and CHB - Chineese populaion,
+#	then we can write YRI, CEU, CHB or YRI, CHB, CEU 
+#	(YRI must be at the first place)
 #	Default: from input file
-Population labels : CEU, YRI # we change populations order (in input file YRI is first)
+Population labels : CEU, YRI # we change populations order 
+							 # (in input file YRI is first)
 
-#	Also you can project your spectrum for less size.
-#	For example, you have 80 individuals in each of three populations, then spectrum will be 81x81x81 and
-#	you can project it to 21x21x21 by set Projections parameter to 20, 20, 20.
+#	Also one can project your spectrum to less size.
+#	For example, we have 80 individuals in each of three 
+#	populations, then spectrum will be 81x81x81 and one can 
+#	project it to 21x21x21 by set 'Projections' parameter 
+#	to 20, 20, 20.
 #	Default: from input file
 Projections : None # will be 20, 20
 
@@ -44,14 +65,16 @@ Projections : None # will be 20, 20
 #	Total mutation flux - theta.
 #	It is equal to:
 #	theta = 4 * μ * L
-#	where μ - mutation rate per site per generation and L - effective sequenced length, which accounts for losses in alignment and missed calls.
-#	Note: you should estimate μ based on generation time.
-#	Here there theta as in Gutenkunst et al, 2009.
+#	where μ - mutation rate per site per generation and 
+#	L - effective sequenced length, which accounts for losses 
+#	in alignment and missed calls.
+#	Note: one should estimate μ based on generation time.
 #	Default: 1.0
 Theta0 : 0.37976 # the same as in Gutenkunst et al 2009
 
-#	Time (number of years) for one generation. Can be float. For human it can be (Gutenkunst et al, 2009):
-#	Is important for drawing models. If you don't want to draw, you can pass it.
+#	Time (years) for one generation. Can be float. 
+#	Is important for drawing models. If one don't want to draw, 
+#	one can pass it.
 #	Default: 1.0
 Time for generation : 25 # the same as in Gutenkunst et al 2009
 
@@ -62,16 +85,30 @@ Time for generation : 25 # the same as in Gutenkunst et al 2009
 #	Default: dadi
 Use moments or dadi : dadi
 
-#	If you choose to use dadi, please set pts parameter - number of points in grid
-#	Default: Let n = max number of individuals in one population, then pts = n, n+10, n+20
-#Pts : 
+#	Use multinom scheme: N_A is not parameter for search, 
+#	it is calculated through optimal_sfs_scaling.
+#	Multinom scheme decrease number of parameter by one and 
+#	is usually faster, however non multinom scheme usually 
+#	finds better solutions.
+#	Default: False
+Multinom : False
 
-#	Sructure of model for one population - number of time periods (e.g. 5).
-#	Sructure of model for two populations - number of time periods before split of ancestral population and after it (e.g. 2,2).
-#	Sructure of model for three populations - number of time periods before first split, between first and second splits and after second split (e.g. 2,1,2).
+#	If you choose to use dadi, please set pts parameter - number
+#	of points in grid
+#	Default: Let n = max number of individuals in one population, 
+#	then pts = n, n+10, n+20
+Pts : 20, 30, 40
+
+#	Structure of model for one population - number of time periods 
+#	(e.g. 5).
+#	Structure of model for two populations - number of time periods
+#	before split of ancestral population and after it (e.g. 2,2).
+#	Structure of model for three populations - number of time periods
+#	before first split, between first and second splits and after 
+#	second split (e.g. 2,1,2).
 #
-#	Sructure of initial model:
-#	Default: all 1s - 1 or 1,1 or 1,1,1
+#	Structure of initial model:
+#	Default: all is ones - 1 or 1,1 or 1,1,1
 Initial structure : 2,1
 
 #	Structure of final model:
@@ -81,8 +118,8 @@ Initial structure : 2,1
 #	It is possible to limit time of splits.
 #	Split 1 is the most ancient split.
 #	!Note that time is in genetic units (2 * time for 1 generation):
-#	e.g. you want to limit by 150 kya, time for one generation is 25 years, then 
-#	bound will be 150000 / (2*25) = 3000.
+#	e.g. we want to limit by 150 kya, time for one generation is 
+#	25 years, then bound will be 150000 / (2*25) = 3000.
 #
 #	Upper bound for split 1 (in case of 2 or 3 populations).
 #	Default: None
@@ -110,24 +147,32 @@ No migrations : false
 #	Default: 10
 Size of population in GA : 20
 
-#	Fractions of current models, mutated models and crossed models to be taken to new population.
-#	Sum of fractions should be <= 1, the remaining fraction is fraction of random models.
+#	Fractions of current models, mutated models and crossed models 
+#	to be taken to new population.
+#	Sum of fractions should be <= 1, the remaining fraction is 
+#	fraction of random models.
 #	Default: 0.2,0.3,0.3
 #Fractions in GA : 0.2,0.3,0.3
 
-#	Mutation strength - fraction of parameters in model to mutate during global mutation process of model.
-#	Number of parameters to mutate is sampled from binomial distribution, so we need to set mean.
+#	Mutation strength - fraction of parameters in model to mutate 
+#	during global mutation process of model.
+#	Number of parameters to mutate is sampled from binomial 
+#	distribution, so we need to set mean.
 #	Default: 0.2
 Mean mutation strength : 0.3
 #
-#	Mutation strength can be adaptive: if mutation is good, i.e. has the best fitness function (log likelihood),
-#	then mutation strength is increased multiplying by const otherwise it decreases dividing by (1/4)^const.
+#	Mutation strength can be adaptive: if mutation is good, 
+#	i.e. has the best fitness function (log likelihood),
+#	then mutation strength is increased multiplying by const 
+#	otherwise it decreases dividing by (1/4)^const.
 #	When const is 1.0 it is not adaptive.
 #	Default: 1.0
 Const for mutation strength : 1.05
 
-#	Mutation rate - fraction of any parameter to change during its mutation.
-#	Mutation rate is sampled from truncated normal disstribution, so we need mean (std in extra param).
+#	Mutation rate - fraction of any parameter to change during
+#	its mutation.
+#	Mutation rate is sampled from truncated normal distribution, 
+#	so we need mean (std can be specified in extra params).
 #	Default 0.2
 Mean mutation rate : 0.1
 #
@@ -135,7 +180,8 @@ Mean mutation rate : 0.1
 #	Default: 1.02
 Const for mutation rate : 1.01 #very small changes
 
-#	Genetic algorithm stops when it couldn't improve model more that epsilon
+#	Genetic algorithm stops when it couldn't improve model by
+#	more that epsilon in logLL
 #	Default: 1e-2
 Epsilon : 1e-2
 #	
@@ -146,7 +192,8 @@ Stop iteration : 50
 
 #	Local optimization.
 #
-#	Choice of local optimization, that is launched after each genetic algorithm.
+#	Choice of local optimization, that is launched after 
+#	each genetic algorithm.
 #	Choices:
 #
 #	*	optimize (BFGS method)
@@ -154,13 +201,16 @@ Stop iteration : 50
 #	*	optimiza_log (BFGS method)
 #	
 #	*	optimize_powell (Powell’s conjugate direction method)
-#	(Note: is implemented in moments: you need to have moments installed.)
+#	(Note: is implemented in moments: one need to have moments 
+#	installed.)
 #
-#	(If your optimizations are often hitting the parameter bounds, try using these methods:)
+#	(If optimizations are often hitting the parameter bounds, 
+#	try using these methods:)
 #	*	optimize_lbfgsb
 #	*	optimize_log_lbfgsb 
-#	(Note that it is probably best to start with the vanilla BFGS methods, because 
-#	the L-BFGS-B methods will always try parameter values at the bounds during the search. 
+#	(Note that it is probably best to start with the vanilla BFGS 
+#	methods, because the L-BFGS-B methods will always try parameter
+#	values at the bounds during the search. 
 #	This can dramatically slow model fitting.)
 #
 #	*	optimize_log_fmin (simplex (a.k.a. amoeba) method)
@@ -174,20 +224,24 @@ Name of local optimization : optimize_log
 
 #	Parameters of pipeline
 #
-#	You can automatically draw models every N iteration. If 0 then never.
+#	One can automatically draw models every N iteration. 
+#	If 0 then never.
 #	Pictures are saved in GA's directory in picture folder.
 #	Default: 0
 Draw models every N iteration : 100
 
-#	You can automatically generate dadi and moments code for models.
-#	If 0 then only current best model will be printed in GA's working directory.
+#	One can automatically generate dadi and moments code for models.
+#	If 0 then only current best model will be printed in GA's 
+#	working directory.
 #	Also result model will be saved there. 
-#	If specified (not 0) then every N iteration model will be saved in python code folder.
+#	If specified (not 0) then every N iteration model will be saved
+#	in python code folder.
 #	Default: 0
 Print models' code every N iteration : 100
 
-#	You can choose time units in models' plots: years or thousand years (kya, KYA).
-#	If time for one generation isn't specified then time is in genetic units.
+#	One can choose time units in models' plots: years or thousand 
+#	years (kya, KYA). If time for one generation isn't specified 
+#	then time is in genetic units.
 #	Default: years
 Units of time in drawing : thousand years
 
@@ -195,13 +249,14 @@ Units of time in drawing : thousand years
 #	Default: False
 Silence : False
 
-#	How many times launch gadma with this parameters.
+#	How many times launch GADMA with this parameters.
 #	Default: 1
 Number of repeats : 3
 
 #	How many processes to use for this repeats.
-#	Note that one repeat isn't parallelized, so increasing number of processes
-#	doesn't effect on time of one repeat.
-#	It is desirable that the number of repeats is a multiple of the number of processes.
+#	Note that one repeat isn't parallelized, so increasing number
+#	of processes doesn't effect on time of one repeat.
+#	It is desirable that the number of repeats is a multiple of 
+#	the number of processes.
 #	Default: 1
 Number of processes : 3
