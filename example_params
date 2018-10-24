@@ -83,7 +83,7 @@ Time for generation : 25 # the same as in Gutenkunst et al 2009
 #
 #	Use moments or dadi
 #	Default: dadi
-Use moments or dadi : dadi
+Use moments or dadi : moments
 
 #	Use multinom scheme: N_A is not parameter for search, 
 #	it is calculated through optimal_sfs_scaling.
@@ -97,7 +97,7 @@ Multinom : False
 #	of points in grid
 #	Default: Let n = max number of individuals in one population, 
 #	then pts = n, n+10, n+20
-Pts : 20, 30, 40
+#Pts : 20, 30, 40
 
 #	Structure of model for one population - number of time periods 
 #	(e.g. 5).
@@ -145,7 +145,7 @@ No migrations : false
 #
 #	Size of population of demographic models in GA:
 #	Default: 10
-Size of population in GA : 20
+Size of population in GA : 10
 
 #	Fractions of current models, mutated models and crossed models 
 #	to be taken to new population.
