@@ -217,7 +217,7 @@ class GA(object):
         restored from previous run.
         """
         # we need to restore if we resume
-        if self.prefix is not None and self.params.resume_dir is not None:
+        if self.prefix is not None and not self.chromosomes_only and self.params.resume_dir is not None:
             self.restore()
 
         if len(self.models) > 0:
@@ -403,6 +403,37 @@ class GA(object):
                     os.path.join(self.out_dir,
                                  'current_best_bic_model_moments.py'))
 
+    def print_and_draw_best_model(self):
+        if not self.chromosomes_only:
+            # print currrent best model
+
+            self.models[0].dadi_code_to_file(
+                os.path.join(self.out_dir,
+                             'current_best_logLL_model.py'))
+            self.models[0].moments_code_to_file(
+                os.path.join(self.out_dir,
+                             'current_best_logLL_model_moments.py'))
+            if (not self.params.code_iter ==
+                    0) and self.cur_iteration % self.params.code_iter == 0:
+                # print best model's code
+                self.models[0].dadi_code_to_file(
+                    os.path.join(self.out_dir, 'python_code', 'dadi',
+                                 'iteration_' + str(self.cur_iteration) + '.py'))
+                self.models[0].moments_code_to_file(
+                    os.path.join(self.out_dir, 'python_code', 'moments',
+                                 'iteration_' + str(self.cur_iteration) + '.py'))
+
+        # draw its picture every self.params.draw_iter iteration
+        if not self.params.draw_iter == 0 and self.cur_iteration % self.params.draw_iter == 0:
+            if not self.params.draw_iter == 0 and self.cur_iteration % self.params.draw_iter == 0:
+                self.best_model().draw(
+                    os.path.join(self.out_dir, 'pictures',
+                                 'iteration_' + str(self.cur_iteration) + '.png'),
+                    'Iteration ' + str(self.cur_iteration) + ', logLL: ' +
+                    support.float_representation(-self.best_fitness_value(), self.ll_precision) + ', BIC: ' +
+                    support.float_representation(self.best_model().get_bic_score(), self.ll_precision))
+                
+
     def run_one_iteration(self):
         """Iteration step for genetic algorithm."""
         start = time.time()
@@ -453,34 +484,7 @@ class GA(object):
         # sort population by fitness function
         self.select(self.params.size_of_population)
 
-        if not self.chromosomes_only:
-            # print currrent best model
-
-            self.models[0].dadi_code_to_file(
-                os.path.join(self.out_dir,
-                             'current_best_logLL_model.py'))
-            self.models[0].moments_code_to_file(
-                os.path.join(self.out_dir,
-                             'current_best_logLL_model_moments.py'))
-            if (not self.params.code_iter ==
-                    0) and self.cur_iteration % self.params.code_iter == 0:
-                # print best model's code
-                self.models[0].dadi_code_to_file(
-                    os.path.join(self.out_dir, 'python_code', 'dadi',
-                                 'iteration_' + str(self.cur_iteration) + '.py'))
-                self.models[0].moments_code_to_file(
-                    os.path.join(self.out_dir, 'python_code', 'moments',
-                                 'iteration_' + str(self.cur_iteration) + '.py'))
-
-        # draw its picture every self.params.draw_iter iteration
-        if not self.params.draw_iter == 0 and self.cur_iteration % self.params.draw_iter == 0:
-            if not self.params.draw_iter == 0 and self.cur_iteration % self.params.draw_iter == 0:
-                self.best_model().draw(
-                    os.path.join(self.out_dir, 'pictures',
-                                 'iteration_' + str(self.cur_iteration) + '.png'),
-                    'Iteration ' + str(self.cur_iteration) + ', logLL: ' +
-                    support.float_representation(-self.best_fitness_value(), self.ll_precision) + ', BIC: ' +
-                    support.float_representation(self.best_model().get_bic_score(), self.ll_precision))
+        self.print_and_draw_best_model() 
 
         # try to make better mutated and crossed models, random are so by
         # definition
@@ -581,7 +585,7 @@ class GA(object):
         shared_dict :   dictionary to share information among processes.
         """
         # checking dirs
-        if self.prefix is not None:
+        if self.prefix is not None and not self.chromosomes_only:
             self.out_dir = os.path.join(self.params.output_dir, self.prefix)
             if not os.path.exists(self.out_dir):
                 os.makedirs(self.out_dir)
@@ -616,7 +620,7 @@ class GA(object):
                 ')')
             if self.params.optimize_name != 'hill_climbing':
                 self.models[0].run_local_search(self.params.optimize_name, os.path.join(
-                    self.out_dir, self.params.optimize_name + '_' + str(self.cur_iteration) + '_out'))
+                    self.out_dir, self.log_file))
                 self.check_best_bic()
             else:
                 self.run_hill_climbing_of_best()
@@ -670,13 +674,15 @@ class GA(object):
                               '--Start genetic algorithm pipeline--')
 
         # initialization of first population
-        self.init_first_population_of_models()
+        self.init_first_population_of_models()        
         if shared_dict is not None:
             shared_dict[
                 self.prefix] = (
                 copy.deepcopy(
                     self.models[0]),
                 self.best_model_by_bic)
+        self.print_and_draw_best_model()
+ 
 
         self.cur_iteration += 1
 
