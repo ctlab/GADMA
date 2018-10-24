@@ -1,442 +1,166 @@
-# GADMA 
-GADMA implements methods for automatic inferring joint demographic history of multiple populations from genetic data.
+# GADMA
 
-GADMA is based on two open source packages: the ∂a∂i developed by Ryan Gutenkunst [https://bitbucket.org/gutenkunstlab/dadi/] and the *moments* developed by Simon Gravel [https://bitbucket.org/simongravel/moments/]. 
+Welcome to GADMA!\\
 
-In contrast, GADMA is **a command-line tool**. It presents a series of launches of the genetic algorithm and infer demographic history from Allele Frequency Spectrum of multiple populations (up to three). 
+GADMA implements methods for automatic inferring joint demographic history of multiple populations from the genetic data.
 
+GADMA is based on two open source packages: the ∂a∂i developed by Ryan Gutenkunst [\url{https://bitbucket.org/gutenkunstlab/dadi/}] and the *moments* developed by Simon Gravel [\url{https://bitbucket.org/simongravel/moments/}].
+
+In contrast, GADMA is a command-line tool. It presents a series of launches of the genetic algorithm and infer demographic history from Allele Frequency Spectrum of multiple populations (up to three).
 
 GADMA is developed by Ekaterina Noskova (ekaterina.e.noskova@gmail.com)
 
-# Table of contents
-- [GADMA](#gadma)
-- [Table of contents](#table-of-contents)
-- [Dependencies](#dependencies)
-- [Installation](#installation)
-  * [∂a∂i](#ai)
-  * [*moments*](#moments)
-  * [GADMA](#gadma-1)
-    + [Verifying installation](#verifying-installation)
-- [Usage](#usage)
-  * [Command line interface](#command-line-interface)
-  * [Python package](#python-package)
-- [Parameters files](#parameters-files)
-  * [Main parameters file](#main-parameters-file)
-  * [Extra parameters file](#extra-parameters-file)
-- [Input files](#input-files)
-- [Output](#output)
-  * [Model representation](#model-representation)
-  * [Bootstrap analysis](#bootstrap-analysis)
-  * [Model drawing](#model-drawing)
-  * [Output directory content](#output-directory-content)
-- [LogLL (Log likelihood)](#logll-log-likelihood)
-- [BIC](#bic)
-- [Theta](#theta)
-  * [Changing theta](#changing-theta)
-- [Structure of demographic model](#structure-of-demographic-model)
-- [Resume launch](#resume-launch)
+## Getting help
+GADMA manual can be found in `doc/manual/` directory.
+Please don't be afraid to contact me for different problems and offers via email ekaterina.e.noskova@gmail.com. I will be glad to answer all questions. 
 
-# Dependencies
+## Installation
 
-The absolute dependencies for GADMA are:
+Please see the corresponding section of GADMA manual.
 
-* Python (2.5, 2.6, 2.7)
-* NumPy (>= 1.2.0)
-* Scipy (>= 0.6.0)
-* ∂a∂i (>= 1.7.0) **or** *moments* (>= 1.0.0) 
+## Hands on
 
-To draw demographic models you have to install:
+###Test case
 
-* matplotlib (>= 0.98.1)
-* Pillow (>= 4.2.1)
-* *moments* (>= 1.0.0)
-
-# Installation
-
-Before GADMA installation you need either ∂a∂i or *moments* been installed.
-
-## ∂a∂i
-To install dadi, go to the work directory and run:
-```console
-$ git clone https://bitbucket.org/gutenkunstlab/dadi/
-```
-Then go to the `dadi` directory and install package:
-```console
-$ cd dadi
-$ python setup.py install
-```
-
-Now you can check ∂a∂i's installation in python interpreter:
-```console
-$ python
->>> import dadi
-```
-
-## *moments*
-To install *moments*, go to the work directory and run:
-```console
-$ git clone https://bitbucket.org/simongravel/moments/
-```
-Check that Cython is installed:
-```console
-$ pip install --upgrade Cython
-```
-Then go to the `moments` directory and install package:
-```console
-$ cd moments
-$ python setup.py install
-```
-
-Now you can check *moments*'s installation in python interpreter:
-```console
-$ python
->>> import moments
-```
-
-## GADMA
-To download GADMA, go to the work directory and run:
-```console
-$ git clone https://github.com/ctlab/GADMA
-```
-Then go to the `GADMA` directory and install GADMA:
-```console
-$ cd GADMA
-$ python setup.py install
-```
-
-Now you can run it like this:
-```console
-$ gadma --help
-```
-
-### Verifying installation
-
-To verify installation you can run test:
+GADMA has test case for simple demographic model for 1 population: just constant size of 10000 individuals in population. To run test case just print:
 
 ```console
 $ gadma --test
 ```
 
-If the installation is successful, you will find the following information at the end:
+
+### Example 2
+
+Suppose we have SNP data for two populations. Data is in ∂a∂i's SNP format in file `snp_data.txt`. Suppose we want to get all output in some `gadma_output` directory:
 
 ```console
---Finish bootstrap comparison of result demographic models--
-
---Finish pipeline--
-
---Test passed correctly--
-Thank you for using GADMA!
+$ gadma -i snp_data.txt -o gadma_output
 ```
 
-# Usage
-## Command line interface
-Now you can use GADMA like command line tool:
-```console
-$ gadma --help
-GADMA version 1.0.0	by Ekaterina Noskova (ekaterina.e.noskova@gmail.com)
-Usage: 
-	gadma -p/--params <params_file> -e/--extra <extra_params_file>
-
-
-Instead/With -p/--params and -e/--extra option you can set:
-	-o/--output <output_dir>	output directory.
-	-i/--input <in.fs>/<in.txt>	input file with AFS or in dadi format.
-	--resume <resume_dir>		resume another launch from <resume_dir>.
-	--only_models			flag to take models only from another launch (--resume option).
-
-
-	-h/--help		show this help message and exit.
-	-v/--version		show version and exit.
-	--test			run test case.
-
-In case of any questions or problems, please contact: ekaterina.e.noskova@gmail.com
-```
-
-## Python package
-But it is also possible to use Genetic algorithm from GADMA like ∂a∂i's or *moments*' optimizations: you can find standart YRI_CEU example case for both ∂a∂i and *moments*  in [`examples/YRI_CEU`](https://github.com/ctlab/GADMA/blob/master/examples/YRI_CEU/) directory.
-
-Or you can read `help` for `gadma.Inference.optimize_ga` function:
-```python
->>> import gadma
->>> help(gadma.Inference.optimize_ga)
-```
-
-# Parameters files
-## Main parameters file
-GADMA takes file with main pipeline parameters using `-p/--params` option. You can find example parameters file [here](https://github.com/ctlab/GADMA/blob/master/example_params).
-
-You can run example from GADMA installation directory as:
-```console
-$ gadma -p GADMA/example_params
-```
-
-**Note** that all parameters of every launch are saved in `<output_dir>`. So you can find them there and reuse them.
-
-## Extra parameters file
-There are also extra parameters, but **you probably do not need them**. You can find their description [here](https://github.com/ctlab/GADMA/blob/master/gadma/extra_params_template).
-
-# Input files
-
-GADMA handles two formats of input files: 
-* Frequency spectrum file format (.fs or .sfs)
-* SNP data format (.txt)
-
-You can read more about them [here](https://github.com/ctlab/GADMA/blob/master/doc/input_formats.md).
-
-# Output
-
-GADMA prints its progress about every minute in stdout (if not silence parameter is set) and `<output_dir>/GADMA.log` file:
-
-```
-[hhh:mm:ss]
-All best logLL models:
-GA number       logLL            BIC             Model
-
-All best BIC models:
-GA number       logLL            BIC             Model
-
---Best model by log likelihood--
-Log likelihood:       	Best logLL
-with BIC score:         BIC_score
-Model: 	representation of best logLL model
-
---Best model by BIC score--
-Log likelihood:       	logLL
-with BIC score:         Best BIC score
-Model:  representation of best BIC model  
-```
-
-## Model representation
-
-Every model is printed as line of parameters.
-
-All model parameters, except mutation rates, have precision equals to 2.
-
-Our designations: 
-* `T` is time, 
-* `Ni` is size of population number i, 
-* `li` is law of changing of the size of population number i,
-* `mij2` is mutation rate from population i to population j.
-
-Model is printed as sequence of periods. Each period is represented as:
-
-* First period (NA - size of ancestry population): 
-
-	```
-	[ NA ]
-	```
-	
-* Split: 
-
-	* If we split 1 pop into 2 pops:
-
-	```
-	[ Percent of split %, N1, N2]
-	```
-	
-	* If we split 2 pops into 3 pops:
-
-	```
-	[ Percent of split %, N1, N2, N3]
-	```
-
-* Usual time period:
-
-	* If we have 1 pop:
-
-	```
-	[ T, [N1], [l1] ]
-	```
-
-	* If we have 2 pops:
-
-	```
-	[ T, [N1, N2], [l1, l2], [[None, m12], [m21, None]] ]
-	```
-
-	* If we have 3 pops:
-	
-	```
-	[ T, [N1, N2, N3], [l1, l2, l3], [[None, m12, m13], [m21, None, m23], [m31, m32, None]] ]
-	```
-
-At the end of the string, that corresponds to the model, there is information about model's ancestry: `c` for model, that is child of crossover, `r` - if it was formed random way, `m` - if it was mutated and `f` - final model of genetic algorithm. 
-
-**Note:** `m` is added as many times as model was mutated.
-
-**Example:**
-
-```
-[ [144.38] ][ 16.00%, [23.10, 121.28] ][ 375.77, [143.31, 30.07], [2, 2], [[None, 3.33e-03][7.53e-04, None]] ]	cmm
-```
-
-## Bootstrap analysis
-GADMA make bootstrap analysis of current best models about every hour.
-
-We sampled our input data, calculate fitness function value of our best models (by logLL and BIC) on it and get mean logLL. It and some other statistics are saved to file `some_statistics` in `<output_dir>`.
-
-GADMA also draws boxplots and best model by mean logLL in `<output_dir>`.
-
-```
---Start bootstrap comparison of result demographic models--
-Write statistics to file
-Draw boxplots
-
---Best model by mean logLL:--
-Mean Relative Goodness of Fit: 	Best mean logLL
-Model:  representation of the model
-
---Finish bootstrap comparison of result demographic models--
-You can find bootstrap comparison of models in output directory.
-```
-
-## Model drawing
-
-Every N's iteration (parameter) of each genetic algorithm best model is drawn.
-
-During bootstrap analysis we draw best by mean logLL model.
-
-Models are drawn with *moments* library. In the top left corner there is size of ancestry population. Other parameters are in string representation of the model in log files.
-
-![model plot](doc/model.png)
-
-**Note:** You can disable drawing if you ask to draw every **0** iteration.
-
-**Note:** Time units are `Thousand years` usually or `Genetic units`, if you don't specify `Time for generation` parameter, but you can ask for years in parameters file.
-
-**Note:** You can draw model again with generated python code in `<output_dir>`:
+### Example 3
+We didn't specify AFS size or labels for populations, they are taken automaticaly from the input file. We can see parameters file of our run in `gadma_output/params` file. We see that there are the following:
 
 ```console
-$ python best_logll_model_moments_code.py
-
+# gadma_output/params
+...
+Population labels : pop_name_1, pop_name_2
+Projections: 18, 20
+...
 ```
 
-(It's possible only if you have *moments* installed.)
-
-## Output directory content
-
-For every repeat of Genetic algorithm GADMA create new folder with correspond number.
-
-In every folder there is GADMA_GA.log, where every iteration of algorithm is saved, folders `pictures` and `python_code`. 
-
-When Genetic Algorithm finishes GADMA saves picture and python code of result model in its base folder.
-
-When all GA finishes picture and code of best model among their ones are saved in root directory. Bootstrap results are also saved there.
-
-```
-- <output_dir>
-	- 1
-		GADMA_GA.log
-		- pictures
-		- python_code
-			- dadi
-			- moments
-		result_model.png
-		result_model_code.py
-	- 2
-		GADMA_GA.log
-		- pictures
-		- python_code
-			- dadi
-			- moments
-		result_model.png
-		result_model_code.py
-	params
-	extra_params
-	GADMA.log
-	best_logLL_model.png
-	best_logLL_model_dadi_code.py
-	best_logLL_model_moments_code.py
-	best_bic_model.png
-	best_bic_model_dadi_code.py
-	best_bic_model_moments_code.py
-	some_statistics
-	boxplots.png
-```
-
-# LogLL (Log likelihood)
-
-∂a∂i and *moments* simulate the allele frequency spectrum `M` from the proposed demographic model as the expected values of Poisson random variables.
-
-For observed spectrum `S` and spectrum `M` for our demographic model, we can calculate likelihood to obtain matrix `S` if  `M` is the expected one:
-
-![formula for likelihood](doc/formula_for_likelihood.gif)
-
-We compare demographic models by `log(L(M | S))`. It is our fitness function of genetic algorithm.
-
-**Note:** you can simply get `log(L(M | S))` again by running generated python script for model in `<output_dir>`:
+But we know that spectrum should be 20×20! To specify size of AFS we need to create parameters file and set `Projections`:
 
 ```console
-$ python best_logLL_model_dadi_code.py
-Model log likelihood (LL(model, data)): -276223.285715
+# params_file
+Projections : 20,20
 ```
 
-# BIC
+Also we can change order of populations. We should add:
 
-Bayesian Information Criterion is a criterion for model selection. The less BIC is, the better model is.
-It is defined as:
+```console
+# params_file
+Projections : 20,20
+Population labels : pop_name_2, pop_name_1
+```
 
-![formula for BIC](doc/formula_for_bic.gif)
+If we want to rename populations, we should change names in `snp_data.txt` file.
 
-where `n` is the number of entries in spectrum.
+Now assume we want to get the simplest demographic model that we can as faster as we can. We will tell GADMA that we don't need no other dynamics of population sizes except sudden (constant) population size change and that we want to use *moments* library.
 
-BIC helps us to find out overfitting of observed spectrum and choose optimal number of parameters of the demographic model.
+We add corresponding string to parameters file and now it looks like:
 
-GADMA remembers best BIC model and shows it for every genetic algorithm.
+```console
+# params_file
+Projections : 20,20
+Population labels : pop_name_2, pop_name_1
+Only sudden : True
+Use moments or dadi : moments
+```
 
-# Theta0
-Scaled mutation rate, equal to:
+To run GADMA we need to specify `-p/--params` command-line option in cmd:
+```console
+$ gadma -i snp_data.txt -o gadma_output -p params_file
+```
 
-![`\theta0 = 4 * μ * L`](doc/formula_for_theta.png)
+### Example 4
 
-where `μ` - mutation rate per site per generation and `L` - effective sequenced length, which accounts for losses in alignment and missed calls.
+Consider some AFS file `fs_data.fs`. There is spectrum for three populations: YRI, CEU, CHB. However axes are mixed up: CHB, YRI, CEU. To run GADMA we should order them from most ancient to last formed:
 
-**Note: you should estimate `μ` based on generation time.**
+```console
+# params_file
+Population labels : YRI, CEU, CHB
+```
 
-You can take generation time equal to 1 year, but don't forget to recalculate `μ`.
+We want to allow exponential growth (it is default behaviour) and have some extra change in size of the ancient population. To do so we should specify `Initial structure`. It is list of three numbers: first --- number of time intervals before first split (we want here 2); second --- number of time periods betseen forst and second split events (at least 1); third --- number of time periods after second split.
 
->For example (Gutenkunst et al, 2009):
+```console
+# params_file
+Population labels : YRI, CEU, CHB
+Initial structure : 2,1,1
+```
 
->	We estimate the neutral mutation rate μ using the divergence between human and chimp. Comparing aligned sequences in our data, we estimate the divergence to be 1.13%. Assuming a divergence time of 6 million years and a mean generation time for human and chimp over this interval of 25 years, we have
-	
->	μ = 0.0113 · 25 / (2 · 6 · 10^6) = 2.35 × 10^(−8) per generation.
+Also we can put information about input file and output directory to our parameters file:
 
-**Some examples of theta:**
+```console
+# params_file
+Input file : fs_data.fs
+Output directory : gadma_output
+Population labels : YRI, CEU, CHB
+Initial structure : 2,1,1
+```
 
-|FS file|gen_time| μ | L |theta|Notes|
-|:--:|:--:|:--:|:--:|:--:|--|
-|YRI_CEU_CHB.fs|25|2.35 × 10^(−8)|4.04 × 10^(6)| 0.37976 | From Gutenkunst et al (2009) |
-|YRI_CEU_CHB.fs|24|2.26 × 10^(−8)|4.04 × 10^(6)| 0.36521 | Gen time from Lapierre et al (2017) |
-|YRI_CEU_CHB.fs|29|1.44 × 10^(−8)|4.04 × 10^(6)| 0.23270 | From Jouganous et al (2017) |
-|YRI_CEU_CHB.fs|24|1.2 × 10^(−8)|4.04 × 10^(6)| 0.19392 | Change gen time from 29 to 24 |
+Now we can run GADMA the following way:
 
-You can find FS files in `fs_examples` directory.
+```console
+$ gadma -p params
+```
 
-## Changing theta
+### Example 5
 
-If you have launched GADMA with one theta and now want to use another, you can simply scale model's parameters:
+We have our GADMA launch interrupted for some reason. We want to resume it:
 
-`a` = `new_theta` / `old_theta`,
+```console
+$ gadma --resume gadma_output
+```
 
-* Size of population / `a`,
+`gadma_output` is output directory of previous run. We can find resumed run in `gadma_output_resumed`
 
-* Time / `a`,
+### Example 6
 
-* Migration rates * `a`,
+Our launch was finished, we used ∂a∂i with default grid size which GADMA determines automaticly if it is not specify by user. We found out that it would be better to find some models using greater number of grid points in ∂a∂i scheme, but we want to take final models from previous run:
 
-* Split percent stay the same.
+```console
+# params_file
+Pts : 40, 50, 60 #Greater value of grid size than it was
+```
 
-# Structure of demographic model
+And run GADMA:
 
-We represent the demographic model as a sequence of time periods and splits. We will call number of time periods in the case of one population, in the case of two populations - the number of periods before and after a single split, in the case of three populations - the number of periods to the first, between the first and second and after the second split as **structure of the model**.
+```console
+$ gadma --resume gadma_output --only_models -p params 
+```
 
-For example, we observe three populations, at the beginning there was an ancestry population and the time period was one, then a split occurred and there were two populations that changed during two periods, then a split of the second population occurred and now three real populations changed within one time period, the structure of such model will be 1,2,1. 
+`--only_models` tell GADMA to take from `gadma_output` final models only.
 
-# Resume launch
+There is another way to do the same:
 
-To resume interrupted launch you can use `--resume` option or set `Resume from` in parmeters file. You need to set output directory of previous run. 
+```console
+# params_file
+Resume from : gadma_output
+Only models : True
+Pts : 40, 50, 60 #Greater value of grid size than it was
+```
 
-If output directory isn't setted, GADMA will continue evaluation in the directory: `<previous_output_dir>_resumed`.
+And run GADMA the following way:
 
-**Note** that best by BIC models are lost after resumption. So if you change model's structure, please check best BIC models in both runs.
+```console
+$ gadma -p params
+```
+
+### Example YRI, CEU
+GADMA has example of full parameters file `example_params`, that can be found [here](https://github.com/ctlab/GADMA/blob/master/example_params). To run GADMA with this parameters one should just run from the GADMA's home directory:
+
+```console
+$ gadma -p example_params
+```
 
