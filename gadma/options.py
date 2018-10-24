@@ -121,7 +121,6 @@ class Options_storage:
         self.multinom_mutate = False
 
         # Options of printing summary information about repeats
-        self.time_for_bootstrap = 60  # min
         self.time_for_print = 1  # min
 
         # Options of distributions
@@ -279,8 +278,6 @@ class Options_storage:
                     self.multinom_mutation = value.lower() == 'true'
                 elif identity == 'random n_a':
                     self.random_N_A = value.lower == 'true'
-                elif identity == 'time to run bootstrap':
-                    self.time_for_bootstrap = float(value)
                 elif identity == 'time to print summary':
                     self.time_for_print = float(value)
                 elif identity == 'distribution':
@@ -373,7 +370,6 @@ class Options_storage:
                     str(self.random_N_A),
                     str(self.multinom_cross),
                     str(self.multinom_mutate),
-                    str(self.time_for_bootstrap),
                     str(self.time_for_print),
                     str(self.distribution),
                     str(self.std)

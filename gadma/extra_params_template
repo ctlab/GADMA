@@ -4,7 +4,8 @@
 #	Also comments at the end of a line are ignored too.
 #	Every line contains: Identificator of parameter : value.
 #	If you want to change some default parameters, you need to 
-#	remove # at the begining of line and change corresponding parameter.
+#	remove # at the begining of line and change corresponding 
+#	parameter.
 
 
 #	Lower and upper bounds on N - sizes of populations, 
@@ -83,9 +84,9 @@ Multinomial mutation : {14}
 Multinomial crossing : {15}
 
 #	To get random model we sample number between bounds (min_N, 
-#	max_N, min_T, etc.) and then scale them with optimal_sfs_scaling.
-#	We can choose N_A random between min_N and max_N or we can always
-#	take it as 1.0.
+#	max_N, min_T, etc.) and then scale them with 
+#	optimal_sfs_scaling. We can choose N_A random between min_N 
+#	and max_N or we can always take it as 1.0.
 #	Default: True
 Random N_A : {16}
 
@@ -93,15 +94,9 @@ Random N_A : {16}
 
 #	Options of printing summary information about repeats 
 #	in parent process.
-
-#	How often do bootstrap analysis of current best models.
-#	Take into account that it is rather time-consuming.
-#	Default: 60 (minutes)
-Time to run bootstrap : {17}
-
 #	How often print all best by likelihood and by BIC models.
 #	Default: 1 (minute)
-Time to print summary : {18}
+Time to print summary : {17}
 
 
 
@@ -112,5 +107,5 @@ Time to print summary : {18}
 #	Mean mutation rate is parameter. So we can shoose here
 #	Distribution and std (in case of normal distribution).
 #	Default: 'normal', None (std = mean)
-Distribution : {19}
-Std : {20}
+Distribution : {18}
+Std : {19}
