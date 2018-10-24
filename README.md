@@ -1,6 +1,6 @@
 # GADMA
 
-Welcome to GADMA!\\
+Welcome to GADMA!
 
 GADMA implements methods for automatic inferring joint demographic history of multiple populations from the genetic data.
 
@@ -20,9 +20,9 @@ Please see the corresponding section of GADMA manual.
 
 ## Hands on
 
-###Test case
+### Test case
 
-GADMA has test case for simple demographic model for 1 population: just constant size of 10000 individuals in population. To run test case just print:
+GADMA has test case for simple demographic model for 1 population: just constant size of 10000 individuals in population. To run test case type:
 
 ```console
 $ gadma --test
@@ -91,7 +91,7 @@ Consider some AFS file `fs_data.fs`. There is spectrum for three populations: YR
 Population labels : YRI, CEU, CHB
 ```
 
-We want to allow exponential growth (it is default behaviour) and have some extra change in size of the ancient population. To do so we should specify `Initial structure`. It is list of three numbers: first --- number of time intervals before first split (we want here 2); second --- number of time periods betseen forst and second split events (at least 1); third --- number of time periods after second split.
+We want to allow exponential growth (it is default behaviour) and have some extra change in size of the ancient population. To do so we should specify `Initial structure`. It is list of three numbers: first - number of time intervals before first split (we want here 2); second - number of time periods betseen forst and second split events (at least 1); third - number of time periods after second split.
 
 ```console
 # params_file
@@ -123,11 +123,11 @@ We have our GADMA launch interrupted for some reason. We want to resume it:
 $ gadma --resume gadma_output
 ```
 
-`gadma_output` is output directory of previous run. We can find resumed run in `gadma_output_resumed`
+where `gadma_output` is output directory of previous run. We can find resumed run in `gadma_output_resumed`
 
 ### Example 6
 
-Our launch was finished, we used ∂a∂i with default grid size which GADMA determines automaticly if it is not specify by user. We found out that it would be better to find some models using greater number of grid points in ∂a∂i scheme, but we want to take final models from previous run:
+Our launch was finished, we used ∂a∂i with default grid size which GADMA determines automatically if it is not specify by user. We found out that it would be better to find some models using greater number of grid points in ∂a∂i scheme, but we want to take final models from previous run:
 
 ```console
 # params_file
