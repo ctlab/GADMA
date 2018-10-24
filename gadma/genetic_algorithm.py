@@ -620,7 +620,7 @@ class GA(object):
                 ')')
             if self.params.optimize_name != 'hill_climbing':
                 self.models[0].run_local_search(self.params.optimize_name, os.path.join(
-                    self.out_dir, self.log_file))
+                    self.out_dir, self.params.optimize_name + '_' + str(self.cur_iteration) + '_out'))
                 self.check_best_bic()
             else:
                 self.run_hill_climbing_of_best()
