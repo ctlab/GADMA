@@ -1476,7 +1476,7 @@ class Demographic_model:
                              ', projections=' +
                              str(list(self.params.ns)) +
                              ', polarized=' +
-                             str(self.params.input_data.folded) +
+                             str(not self.params.input_data.folded) +
                              ')\n')
             output.write('\npopt = ' + str(self.as_vector()) + '\n')
             output.write('pts = ' + str(list(self.params.dadi_pts)) + '\n')
@@ -1720,7 +1720,7 @@ class Demographic_model:
                              ', projections=' +
                              str(list(self.params.ns)) +
                              ', polarized=' +
-                             str(self.params.input_data.folded) +
+                             str(not self.params.input_data.folded) +
                              ')\n')
             output.write('\npopt = ' + str(self.as_vector()) + '\n')
             output.write('ns = ' + str(list(self.params.ns)) + '\n')
