@@ -194,7 +194,7 @@ def read_dadi_file(filename, proj, pop_labels):
             ]
         for line in f:
             splited_line = line.split()
-            if splited_line[1][1].lowercase() not in ['a', 't', 'c', 'g']:
+            if splited_line[1][1].lower() not in ['a', 't', 'c', 'g']:
                 polarized = False
             if proj is None:
                 for x in xrange(number_of_pops):
