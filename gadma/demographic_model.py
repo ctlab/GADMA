@@ -1836,17 +1836,22 @@ class Demographic_model:
         self.normalize_by_Nref(1 / size_of_first_pop)
         model = moments.ModelPlot.generate_model(self.moments_code, [],
                                                  self.params.ns)
+        draw_scale = self.params.theta is not None
+        if self.params.gen_time is None or not (self.params.time_units not in [1, 1000]):
+            gen_time = 1.0
+            units = 'Genetic units'
+        else:
+            gen_time = self.params.gen_time / self.params.time_units
+            units = 'Years' if self.params.time_units == 1 else 'Thousand years'
         moments.ModelPlot.plot_model(
             model,
             save_file=save_file,
             fig_title=title,
             pop_labels=self.params.pop_labels,
-            nref=int(size_of_first_pop),
-            draw_scale=self.params.theta is not None,
-            gen_time=float(self.params.gen_time) /
-            1000 if self.params.gen_time is not None else 1.0,
-            gen_time_units=(
-                'Thousand years' if self.params.gen_time is not None else 'Genetic units'),
+            nref=int(size_of_first_pop) if draw_scale else 1.0,
+            draw_scale=draw_scale,
+            gen_time=gen_time,
+            gen_time_units=units,
             reverse_timeline=True)
         self.normalize_by_Nref(size_of_first_pop)
 
@@ -1892,17 +1897,17 @@ class Demographic_model:
         elif (self.number_of_populations == 2):
             if self.params.moments_scenario:
                 moments.Plotting.plot_2d_comp_Poisson(
-                    self.get_sfs(), self.params.input_data, vmin=1, show=False)
+                    self.get_sfs(), self.params.input_data, show=False)
             else:
                 dadi.Plotting.plot_2d_comp_Poisson(
-                    self.get_sfs(), self.params.input_data, vmin=1, show=False)
+                    self.get_sfs(), self.params.input_data, show=False)
         elif (self.number_of_populations == 3):
             if self.params.moments_scenario:
                 moments.Plotting.plot_3d_comp_Poisson(
-                    self.get_sfs(), self.params.input_data, vmin=1, show=False)
+                    self.get_sfs(), self.params.input_data, show=False)
             else:
                 dadi.Plotting.plot_3d_comp_Poisson(
-                    self.get_sfs(), self.params.input_data, vmin=1, show=False)
+                    self.get_sfs(), self.params.input_data, show=False)
         buf2 = io.BytesIO()
         plt.savefig(buf2, format='png')
         buf2.seek(0)

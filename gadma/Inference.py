@@ -163,7 +163,7 @@ class Demographic_model:
             if self.global_params.multinom:
                 log_likelihood = sim_sfs_lib.Inference.ll_multinom(self.sfs, data)
             else:
-                log_likelihood = dadi.Inference.ll(self.sfs, data)
+                log_likelihood = sim_sfs_lib.Inference.ll(self.sfs, data)
             self.fitness_func_value = - log_likelihood
             ns = self.global_params.data.sample_sizes
             self.bic_score = math.log(np.prod(
