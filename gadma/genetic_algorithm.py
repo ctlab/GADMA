@@ -611,7 +611,7 @@ class GA(object):
                     self.models[0].run_local_search(self.params.optimize_name, os.path.join(
                         self.out_dir, self.params.optimize_name + '_' + str(self.cur_iteration) + '_out'))
                 else:
-                    self.models[0].run_local_search(self.params.optimize_name)
+                    self.models[0].run_local_search(self.params.optimize_name, None)
                 self.check_best_aic()
             else:
                 self.run_hill_climbing_of_best()
