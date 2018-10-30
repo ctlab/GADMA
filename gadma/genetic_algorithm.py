@@ -25,7 +25,6 @@ class GA(object):
             self,
             params,
             prefix=None,
-            chromosomes_only=False,
             one_initial_model=None):
         """Genetic algorithm class.
 
@@ -45,7 +44,6 @@ class GA(object):
             final_structure :   structure of final model
         (Other fields in params are for Demographic model class)
         prefix :    prefix for output folder and so on.
-        chromosomes_only :  if we want to consider dem models as lists.
         """
         # all parameters
         self.params = params
@@ -56,7 +54,7 @@ class GA(object):
         self.it_without_changes_to_stop_ga = self.params.stop_iter
 
         self.prefix = prefix
-        self.chromosomes_only = chromosomes_only
+        self.is_custom_model = self.params.initial_structure is None
         self.one_initial_model = one_initial_model
         self.ll_precision = 1 - int(math.log(self.params.epsilon, 10))
 
@@ -217,7 +215,7 @@ class GA(object):
         restored from previous run.
         """
         # we need to restore if we resume
-        if self.prefix is not None and not self.chromosomes_only and self.params.resume_dir is not None:
+        if self.prefix is not None and self.params.resume_dir is not None:
             self.restore()
 
         if len(self.models) > 0:
@@ -293,10 +291,6 @@ class GA(object):
             return new_model_2
 
     def get_random_model(self, structure=None):
-        if self.chromosomes_only:
-            from Inference import Demographic_model
-        else:
-            from demographic_model import Demographic_model
         return Demographic_model(self.params, structure=structure)
 
     def select(self, size, print_iter=True):
@@ -395,7 +389,7 @@ class GA(object):
         if self.best_model_by_aic is None or self.best_model_by_aic.get_aic_score() - \
                 self.best_model().get_aic_score() > 1e-8:
             self.best_model_by_aic = copy.deepcopy(self.best_model())
-            if not self.chromosomes_only:
+            if not self.is_custom_model:
                 self.best_model_by_aic.dadi_code_to_file(
                     os.path.join(self.out_dir,
                                  'current_best_aic_model.py'))
@@ -404,7 +398,7 @@ class GA(object):
                                  'current_best_aic_model_moments.py'))
 
     def print_and_draw_best_model(self):
-        if not self.chromosomes_only:
+        if not self.is_custom_model:
             # print currrent best model
 
             self.models[0].dadi_code_to_file(
@@ -488,9 +482,7 @@ class GA(object):
 
         # try to make better mutated and crossed models, random are so by
         # definition
-        if not self.chromosomes_only and (
-                self.without_changes == self.it_without_changes_to_stop_ga /
-                2 or self.is_stoped()):
+        if self.without_changes == self.it_without_changes_to_stop_ga / 2 or self.is_stoped():
             prev_value_of_fit = self.best_fitness_value()
             support.write_to_file(
                 self.log_file,
@@ -573,9 +565,7 @@ class GA(object):
             self.print_mutation_rate_and_strength()
 
             # normalize model sometime
-            if not self.chromosomes_only and (
-                    local_without_changes == self.params.hc_stop_iter /
-                    2 or local_without_changes == self.params.hc_stop_iter):
+            if local_without_changes == self.params.hc_stop_iter / 2 or local_without_changes == self.params.hc_stop_iter:
                 self.models[0].normalize_by_Nref()
         self.cur_mutation_rate = old_cur_mut_rate
 
@@ -585,7 +575,7 @@ class GA(object):
         shared_dict :   dictionary to share information among processes.
         """
         # checking dirs
-        if self.prefix is not None and not self.chromosomes_only:
+        if self.prefix is not None:
             self.out_dir = os.path.join(self.params.output_dir, self.prefix)
             if not os.path.exists(self.out_dir):
                 os.makedirs(self.out_dir)
@@ -611,16 +601,17 @@ class GA(object):
                 if shared_dict is not None:
                     shared_dict[self.prefix] = (
                         copy.deepcopy(self.models[0]), self.best_model_by_aic)
-            if self.chromosomes_only:
-                return
             support.write_to_file(
                 self.log_file,
                 '\nTry to improve best model (' +
                 self.params.optimize_name +
                 ')')
             if self.params.optimize_name != 'hill_climbing':
-                self.models[0].run_local_search(self.params.optimize_name, os.path.join(
-                    self.out_dir, self.params.optimize_name + '_' + str(self.cur_iteration) + '_out'))
+                if not self.is_custom_model:
+                    self.models[0].run_local_search(self.params.optimize_name, os.path.join(
+                        self.out_dir, self.params.optimize_name + '_' + str(self.cur_iteration) + '_out'))
+                else:
+                    self.models[0].run_local_search(self.params.optimize_name)
                 self.check_best_aic()
             else:
                 self.run_hill_climbing_of_best()
@@ -688,7 +679,7 @@ class GA(object):
 
         # main part
         run_one_ga_and_one_ls()
-        if not self.chromosomes_only:
+        if not self.is_custom_model:
             while not (self.models[0].cur_structure ==
                        self.params.final_structure).all():
                 increase_models_complexity()
@@ -708,7 +699,7 @@ class GA(object):
                 os.path.join(self.out_dir, 'result_model' + '.png'),
                 'Iteration ' + str(self.cur_iteration) + ', logLL: ' +
                 support.float_representation(-self.models[0].get_fitness_func_value(), self.ll_precision))
-        if not self.chromosomes_only:
+        if not self.is_custom_model:
             self.models[0].dadi_code_to_file(
                 os.path.join(self.out_dir,
                              'result_model_dadi_code.py'))
