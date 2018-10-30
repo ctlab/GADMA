@@ -38,25 +38,27 @@ captionpos=b,
 \section{Introduction}
 Welcome to GADMA!\\
 
-GADMA implements methods for automatic inferring joint demographic history of multiple populations from the genetic data.
+GADMA implements methods for automatic inferring the joint demographic history of multiple populations from genetic data.
 
-GADMA is based on two open source packages: the \dadi developed by Ryan Gutenkunst [\url{https://bitbucket.org/gutenkunstlab/dadi/}] and the \moments developed by Simon Gravel [\url{https://bitbucket.org/simongravel/moments/}].
+GADMA is based on two open source packages: \dadi developed by Ryan Gutenkunst [\url{https://bitbucket.org/gutenkunstlab/dadi/}] and \moments developed by Simon Gravel [\url{https://bitbucket.org/simongravel/moments/}].
 
-In contrast, GADMA is a command-line tool. It presents a series of launches of the genetic algorithm and infer demographic history from Allele Frequency Spectrum of multiple populations (up to three).
+In contrast, GADMA is a command-line tool. It presents a series of launches of the genetic algorithm and infers demographic history from the Allele Frequency Spectrum of multiple populations (up to three).
 
-\section{Getting help}
-Please don't be afraid to contact me for different problems and offers via email ekaterina.e.noskova@gmail.com. I will be glad to answer all questions. 
+\subsection{Getting help}
+If you have any problems, please don't hesitate to contact me by email:
+ekaterina.e.noskova@gmail.com. I will be glad to answer your questions. 
 
 \section{Hands on}
 \paragraph{Test case}\mbox{}\\
-GADMA has test case for simple demographic model for 1 population: just constant size of $10000$ individuals in population. To run test case type:
+GADMA has a test case for a simple demographic model for one population: just a constant size of $10000$ individuals in population. To run a test case:
 
 \begin{lstlisting}
 $ gadma --test
 \end{lstlisting}
 
 \paragraph{Example 2}\mbox{}\\
-Suppose we have SNP data for two populations. Data is in \dadi's SNP format in file \py{snp_data.txt}. Suppose we want to get all output in some \py{gadma_output} directory:
+Suppose we have SNP data for two populations. Data is in \dadi's SNP file format in the \py{snp_data.txt}. Suppose we want To get all output in some \py{gadma_output} directory:
+
 
 \begin{lstlisting}
 $ gadma -i snp_data.txt -o gadma_output
@@ -64,7 +66,7 @@ $ gadma -i snp_data.txt -o gadma_output
 
 
 \paragraph{Example 3}\mbox{}\\
-We didn't specify AFS size or labels for populations, they are taken automaticaly from the input file.We can see parameters file of our run in \py{gadma_output/params} file. We see that there are 
+We didn't specify AFS size or labels for populations, they are taken automaticaly from the input file. We can see parameters file of our run in the \py{gadma_output/params} file. We see that there are 
 \begin{lstlisting}
 # gadma_output/params
 ...
@@ -79,7 +81,7 @@ But we know that spectrum should be $20 \times 20$! To specify size of AFS we ne
 Projections : 20,20
 \end{lstlisting}
 
-Also we can change order of populations. We should add:
+Also we can change order of populations. We should add: (Order of populations can be changed as:)
 \begin{lstlisting}
 # params_file
 Projections : 20,20
@@ -493,20 +495,20 @@ GADMA prints its progress about every minute in stdout and in \py{output_dir/GAD
 \begin{lstlisting}
 [hhh:mm:ss]
 All best logLL models:
-GA number       logLL            BIC             Model
+GA number       logLL            AIC             Model
 
-All best BIC models:
-GA number       logLL            BIC             Model
+All best AIC models:
+GA number       logLL            AIC             Model
 
 --Best model by log likelihood--
 Log likelihood:       	Best logLL
-with BIC score:         BIC_score
+with AIC score:         AIC_score
 Model: 	representation of best logLL model
 
---Best model by BIC score--
+--Best model by AIC score--
 Log likelihood:       	logLL
-with BIC score:         Best BIC score
-Model:  representation of best BIC model 
+with AIC score:         Best AIC score
+Model:  representation of best AIC model 
 \end{lstlisting}
  
 \textbf{Note: } One can set \py{Silence} option in parameters file to \py{True} to disable output in stdout, file \py{output_dir/GADMA.log} will still have it.
@@ -617,9 +619,9 @@ When all GA finishes picture and code of best model among them are saved in root
 	best_logLL_model.png
 	best_logLL_model_dadi_code.py
 	best_logLL_model_moments_code.py
-	best_bic_model.png
-	best_bic_model_dadi_code.py
-	best_bic_model_moments_code.py
+	best_aic_model.png
+	best_aic_model_dadi_code.py
+	best_aic_model_moments_code.py
 \end{lstlisting}
 
 \subsection{Generated code of models}
@@ -805,7 +807,7 @@ To draw demographic models install:
 
 
 \section{Installation}
-Before GADMA installation one need either \dadi or \moments been installed.
+Before GADMA installation one need either \dadi or \moments to be installed.
 
 \subsection{\dadi}
 To install \dadi, go to the work directory and run:
@@ -857,7 +859,7 @@ $ python
 
 \subsection{Pillow}
 
-Install Pillow throgh \py{pip}:
+Install Pillow through \py{pip}:
 
 \begin{lstlisting}
 $ python -m pip install Pillow
@@ -895,7 +897,7 @@ To verify installation run test:
 $ gadma --test
 \end{lstlisting}
 
-If the installation is successful, one will find the following information at the end:
+If the installation is successful, one (you) will find the following information at the end:
 \begin{lstlisting}
 --Finish pipeline--
 
@@ -905,7 +907,7 @@ Thank you for using GADMA!
 
 \newpage
 \begin{appendices}
-\section{Example of full parameters file}
+\section{Appendix A: Example of full parameters file}
 \label{sec:example-params}
 \begin{lstlisting}
 #	It is parameters file for GADMA software.
@@ -1171,7 +1173,7 @@ Number of repeats : 3
 Number of processes : 3
 \end{lstlisting}
 
-\section{Example of generated code}
+\section{Appendix B: Example of generated code}
 \label{sec:ex-gen-code}
 For example, \moments generated code for 2d AFS for YRI, CEU populations from \cite{gutenkunst2009}:
 

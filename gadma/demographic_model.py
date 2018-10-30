@@ -290,7 +290,7 @@ class Demographic_model:
         self.dt_fac = 0.1  # for moments
         self.sfs = None
         self.fitness_func_value = None
-        self.bic_score = None
+        self.aic_score = None
 
         self.split_1_pos = None
         self.split_2_pos = None
@@ -611,7 +611,7 @@ class Demographic_model:
         value aren't value."""
         self.sfs = None
         self.fitness_func_value = None
-        self.bic_score = None
+        self.aic_score = None
 
     def add_period(self, period):
         """Add one period to the list of periods."""
@@ -948,7 +948,7 @@ class Demographic_model:
         self.get_param_ids()
         self.number_of_changes = np.array(number_of_changes)
 
-        self.get_bic_score()
+        self.get_aic_score()
         return period_index_to_divide
 
     def normalize_by_Nref(self, N_ref=None):
@@ -1120,23 +1120,23 @@ class Demographic_model:
             else:
                 log_likelihood = moments.Inference.ll(self.sfs, data)
                 self.fitness_func_value = - log_likelihood
-            self.bic_score = math.log(
+            self.aic_score = math.log(
                 np.prod(
                     np.array(
-                        self.params.ns))) * self.get_number_of_params() - 2 * log_likelihood
+                        self.params.ns))) * 2 - 2 * log_likelihood
 
         return_value = self.fitness_func_value
         if data_sample is not None:
             self.has_changed()
         return return_value
 
-    def get_bic_score(self, data_sample=None):
-        """Calculate BIC score for the model."""
+    def get_aic_score(self, data_sample=None):
+        """Calculate AIC score for the model."""
         if data_sample is not None:
             self.has_changed()
-        if self.bic_score is None:
+        if self.aic_score is None:
             self.get_fitness_func_value(data_sample)
-        return_value = self.bic_score
+        return_value = self.aic_score
         if data_sample is not None:
             self.has_changed()
         return return_value

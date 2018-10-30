@@ -64,7 +64,7 @@ def print_best_solution_now(start_time, shared_dict,
     start_time :    time when equation was started.
     shared_dict :   dictionary to share information between processes.
     log_file :      file to write logs.
-    draw_model :    plot model best by logll and best by BIC.
+    draw_model :    plot model best by logll and best by AIC.
     """
 
     def write_func(string): return support.write_log(log_file, string,
@@ -87,39 +87,39 @@ def print_best_solution_now(start_time, shared_dict,
     })
 
     write_func('All best logLL models:')
-    write_func('GA number\tlogLL\t\tBIC\t\tModel')
+    write_func('GA number\tlogLL\t\tAIC\t\tModel')
     for number, res in all_models:
         write_func(('Model %3s' % number) + '\t' +
                    my_str(-res.get_fitness_func_value()) + '\t' +
-                   my_str(res.get_bic_score()) + '\t' +
+                   my_str(res.get_aic_score()) + '\t' +
                    str(res))
 
-    all_bic_models = [(i, all_models_data[i][1]) for i in all_models_data]
-    all_bic_models = sorted(all_bic_models, key=lambda x: x[1].get_bic_score())
+    all_aic_models = [(i, all_models_data[i][1]) for i in all_models_data]
+    all_aic_models = sorted(all_aic_models, key=lambda x: x[1].get_aic_score())
 
     if (options.options_storage.final_structure != options.options_storage.initial_structure).any():
-        write_func('\nAll best BIC models:')
-        write_func('GA number\tlogLL\t\tBIC\t\tModel')
-        for number, res in all_bic_models:
+        write_func('\nAll best AIC models:')
+        write_func('GA number\tlogLL\t\tAIC\t\tModel')
+        for number, res in all_aic_models:
             write_func(('Model %3s' % number) + '\t' +
                        my_str(-res.get_fitness_func_value()) + '\t' +
-                       my_str(res.get_bic_score()) + '\t' +
+                       my_str(res.get_aic_score()) + '\t' +
                        str(res))
 
     write_func('\n--Best model by log likelihood--')
     write_func('Log likelihood:\t' +
                my_str(-all_models[0][1].get_fitness_func_value()))
-    write_func('with BIC score:\t' +
-               my_str(all_models[0][1].get_bic_score()))
+    write_func('with AIC score:\t' +
+               my_str(all_models[0][1].get_aic_score()))
     write_func('Model:\t' + str(all_models[0][1]))
 
     if (options.options_storage.final_structure != options.options_storage.initial_structure).any():
-        write_func('\n--Best model by BIC score--')
+        write_func('\n--Best model by AIC score--')
         write_func('Log likelihood:\t' +
-                   my_str(-all_bic_models[0][1].get_fitness_func_value()))
-        write_func('with BIC score:\t' +
-                   my_str(all_bic_models[0][1].get_bic_score()))
-        write_func('Model:\t' + str(all_bic_models[0][1]))
+                   my_str(-all_aic_models[0][1].get_fitness_func_value()))
+        write_func('with AIC score:\t' +
+                   my_str(all_aic_models[0][1].get_aic_score()))
+        write_func('Model:\t' + str(all_aic_models[0][1]))
 
     if draw_model:
         all_models[0][1].draw(
@@ -127,24 +127,24 @@ def print_best_solution_now(start_time, shared_dict,
                          'best_logLL_model.png'),
             title='logLL: ' +
             support.float_representation(-all_models[0][1].get_fitness_func_value(), precision) +
-            ', BIC: ' + support.float_representation(all_models[0][1].get_bic_score(), precision))
+            ', AIC: ' + support.float_representation(all_models[0][1].get_aic_score(), precision))
         if (options.options_storage.final_structure != options.options_storage.initial_structure).any():
-            all_bic_models[0][1].draw(
+            all_aic_models[0][1].draw(
                 os.path.join(options.options_storage.output_dir,
-                             'best_bic_model.png'),
+                             'best_aic_model.png'),
                 title='logLL: ' +
-                support.float_representation(-all_bic_models[0][1].get_fitness_func_value(), precision) +
-                ', BIC: ' + support.float_representation(all_bic_models[0][1].get_bic_score(), precision))
+                support.float_representation(-all_aic_models[0][1].get_fitness_func_value(), precision) +
+                ', AIC: ' + support.float_representation(all_aic_models[0][1].get_aic_score(), precision))
 
     all_models[0][1].dadi_code_to_file(
         os.path.join(options.options_storage.output_dir, 'best_logLL_model_dadi_code.py'))
     all_models[0][1].moments_code_to_file(
         os.path.join(options.options_storage.output_dir, 'best_logLL_model_moments_code.py'))
     if (options.options_storage.final_structure != options.options_storage.initial_structure).any():
-        all_bic_models[0][1].dadi_code_to_file(
-            os.path.join(options.options_storage.output_dir, 'best_bic_model_dadi_code.py'))
-        all_bic_models[0][1].moments_code_to_file(
-            os.path.join(options.options_storage.output_dir, 'best_bic_model_moments_code.py'))
+        all_aic_models[0][1].dadi_code_to_file(
+            os.path.join(options.options_storage.output_dir, 'best_aic_model_dadi_code.py'))
+        all_aic_models[0][1].moments_code_to_file(
+            os.path.join(options.options_storage.output_dir, 'best_aic_model_moments_code.py'))
 
     if not options.options_storage.draw_iter == 0 and not options.options_storage.test:
         write_func(
@@ -218,7 +218,7 @@ def main():
                 log_file, "\nYou didn't specify theta at the beginning. If you want change it and rescale parameters, please see tutorial.\n")
         if options.options_storage.resume_dir is not None and (options.options_storage.initial_structure != options.options_storage.final_structure).any():
             support.write_log(
-                log_file, '\nYou have resumed from another launch. Please, check best BIC model, as information about it was lost.\n')
+                log_file, '\nYou have resumed from another launch. Please, check best AIC model, as information about it was lost.\n')
 
         support.write_log(log_file, 'Thank you for using GADMA!')
 

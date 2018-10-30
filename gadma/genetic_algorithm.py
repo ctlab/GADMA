@@ -88,7 +88,7 @@ class GA(object):
         # connected files and directories
         self.out_dir = None
         self.log_file = None
-        self.best_model_by_bic = None
+        self.best_model_by_aic = None
 
     def restore(self):
         def restore_from_cur_pop_of_models(list_of_str):
@@ -243,9 +243,9 @@ class GA(object):
                                                            self.ll_precision))
         support.write_to_file(
             self.log_file,
-            'with BIC score:\t',
+            'with AIC score:\t',
             support.float_representation(
-                self.best_model().get_bic_score(),
+                self.best_model().get_aic_score(),
                 self.ll_precision))
         support.write_to_file(self.log_file, 'Model:', self.models[0])
 
@@ -313,7 +313,7 @@ class GA(object):
                                   '\n\nIteration #' + str(self.cur_iteration) + '.')
         support.write_to_file(
             self.log_file,
-            'Current population of models:\nN\tlogLL\t\t\tBIC\t\t\t\tmodel')
+            'Current population of models:\nN\tlogLL\t\t\tAIC\t\t\t\tmodel')
         for i, model in enumerate(self.models):
             support.write_to_file(
                 self.log_file,
@@ -322,10 +322,10 @@ class GA(object):
                     -model.get_fitness_func_value(),
                     self.ll_precision),
                 support.float_representation(
-                    model.get_bic_score(),
+                    model.get_aic_score(),
                     self.ll_precision),
                 model)
-        self.check_best_bic()
+        self.check_best_aic()
 
     def upgrade_model(self, model, mutation_rate=None):
         """Step for hill climbing.
@@ -387,21 +387,21 @@ class GA(object):
         return self.without_changes >= self.it_without_changes_to_stop_ga or (
             self.models[0].get_number_of_params() - int(not self.params.multinom) == 0)
 
-    def check_best_bic(self):
-        """Check if we have best by BIC model on current iteration.
+    def check_best_aic(self):
+        """Check if we have best by AIC model on current iteration.
 
         If so, we print it to file.
         """
-        if self.best_model_by_bic is None or self.best_model_by_bic.get_bic_score() - \
-                self.best_model().get_bic_score() > 1e-8:
-            self.best_model_by_bic = copy.deepcopy(self.best_model())
+        if self.best_model_by_aic is None or self.best_model_by_aic.get_aic_score() - \
+                self.best_model().get_aic_score() > 1e-8:
+            self.best_model_by_aic = copy.deepcopy(self.best_model())
             if not self.chromosomes_only:
-                self.best_model_by_bic.dadi_code_to_file(
+                self.best_model_by_aic.dadi_code_to_file(
                     os.path.join(self.out_dir,
-                                 'current_best_bic_model.py'))
-                self.best_model_by_bic.moments_code_to_file(
+                                 'current_best_aic_model.py'))
+                self.best_model_by_aic.moments_code_to_file(
                     os.path.join(self.out_dir,
-                                 'current_best_bic_model_moments.py'))
+                                 'current_best_aic_model_moments.py'))
 
     def print_and_draw_best_model(self):
         if not self.chromosomes_only:
@@ -430,8 +430,8 @@ class GA(object):
                     os.path.join(self.out_dir, 'pictures',
                                  'iteration_' + str(self.cur_iteration) + '.png'),
                     'Iteration ' + str(self.cur_iteration) + ', logLL: ' +
-                    support.float_representation(-self.best_fitness_value(), self.ll_precision) + ', BIC: ' +
-                    support.float_representation(self.best_model().get_bic_score(), self.ll_precision))
+                    support.float_representation(-self.best_fitness_value(), self.ll_precision) + ', AIC: ' +
+                    support.float_representation(self.best_model().get_aic_score(), self.ll_precision))
                 
 
     def run_one_iteration(self):
@@ -520,9 +520,9 @@ class GA(object):
                                                            self.ll_precision))
         support.write_to_file(
             self.log_file,
-            'with BIC score:\t',
+            'with AIC score:\t',
             support.float_representation(
-                self.best_model().get_bic_score(),
+                self.best_model().get_aic_score(),
                 self.ll_precision))
         support.write_to_file(self.log_file, 'Model:', self.models[0])
         stop = time.time()
@@ -560,10 +560,10 @@ class GA(object):
                     self.models[0].moments_code_to_file(
                         os.path.join(self.out_dir, 'python_code', 'moments',
                                      'iteration_' + str(self.cur_iteration) + '_after_hc.py'))
-                self.check_best_bic()
+                self.check_best_aic()
                 if shared_dict is not None:
                     shared_dict[self.prefix] = (
-                        self.models[0], self.best_model_by_bic)
+                        self.models[0], self.best_model_by_aic)
             else:
                 local_without_changes += 1
             self.update_mutation_rate(flag)
@@ -610,7 +610,7 @@ class GA(object):
                 self.run_one_iteration()
                 if shared_dict is not None:
                     shared_dict[self.prefix] = (
-                        copy.deepcopy(self.models[0]), self.best_model_by_bic)
+                        copy.deepcopy(self.models[0]), self.best_model_by_aic)
             if self.chromosomes_only:
                 return
             support.write_to_file(
@@ -621,13 +621,13 @@ class GA(object):
             if self.params.optimize_name != 'hill_climbing':
                 self.models[0].run_local_search(self.params.optimize_name, os.path.join(
                     self.out_dir, self.params.optimize_name + '_' + str(self.cur_iteration) + '_out'))
-                self.check_best_bic()
+                self.check_best_aic()
             else:
                 self.run_hill_climbing_of_best()
 
             if shared_dict is not None:
                 shared_dict[self.prefix] = (
-                    copy.deepcopy(self.models[0]), self.best_model_by_bic)
+                    copy.deepcopy(self.models[0]), self.best_model_by_aic)
 
             if self.params.code_iter != 0 and self.cur_iteration % self.params.code_iter == 0:
                 self.models[0].dadi_code_to_file(
@@ -638,7 +638,7 @@ class GA(object):
                     os.path.join(self.out_dir, 'python_code', 'moments',
                                  'iteration_' + str(self.cur_iteration) +
                                  '_after_local_search.py'))
-            self.check_best_bic()
+            self.check_best_aic()
 
             support.write_to_file(self.log_file, 'BEST:')
             support.write_to_file(
@@ -654,8 +654,8 @@ class GA(object):
                                  'iteration_' + str(self.cur_iteration) + '_after_local_search.png'),
                     'Iteration ' + str(self.cur_iteration) + '(LS), logLL: ' +
                     support.float_representation(-self.best_model().get_fitness_func_value(),
-                                                 self.ll_precision) + ', BIC: ' +
-                    support.float_representation(self.best_model().get_bic_score(),
+                                                 self.ll_precision) + ', AIC: ' +
+                    support.float_representation(self.best_model().get_aic_score(),
                                                  self.ll_precision))
 
         def increase_models_complexity():
@@ -680,7 +680,7 @@ class GA(object):
                 self.prefix] = (
                 copy.deepcopy(
                     self.models[0]),
-                self.best_model_by_bic)
+                self.best_model_by_aic)
         self.print_and_draw_best_model()
  
 
@@ -696,11 +696,11 @@ class GA(object):
 
         for model in self.models:
             model.info = 'f'
-        self.check_best_bic()
+        self.check_best_aic()
 
         if shared_dict is not None:
             shared_dict[self.prefix] = (
-                copy.deepcopy(self.models[0]), self.best_model_by_bic)
+                copy.deepcopy(self.models[0]), self.best_model_by_aic)
 
         # final part
         if not self.params.draw_iter == 0 and self.cur_iteration % self.params.draw_iter == 0:
