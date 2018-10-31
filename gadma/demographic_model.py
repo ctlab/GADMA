@@ -290,9 +290,9 @@ class Demographic_model:
             self.lower_bound = self.params.lower_bound
             self.upper_bound = self.params.upper_bound
             self.normalize_funcs = self.params.normalize_funcs # rules of dependence from Nref value
-            self.multinom = self.params.multinom or self.params.normalize_funcs is None
+            self.params.multinom = self.params.multinom or self.params.normalize_funcs is None
             self.cur_structure = None
-            if not self.multinom:
+            if not self.params.multinom:
                 self.normalize_funcs.append(lambda x, y: x * y)
         else:
             self.is_custom_model = False
@@ -333,7 +333,7 @@ class Demographic_model:
                     self.popt.append(np.random.uniform(low=low_bound, high=upp_bound))
                     self.popt_len += 1
                     self.number_of_changes = np.append(self.number_of_changes, 0.0)
-                if not self.multinom:
+                if not self.params.multinom:
                     self.popt.append(1.0)
                     self.popt_len += 1
                     self.normalize_by_Nref()
@@ -430,7 +430,7 @@ class Demographic_model:
 
         if self.is_custom_model:
             self.popt = [float(x) for x in string[1:].split(', ')]
-            if not self.multinom:
+            if not self.params.multinom:
                 self.popt.append(real_Nref)
             self.popt_len = len(self.popt)
             self.number_of_changes = np.array([0 for _ in xrange(self.popt_len)])
@@ -570,12 +570,18 @@ class Demographic_model:
             data = self.params.input_data
         else:
             data = data_sample
-        if len(self.get_param_ids()) == int(not self.params.multinom):
+        if self.get_number_of_params() == int(not self.params.multinom):
             return
         old_func_value = self.get_fitness_func_value(data_sample)
         self.normalize_by_Nref(1 / self.get_N_A())
         lower_bound, upper_bound = self.get_lower_and_upper_bounds()
-        p0 = self.as_vector()[1:]
+        if self.is_custom_model:
+            if self.params.multinom:
+                p0 = self.popt
+            else:
+                p0 = self.popt[:-1]
+        else:
+            p0 = self.as_vector()[1:]
         if self.params.ls_verbose is not None:
             verbose = self.params.ls_verbose
         else:
@@ -628,23 +634,32 @@ class Demographic_model:
             else:
                 optimize_func = dadi.Inference.optimize_log_fmin
 
+        if self.is_custom_model:
+            func_kwargs['multinom'] = True
+            if self.params.moments_scenario:
+                func = self.params.model_func
+            else:
+                func = func_ex = dadi.Numerics.make_extrap_log_func(self.params.model_func)
+        else:
+            if self.params.moments_scenario:
+                func = self.moments_code
+            else:
+                func = func_ex = dadi.Numerics.make_extrap_log_func(self.dadi_code)
+
         if self.params.moments_scenario:
             p_opt = optimize_func(p0, data,
-                                  self.moments_code, **func_kwargs)
+                                  func, **func_kwargs)
         elif name_of_search == 'optimize_powell':
             # we need to run moments function with dadi's one, so we create
             # extra function abd put pts inside
-            func_ex = dadi.Numerics.make_extrap_log_func(self.dadi_code)
-
             def my_func(*args, **kwargs):
                 kwargs['pts'] = self.params.dadi_pts
-                return func_ex(*args, **kwargs)
+                return func(*args, **kwargs)
             p_opt = optimize_func(
                 p0, data, my_func, **func_kwargs)
         else:
-            func_ex = dadi.Numerics.make_extrap_log_func(self.dadi_code)
             p_opt = optimize_func(p0, data,
-                                  func_ex, self.params.dadi_pts, **func_kwargs)
+                                  func, self.params.dadi_pts, **func_kwargs)
 
         if not np.isnan(p_opt).any() and not (p_opt < 0).any() and self.get_fitness_func_value(data_sample) < old_func_value:
             self.construct_from_vector(p_opt)
@@ -770,7 +785,7 @@ class Demographic_model:
             if i != self.popt_len - 1:
                 low_bound = self.lower_bound[i]
                 upp_bound = self.upper_bound[i]
-                if not self.multinom:
+                if not self.params.multinom:
                     Nref = self.get_N_A()
                     low_bound = self.normalize_funcs[i](low_bound, Nref)
                     upp_bound = self.normalize_funcs[i](upp_bound, Nref)
@@ -1038,8 +1053,8 @@ class Demographic_model:
                                 sum([p.time for p in self.periods[self.split_2_pos:]]))
             N_ref = opt_scale
         if self.is_custom_model:
-            if not self.multinom:
-                for i in xrange(self.popt_len):
+            if not self.params.multinom:
+                for i in xrange(self.popt_len - int(self.params.multinom)):
                     self.popt[i] = self.normalize_funcs[i](self.popt[i], N_ref)
         else:
             for period_number, period in enumerate(self.periods):
@@ -1141,7 +1156,7 @@ class Demographic_model:
     def __str__(self, end='\n'):
         """String representation."""
         if self.is_custom_model:
-            if self.multinom:
+            if self.params.multinom:
                 s = '[' +', '.join(["%10.3f" % x for x in self.popt]) + ']'
             else:
                 N_ref = self.get_N_A()
@@ -1165,7 +1180,7 @@ class Demographic_model:
 
     def get_N_A(self):
         if self.is_custom_model:
-            if not self.multinom:
+            if not self.params.multinom:
                 return self.popt[-1]
             else:
                 return 1.0
@@ -1175,7 +1190,7 @@ class Demographic_model:
         """Get SFS from model."""
         if self.sfs is None:
             if self.is_custom_model:
-                if not self.multinom:
+                if not self.params.multinom:
                     popt = self.popt[:-1]
                 else:
                     popt = self.popt
@@ -1211,19 +1226,26 @@ class Demographic_model:
             self.has_changed()
         if self.fitness_func_value is None:
             sfs = self.get_sfs()
-            if (self.params.multinom) and data_sample is None:
+            if self.params.moments_scenario:
+                ll_func = moments.Inference.ll
+            else:
+                ll_func = dadi.Inference.ll
+
+            if self.is_custom_model and self.params.multinom:
+                if self.params.moments_scenario:
+                    ll_func = moments.Inference.ll_multinom
+                else:
+                    ll_func = dadi.Inference.ll_multinom
+
+            if (self.params.multinom) and data_sample is None and not self.is_custom_model:
                 self.normalize_by_Nref()
 
             if data_sample is None:
                 data = self.params.input_data
             else:
                 data = data_sample
-            if not self.params.moments_scenario:
-                log_likelihood = dadi.Inference.ll(self.sfs, data)
-                self.fitness_func_value = - log_likelihood
-            else:
-                log_likelihood = moments.Inference.ll(self.sfs, data)
-                self.fitness_func_value = - log_likelihood
+            log_likelihood = ll_func(self.sfs, data)
+            self.fitness_func_value = - log_likelihood
             self.aic_score = self.get_number_of_params() * 2 - 2 * log_likelihood
 
         return_value = self.fitness_func_value
