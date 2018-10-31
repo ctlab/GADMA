@@ -495,6 +495,14 @@ class Demographic_model:
         """
         cur_index = 0
         vector = list(vector)
+        if self.is_custom_model:
+            self.popt = vector
+            if not self.params.multinom:
+                self.popt.append(1.0)
+                self.normalize_by_Nref()
+            self.has_changed()
+            return
+
         for i, period in enumerate(self.periods):
             if period.is_first_period:
                 period.sizes_of_populations = [1.0]
@@ -661,8 +669,10 @@ class Demographic_model:
             p_opt = optimize_func(p0, data,
                                   func, self.params.dadi_pts, **func_kwargs)
 
-        if not np.isnan(p_opt).any() and not (p_opt < 0).any() and self.get_fitness_func_value(data_sample) < old_func_value:
+        if not np.isnan(p_opt).any() and not (p_opt < 0).any():
             self.construct_from_vector(p_opt)
+            if self.get_fitness_func_value(data_sample) > old_func_value:
+                self.construct_from_vector(p0)
         else:
             self.construct_from_vector(p0)
 
