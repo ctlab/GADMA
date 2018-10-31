@@ -92,6 +92,11 @@ Use moments or dadi : {8}
 #	Default: False
 Multinom : {9}
 
+#	Use sudden changes of population sizes only. Decreases 
+#	the number of parameters.
+#	Default: False
+Only sudden : {32}
+
 #	If you choose to use dadi, please set pts parameter - number
 #	of points in grid
 #	Default: Let n = max number of individuals in one population, 
