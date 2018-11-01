@@ -224,6 +224,8 @@ class Split(Period):
         return sizes_of_pops
 
     def check_prop(self, min_N, N_A):
+        if self.split_prop is None:
+            return True
         min_split_prop = min_N * N_A / \
             self.sizes_of_pops_before[self.population_to_split]
         return_flag = False
@@ -240,11 +242,15 @@ class Split(Period):
 
         N_A is for right scaling and limitations.
         """
+        if self.split_prop is None:
+            return
         self.split_prop *= 1 + sign * change
         self.check_prop(min_N, N_A)
         
     def update(self, new_size_of_population_before_split, min_N=None, N_A=None):
         """Update sizes of populations of previous period."""
+        if self.split_prop is None:
+            return 
         self.sizes_of_pops_before = copy.deepcopy(
             new_size_of_population_before_split)
         if min_N is not None and N_A is not None:
