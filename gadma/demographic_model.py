@@ -370,7 +370,7 @@ class Demographic_model:
                 num_of_pops += 2
                 self.add_period(
                     Split(
-                        split_prop=np.random.uniform(
+                        split_prop=None if self.params.only_sudden else np.random.uniform(
                             self.params.min_N, 1 - self.params.min_N),
                         population_to_split=num_of_pops - 2,
                         sizes_of_populations_before_split=self.periods[-1]
@@ -469,7 +469,7 @@ class Demographic_model:
                         proportion = 1 / NA
                     self.add_period(
                         Split(
-                            proportion,
+                            None if self.params.only_sudden else proportion,
                             -1,
                             self.periods[-1].get_sizes_of_populations()))
                     self.periods[-1].update(self.periods[-2].get_sizes_of_populations(), self.params.min_N, N_A=NA)
