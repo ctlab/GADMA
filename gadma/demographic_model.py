@@ -208,10 +208,15 @@ class Split(Period):
             time=0,
             sizes_of_populations=self.get_sizes_of_populations(),
             is_split_of_population=True)
-        self.number_of_parameters = 1
+        if split_prop is None:
+            self.number_of_parameters = 1
+        else:
+            self.number_of_parameters = 0
         self.number_of_changes = [0.0]
 
     def get_sizes_of_populations(self):
+        if self.split_prop is None:
+            return None
         sizes_of_pops = copy.deepcopy(self.sizes_of_pops_before)
         sizes_of_pops.append(sizes_of_pops[-1])
         sizes_of_pops[-1] *= (1 - self.split_prop)
