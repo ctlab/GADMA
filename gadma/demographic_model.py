@@ -170,8 +170,8 @@ class Period(object):
             return '[ ' + list_float_representation(
                 [self.get_sizes_of_populations()[0]]) + ' ]'
         if self.is_split_of_population:
-            return '[ ' + float_representation(100 * self.split_prop) + '%, ' + \
-                list_float_representation(
+            return '[ ' + float_representation(None if self.split_prop is None else 100 * self.split_prop) +\
+                '%, ' + list_float_representation(
                     self.get_sizes_of_populations()) + ' ]'
         if self.migration_rates is None:
             mig_str = ''
@@ -215,12 +215,14 @@ class Split(Period):
         self.number_of_changes = [0.0]
 
     def get_sizes_of_populations(self):
-        if self.split_prop is None:
-            return None
         sizes_of_pops = copy.deepcopy(self.sizes_of_pops_before)
         sizes_of_pops.append(sizes_of_pops[-1])
-        sizes_of_pops[-1] *= (1 - self.split_prop)
-        sizes_of_pops[-2] *= self.split_prop
+        if self.split_prop is None:
+            sizes_of_pops[-1] = None
+            sizes_of_pops[-2] = None
+        else:
+            sizes_of_pops[-1] *= (1 - self.split_prop)
+            sizes_of_pops[-2] *= self.split_prop
         return sizes_of_pops
 
     def check_prop(self, min_N, N_A):
@@ -518,12 +520,14 @@ class Demographic_model:
             if period.is_first_period:
                 period.sizes_of_populations = [1.0]
             elif period.is_split_of_population:
-                period.split_prop = vector[cur_index]
-                period.update(
-                    self.periods[
-                        i - 1].get_sizes_of_populations(),
-                    self.params.min_N)
-                cur_index += 1
+                all_sudden = (np.array(self.periods[i + 1].growth_types) == 0).all()
+                if not all_sudden:
+                    period.split_prop = vector[cur_index]
+                    period.update(
+                        self.periods[
+                            i - 1].get_sizes_of_populations(),
+                        self.params.min_N)
+                    cur_index += 1
             else:
                 period.sizes_of_populations = copy.deepcopy(vector[
                     cur_index:cur_index + period.number_of_populations])
@@ -1913,11 +1917,13 @@ class Demographic_model:
         """Vector representaton of the model in order to put it in python code
         for DaDi."""
         vector = []
-        for period in self.periods:
+        for i, period in enumerate(self.periods):
             if period.is_first_period:
                 vector.append(period.get_sizes_of_populations()[0])
             elif period.is_split_of_population:
-                vector.append(period.split_prop)
+                all_sudden = (np.array(self.periods[i + 1].growth_types) == 0).all()
+                if not all_sudden:
+                    vector.append(period.split_prop)
             else:
                 vector.extend(period.get_sizes_of_populations())
         for period in self.periods:
