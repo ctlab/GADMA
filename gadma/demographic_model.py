@@ -1217,6 +1217,7 @@ class Demographic_model:
             if not self.params.moments_scenario:
                 func_ex = dadi.Numerics.make_extrap_log_func(func)
                 self.sfs = func_ex(self.params.ns, self.params.dadi_pts)
+
             else:
                 for i in xrange(10):
                     try:
@@ -1228,6 +1229,13 @@ class Demographic_model:
                                 raise RuntimeError(
                                     'Factor is exactly singular')
                             self.dt_fac /= 2
+
+            if self.is_custom_model and self.params.multinom:
+                if self.params.moments_scenario:
+                    self.sfs *= moments.optimal_sfs_scaling(self.sfs, self.params.input_data)
+                else:
+                    self.sfs *= dadi.optimal_sfs_scaling(self.sfs, self.params.input_data)
+
         return self.sfs
 
     def get_fitness_func_value(self, data_sample=None):
@@ -1240,12 +1248,6 @@ class Demographic_model:
                 ll_func = moments.Inference.ll
             else:
                 ll_func = dadi.Inference.ll
-
-            if self.is_custom_model and self.params.multinom:
-                if self.params.moments_scenario:
-                    ll_func = moments.Inference.ll_multinom
-                else:
-                    ll_func = dadi.Inference.ll_multinom
 
             if (self.params.multinom) and data_sample is None and not self.is_custom_model:
                 self.normalize_by_Nref()
