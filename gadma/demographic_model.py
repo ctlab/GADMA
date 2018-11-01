@@ -209,9 +209,9 @@ class Split(Period):
             sizes_of_populations=self.get_sizes_of_populations(),
             is_split_of_population=True)
         if split_prop is None:
-            self.number_of_parameters = 1
-        else:
             self.number_of_parameters = 0
+        else:
+            self.number_of_parameters = 1
         self.number_of_changes = [0.0]
 
     def get_sizes_of_populations(self):
