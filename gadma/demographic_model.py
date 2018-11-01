@@ -1331,14 +1331,15 @@ class Demographic_model:
                     continue
 
                 if period.is_split_of_population:
-                    if take_from_other[cur_ind]:
-                        period.split_prop = other.periods[i].split_prop
-                    period.update(
-                        child.periods[
-                            i - 1].get_sizes_of_populations(),
-                        self.params.min_N,
-                        N_A=N_A)
-                    cur_ind += 1
+                    if not self.params.only_sudden:
+                        if take_from_other[cur_ind]:
+                            period.split_prop = other.periods[i].split_prop
+                        period.update(
+                            child.periods[
+                                i - 1].get_sizes_of_populations(),
+                            self.params.min_N,
+                            N_A=N_A)
+                        cur_ind += 1
                     continue
 
                 if take_from_other[cur_ind]:
