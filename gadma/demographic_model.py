@@ -308,6 +308,8 @@ class Demographic_model:
             if not self.params.multinom:
                 self.normalize_funcs.append(lambda x, y: x * y)
         else:
+            self.lower_bound = None
+            self.upper_bound = None
             self.is_custom_model = False
             self.number_of_periods = 0
             self.periods = []
@@ -1495,11 +1497,13 @@ class Demographic_model:
                 'import dadi\ndef generated_model(params, ns, pts):\n')
             Ns_len = 0
             Ts_len = 0
-            for period in self.periods:
+            for i, period in enumerate(self.periods):
                 if period.is_first_period:
                     Ns_len += 1
                 elif period.is_split_of_population:
-                    Ns_len += 1
+                    all_sudden = (np.array(self.periods[i+1].growth_types) == 0).all()
+                    if not all_sudden:
+                        Ns_len += 1
                 else:
                     Ns_len += period.number_of_populations
                     Ts_len += 1
