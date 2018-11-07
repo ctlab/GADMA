@@ -1512,50 +1512,73 @@ class Demographic_model:
                          str(Ns_len + Ts_len) + ']\n')
             output.write('\tMs = params[' + str(Ns_len + Ts_len) + ':]\n')
 
-            cur_index = 0
-            extra = 0
-            mig_index = Ns_len + Ts_len
+            ns_index = 0
+            ts_index = 0
+            ms_index = 0
             output.write('\ttheta1 = ' + str(theta) + '\n')
             output.write('\txx = dadi.Numerics.default_grid(pts)\n')
             for pos, period in enumerate(self.periods):
+                if self.params.only_sudden:
+                    all_sudden_later = True
+                else:
+                    all_sudden_later = True
+                    if pos == len(self.periods) - 1:
+                        all_sudden_later = True
+                    else:
+                        if self.periods[pos+1].is_split_of_population:
+                            all_sudden_later = True
+                        else:
+                            next_not_split_period = self.periods[pos+1]
+                            all_sudden_later = (np.array(next_not_split_period.growth_types) == 0).all()
+
                 if period.is_first_period:
                     output.write(
-                        '\tphi = dadi.PhiManip.phi_1D(xx, theta0=theta1, nu=Ns['
-                        + str(cur_index) + '])\n')
-                    output.write('\tbefore = [Ns[' + str(cur_index) + ']]\n')
-                    extra += 1
+                        '\tphi = dadi.PhiManip.phi_1D(xx, theta0=theta1')
+                    if self.params.multinom:
+                        output.write(')\n')
+                    else:
+                        output.write(', nu=Ns[' + str(ns_index) + '])\n')
+                        if not all_sudden_later:
+                            output.write('\tbefore = [Ns[' + str(ns_index) + ']]\n')
+                        ns_index += 1
+
                 elif period.is_split_of_population:
                     if period.number_of_populations == 2:
                         output.write(
                             '\tphi = dadi.PhiManip.phi_1D_to_2D(xx, phi)\n')
-                        output.write('\tbefore.append((1 - Ns[' +
-                                     str(cur_index + extra) + ']) * before[-1])\n')
-                        output.write(
-                            '\tbefore[-2] *= Ns[' + str(cur_index + extra) + ']\n')
+                        if not all_sudden_later:
+                            output.write('\tbefore.append((1 - Ns[' +
+                                         str(ns_index) + ']) * before[-1])\n')
+                            output.write(
+                                '\tbefore[-2] *= Ns[' + str(ns_index) + ']\n')
+                            ns_index += 1
                     if period.number_of_populations == 3:
                         if period.population_to_split == 0:
                             output.write(
                                 '\tphi = dadi.PhiManip.phi_2D_to_3D_split_1(xx, phi)\n')
-                            output.write('\tbefore.append((1 - Ns[' +
-                                         str(cur_index + extra) + ']) * before[0])\n')
-                            output.write(
-                                '\tbefore[0] *= Ns[' + str(cur_index + extra) + ']\n')
+                            if not all_sudden_later:
+                                output.write('\tbefore.append((1 - Ns[' +
+                                             str(ns_index) + ']) * before[-1])\n')
+                                output.write(
+                                    '\tbefore[0] *= Ns[' + str(ns_index) + ']\n')
+                                ns_index += 1
                         else:
                             output.write(
                                 '\tphi = dadi.PhiManip.phi_2D_to_3D_split_2(xx, phi)\n')
-                            output.write('\tbefore.append((1 - Ns[' +
-                                         str(cur_index + extra) + ']) * before[-1])\n')
-                            output.write(
-                                '\tbefore[-2] *= Ns[' + str(cur_index + extra) + ']\n')
-                    extra += 1
+                            if not all_sudden_later:
+                                output.write('\tbefore.append((1 - Ns[' +
+                                             str(ns_index) + ']) * before[-1])\n')
+                                output.write(
+                                    '\tbefore[-2] *= Ns[' + str(ns_index) + ']\n')
+                                ns_index += 1
 
                 else:  # change population size
                     growth_funcs = []
-                    output.write('\tT = Ts[' + str(cur_index) + ']\n')
-                    output.write('\tafter = Ns[' + str(cur_index + extra) + ':'
-                                 + str(cur_index + extra +
-                                       period.number_of_populations) + ']\n')
-                    extra += period.number_of_populations - 1
+                    output.write('\tT = Ts[' + str(ts_index) + ']\n')
+                    ts_index += 1
+                    output.write('\tafter = Ns[' + str(ns_index) + ':'
+                                 + str(ns_index + period.number_of_populations) + ']\n')
+                    ns_index += period.number_of_populations
 
                     for i in xrange(period.number_of_populations):
                         if period.growth_types[i] == 0:
@@ -1588,11 +1611,11 @@ class Demographic_model:
                             '\tphi = dadi.Integration.two_pops(phi, xx,  T=T,'
                             'nu1=growth_func_1, nu2=growth_func_2, m12='
                             + ('0' if period.migration_rates is None else
-                               'params[' + str(mig_index) + ']') + ', m21=' +
+                               'Ms[' + str(ms_index) + ']') + ', m21=' +
                             ('0' if period.migration_rates is None else
-                             'params[' + str(mig_index + 1) + ']') +
+                             'Ms[' + str(ms_index + 1) + ']') +
                             ', theta0=theta1)\n')
-                        mig_index += 2
+                        ms_index += 2
                     else:
                         output.write('\tgrowth_func_1 = ' + growth_funcs[0] +
                                      '\n')
@@ -1604,21 +1627,21 @@ class Demographic_model:
                             '\tphi = dadi.Integration.three_pops(phi, xx,  T=T, '
                             'nu1=growth_func_1, nu2=growth_func_2, nu3=growth_func_3, m12='
                             + ('0' if period.migration_rates is None else
-                               'params[' + str(mig_index) + ']') + ', m13=' +
+                               'Ms[' + str(ms_index) + ']') + ', m13=' +
                             ('0' if period.migration_rates is None else
-                             'params[' + str(mig_index + 1) + ']') + ', m21=' +
+                             'Ms[' + str(ms_index + 1) + ']') + ', m21=' +
                             ('0' if period.migration_rates is None else
-                             'params[' + str(mig_index + 2) + ']') + ', m23=' +
+                             'Ms[' + str(ms_index + 2) + ']') + ', m23=' +
                             ('0' if period.migration_rates is None else
-                             'params[' + str(mig_index + 3) + ']') + ', m31=' +
+                             'Ms[' + str(ms_index + 3) + ']') + ', m31=' +
                             ('0' if period.migration_rates is None else
-                             'params[' + str(mig_index + 4) + ']') + ', m32=' +
+                             'Ms[' + str(ms_index + 4) + ']') + ', m32=' +
                             ('0' if period.migration_rates is None else
-                             'params[' + str(mig_index + 5) + ']') +
+                             'Ms[' + str(ms_index + 5) + ']') +
                             ', theta0=theta1)\n')
-                        mig_index += 6
-                    cur_index += 1
-                    output.write('\tbefore = after\n')
+                        ms_index += 6
+                    if not all_sudden_later:
+                        output.write('\tbefore = after\n')
             output.write('\tsfs = dadi.Spectrum.from_phi(phi, ns, [xx]*' + str(
                 self.params.number_of_populations) + ')\n\treturn sfs\n')
 
