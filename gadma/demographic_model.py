@@ -1249,9 +1249,9 @@ class Demographic_model:
 
             if self.is_custom_model and self.params.multinom:
                 if self.params.moments_scenario:
-                    self.sfs *= moments.optimal_sfs_scaling(self.sfs, self.params.input_data)
+                    self.sfs *= moments.Inference.optimal_sfs_scaling(self.sfs, self.params.input_data)
                 else:
-                    self.sfs *= dadi.optimal_sfs_scaling(self.sfs, self.params.input_data)
+                    self.sfs *= dadi.Inference.optimal_sfs_scaling(self.sfs, self.params.input_data)
 
         return self.sfs
 
