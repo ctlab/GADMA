@@ -1494,7 +1494,7 @@ class Demographic_model:
             output.write('#current best params = ' + str(self.as_vector()) +
                          '\n')
             output.write(
-                'import dadi\ndef generated_model(params, ns, pts):\n')
+                'import dadi\nimport numpy as np\ndef generated_model(params, ns, pts):\n')
             Ns_len = 0
             Ts_len = 0
             for i, period in enumerate(self.periods):
@@ -1640,7 +1640,7 @@ class Demographic_model:
                              'Ms[' + str(ms_index + 5) + ']') +
                             ', theta0=theta1)\n')
                         ms_index += 6
-                    if not all_sudden_later:
+                    if not all_sudden_later or (pos+1 != len(self.periods) and self.periods[pos+1].is_split_of_population):
                         output.write('\tbefore = after\n')
             output.write('\tsfs = dadi.Spectrum.from_phi(phi, ns, [xx]*' + str(
                 self.params.number_of_populations) + ')\n\treturn sfs\n')
@@ -1651,6 +1651,17 @@ class Demographic_model:
             if ext == 'fs':
                 output.write("data = dadi.Spectrum.from_file('" + os.path.
                              abspath(self.params.input_file) + "')\n")
+                # we need check if we change spectrum from file:
+                real_spectrum, real_ns, real_labels  = support.read_fs_file(os.path.
+                             abspath(self.params.input_file), proj=None, pop_labels=None)
+                if not (real_ns == self.params.ns).all():
+                    output.write("data.project(" + str(list(self.params.ns)) + ")\n")
+                if not real_labels == self.params.pop_labels:
+                    d = {x: i for i, x in enumerate(real_labels)}
+                    d = [d[x] for x in self.params.pop_labels]
+                    output.write("new_axis = " + str(d) + '\n')
+                    output.write("data = np.transpose(data, new_axis)\n")
+                    output.write("data.pop_ids = " + str(self.params.pop_labels) + '\n')
             else:
                 output.write("dd = dadi.Misc.make_data_dict('" + os.path.
                              abspath(self.params.input_file) + "')\n")
@@ -1773,11 +1784,13 @@ class Demographic_model:
             )
             Ns_len = 0
             Ts_len = 0
-            for period in self.periods:
+            for i, period in enumerate(self.periods):
                 if period.is_first_period:
                     Ns_len += 1
                 elif period.is_split_of_population:
-                    Ns_len += 1
+                    all_sudden = (np.array(self.periods[i+1].growth_types) == 0).all()
+                    if not all_sudden:
+                        Ns_len += 1
                 else:
                     Ns_len += period.number_of_populations
                     Ts_len += 1
@@ -1786,59 +1799,78 @@ class Demographic_model:
                          str(Ns_len + Ts_len) + ']\n')
             output.write('\tMs = params[' + str(Ns_len + Ts_len) + ':]\n')
 
-            cur_index = 0
-            extra = 0
-            mig_index = Ns_len + Ts_len
+            ns_index = 0
+            ts_index = 0
+            ms_index = 0
             output.write(
                 '\ttheta1 = ' + str(self.params.theta if self.params.theta is not None else 1) + '\n')
             for pos, period in enumerate(self.periods):
+                if self.params.only_sudden:
+                    all_sudden_later = True
+                else:
+                    all_sudden_later = True
+                    if pos == len(self.periods) - 1:
+                        all_sudden_later = True
+                    else:
+                        if self.periods[pos+1].is_split_of_population:
+                            all_sudden_later = True
+                        else:
+                            next_not_split_period = self.periods[pos+1]
+                            all_sudden_later = (np.array(next_not_split_period.growth_types) == 0).all()
+
                 if period.is_first_period:
                     output.write(
-                        '\tsts = moments.LinearSystem_1D.steady_state_1D(sum(ns), theta=theta1, N=Ns[' +
-                        str(cur_index) +
-                        '])\n')
+                        '\tsts = moments.LinearSystem_1D.steady_state_1D(sum(ns), theta=theta1')
+                    if self.params.multinom:
+                        output.write(')\n')
+                    else:
+                        output.write(', N=Ns[' + str(ns_index) + '])\n')
+                        if not all_sudden_later:
+                            output.write('\tbefore = [Ns[' + str(ns_index) + ']]\n')
+                        ns_index += 1
                     output.write('\tfs = moments.Spectrum(sts)\n\n')
-                    output.write('\tbefore = [Ns[' + str(cur_index) + ']]\n')
-                    extra += 1
+
                 elif period.is_split_of_population:
                     if period.number_of_populations == 2:
                         if pop_to_split_3 is None or pop_to_split_3 == 1:
                             output.write(
-                                '\tfs = moments.Manips.split_1D_to_2D(fs, ns[0], sum(ns[1:]))\n\n'
-                            )
+                                '\tfs = moments.Manips.split_1D_to_2D(fs, ns[0], sum(ns[1:]))\n\n')
                         else:
                             output.write(
-                                '\tfs = moments.Manips.split_1D_to_2D(fs, ns[0] + ns[2], ns[1])\n\n'
-                            )
-                        output.write('\tbefore.append((1 - Ns[' + str(cur_index + extra) +
-                                     ']) * before[-1])\n')
-                        output.write(
-                            '\tbefore[-2] *= Ns[' + str(cur_index + extra) + ']\n')
-                    else:  # if period.number_of_populations == 3:
+                                '\tfs = moments.Manips.split_1D_to_2D(fs, ns[0] + ns[2], ns[1])\n\n')
+                        if not all_sudden_later:
+                            output.write('\tbefore.append((1 - Ns[' +
+                                         str(ns_index) + ']) * before[-1])\n')
+                            output.write(
+                                '\tbefore[-2] *= Ns[' + str(ns_index) + ']\n')
+                            ns_index += 1
+                    if period.number_of_populations == 3:
                         if period.population_to_split == 0:
                             output.write(
-                                '\tfs = moments.Manips.split_2D_to_3D_1(fs, ns[0], ns[2])\n\n'
-                            )
-                            output.write('\tbefore.append((1 - Ns[' + str(cur_index + extra) +
-                                         ']) * before[0])\n')
+                                '\tfs = moments.Manips.split_2D_to_3D_1(fs, ns[0], ns[2])\n')
+                            if not all_sudden_later:
+                                output.write('\tbefore.append((1 - Ns[' +
+                                             str(ns_index) + ']) * before[-1])\n')
+                                output.write(
+                                    '\tbefore[0] *= Ns[' + str(ns_index) + ']\n')
+                                ns_index += 1
+                        else:
                             output.write(
-                                '\tbefore[0] *= Ns[' + str(cur_index + extra) + ']\n')
-                        else:  # if period.population_to_split == 1
-                            output.write(
-                                '\tfs = moments.Manips.split_2D_to_3D_2(fs, ns[1], ns[2])\n\n'
-                            )
-                            output.write('\tbefore.append((1 - Ns[' + str(cur_index + extra) +
-                                         ']) * before[-1])\n')
-                            output.write(
-                                '\tbefore[-2] *= Ns[' + str(cur_index + extra) + ']\n')
-                    extra += 1
+                                '\tfs = moments.Manips.split_2D_to_3D_2(fs, ns[1], ns[2])\n')
+                            if not all_sudden_later:
+                                output.write('\tbefore.append((1 - Ns[' +
+                                             str(ns_index) + ']) * before[-1])\n')
+                                output.write(
+                                    '\tbefore[-2] *= Ns[' + str(ns_index) + ']\n')
+                                ns_index += 1
 
                 else:  # change population size
-                    output.write('\tT = Ts[' + str(cur_index) + ']\n')
-                    output.write('\tafter = Ns[' + str(cur_index + extra) + ':'
-                                 + str(cur_index + extra +
-                                       period.number_of_populations) + ']\n')
-                    extra += period.number_of_populations - 1
+                    output.write('\tT = Ts[' + str(ts_index) + ']\n')
+                    ts_index += 1
+                    output.write('\tafter = Ns[' + str(ns_index) + ':'
+                                 + str(ns_index + period.number_of_populations) + ']\n')
+                    ns_index += period.number_of_populations
+
                     growth_funcs = '['
                     for i in xrange(period.number_of_populations):
                         if period.growth_types[i] == 0:
@@ -1864,29 +1896,29 @@ class Demographic_model:
                             str(self.dt_fac) + ', theta=theta1)\n\n'
                         )
                     elif period.number_of_populations == 2:
-                        output.write('\tm = np.array([[0, params[' +
-                                     str(mig_index) + ']],[params[' +
-                                     str(mig_index + 1) + '], 0]])\n')
+                        output.write('\tm = np.array([[0, Ms[' +
+                                     str(ms_index) + ']],[Ms[' +
+                                     str(ms_index + 1) + '], 0]])\n')
                         output.write(
                             '\tfs.integrate(Npop=list_growth_funcs, tf=T, m=m, dt_fac=' +
                             str(self.dt_fac) + ', theta=theta1)\n\n'
                         )
-                        mig_index += 2
+                        ms_index += 2
                     else:
-                        output.write('\tm = np.array([[0.0, params[' +
-                                     str(mig_index) + '], params[' +
-                                     str(mig_index + 1) + ']],[params[' +
-                                     str(mig_index + 2) + '], 0.0, params[' +
-                                     str(mig_index + 3) + ']], [params[' +
-                                     str(mig_index + 4) + '], params[' +
-                                     str(mig_index + 5) + '], 0.0]])\n')
+                        output.write('\tm = np.array([[0.0, Ms[' +
+                                     str(ms_index) + '], Ms[' +
+                                     str(ms_index + 1) + ']],[Ms[' +
+                                     str(ms_index + 2) + '], 0.0, Ms[' +
+                                     str(ms_index + 3) + ']], [Ms[' +
+                                     str(ms_index + 4) + '], Ms[' +
+                                     str(ms_index + 5) + '], 0.0]])\n')
                         output.write(
                             '\tfs.integrate(Npop=list_growth_funcs, tf=T, m=m, dt_fac=' +
                             str(self.dt_fac) + ', theta=theta1)\n\n'
                         )
-                        mig_index += 6
-                    cur_index += 1
-                    output.write('\tbefore = after\n')
+                        ms_index += 6
+                    if not all_sudden_later or (pos+1 != len(self.periods) and self.periods[pos+1].is_split_of_population):
+                        output.write('\tbefore = after\n')
             output.write('\treturn fs\n')
 
             # main
@@ -1895,6 +1927,18 @@ class Demographic_model:
             if ext == 'fs':
                 output.write("data = moments.Spectrum.from_file('" + os.path.
                              abspath(self.params.input_file) + "')\n")
+                # we need check if we change spectrum from file:
+                real_spectrum, real_ns, real_labels  = support.read_fs_file(os.path.
+                             abspath(self.params.input_file), proj=None, pop_labels=None)
+                if not (real_ns == self.params.ns).all():
+                    output.write("data.project(" + str(list(self.params.ns)) + ")\n")
+                if not real_labels == self.params.pop_labels:
+                    d = {x: i for i, x in enumerate(real_labels)}
+                    d = [d[x] for x in self.params.pop_labels]
+                    output.write("new_axis = " + str(d) + '\n')
+                    output.write("data = np.transpose(data, new_axis)\n")
+                    output.write("data.pop_ids = " + str(self.params.pop_labels) + '\n')
+
             else:
                 output.write("dd = moments.Misc.make_data_dict('" + os.path.
                              abspath(self.params.input_file) + "')\n")
