@@ -101,8 +101,6 @@ class Period(object):
         # ancestral population
         elif self.is_first_period:
             self.get_sizes_of_populations()[0] *= 1 + sign * change
-            self.get_sizes_of_populations()[0] = max(
-                self.get_sizes_of_populations()[0], bounds.min_N * N_A)
 
         # otherwise change corresponding parameter
         elif param_index == 0:
@@ -141,8 +139,7 @@ class Period(object):
             size_of_pop = self.get_sizes_of_populations()[x]
             if self.migration_rates[x][y] == 0 and sign == 1:
                 self.migration_rates[x][y] = np.random.uniform(
-                    bounds.min_M / N_A, min(
-                        bounds.max_M / size_of_pop, 10.0 / size_of_pop))
+                    bounds.min_M / N_A, bounds.max_M / size_of_pop)
             else:
                 self.migration_rates[x][y]
                 self.migration_rates[x][
@@ -150,7 +147,7 @@ class Period(object):
                 self.migration_rates[x][y] = max(
                     self.migration_rates[x][y], bounds.min_M / size_of_pop)
                 self.migration_rates[x][y] = min(
-                    self.migration_rates[x][y], bounds.min_M / size_of_pop)
+                    self.migration_rates[x][y], bounds.max_M / size_of_pop)
             if self.migration_rates[x][y] * size_of_pop < 1e-3 and sign == -1:
                 self.migration_rates[x][y] *= random.choice([0, 1])
 
@@ -170,9 +167,12 @@ class Period(object):
             return '[ ' + list_float_representation(
                 [self.get_sizes_of_populations()[0]]) + ' ]'
         if self.is_split_of_population:
-            return '[ ' + float_representation(None if self.split_prop is None else 100 * self.split_prop) +\
-                '%, ' + list_float_representation(
-                    self.get_sizes_of_populations()) + ' ]'
+            if self.split_prop is None:
+                return '[ Split ]'
+            else:
+                return '[ ' + float_representation(None if self.split_prop is None else 100 * self.split_prop) +\
+                    '%, ' + list_float_representation(
+                        self.get_sizes_of_populations()) + ' ]'
         if self.migration_rates is None:
             mig_str = ''
         else:
@@ -340,26 +340,53 @@ class Demographic_model:
         if initial_vector is not None:
             self.construct_from_vector(initial_vector)
 
+    def generate_random_value(self, low_bound, upp_bound, identificator=None):
+        """Generate random value for different parameters of models"""
+        if identificator == 't' or identificator == 's':
+            return np.random.uniform(low_bound, upp_bound)
+        # if identificator == 'm' or identificator == 'n' or None
+        mode = 1.0
+        if low_bound >= mode:
+            sample = np.random.triangular(low_bound, low_bound, upp_bound)
+        elif upp_bound <= mode:
+            sample = np.random.triangular(low_bound, upp_bound, upp_bound)
+        else:
+            sample = np.random.triangular(low_bound, mode, upp_bound)
+        return sample
+
     def init_random_model(self, structure):
-        """Generate random model of a given structure."""
+        """Generate random model of a given structure.
+        This method is MAGIC, real magic. It is strange just because it is the best way to do it."""
         if structure is None:
             if self.is_custom_model:
-                for low_bound, upp_bound in zip(self.lower_bound, self.upper_bound):
-                    self.popt.append(np.random.uniform(low=low_bound, high=upp_bound))
+                for i, (low_bound, upp_bound) in enumerate(zip(self.lower_bound, self.upper_bound)):
+                    if self.params.p_ids is not None:
+                        p_id = self.params.p_ids[i]
+                    else:
+                        p_id = None
+                    self.popt.append(self.generate_random_value(low_bound, upp_bound, p_id))
                     self.popt_len += 1
                     self.number_of_changes = np.append(self.number_of_changes, 0.0)
+#                if not self.params.multinom or self.params.p_ids is not None:
+#                    Nref = self.generate_random_value(self.params.min_N, self.params.max_N, 'n')
                 if not self.params.multinom:
                     self.popt.append(1.0)
                     self.popt_len += 1
-                    self.normalize_by_Nref()
                     self.number_of_changes = np.append(self.number_of_changes, 0.0)
+#                if self.params.p_ids is not None:
+#                    self.normalize_by_Nref(1 / Nref)
+#                    for i, (low_bound, upp_bound) in enumerate(zip(self.lower_bound, self.upper_bound)):
+#                        self.popt[i] = max(low_bound, self.popt[i])
+#                        self.popt[i] = min(upp_bound, self.popt[i])
+                self.normalize_by_Nref()
+
             else:
                 structure = self.params.initial_structure
         
         if not self.is_custom_model:
             # add first "const" period
             if self.params.random_N_A:
-                N_A = np.random.uniform(self.params.min_N, self.params.max_N)
+                N_A = self.generate_random_value(self.params.min_N, self.params.max_N, 'n')
             else:
                 N_A = 1.0
             self.add_period(
@@ -371,29 +398,29 @@ class Demographic_model:
             for i in xrange(structure[0] - 1):
                 self.add_period(
                     Period(
-                        time=np.random.uniform(
-                            self.params.min_T, self.params.max_T),
-                        sizes_of_populations=[np.random.uniform(
-                            self.params.min_N, self.params.max_N)],
+                        time=self.generate_random_value(
+                            self.params.min_T, self.params.max_T, 't'),
+                        sizes_of_populations=[self.generate_random_value(
+                            self.params.min_N, self.params.max_N, 'n')],
                         growth_types= None if self.params.only_sudden else [random.choice([0, 1, 2])]))
             for num_of_pops, number_of_periods in enumerate(structure[1:]):
                 num_of_pops += 2
                 self.add_period(
                     Split(
-                        split_prop=None if self.params.only_sudden else np.random.uniform(
-                            self.params.min_N, 1 - self.params.min_N),
+                        split_prop=None if self.params.only_sudden else self.generate_random_value(
+                            self.params.min_N, 1 - self.params.min_N, 's'),
                         population_to_split=num_of_pops - 2,
                         sizes_of_populations_before_split=self.periods[-1]
                         .get_sizes_of_populations()))
                 for i in xrange(number_of_periods):
                     sizes_of_pops = [
-                        np.random.uniform(self.params.min_N, self.params.max_N)
+                        self.generate_random_value(self.params.min_N, self.params.max_N, 'n')
                         for x in xrange(num_of_pops)
                     ]
                     self.add_period(
                         Period(
-                            time=np.random.uniform(
-                                self.params.min_T, self.params.max_T),
+                            time=self.generate_random_value(
+                                self.params.min_T, self.params.max_T, 't'),
                             sizes_of_populations=sizes_of_pops,
                             growth_types=None if self.params.only_sudden else [
                                 random.choice([0, 1, 2])
@@ -818,8 +845,6 @@ class Demographic_model:
                     upp_bound = self.normalize_funcs[i](upp_bound, Nref)
                 self.popt[i] = max(low_bound, self.popt[i])
                 self.popt[i] = min(upp_bound, self.popt[i])
-            else:
-                self.popt[i] = max(self.popt[i], 1e-100)
             
         else:
             period_index, param_index = self.get_param_ids()[i]
@@ -1080,7 +1105,7 @@ class Demographic_model:
                                 sum([p.time for p in self.periods[self.split_2_pos:]]))
             N_ref = opt_scale
         if self.is_custom_model:
-            if not self.params.multinom:
+            if self.params.p_ids is not None:
                 for i in xrange(self.popt_len - int(self.params.multinom)):
                     self.popt[i] = self.normalize_funcs[i](self.popt[i], N_ref)
         else:
@@ -1153,31 +1178,37 @@ class Demographic_model:
         if number_of_populations == 2:
             return [[None,
                      random.choice([0,
-                                    1]) * np.random.uniform(self.params.min_M,
+                                    1]) * self.generate_random_value(self.params.min_M / N_A,
                                                             min(self.params.max_M,
-                                                                10.0 / sizes_of_pops[0])) / N_A],
+                                                                self.params.max_M * sizes_of_pops[0]) / N_A, 'm')],
                     [random.choice([0,
-                                    1]) * np.random.uniform(self.params.min_M,
+                                    1]) * self.generate_random_value(self.params.min_M / N_A,
                                                             min(self.params.max_M,
-                                                                10.0 / sizes_of_pops[1])) / N_A,
+                                                                self.params.max_M * sizes_of_pops[1]) / N_A, 'm'),
                      None]]
         if number_of_populations == 3:
             return [[
                 None,
-                random.choice([0, 1]) * np.random.uniform(self.params.min_M,
-                                                          min(self.params.max_M, 10.0 / sizes_of_pops[0])) / N_A,
-                random.choice([0, 1]) * np.random.uniform(self.params.min_M,
-                                                          min(self.params.max_M, 10.0 / sizes_of_pops[0])) / N_A
+                random.choice([0, 1]) * self.generate_random_value(self.params.min_M / N_A,
+                                                            min(self.params.max_M,
+                                                                self.params.max_M * sizes_of_pops[0]) / N_A, 'm'),
+                random.choice([0, 1]) * self.generate_random_value(self.params.min_M / N_A,
+                                                            min(self.params.max_M,
+                                                                self.params.max_M * sizes_of_pops[0]) / N_A, 'm')
             ], [
-                random.choice([0, 1]) * np.random.uniform(self.params.min_M,
-                                                          min(self.params.max_M, 10.0 / sizes_of_pops[1])) / N_A, None,
-                random.choice([0, 1]) * np.random.uniform(self.params.min_M,
-                                                          min(self.params.max_M, 10.0 / sizes_of_pops[1])) / N_A
+                random.choice([0, 1]) * self.generate_random_value(self.params.min_M / N_A,
+                                                            min(self.params.max_M,
+                                                                self.params.max_M * sizes_of_pops[1]) / N_A, 'm'), None,
+                random.choice([0, 1]) * self.generate_random_value(self.params.min_M / N_A,
+                                                            min(self.params.max_M,
+                                                                self.params.max_M * sizes_of_pops[1]) / N_A, 'm')
             ], [
-                random.choice([0, 1]) * np.random.uniform(self.params.min_M,
-                                                          min(self.params.max_M, 10.0 / sizes_of_pops[2])) / N_A,
-                random.choice([0, 1]) * np.random.uniform(self.params.min_M,
-                                                          min(self.params.max_M, 10.0 / sizes_of_pops[2])) / N_A, None
+                random.choice([0, 1]) * self.generate_random_value(self.params.min_M / N_A,
+                                                            min(self.params.max_M,
+                                                                self.params.max_M * sizes_of_pops[2]) / N_A, 'm'),
+                random.choice([0, 1]) * self.generate_random_value(self.params.min_M / N_A,
+                                                            min(self.params.max_M,
+                                                                self.params.max_M * sizes_of_pops[2]) / N_A, 'm'), None
             ]]
 
     def __str__(self, end='\n'):
@@ -1681,7 +1712,6 @@ class Demographic_model:
             output.write('model =  func_ex(popt, ns, pts)\n')
             output.write(
                 'll_model = dadi.Inference.ll(model, data)\n'
-                'll_true = dadi.Inference.ll(data, data)\n'
                 "print('Model log likelihood (LL(model, data)): {0}'.format(ll_model))\n")
 
     def moments_code(self, params, ns=None):
@@ -1954,7 +1984,6 @@ class Demographic_model:
             output.write('model = generated_model(popt, ns)\n')
             output.write(
                 'll_model = moments.Inference.ll(model, data)\n'
-                'll_true = moments.Inference.ll(data, data)\n'
                 "print('Model log likelihood (LL(model, data)): {0}'.format(ll_model))\n")
 
             size_of_first_pop = self.get_N_A()

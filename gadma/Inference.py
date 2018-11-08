@@ -26,7 +26,7 @@ except ImportError:
 
 
 def optimize_ga(number_of_params, data, model_func, pts=None, lower_bound=None, upper_bound=None, p0=None,
-                 multinom=False, p_ids = None, mutation_strength=0.2, const_for_mut_strength=1.1, mutation_rate=0.2, const_for_mut_rate=1.2,
+                 multinom=True, p_ids = None, mutation_strength=0.2, const_for_mut_strength=1.1, mutation_rate=0.2, const_for_mut_rate=1.2,
                  epsilon=1e-2, stop_iter=100, size_of_population_in_ga=10, frac_of_old_models=0.2, frac_of_mutated_models=0.3, 
                  frac_of_crossed_models=0.3):
     """
@@ -103,12 +103,14 @@ def optimize_ga(number_of_params, data, model_func, pts=None, lower_bound=None, 
     params.moments_scenario = pts is None
     params.lower_bound = lower_bound
     params.upper_bound = upper_bound
-    params.multinom = multinom and p_ids is None
-
+    params.multinom = multinom or p_ids is None
+    
     #create normalize funcs
     if p_ids is None:
         params.normalize_funcs = None
+        params.p_ids = None
     else:
+        params.p_ids = [x.lower()[0] for x in p_ids]
         params.normalize_funcs = []
         for i in xrange(number_of_params):
             id_v = p_ids[i][0].lower()
