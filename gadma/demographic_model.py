@@ -2255,8 +2255,11 @@ class Demographic_model:
         plt.savefig(buf2, format='png')
         buf2.seek(0)
         plt.close('all')
-
-        img1 = PIL.Image.open(buf1)
+        
+        if self.is_custom_model and not self.params.moments_scenario:
+            img1 = Image.new('RGB', (0, 0))
+        else:
+            img1 = PIL.Image.open(buf1)
         img2 = PIL.Image.open(buf2)
 
         weight = img1.size[0] + img2.size[0]
