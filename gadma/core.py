@@ -30,6 +30,7 @@ def run_genetic_algorithm(params_tuple):
         log_file :  log file to write output.
         shared_dict :   dictionary to share information between processes.
     """
+    np.random.seed()
     number = 'ID'
     try:
         def write_func(string): return support.write_log(log_file, string,
@@ -97,7 +98,7 @@ def print_best_solution_now(start_time, shared_dict,
     all_aic_models = [(i, all_models_data[i][1]) for i in all_models_data]
     all_aic_models = sorted(all_aic_models, key=lambda x: x[1].get_aic_score())
 
-    if (options.options_storage.final_structure != options.options_storage.initial_structure).any():
+    if options.options_storage.initial_structure is not None and (options.options_storage.final_structure != options.options_storage.initial_structure).any():
         write_func('\nAll best AIC models:')
         write_func('GA number\tlogLL\t\tAIC\t\tModel')
         for number, res in all_aic_models:
@@ -113,7 +114,7 @@ def print_best_solution_now(start_time, shared_dict,
                my_str(all_models[0][1].get_aic_score()))
     write_func('Model:\t' + str(all_models[0][1]))
 
-    if (options.options_storage.final_structure != options.options_storage.initial_structure).any():
+    if options.options_storage.model_func_file is None and (options.options_storage.final_structure != options.options_storage.initial_structure).any():
         write_func('\n--Best model by AIC score--')
         write_func('Log likelihood:\t' +
                    my_str(-all_aic_models[0][1].get_fitness_func_value()))
@@ -128,7 +129,7 @@ def print_best_solution_now(start_time, shared_dict,
             title='logLL: ' +
             support.float_representation(-all_models[0][1].get_fitness_func_value(), precision) +
             ', AIC: ' + support.float_representation(all_models[0][1].get_aic_score(), precision))
-        if (options.options_storage.final_structure != options.options_storage.initial_structure).any():
+        if options.options_storage.model_func_file is None and (options.options_storage.final_structure != options.options_storage.initial_structure).any():
             all_aic_models[0][1].draw(
                 os.path.join(options.options_storage.output_dir,
                              'best_aic_model.png'),
@@ -140,7 +141,7 @@ def print_best_solution_now(start_time, shared_dict,
         os.path.join(options.options_storage.output_dir, 'best_logLL_model_dadi_code.py'))
     all_models[0][1].moments_code_to_file(
         os.path.join(options.options_storage.output_dir, 'best_logLL_model_moments_code.py'))
-    if (options.options_storage.final_structure != options.options_storage.initial_structure).any():
+    if options.options_storage.model_func_file is None and (options.options_storage.final_structure != options.options_storage.initial_structure).any():
         all_aic_models[0][1].dadi_code_to_file(
             os.path.join(options.options_storage.output_dir, 'best_aic_model_dadi_code.py'))
         all_aic_models[0][1].moments_code_to_file(
@@ -156,6 +157,9 @@ def print_best_solution_now(start_time, shared_dict,
 
 def main():
     options.parse_args()
+
+    import pickle
+    pickle.dumps(options.options_storage)
 
     log_file = os.path.join(
         options.options_storage.output_dir, 'GADMA.log')
@@ -174,7 +178,7 @@ def main():
     support.write_log(log_file, '--Start pipeline--\n')
 
     # For debug
-#        run_genetic_algorithm((1, log_file, None))
+#    run_genetic_algorithm((1, log_file, None))
 
     # Create shared dictionary
     m = Manager()

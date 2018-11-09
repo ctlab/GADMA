@@ -49,7 +49,8 @@ def write_log(log_file, string, write_to_stdout=True):
     write_to_file(log_file, string)
 
 
-def check_file_existence(filename):
+def check_file_existence(input_filename):
+    filename = abspath(expanduser(input_filename))
     if not os.path.isfile(filename):
         return error("file " + filename + " doesn't exist")
     return filename
@@ -62,11 +63,18 @@ def check_dir_existence(input_dirname):
     return dirname
 
 
-def check_comma_sep_list(l_str):
+def check_comma_sep_list(l_str, is_int=True):
     try:
-        return np.array([int(x) for x in l_str.split(',')])
+        if is_int:
+            return np.array([int(x) for x in l_str.split(',')])
+        else:
+            return np.array([x.strip().lower() for x in l_str.split(',')])
     except:
-        error("can't read comma-separated list of ints: " + l_str)
+        if is_int:
+            error("can't read comma-separated list of ints: " + l_str)
+        else:
+            error("can't read comma-separated list: " + l_str)
+
 
 
 def ask_user(question):

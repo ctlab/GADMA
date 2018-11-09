@@ -15,6 +15,7 @@ import re
 from operator import itemgetter
 import ast
 from gadma.version import __version__
+import imp 
 
 
 READ_ALLOWED_EXTENSIONS = {
@@ -48,12 +49,19 @@ class Options_storage:
         # Pipeline
         self.theta = None
         self.gen_time = None
-        self.multinom = False
+        self.multinom = None
         self.only_sudden = False
         self.dadi_pts = None
         self.moments_scenario = False
         self.relative_params = False
         self.no_mig = False
+
+        #Custom model
+        self.model_func_file = None
+        self.model_func = None
+        self.lower_bound = None
+        self.upper_bound = None
+        self.p_ids = None
 
         # Structure of models
         self.initial_structure = None
@@ -286,10 +294,18 @@ class Options_storage:
                     self.std = None if value.lower() == 'none' else float(value)
                 elif identity == 'only sudden':
                     self.only_sudden = value.lower() == 'true'
+                elif identity == 'model filename':
+                    self.model_func_file = value if value.lower() != 'none' else None
+                elif identity == 'lower bounds':
+                    self.lower_bound = value if value.lower() != 'none' else None
+                elif identity == 'upper bounds':
+                    self.upper_bound = value if value.lower() != 'none' else None
+                elif identity == 'parameters identificators':
+                    self.p_ids = value if value.lower() != 'none' else None
                 else:
                     support.error(
                         'Cannot recognize identifier: ' +
-                        str(identity))
+                        str(line.split(':')[0].strip()))
 
                 line_number += 1
 
@@ -341,7 +357,12 @@ class Options_storage:
                     str(self.silence),
                     str(self.repeats),
                     str(self.processes),
-                    str(self.only_sudden)
+                    str(self.only_sudden),
+                    str(self.model_func_file),
+                    comma_sep_repr(self.lower_bound),
+                    comma_sep_repr(self.upper_bound),
+                    comma_sep_repr(self.p_ids)
+
                 ))
 
     def to_file_extra(self, output_filename):
@@ -387,34 +408,70 @@ class Options_storage:
         '''
         If some parameters aren't defined, put default values.
         '''
-        if self.initial_structure is None:
-            self.initial_structure = [
-                START_MODEL_NUMBER_OF_PERIODS
-            ] * self.number_of_populations
-        else:
-            self.initial_structure = support.check_comma_sep_list(
+        # if not custom model then fill structures
+        if self.model_func_file is None:
+            if self.initial_structure is None:
+                self.initial_structure = [
+                    START_MODEL_NUMBER_OF_PERIODS
+                ] * self.number_of_populations
+            else:
+                self.initial_structure = support.check_comma_sep_list(
+                    self.initial_structure)
+            if self.final_structure is None:
+                self.final_structure = np.array(self.initial_structure)
+            else:
+                self.final_structure = support.check_comma_sep_list(
+                    self.final_structure)
+            self.initial_structure = np.array(
                 self.initial_structure)
-        if self.final_structure is None:
-            self.final_structure = np.array(self.initial_structure)
-        else:
-            self.final_structure = support.check_comma_sep_list(
+            self.final_structure = np.array(
                 self.final_structure)
-        self.initial_structure = np.array(
-            self.initial_structure)
-        self.final_structure = np.array(
-            self.final_structure)
+        else:
+            if self.lower_bound is None:
+                self.lower_bound = []
+                for p_id in self.p_ids:
+                    if p_id == 'n':
+                        self.lower_bound.append(self.min_N)
+                    elif p_id == 't':
+                        self.lower_bound.append(self.min_T)
+                    elif p_id == 'm':
+                        self.lower_bound.append(self.min_M)
+                    elif p_id == 's':
+                        self.lower_bound.append(0.0)
+            else:
+                self.lower_bound = [float(x) for x in support.check_comma_sep_list(self.lower_bound, is_int=False)]
+
+            if self.upper_bound is None:
+                self.upper_bound = []
+                for p_id in self.p_ids:
+                    if p_id == 'n':
+                        self.upper_bound.append(self.max_N)
+                    elif p_id == 't':
+                        self.upper_bound.append(self.max_T)
+                    elif p_id == 'm':
+                        self.upper_bound.append(self.max_M)
+                    elif p_id == 's':
+                        self.upper_bound.append(1.0)
+            else:
+                self.upper_bound = [float(x) for x in support.check_comma_sep_list(self.upper_bound, is_int=False)]
+
 
     def check(self):
         '''
         Check correctness of parameters. Unless throws error.
         '''
+        if self.multinom is None:
+            if self.model_func_file is None:
+                self.multinom = False
+            else:
+                self.multinom = True
 
         if self.pop_labels is not None:
             self.pop_labels = [x.strip() for x in self.pop_labels.split(',')]
         if self.ns is not None:
             self.ns = support.check_comma_sep_list(self.ns)
 
-        support.check_file_existence(self.input_file)
+        self.input_file = support.check_file_existence(self.input_file)
         ext = "." + os.path.splitext(self.input_file)[1][1:]
         if ext not in READ_ALLOWED_EXTENSIONS.keys():
             parser.error(
@@ -448,6 +505,25 @@ class Options_storage:
         self.ns = np.array(self.ns)
         self.number_of_populations = len(self.ns)
 
+        # Custom model
+        if self.model_func_file is not None:
+            self.model_func_file = support.check_file_existence(self.model_func_file)
+            file_with_model_func = imp.load_source('module', self.model_func_file)
+            try:
+                self.model_func = file_with_model_func.model  
+            except:
+                support.error(
+                    "File " + self.model_func_file + ' does not contain function named `model`.')
+
+        
+        if self.model_func_file is not None:
+            if self.p_ids is not None:
+                self.p_ids = support.check_comma_sep_list(self.p_ids, is_int=False)
+            else:
+                if self.lower_bound is None or self.upper_bound is None:
+                    support.error(
+                            "Either parameters identificators or lower and upper bounds should be specified.")
+
         self.fracs = [float(x) for x in self.fracs.split(",")]
         if len(self.fracs) != 3:
             support.error(
@@ -477,28 +553,43 @@ class Options_storage:
 
         self.put_default_structures()
 
-        if len(self.initial_structure
-               ) != self.number_of_populations:
-            support.error("Wrong length of initial model structure: must be " +
-                          str(self.number_of_populations))
-        for n in self.initial_structure:
-            if n < 0:
-                support.error('Elements in comma-separated list ' + ','.join(
-                    str(x) for x in self.initial_structure) +
-                    ' must be positive (`Initial structure` parameter)')
-        if len(self.final_structure
-               ) != self.number_of_populations:
-            support.error("Wrong length of final model structure: must be " +
-                          str(self.number_of_populations))
-        for n in self.final_structure:
-            if n < 0:
-                support.error('Elements in comma-separated list ' + ','.join(
-                    self.final_structure) +
-                    ' must be positive (`Final structure` parameter)')
-        if not (self.final_structure >=
-                self.initial_structure).all():
-            support.error(
-                "Final structure must be greater than initial structure")
+        # check lengths of bounds and p_ids
+        if self.model_func_file is not None:
+            if len(self.lower_bound) != len(self.upper_bound):
+                support.error(
+                        "Lengths of lower and upper bounds should be equal.")
+            if self.p_ids is not None:
+                if len(self.p_ids) != len(self.lower_bound):
+                    print self.p_ids
+                    print self.lower_bound
+                    support.error(
+                        "Lengths of lower, upper bounds and parameters identificators should be equal.")
+
+
+        if self.initial_structure is not None:
+            if len(self.initial_structure
+                   ) != self.number_of_populations:
+                support.error("wrong length of initial model structure: must be " +
+                              str(self.number_of_populations))
+            for n in self.initial_structure:
+                if n < 0:
+                    support.error('elements in comma-separated list ' + ','.join(
+                        str(x) for x in self.initial_structure) +
+                        ' must be positive (`Initial structure` parameter)')
+        if self.final_structure is not None:
+            if len(self.final_structure
+                   ) != self.number_of_populations:
+                support.error("Wrong length of final model structure: must be " +
+                              str(self.number_of_populations))
+            for n in self.final_structure:
+                if n < 0:
+                    support.error('Elements in comma-separated list ' + ','.join(
+                        self.final_structure) +
+                        ' must be positive (`Final structure` parameter)')
+            if not (self.final_structure >=
+                    self.initial_structure).all():
+                support.error(
+                    "Final structure must be greater than initial structure")
         if self.split_1_lim is not None and self.split_2_lim is not None and not self.split_1_lim > self.split_2_lim:
             support.error(
                 "Upper bound of first split must be greater than upper bound of second split")
@@ -679,6 +770,7 @@ def test_args():
     options_storage.processes = 2
     options_storage.epsilon = 1
     options_storage.test = True
+    options_storage.multinom = True
 
 
 def parse_args():

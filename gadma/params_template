@@ -89,7 +89,7 @@ Use moments or dadi : {8}
 #	Multinom scheme decrease number of parameter by one and 
 #	is usually faster, however non multinom scheme usually 
 #	finds better solutions.
-#	Default: False
+#	Default: False if not custom model and True if custom
 Multinom : {9}
 
 #	Use sudden changes of population sizes only. Decreases 
@@ -103,6 +103,36 @@ Only sudden : {32}
 #	then pts = n, n+10, n+20
 Pts : {10}
 
+#	Use of custom model.
+#	Please specify file with function named 'model' in it. 
+#	So file should contain:
+#	def model(params, ns, pts)	in case of dadi
+#	or
+#	def model(params, ns)		in case of moments
+#	Default: None
+Model filename : {32}
+
+#	Now one should specify either bounds or identifications of custom
+#	model's parameters. All values in Nref units.
+#	Lower and upper bounds - lists of numbers.
+#	Usual bounds are:
+#	N: 1e-2 - 100
+#	T: 0 - 5
+#	m: 0 - 10
+#	s: 0 - 1
+#	This bounds will be taken automaticly if identifications are set.
+#	Default: None
+Lower bounds : {33}
+Upper bounds : {34}
+#	List of parameters identificators:
+#	T - time
+#	N - size of population
+#	m - migration
+#	s - split event
+#	Default: None
+Parameters identificators : {35}
+
+#	Structure is for not custom models!
 #	Structure of model for one population - number of time periods 
 #	(e.g. 5).
 #	Structure of model for two populations - number of time periods
