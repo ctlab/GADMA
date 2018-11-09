@@ -2257,7 +2257,7 @@ class Demographic_model:
         plt.close('all')
         
         if self.is_custom_model and not self.params.moments_scenario:
-            img1 = Image.new('RGB', (0, 0))
+            img1 = PIL.Image.new('RGB', (0, 0))
         else:
             img1 = PIL.Image.open(buf1)
         img2 = PIL.Image.open(buf2)
