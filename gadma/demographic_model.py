@@ -715,6 +715,13 @@ class Demographic_model:
         else:
             p_opt = optimize_func(p0, data,
                                   func, self.params.dadi_pts, **func_kwargs)
+        if not self.is_custom_model and not self.params.multinom:
+            x = [1.0]
+            x.extend(p_opt)
+            p_opt = np.array(x)
+            x = [1.0]
+            x.extend(p0)
+            p0 = np.array(x)
 
         if not np.isnan(p_opt).any() and not (p_opt < 0).any():
             self.construct_from_vector(p_opt)

@@ -158,9 +158,6 @@ def print_best_solution_now(start_time, shared_dict,
 def main():
     options.parse_args()
 
-    import pickle
-    pickle.dumps(options.options_storage)
-
     log_file = os.path.join(
         options.options_storage.output_dir, 'GADMA.log')
     open(log_file, 'w').close()
