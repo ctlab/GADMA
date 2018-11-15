@@ -95,10 +95,9 @@ def print_best_solution_now(start_time, shared_dict,
                    my_str(res.get_aic_score()) + '\t' +
                    str(res))
 
-    all_aic_models = [(i, all_models_data[i][1]) for i in all_models_data]
-    all_aic_models = sorted(all_aic_models, key=lambda x: x[1].get_aic_score())
-
     if options.options_storage.initial_structure is not None and (options.options_storage.final_structure != options.options_storage.initial_structure).any():
+        all_aic_models = [(i, all_models_data[i][1]) for i in all_models_data]
+        all_aic_models = sorted(all_aic_models, key=lambda x: x[1].get_aic_score())
         write_func('\nAll best AIC models:')
         write_func('GA number\tlogLL\t\tAIC\t\tModel')
         for number, res in all_aic_models:
@@ -137,22 +136,23 @@ def print_best_solution_now(start_time, shared_dict,
                 support.float_representation(-all_aic_models[0][1].get_fitness_func_value(), precision) +
                 ', AIC: ' + support.float_representation(all_aic_models[0][1].get_aic_score(), precision))
 
-    all_models[0][1].dadi_code_to_file(
-        os.path.join(options.options_storage.output_dir, 'best_logLL_model_dadi_code.py'))
-    all_models[0][1].moments_code_to_file(
-        os.path.join(options.options_storage.output_dir, 'best_logLL_model_moments_code.py'))
+    if not options.options_storage.initial_structure is None or not options.options_storage.moments_scenario:
+        all_models[0][1].dadi_code_to_file(
+            os.path.join(options.options_storage.output_dir, 'best_logLL_model_dadi_code.py'))
+    if not options.options_storage.initial_structure is None or options.options_storage.moments_scenario:
+        all_models[0][1].moments_code_to_file(
+            os.path.join(options.options_storage.output_dir, 'best_logLL_model_moments_code.py'))
     if options.options_storage.model_func_file is None and (options.options_storage.final_structure != options.options_storage.initial_structure).any():
-        all_aic_models[0][1].dadi_code_to_file(
-            os.path.join(options.options_storage.output_dir, 'best_aic_model_dadi_code.py'))
-        all_aic_models[0][1].moments_code_to_file(
-            os.path.join(options.options_storage.output_dir, 'best_aic_model_moments_code.py'))
+        if not options.options_storage.initial_structure is None or not options.options_storage.moments_scenario:
+            all_aic_models[0][1].dadi_code_to_file(
+                os.path.join(options.options_storage.output_dir, 'best_aic_model_dadi_code.py'))
+        if not options.options_storage.initial_structure is None or options.options_storage.moments_scenario:
+            all_aic_models[0][1].moments_code_to_file(
+                os.path.join(options.options_storage.output_dir, 'best_aic_model_moments_code.py'))
 
-    if not options.options_storage.draw_iter == 0 and not options.options_storage.test:
+    if not options.options_storage.test:
         write_func(
             '\nYou can find its picture and python code in output directory')
-
-    elif not options.options_storage.test:
-        write_func('\nYou can find its python code in output directory')
 
 
 def main():

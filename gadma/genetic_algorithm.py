@@ -386,40 +386,48 @@ class GA(object):
 
         If so, we print it to file.
         """
+        if self.is_custom_model or (self.params.initial_structure == self.params.final_structure).all():
+            return 
         if self.best_model_by_aic is None or self.best_model_by_aic.get_aic_score() - \
                 self.best_model().get_aic_score() > 1e-8:
             self.best_model_by_aic = copy.deepcopy(self.best_model())
-            if not self.is_custom_model:
-                self.best_model_by_aic.dadi_code_to_file(
-                    os.path.join(self.out_dir,
-                                 'current_best_aic_model.py'))
-                self.best_model_by_aic.moments_code_to_file(
-                    os.path.join(self.out_dir,
-                                 'current_best_aic_model_moments.py'))
+            if self.out_dir is not None:
+                if not self.is_custom_model or not self.params.moments_scenario:
+                    self.best_model_by_aic.dadi_code_to_file(
+                        os.path.join(self.out_dir,
+                                     'current_best_aic_model_dadi_code.py'))
+                if not self.is_custom_model or self.params.moments_scenario:
+                    self.best_model_by_aic.moments_code_to_file(
+                        os.path.join(self.out_dir,
+                                     'current_best_aic_model_moments_code.py'))
 
     def print_and_draw_best_model(self):
-        if not self.is_custom_model:
-            # print currrent best model
-
+        # print currrent best model
+        if self.out_dir is None:
+            return
+        if not self.is_custom_model or not self.params.moments_scenario:
             self.models[0].dadi_code_to_file(
                 os.path.join(self.out_dir,
-                             'current_best_logLL_model.py'))
+                             'current_best_logLL_model_dadi_code.py'))
+        if not self.is_custom_model or self.params.moments_scenario:
             self.models[0].moments_code_to_file(
                 os.path.join(self.out_dir,
-                             'current_best_logLL_model_moments.py'))
-            if (not self.params.code_iter ==
+                             'current_best_logLL_model_moments_code.py'))
+        if (not self.params.code_iter ==
                     0) and self.cur_iteration % self.params.code_iter == 0:
                 # print best model's code
+            if not self.is_custom_model or not self.params.moments_scenario:
                 self.models[0].dadi_code_to_file(
                     os.path.join(self.out_dir, 'python_code', 'dadi',
                                  'iteration_' + str(self.cur_iteration) + '.py'))
+            if not self.is_custom_model or self.params.moments_scenario:
                 self.models[0].moments_code_to_file(
                     os.path.join(self.out_dir, 'python_code', 'moments',
                                  'iteration_' + str(self.cur_iteration) + '.py'))
 
         # draw its picture every self.params.draw_iter iteration
         if not self.params.draw_iter == 0 and self.cur_iteration % self.params.draw_iter == 0:
-            if not self.params.draw_iter == 0 and self.cur_iteration % self.params.draw_iter == 0:
+            if not self.is_custom_model or self.params.moments_scenario:
                 self.best_model().draw(
                     os.path.join(self.out_dir, 'pictures',
                                  'iteration_' + str(self.cur_iteration) + '.png'),
@@ -545,13 +553,15 @@ class GA(object):
                         -self.models[0].get_fitness_func_value(),
                         self.ll_precision),
                     self.models[0])
-                if not self.params.code_iter == 0 and self.cur_iteration % self.params.code_iter == 0:
-                    self.models[0].dadi_code_to_file(
-                        os.path.join(self.out_dir, 'python_code', 'dadi',
-                                     'iteration_' + str(self.cur_iteration) + '_after_hc.py'))
-                    self.models[0].moments_code_to_file(
-                        os.path.join(self.out_dir, 'python_code', 'moments',
-                                     'iteration_' + str(self.cur_iteration) + '_after_hc.py'))
+                if self.out_dir is not None and (not self.params.code_iter == 0 and self.cur_iteration % self.params.code_iter == 0):
+                    if not self.is_custom_model or not self.params.moments_scenario:
+                        self.models[0].dadi_code_to_file(
+                            os.path.join(self.out_dir, 'python_code', 'dadi',
+                                         'iteration_' + str(self.cur_iteration) + '_after_hc.py'))
+                    if not self.is_custom_model or self.params.moments_scenario:
+                        self.models[0].moments_code_to_file(
+                            os.path.join(self.out_dir, 'python_code', 'moments',
+                                         'iteration_' + str(self.cur_iteration) + '_after_hc.py'))
                 self.check_best_aic()
                 if shared_dict is not None:
                     shared_dict[self.prefix] = (
@@ -621,14 +631,16 @@ class GA(object):
                     copy.deepcopy(self.models[0]), self.best_model_by_aic)
 
             if self.params.code_iter != 0 and self.cur_iteration % self.params.code_iter == 0:
-                self.models[0].dadi_code_to_file(
-                    os.path.join(self.out_dir, 'python_code', 'dadi',
-                                 'iteration_' + str(self.cur_iteration) +
-                                 '_after_local_search.py'))
-                self.models[0].moments_code_to_file(
-                    os.path.join(self.out_dir, 'python_code', 'moments',
-                                 'iteration_' + str(self.cur_iteration) +
-                                 '_after_local_search.py'))
+                if self.out_dir is not None and (not self.is_custom_model or not self.params.moments_scenario):
+                    self.models[0].dadi_code_to_file(
+                        os.path.join(self.out_dir, 'python_code', 'dadi',
+                                     'iteration_' + str(self.cur_iteration) +
+                                     '_after_local_search.py'))
+                if self.out_dir is not None and (not self.is_custom_model or self.params.moments_scenario):
+                    self.models[0].moments_code_to_file(
+                        os.path.join(self.out_dir, 'python_code', 'moments',
+                                     'iteration_' + str(self.cur_iteration) +
+                                     '_after_local_search.py'))
             self.check_best_aic()
 
             support.write_to_file(self.log_file, 'BEST:')
@@ -639,7 +651,7 @@ class GA(object):
                     self.ll_precision),
                 self.models[0])
 
-            if not self.params.draw_iter == 0 and self.cur_iteration % self.params.draw_iter == 0:
+            if self.out_dir is not None and (not self.params.draw_iter == 0 and self.cur_iteration % self.params.draw_iter == 0):
                 self.best_model().draw(
                     os.path.join(self.out_dir, 'pictures',
                                  'iteration_' + str(self.cur_iteration) + '_after_local_search.png'),
@@ -694,18 +706,20 @@ class GA(object):
                 copy.deepcopy(self.models[0]), self.best_model_by_aic)
 
         # final part
-        if not self.params.draw_iter == 0 and self.cur_iteration % self.params.draw_iter == 0:
-            self.best_model().draw(
-                os.path.join(self.out_dir, 'result_model' + '.png'),
-                'Iteration ' + str(self.cur_iteration) + ', logLL: ' +
-                support.float_representation(-self.models[0].get_fitness_func_value(), self.ll_precision))
-        if not self.is_custom_model:
-            self.models[0].dadi_code_to_file(
-                os.path.join(self.out_dir,
-                             'result_model_dadi_code.py'))
-            self.models[0].moments_code_to_file(
-                os.path.join(self.out_dir,
-                             'result_model_moments_code.py'))
+        if self.out_dir is not None:
+            if not self.params.draw_iter == 0 and self.cur_iteration % self.params.draw_iter == 0:
+                self.best_model().draw(
+                    os.path.join(self.out_dir, 'result_model' + '.png'),
+                    'Iteration ' + str(self.cur_iteration) + ', logLL: ' +
+                    support.float_representation(-self.models[0].get_fitness_func_value(), self.ll_precision))
+            if not self.is_custom_model or not self.params.moments_scenario:
+                self.models[0].dadi_code_to_file(
+                    os.path.join(self.out_dir,
+                                 'result_model_dadi_code.py'))
+            if not self.is_custom_model or self.params.moments_scenario:
+                self.models[0].moments_code_to_file(
+                    os.path.join(self.out_dir,
+                                 'result_model_moments_code.py'))
         return self.best_model()
 
     def update_mutation_rate(self, flag):

@@ -1852,13 +1852,6 @@ class Demographic_model:
     def moments_code_to_file(self, filename):
         """Print a python code to the file for a function to run in moments."""
         with open(filename, 'w') as output:
-            pop_to_split_3 = None
-            if self.number_of_populations == 3:
-                for period in reversed(self.periods):
-                    if period.is_split_of_population:
-                        pop_to_split_3 = period.population_to_split
-                        break
-
             output.write('#current best params = ' + str(self.as_vector()) +
                          '\n')
             output.write(
@@ -1870,6 +1863,13 @@ class Demographic_model:
                         '= file_with_model_func", "' + self.params.model_func_file + '")\n')
                 output.write('generated_model = file_with_model_func.model\n')
             else:
+                pop_to_split_3 = None
+                if self.number_of_populations == 3:
+                    for period in reversed(self.periods):
+                        if period.is_split_of_population:
+                            pop_to_split_3 = period.population_to_split
+                            break
+
                 output.write('def generated_model(params, ns):\n')
                 Ns_len = 0
                 Ts_len = 0
@@ -2077,7 +2077,7 @@ class Demographic_model:
                          '\tnref=' +
                          str(int(size_of_first_pop)) +
                          ',\n'
-                         '\tdraw_scale=True,\n'
+                         '\tdraw_scale=' + str(self.params.theta is not None and not self.params.multinom) + ',\n'
                          '\tgen_time=' +
                          str(float(self.params.gen_time) /
                              1000 if self.params.gen_time is not None else 1.0) +
@@ -2183,7 +2183,7 @@ class Demographic_model:
         else:
             model = moments.ModelPlot.generate_model(self.moments_code, [],
                                                  self.params.ns)
-        draw_scale = self.params.theta is not None
+        draw_scale = self.params.theta is not None and not self.params.multinom
         if self.params.gen_time is None or not (self.params.time_units not in [1, 1000]):
             gen_time = 1.0
             units = 'Genetic units'
