@@ -48,7 +48,7 @@ popt = gadma.Inference.optimize_ga(len(p0), data, func, #p0=p0,
                                    p_ids = ['n', 'n', 'n', 'm', 't', 't'],
                                    lower_bound=lower_bound,
                                    upper_bound=upper_bound,
-                                   size_of_population_in_ga=10, 
+                                   size_of_generation_in_ga=10, 
                                    stop_iter=50, 
                                    optimization_name='optimize_powell')
 print('Finished optimization **************************************************')

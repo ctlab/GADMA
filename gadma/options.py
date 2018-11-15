@@ -72,7 +72,7 @@ class Options_storage:
         self.split_2_lim = None
 
         # GA options
-        self.size_of_population = 10
+        self.size_of_generation = 10
         self.fracs = "0.2, 0.3, 0.3"
         self.frac_of_old_models = None
         self.frac_of_mutated_models = None
@@ -188,7 +188,7 @@ class Options_storage:
                 elif identity == 'no migrations':
                     self.no_mig = value.lower() == 'true'
                 elif identity == 'size of population in ga':
-                    self.size_of_population = int(value)
+                    self.size_of_generation = int(value)
                 elif identity == 'fractions in ga':
                     self.fracs = value
                 elif identity == 'mean mutation strength':
@@ -342,7 +342,7 @@ class Options_storage:
                     str(self.split_2_lim),
                     str(self.relative_params),
                     str(self.no_mig),
-                    str(self.size_of_population),
+                    str(self.size_of_generation),
                     comma_sep_repr(self.fracs),
                     str(self.mutation_strength),
                     str(self.const_for_mut_strength),
@@ -599,7 +599,7 @@ class Options_storage:
         if self.split_1_lim is not None and self.split_2_lim is not None and not self.split_1_lim > self.split_2_lim:
             support.error(
                 "Upper bound of first split must be greater than upper bound of second split")
-        if self.size_of_population <= 0:
+        if self.size_of_generation <= 0:
             support.error(
                 "Size of population (Parameters of genetic algorithm) must be positive"
             )
@@ -734,7 +734,7 @@ def test_args():
     options_storage.gen_time = 25
     options_storage.initial_structure = np.array([1])
     options_storage.final_structure = np.array([2])
-    options_storage.size_of_population = 5
+    options_storage.size_of_generation = 5
     options_storage.fracs = [float(x)
                              for x in options_storage.fracs.split(",")]
     options_storage.frac_of_old_models = options_storage.fracs[0]

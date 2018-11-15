@@ -51,7 +51,7 @@ print('Beginning optimization ************************************************')
 popt = gadma.Inference.optimize_ga(len(p0), data, func_ex, pts_l, #p0=p0,
                                    lower_bound=lower_bound,
                                    upper_bound=upper_bound,
-                                   size_of_population_in_ga=10,
+                                   size_of_generation_in_ga=10,
                                    optimization_name='optimize_log')
 print('Finshed optimization **************************************************')
 print('Found parameters: {0}'.format(popt))

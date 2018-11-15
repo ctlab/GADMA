@@ -27,7 +27,7 @@ except ImportError:
 
 def optimize_ga(number_of_params, data, model_func, pts=None, lower_bound=None, upper_bound=None, p0=None,
                  multinom=True, p_ids = None, mutation_strength=0.2, const_for_mut_strength=1.1, mutation_rate=0.2, const_for_mut_rate=1.2,
-                 epsilon=1e-2, stop_iter=100, size_of_population_in_ga=10, frac_of_old_models=0.2, frac_of_mutated_models=0.3, 
+                 epsilon=1e-2, stop_iter=100, size_of_generation_in_ga=10, frac_of_old_models=0.2, frac_of_mutated_models=0.3, 
                  frac_of_crossed_models=0.3, optimization_name='optimize_log'):
     """
     Find optimized params to fit model to data using Genetic Algorithm.
@@ -83,14 +83,14 @@ def optimize_ga(number_of_params, data, model_func, pts=None, lower_bound=None, 
     stop_iter :             Number of iterations for GA stopping: GA stops when 
                             it can't improve model during max_iter iterations.
 
-    size_of_population_in_ga: Number of models in GA.
+    size_of_generation_in_ga: Number of models in one generation of GA.
 
-    frac_of_old_models :    Fraction of models from previous ga population that are taken 
-                            to new population.
+    frac_of_old_models :    Fraction of models from previous ga generation that are taken 
+                            to new generation.
 
-    frac_of_mutated_models: Fraction of mutated models in new population.
+    frac_of_mutated_models: Fraction of mutated models in new generation.
 
-    frac_of_crossed_models: Fraction of crossed models in new population.
+    frac_of_crossed_models: Fraction of crossed models in new generation.
     
     optimization_name:      Name of local optimization that will be run after genetic 
                             algorithm. By default, it is 'optimize_log'. If None then no
@@ -131,7 +131,7 @@ def optimize_ga(number_of_params, data, model_func, pts=None, lower_bound=None, 
     params.const_for_mut_rate = const_for_mut_rate
     params.epsilon = epsilon
     params.stop_iter = stop_iter
-    params.size_of_population_in_ga = size_of_population_in_ga
+    params.size_of_generation = size_of_generation_in_ga
     params.frac_of_old_models = frac_of_old_models
     params.frac_of_mutated_models = frac_of_mutated_models
     params.frac_of_crossed_models = frac_of_crossed_models

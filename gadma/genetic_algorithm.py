@@ -30,7 +30,7 @@ class GA(object):
 
         params :    an object with parameters to work with
             parameters for genetic algorithm:
-            size_of_population :    size of the population of demographic models.
+            size_of_generation :    size of the generation of demographic models.
             frac_of_old_models :    the fraction of models from the previous
                                     population in a new one.
             frac_of_mutated_models :    the fraction of mutated models in a new
@@ -63,14 +63,14 @@ class GA(object):
         self.cur_mutation_strength = self.params.mutation_strength
 
         # helpful parameters
-        self.size_of_population = self.params.size_of_population
+        self.size_of_generation = self.params.size_of_generation
         self.number_of_old_models = int(
-            params.size_of_population * params.frac_of_old_models)
+            params.size_of_generation * params.frac_of_old_models)
         self.number_of_mutated_models = int(
-            params.size_of_population * params.frac_of_mutated_models)
-        self.number_of_crossed_models = int(params.size_of_population * params.
+            params.size_of_generation * params.frac_of_mutated_models)
+        self.number_of_crossed_models = int(params.size_of_generation * params.
                                             frac_of_crossed_models)
-        self.number_of_random_models = params.size_of_population - \
+        self.number_of_random_models = params.size_of_generation - \
             self.number_of_old_models - self.number_of_mutated_models - \
             self.number_of_crossed_models
 
@@ -219,20 +219,20 @@ class GA(object):
             self.restore()
 
         if len(self.models) > 0:
-            for i in xrange(self.params.size_of_population - len(self.models)):
+            for i in xrange(self.params.size_of_generation - len(self.models)):
                 self.models.append(self.get_random_model())
-            if self.params.size_of_population > len(self.models):
-                self.select(self.params.size_of_population)
+            if self.params.size_of_generation > len(self.models):
+                self.select(self.params.size_of_generation)
             return
         # generate random models 5 times more than the population's size
-        for i in xrange(5 * self.size_of_population):
+        for i in xrange(5 * self.size_of_generation):
             self.models.append(self.get_random_model())
 
         # if there was initial model
         if self.one_initial_model is not None:
             self.models.append(self.one_initial_model)
-        # sort by fintess function and select first size_of_population models
-        self.select(self.params.size_of_population)
+        # sort by fintess function and select first size_of_generation models
+        self.select(self.params.size_of_generation)
         self.print_mutation_rate_and_strength()
 
         support.write_to_file(self.log_file,
@@ -476,7 +476,7 @@ class GA(object):
         self.models = new_models
 
         # sort population by fitness function
-        self.select(self.params.size_of_population)
+        self.select(self.params.size_of_generation)
 
         self.print_and_draw_best_model() 
 
@@ -490,7 +490,7 @@ class GA(object):
             for model in new_models:
                 if model.info != 'r':
                     model.normalize_by_Nref()
-            self.select(self.size_of_population, print_iter=False)
+            self.select(self.size_of_generation, print_iter=False)
 
         # update our adaptive mutation_rate and print it to log file
         self.update_mutation_rate_and_strength(prev_value_of_fit)
@@ -656,7 +656,7 @@ class GA(object):
             for model in self.models:
                 index = model.increase_complexity(index)
             self.without_changes = 0
-            self.select(self.size_of_population, print_iter=False)
+            self.select(self.size_of_generation, print_iter=False)
             self.cur_mutation_rate = self.params.mutation_rate
             self.cur_mutation_strength = self.params.mutation_strength
 
