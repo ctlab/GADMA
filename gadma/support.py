@@ -71,9 +71,9 @@ def check_comma_sep_list(l_str, is_int=True):
             return np.array([x.strip().lower() for x in l_str.split(',')])
     except:
         if is_int:
-            error("can't read comma-separated list of ints: " + l_str)
+            error("can't read comma-separated list of ints: " + str(l_str))
         else:
-            error("can't read comma-separated list: " + l_str)
+            error("can't read comma-separated list: " + str(l_str))
 
 
 

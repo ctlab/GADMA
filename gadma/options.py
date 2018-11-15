@@ -236,7 +236,7 @@ class Options_storage:
                     self.split_2_lim = float(
                         value) if value.lower() != 'none' else None
                 elif identity == 'name of local optimization':
-                    self.optimize_name = value
+                    self.optimize_name = value if value.lower() != 'none' else None
                     names = [
                         'optimize',
                         'optimize_log',
@@ -519,11 +519,7 @@ class Options_storage:
         if self.model_func_file is not None:
             if self.p_ids is not None:
                 self.p_ids = support.check_comma_sep_list(self.p_ids, is_int=False)
-            else:
-                if self.lower_bound is None or self.upper_bound is None:
-                    support.error(
-                            "Either parameters identificators or lower and upper bounds should be specified.")
-
+                
         self.fracs = [float(x) for x in self.fracs.split(",")]
         if len(self.fracs) != 3:
             support.error(
@@ -531,16 +527,6 @@ class Options_storage:
         self.frac_of_old_models = self.fracs[0]
         self.frac_of_mutated_models = self.fracs[1]
         self.frac_of_crossed_models = self.fracs[2]
-
-        if (self.frac_of_old_models +
-                self.frac_of_crossed_models +
-                self.frac_of_mutated_models) > 1:
-            support.error(
-                "Sum of Fractions (Parameters of genetic algorithm) must be less than or equal to 1")
-        if (self.frac_of_old_models +
-                self.frac_of_crossed_models +
-                self.frac_of_mutated_models) == 1:
-            support.warning("Fraction of random models is 0")
 
         if self.moments_scenario and self.dadi_pts is not None:
             support.warning(
@@ -552,6 +538,26 @@ class Options_storage:
             self.dadi_pts = support.check_comma_sep_list(self.dadi_pts)
 
         self.put_default_structures()
+
+        self.final_check()
+
+    def final_check(self):
+        if self.model_func_file is not None and self.model_func_file is None:
+            if self.lower_bound is None or self.upper_bound is None:
+                support.error(
+                        "Either parameters identificators or lower and upper bounds should be specified.")
+
+
+        if (self.frac_of_old_models +
+                self.frac_of_crossed_models +
+                self.frac_of_mutated_models) > 1:
+            support.error(
+                "Sum of Fractions (Parameters of genetic algorithm) must be less than or equal to 1")
+        if (self.frac_of_old_models +
+                self.frac_of_crossed_models +
+                self.frac_of_mutated_models) == 1:
+            support.warning("Fraction of random models is 0")
+
 
         # check lengths of bounds and p_ids
         if self.model_func_file is not None:
@@ -613,12 +619,12 @@ class Options_storage:
             support.error(
                 "Const for adaptive mutation strength (Parameters of genetic algorithm) must be between 1 and 2"
             )
-
-        for n in self.dadi_pts:
-            if n < 0:
-                support.error('elements in comma-separated list ' +
-                              ','.join(str(x) for x in self.dadi_pts) +
-                              ' must be positive (Pts parameter)')
+        if self.dadi_pts is not None:
+            for n in self.dadi_pts:
+                if n < 0:
+                    support.error('elements in comma-separated list ' +
+                                  ','.join(str(x) for x in self.dadi_pts) +
+                                  ' must be positive (Pts parameter)')
         if self.repeats <= 0:
             support.error("Repeats (Parameters of pipeline) must be positive")
         if self.processes <= 0:
@@ -639,8 +645,9 @@ class Options_storage:
             try:
                 import moments
             except:
-                support.error(
-                    "To use Powell optimization you need moments installed.")
+                support.warning(
+                    "To use Powell optimization one need moments installed. BFGS (optimize_log) will be used instead.")
+                self.optimize_name = 'optimize_log'
         if not self.draw_iter == 0:
             packages = []
             try:

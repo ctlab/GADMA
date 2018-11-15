@@ -28,7 +28,7 @@ except ImportError:
 def optimize_ga(number_of_params, data, model_func, pts=None, lower_bound=None, upper_bound=None, p0=None,
                  multinom=True, p_ids = None, mutation_strength=0.2, const_for_mut_strength=1.1, mutation_rate=0.2, const_for_mut_rate=1.2,
                  epsilon=1e-2, stop_iter=100, size_of_population_in_ga=10, frac_of_old_models=0.2, frac_of_mutated_models=0.3, 
-                 frac_of_crossed_models=0.3):
+                 frac_of_crossed_models=0.3, optimization_name='optimize_log'):
     """
     Find optimized params to fit model to data using Genetic Algorithm.
     
@@ -92,6 +92,9 @@ def optimize_ga(number_of_params, data, model_func, pts=None, lower_bound=None, 
 
     frac_of_crossed_models: Fraction of crossed models in new population.
     
+    optimization_name:      Name of local optimization that will be run after genetic 
+                            algorithm. By default, it is 'optimize_log'. If None then no
+                            local optimization is run.
     """
     
     params = options.Options_storage()
@@ -104,6 +107,7 @@ def optimize_ga(number_of_params, data, model_func, pts=None, lower_bound=None, 
     params.lower_bound = lower_bound
     params.upper_bound = upper_bound
     params.multinom = multinom or p_ids is None
+    params.optimize_name = optimization_name
     
     #create normalize funcs
     if p_ids is None:
@@ -131,6 +135,8 @@ def optimize_ga(number_of_params, data, model_func, pts=None, lower_bound=None, 
     params.frac_of_old_models = frac_of_old_models
     params.frac_of_mutated_models = frac_of_mutated_models
     params.frac_of_crossed_models = frac_of_crossed_models
+
+    params.final_check()
     
     ga_instance = GA(params, one_initial_model=Demographic_model(params, initial_vector=p0))
     best_model = ga_instance.run()

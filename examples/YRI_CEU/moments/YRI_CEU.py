@@ -16,7 +16,7 @@ ns = data.sample_sizes
 # mostly as examples. We could use one of those.
 func = moments.Demographics2D.split_mig
 # Instead, we'll work with our custom model
-func = demographic_models.prior_onegrow_mig
+func = demographic_models.model
 
 # Now let's optimize parameters for this model.
 
@@ -45,15 +45,12 @@ p0 = moments.Misc.perturb_params(p0, fold=1, upper_bound=upper_bound,
 # For more information: help(gadma.Inference.optimize_ga)
 print('Beginning optimization ************************************************')
 popt = gadma.Inference.optimize_ga(len(p0), data, func, #p0=p0,
+                                   p_ids = ['n', 'n', 'n', 'm', 't', 't'],
                                    lower_bound=lower_bound,
                                    upper_bound=upper_bound,
                                    size_of_population_in_ga=10, 
-                                   stop_iter=50)
-# after genetic we can run local optimization
-popt = moments.Inference.optimize_powell(popt, data, func,
-                                   lower_bound=lower_bound,
-                                   upper_bound=upper_bound,
-                                   verbose=len(p0), maxiter=100)
+                                   stop_iter=50, 
+                                   optimization_name='optimize_powell')
 print('Finished optimization **************************************************')
 print('Found parameters: {0}'.format(popt))
 
