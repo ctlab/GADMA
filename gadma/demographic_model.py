@@ -1371,6 +1371,15 @@ class Demographic_model:
             for i, x in enumerate(other.popt):
                 if take_from_other[i]:
                     child.popt[i] = x
+                if i != self.popt_len - 1:
+                    low_bound = self.lower_bound[i]
+                    upp_bound = self.upper_bound[i]
+                    if not self.params.multinom:
+                        Nref = self.get_N_A()
+                        low_bound = self.normalize_param_by_Nref(low_bound, Nref, self.params.p_ids[i])
+                        upp_bound = self.normalize_param_by_Nref(upp_bound, Nref, self.params.p_ids[i])
+                    child.popt[i] = max(low_bound, child.popt[i])
+                    child.popt[i] = min(upp_bound, child.popt[i])
         else:
             cur_ind = 0
             N_A = child.get_N_A()
@@ -2204,10 +2213,13 @@ class Demographic_model:
 
     def draw(self, filename, title):
         """Draw big picture of the model and data."""
-        import moments
-        import matplotlib
-        import matplotlib.pyplot as plt
-        import PIL
+        try:
+            import moments
+            import matplotlib
+            import matplotlib.pyplot as plt
+            import PIL
+        except ImportError:
+            return
         import warnings
         warnings.filterwarnings(
             'ignore', category=matplotlib.cbook.MatplotlibDeprecationWarning)
