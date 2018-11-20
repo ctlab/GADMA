@@ -1242,9 +1242,9 @@ class Demographic_model:
         s = ''
         if self.is_custom_model:
             if self.params.multinom:
-                s = '[' +', '.join(["%10.3f" % x for x in self.popt]) + ']'
+                s = '[' +', '.join([float_representation(x, 3) for x in self.popt]) + ']'
             else:
-                s = '[' +', '.join(["%10.3f" % x for x in self.popt[:-1]]) + ']'
+                s = '[' +', '.join([float_representation(x, 3) for x in self.popt[:-1]]) + ']'
         else:
             for period in self.periods:
                 s += str(period)
@@ -2316,38 +2316,38 @@ def _expon_growth_func_str(before, after, time):
 
 
 # Functions for float representations
-def float_representation(f):
+def float_representation(f, prec=2):
     if f is None:
         return str(None)
     if f == 0:
         return '0.0'
-    s = '%.2f' % f
-    if s == '0.00':
-        return migration_representation(f)
+    s = ('%.' + str(prec) + 'f') % f
+    if s == ('%.' + str(prec) + 'f') % (0.0):
+        return migration_representation(f, prec)
     return s
 
 
-def migration_representation(m):
+def migration_representation(m, prec=2):
     if m is None:
         return str(None)
-    return '%.2e' % m
+    return ('%.' + str(prec) + 'e') % m
 
 
-def list_float_representation(l):
+def list_float_representation(l, prec=2):
     s = '['
     for x in l:
-        s += float_representation(x) + ', '
+        s += float_representation(x, prec) + ', '
     s = s[:-2]
     s += ']'
     return s
 
 
-def migr_float_representation(m):
+def migr_float_representation(m, prec=2):
     s = '['
     for x in m:
         s += '['
         for y in x:
-            s += migration_representation(y) + ', '
+            s += migration_representation(y, prec) + ', '
         s = s[:-2]
         s += ']'
     s += ']'
