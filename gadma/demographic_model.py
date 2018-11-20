@@ -1242,9 +1242,9 @@ class Demographic_model:
         s = ''
         if self.is_custom_model:
             if self.params.multinom:
-                s = '[' +', '.join([float_representation(x, 3) for x in self.popt]) + ']'
+                s = '[' +', '.join(['%14s' % float_representation(x, 3) for x in self.popt]) + ']'
             else:
-                s = '[' +', '.join([float_representation(x, 3) for x in self.popt[:-1]]) + ']'
+                s = '[' +', '.join(['%14s' % float_representation(x, 3) for x in self.popt[:-1]]) + ']'
         else:
             for period in self.periods:
                 s += str(period)
