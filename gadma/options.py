@@ -474,7 +474,7 @@ class Options_storage:
         self.input_file = support.check_file_existence(self.input_file)
         ext = "." + os.path.splitext(self.input_file)[1][1:]
         if ext not in READ_ALLOWED_EXTENSIONS.keys():
-            parser.error(
+            support.error(
                 "File " +
                 self.input_file +
                 " doesn't end with one of {}". format(ALLOWED_READS_EXTENSIONS))
