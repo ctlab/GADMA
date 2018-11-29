@@ -16,6 +16,7 @@ from operator import itemgetter
 import ast
 from gadma.version import __version__
 import imp 
+import pkgutil
 
 
 READ_ALLOWED_EXTENSIONS = {
@@ -572,7 +573,7 @@ class Options_storage:
         if (self.frac_of_old_models +
                 self.frac_of_crossed_models +
                 self.frac_of_mutated_models) == 1:
-            support.warning("Fraction of random models is 0")
+            support.warning("Faction of random models is 0")
 
 
         # check lengths of bounds and p_ids
@@ -658,42 +659,36 @@ class Options_storage:
             self.split_1_lim = None
 
         if self.moments_scenario:
-            if not 'moments' in sys.modules:
+            if pkgutil.find_loader('moments') is None:
                 if self.model_func_file is not None:
                     support.error("moments is not installed. You tried to use custom model and moments.")
-                if 'dadi' in sys.modules:
+                if pkgutil.find_loader('dadi') is not None:
                     options_storage.moments_scenario = False
                     support.warning("moments is not installed, dadi with " + str(self.dadi_pts) +"grid size will be used instead.")
                 else:
                     support.error("None of the dadi or the moments are installed.")
         else:
-            if not 'dadi' in sys.modules:
+            if pkgutil.find_loader('dadi') is None:
                 if self.model_func_file is not None:
                     support.error("dadi is not installed. You tried to use custom model and moments.")
-                if 'moments' in sys.modules:
+                if pkgutil.find_loader('moments') is not None:
                     options_storage.moments_scenario = True
                     support.warning("dadi is not installed, moments will be used instead.")
                 else:
                     support.error("None of the dadi or the moments are installed.")
 
-        if self.optimize_name == 'optimize_powell' and not self.moments_scenario:
-            if not 'moments' in sys.modules:
-                support.warning(
-                    "To use Powell optimization one need moments installed. BFGS (optimize_log) will be used instead.")
-                self.optimize_name = 'optimize_log'
-
         packages = []
-        self.matplotlib_available = 'matplotlib' in sys.modules
+        self.matplotlib_available = pkgutil.find_loader('matplotlib') is not None
         if not self.matplotlib_available:
             packages.append('matplotlib')
         
         # If custom model and dadi is used we can ignore PIL absence
         if self.model_func_file is None or self.moments_scenario:
-            self.pil_available = 'PIL' in sys.modules
+            self.pil_available = pkgutil.find_loader('PIL') is not None
             if not self.pil_available:
                 packages.append('Pillow')
         
-        self.moments_available = 'moments' in sys.modules
+        self.moments_available = pkgutil.find_loader('moments') is not None
         if not self.moments_available:
             packages.append('moments')
             
@@ -708,6 +703,13 @@ class Options_storage:
             support.warning(
                 "To draw models plots you should install: " +
                 ', '.join(packages))
+
+        if self.optimize_name == 'optimize_powell' and not self.moments_scenario:
+            if not self.moments_available:
+                support.warning(
+                    "To use Powell optimization one need moments installed. BFGS (optimize_log) will be used instead.")
+                self.optimize_name = 'optimize_log'
+
 
         if self.distribution != 'normal' and self.distribution != 'uniform':
             support.error(
