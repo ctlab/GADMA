@@ -191,6 +191,10 @@ class GA(object):
                 # when we don't print final result
                 self.select(size)
                 return
+            if iter_out[-1].startswith('Try to improve'):
+                # when we don't print final result too
+                self.select(size)
+                return
             if iter_out[-1].startswith('BEST'):
                 # remove string with BEST
                 iter_out.pop()
@@ -427,7 +431,7 @@ class GA(object):
 
         # draw its picture every self.params.draw_iter iteration
         if not self.params.draw_iter == 0 and self.cur_iteration % self.params.draw_iter == 0:
-            if not self.is_custom_model or self.params.moments_scenario:
+            if self.params.matplotlib_available:
                 self.best_model().draw(
                     os.path.join(self.out_dir, 'pictures',
                                  'iteration_' + str(self.cur_iteration) + '.png'),
@@ -617,7 +621,7 @@ class GA(object):
                 self.params.optimize_name +
                 ')')
             if self.params.optimize_name != 'hill_climbing':
-                if not self.is_custom_model:
+                if not self.out_dir is not None:
                     self.models[0].run_local_search(self.params.optimize_name, os.path.join(
                         self.out_dir, self.params.optimize_name + '_' + str(self.cur_iteration) + '_out'))
                 else:
@@ -651,15 +655,16 @@ class GA(object):
                     self.ll_precision),
                 self.models[0])
 
-            if self.out_dir is not None and (not self.params.draw_iter == 0 and self.cur_iteration % self.params.draw_iter == 0):
-                self.best_model().draw(
-                    os.path.join(self.out_dir, 'pictures',
-                                 'iteration_' + str(self.cur_iteration) + '_after_local_search.png'),
-                    'Iteration ' + str(self.cur_iteration) + '(LS), logLL: ' +
-                    support.float_representation(-self.best_model().get_fitness_func_value(),
-                                                 self.ll_precision) + ', AIC: ' +
-                    support.float_representation(self.best_model().get_aic_score(),
-                                                 self.ll_precision))
+            if self.out_dir is not None and self.params.matplotlib_available:
+                if (not self.params.draw_iter == 0 and self.cur_iteration % self.params.draw_iter == 0):
+                    self.best_model().draw(
+                        os.path.join(self.out_dir, 'pictures',
+                                     'iteration_' + str(self.cur_iteration) + '_after_local_search.png'),
+                        'Iteration ' + str(self.cur_iteration) + '(LS), logLL: ' +
+                        support.float_representation(-self.best_model().get_fitness_func_value(),
+                                                     self.ll_precision) + ', AIC: ' +
+                        support.float_representation(self.best_model().get_aic_score(),
+                                                     self.ll_precision))
 
         def increase_models_complexity():
             support.write_to_file(self.log_file,
@@ -706,7 +711,7 @@ class GA(object):
                 copy.deepcopy(self.models[0]), self.best_model_by_aic)
 
         # final part
-        if self.out_dir is not None:
+        if self.out_dir is not None and self.params.matplotlib_available:
             if not self.params.draw_iter == 0 and self.cur_iteration % self.params.draw_iter == 0:
                 self.best_model().draw(
                     os.path.join(self.out_dir, 'result_model' + '.png'),

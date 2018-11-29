@@ -26,7 +26,7 @@ captionpos=b,
 %belowskip=0pt
 }
 
-\usepackage[toc,page]{appendix}
+\usepackage[title]{appendix}
 
 \begin{document}
 
@@ -45,10 +45,14 @@ GADMA is based on two open source packages: \dadi developed by Ryan Gutenkunst [
 In contrast, GADMA is a command-line tool. It presents a series of launches of the genetic algorithm and infers demographic history from the Allele Frequency Spectrum of multiple populations (up to three).
 
 \subsection{Getting help}
-If you have any problems, please don't hesitate to contact me by email:
-ekaterina.e.noskova@gmail.com. I will be glad to answer your questions. 
+If you have any problems or questions, please don't hesitate to contact me by email:\\ \textbf{ekaterina.e.noskova@gmail.com}. I will be glad to answer your questions. 
+
+\section{Parameter file}
+
+A parameter file is a simple text file (created in a text editor, such as Notepad), which contains a list of parameters and variables with their assigned values. Create a parameter file that reflect your particular parameters. Hereinafter, as an example, the name of your parameter file will be defined as \py{param_file}.
 
 \section{Hands on}
+
 \paragraph{Test case}\mbox{}\\
 GADMA has a test case for a simple demographic model for one population: just a constant size of $10000$ individuals in population. To run a test case:
 
@@ -57,7 +61,7 @@ $ gadma --test
 \end{lstlisting}
 
 \paragraph{Example 2}\mbox{}\\
-Suppose we have SNP data for two populations. Data is in \dadi's SNP file format in the \py{snp_data.txt}. Suppose we want To get all output in some \py{gadma_output} directory:
+Suppose we have SNP data for two populations. Data is in \dadi's SNP file format in the \py{snp_data.txt}. Suppose we want to get all output in some \py{gadma_output} directory:
 
 
 \begin{lstlisting}
@@ -66,35 +70,33 @@ $ gadma -i snp_data.txt -o gadma_output
 
 
 \paragraph{Example 3}\mbox{}\\
-We didn't specify AFS size or labels for populations, they are taken automaticaly from the input file. We can see parameters file of our run in the \py{gadma_output/params} file. We see that there are 
+We didn't specify AFS size or labels for populations, they are taken automatically from the input file. We can see a parameter file of our run in the \py{gadma_output/param_file}. 
 \begin{lstlisting}
-# gadma_output/params
+# gadma_output/param_file
 ...
 Population labels : pop_name_1, pop_name_2
 Projections: 18, 20
 ...
 \end{lstlisting}
-But we know that spectrum should be $20 \times 20$! To specify size of AFS we need to create parameters file and set \py{Projections}:
+But we know that spectrum should be $20 \times 20$! To specify size of AFS we need to create a parameter file and set \py{Projections}:
 
 \begin{lstlisting}
-# params_file
+# param_file
 Projections : 20,20
 \end{lstlisting}
-
-Also we can change order of populations. We should add: (Order of populations can be changed as:)
+Order of populations can be changed as:
 \begin{lstlisting}
-# params_file
+# param_file
 Projections : 20,20
 Population labels : pop_name_2, pop_name_1
 \end{lstlisting}
 
-If we want to rename populations, we should change names in \py{snp_data.txt} file.
+If we want to rename populations, we should change names on \py{snp_data.txt} file.
 
-Now assume we want to get the simplest demographic model that we can as faster as we can. We will tell GADMA that we don't need no other dynamics of population sizes except sudden (constant) population size change and that we want to use \moments library.
+Now assume we want to get the simplest demographic model as fast as we can. We will tell GADMA that we need no other dynamics of population sizes except sudden (constant) population size change and that we want to use \moments library.
 
-We add corresponding string to parameters file and now it looks like:
 \begin{lstlisting}
-# params_file
+# param_file
 Projections : 20,20
 Population labels : pop_name_2, pop_name_1
 Only sudden : True
@@ -107,46 +109,46 @@ $ gadma -i snp_data.txt -o gadma_output -p params_file
 \end{lstlisting}
 
 \paragraph{Example 4}\mbox{}\\
-Consider some AFS file \py{fs_data.fs}. There is spectrum for three populations: YRI, CEU, CHB. However axes are mixed up: CHB, YRI, CEU. To run GADMA we should order them from most ancient to last formed:
+Consider some AFS file \py{fs_data.fs}. There is a spectrum for three populations: YRI, CEU, CHB. However axes are mixed up: CHB, YRI, CEU. To run GADMA we should order them from most ancient to most recent:
 \begin{lstlisting}
-# params_file
+# param_file
 Population labels : YRI, CEU, CHB
 \end{lstlisting}
 
-We want to allow exponential growth (it is default behaviour) and have some extra change in size of the ancient population. To do so we should specify \py{Initial structure}. It is list of three numbers: first --- number of time intervals before first split (we want here 2); second --- number of time periods betseen forst and second split events (at least 1); third --- number of time periods after second split.
+We want to allow exponential growth (it is the default behaviour) and have some extra changes in size of the ancient population. To do so we should specify \py{Initial structure}. It is list of three numbers: first --- number of time intervals before first split (we want here 2); second --- number of time periods between first and second split events (at least 1); third --- number of time periods after second split.
 
 \begin{lstlisting}
-# params_file
+# param_file
 Population labels : YRI, CEU, CHB
 Initial structure : 2,1,1
 \end{lstlisting}
 
-Also we can put information about input file and output directory to our parameters file:
+Also we can put information about input file and output directory to our parameter file:
 \begin{lstlisting}
-# params_file
+# param_file
 Input file : fs_data.fs
 Output directory : gadma_output
 Population labels : YRI, CEU, CHB
 Initial structure : 2,1,1
 \end{lstlisting}
 
-Now we can run GADMA the following way:
+Now we can run GADMA in the following way:
 \begin{lstlisting}
 $ gadma -p params
 \end{lstlisting}
 
 \paragraph{Example 5}\mbox{}\\
-We have our GADMA launch interrupted for some reason. We want to resume it:
+We have our GADMA launch interrupted for some reasons. We want to resume it:
 \begin{lstlisting}
 $ gadma --resume gadma_output
 \end{lstlisting}
 where \py{gadma_output} is output directory of previous run. We can find resumed run in \py{gadma_output_resumed}
 
 \paragraph{Example 6}\mbox{}\\
-Our launch was finished, we used \dadi with default grid size which GADMA determines automatically if it is not specify by user. We found out that it would be better to find some models using greater number of grid points in \dadi scheme, but we want to take final models from previous run:
+Our launch was finished, we used \dadi with a default grid size which GADMA determines automatically if it is not specified by user. We found out that it would be better to find some models using greater number of grid points in \dadi scheme, but we want to take final models from previous run:
 
 \begin{lstlisting}
-# params_file
+# param_file
 Pts : 40, 50, 60 #Greater value of grid size than it was
 \end{lstlisting}
 
@@ -159,19 +161,77 @@ $ gadma --resume gadma_output --only_models -p params
 
 There is another way to do the same:
 \begin{lstlisting}
-# params_file
+# param_file
 Resume from : gadma_output
 Only models : True
 Pts : 40, 50, 60 #Greater value of grid size than it was
 \end{lstlisting}
 
-And run GADMA the following way:
+And run GADMA in the following way:
 \begin{lstlisting}
 $ gadma -p params
 \end{lstlisting}
 
+\paragraph{Example 7}\mbox{}\\
+We can add a custom model using a parameter \py{Custom filename} in the parameter file:
+
+\begin{lstlisting}
+# param_file
+Custom filename : YRI_CEU_demographic_model.py
+\end{lstlisting}
+
+Our custom file needы to contain a function with a fixed name \py{model_func} (see Appendix A). For example:
+
+\begin{lstlisting}
+# YRI_CEU_demographic_model.py
+def model_func((nu1F, nu2B, nu2F, m, Tp, T), (n1,n2), pts)
+    xx = yy = dadi.Numerics.default_grid(pts)
+
+    phi = dadi.PhiManip.phi_1D(xx)
+    phi = dadi.Integration.one_pop(phi, xx, Tp, nu=nu1F)
+
+    phi = dadi.PhiManip.phi_1D_to_2D(xx, phi)
+    nu2_func = lambda t: nu2B*(nu2F/nu2B)**(t/T)
+    phi = dadi.Integration.two_pops(phi, xx, T, nu1=nu1F, 
+                                    nu2=nu2_func, m12=m, m21=m)
+
+    sfs = dadi.Spectrum.from_phi(phi, (n1,n2), (xx,yy))
+    return sfs
+\end{lstlisting}
+
+In addition, we can easily specify values for lower and upper bounds through a parameter file. Let's set lower and upper bounds for the model we defined above:
+
+\begin{lstlisting}
+# param_file
+Lower bounds : [1e-2, 1e-2, 1e-2, 0, 0, 0]
+Upper bounds : [100, 100, 100, 10, 3, 3]
+\end{lstlisting}
+
+\paragraph{Example 8}\mbox{}\\
+Also, we can get the values of lower/upper bounds, both, or none of them in the parameter file automatically. For this, each identifier in the parameter file must be declared through a parameter \py{Parameter identifiers}. Below is an identifier list:
+
+\begin{lstlisting}
+# param_file
+#   An identifier list:
+#   T - time
+#   N - size of population
+#   m - migration
+#   s - split event, proportion in which population size
+#   is divided to form two new populations.
+\end{lstlisting}
+
+For example, we set a lower bound for the model we defined above (see Example 7) and we want to get an upper bound automatically.
+
+\begin{lstlisting}
+# param_file
+Lower bound : [1e-2, 1e-2, 1e-2, 0, 0, 0]
+Upper bound : None
+
+Parameter identifiers : ['n', 'n', 'n', 'm', 't', 't']
+\end{lstlisting}
+
 \paragraph{Example YRI, CEU}\mbox{}\\
-GADMA has example of full parameters file \py{example_params}, which is preseted here too \hyperref[sec:example-params]{at the end of the manual}. To run GADMA with this parameters one should just run from the GADMA's home directory:
+GADMA has an example of the parameter file \py{example_params} that is presented \hyperref[sec:example-params]{at the end of the manual}. To run GADMA with this parameters one should just run from the GADMA's home directory:
 \begin{lstlisting}
 $ gadma -p example_params
 \end{lstlisting}
@@ -179,15 +239,12 @@ $ gadma -p example_params
 
 \section{Input data}
 
-GADMA handles two formats of input files:
+GADMA supports several types of input data, which are familiar to anyone who has used \dadi or \moments in the past:
 \begin{itemize}
     \item Frequency spectrum file format (.fs or .sfs),
     \item SNP data format (.txt).
 \end{itemize}
-
-These data formats should be familiar to one who was used \dadi or \moments.
-
-Input file can be specified to GADMA with two ways:
+Input file can be specified to GADMA in two ways:
 
 \begin{enumerate}
     \item Through command-line option \py{-i/--input}:
@@ -198,41 +255,40 @@ Input file can be specified to GADMA with two ways:
 \begin{lstlisting}
   $ gadma --input snp_file.txt -o out_dir
 \end{lstlisting}
-    \item In parameters file \py{params_file}:
+    \item Use a parameter \py{Input file} in the parameter file:
     
-    \begin{lstlisting}
-    # params_file
+  \begin{lstlisting}
+  # param_file
     
-    # Input file path
-    Input file : fs_file.fs 
-    ...
-    \end{lstlisting}
+  # Input file path
+  Input file : fs_file.fs 
+  ...
+  \end{lstlisting}
+\end{enumerate}    
+Extra information about input AFS can also be put in the parameter file. For example, AFS can be projected to a smaller size with \py{Projections} option, populations can be named or their order can be changed with \py{Population labels} option. If parameter file does not contain some options, they are automatically pulled out from the input file.
     
-    Extra information about input AFS can also be put in parameters file. For example, AFS can be projected to smaller size with \py{Projections} option, populations can be named or their order can be changed with \py{Population labels} option. If parameters file does not contain some options, they are automaticaly pulled out from the input file.
-    
-    \begin{lstlisting}
-    # params_file
-    
-    # Input file path
-    Input file : fs_file.fs
-    
-    # (New) size of the AFS
-    Projections : 20,20
-    
-    # Labels of populations
-    Population labels : CEU, YRI
-    ...
-    \end{lstlisting}
-    
-GADMA can be launched with parameters file the following way:
 \begin{lstlisting}
-    $ gadma -p params_file -o out_dir
+# param_file
+    
+# Input file path
+Input file : fs_file.fs
+    
+# (New) size of the AFS
+Projections : 20,20
+    
+# Labels of populations
+Population labels : CEU, YRI
+...
+\end{lstlisting}
+GADMA can be launched with a parameter file in the following way:
+\begin{lstlisting}
+$ gadma -p params_file -o out_dir
 \end{lstlisting}
 
-\end{enumerate}
+
 
 \subsection{VCF data format}
-If one have .vcf file, it can be converted it into .sfs file using \url{https://github.com/isaacovercast/easySFS}.
+To convert a VCF (.vcf) file into a SFS (.sfs) file use \url{https://github.com/isaacovercast/easySFS}.
 
 \subsection{Frequency spectrum file format}
 
@@ -282,13 +338,15 @@ Then follows an arbitrary number of columns which will be concatenated with \py{
 
 The \py{Allele1} and \py{Allele2} headers must be exactly those values because the number of columns between those two is used to infer the number of populations in the file.
 
-\section{Specifying scheme}
-GADMA use either \dadi or \moments to simulate expected AFS from the demographic model. By default \dadi is used. To use \dadi it is recommended to check value of the \py{Pts} option in parameters file. \py{Pts} is sequence of three numbers, each of which is equal to the number of points in grid size. The greater numbers are, the more accurate \dadi numerical solution of partial differential equation is, however, it would take more time. By default, GADMA takes \py{Pts : n, n + 10, n + 20}, where \py{n} --- is the maximum sample size among populations of interest. 
+~\
+\section{Specifying a scheme}
 
-\moments library does not need \py{Pts} to be specified. To change \dadi to \moments scheme, specify option in parameters file:
+GADMA uses either \dadi or \moments to simulate expected AFS from the demographic model. \dadi is used by default. To use \dadi it is recommended to check the value of the \py{Pts} option in the \py{params_file}. \py{Pts} is sequence of three numbers, each of which is equal to the number of points in grid size. The greater the numbers are, the more accurate \dadi numerical solution of partial differential equation is. However, finding such a solution take more time. By default, GADMA takes \py{Pts : n, n + 10, n + 20}, where \py{n} — is the largest sample size among populations of interest. 
+
+\moments library does not need \py{Pts} to be specified. To change \dadi to \moments scheme, specify option in the parameters file:
 
 \begin{lstlisting}
-# params file
+# param file
 ...
 Use moments or dadi : moments
 ...
@@ -305,25 +363,25 @@ Use moments or dadi : moments
   \caption{Three main demographic dynamics of population size change.}
   \label{fig:laws_of_size_change}
 \end{figure}
-In GADMA size of population can be changed due to one of three dynamics: sudden change, linear change and exponential change of the effective population size (Figure~\ref{fig:laws_of_size_change}). 
+In GADMA the size of population can be changed due to one of three dynamics: sudden change, linear change and exponential change of the effective population size (Figure~\ref{fig:laws_of_size_change}). 
 
-In order to infer demographic model with sudden changes of populations sizes only, option \py{Only sudden} in parameters file should be set to \py{True}:
+In order to infer a demographic model with sudden changes of populations sizes only, option \py{Only sudden} in the parameters file should be set to \py{True}:
 
 \begin{lstlisting}
-    # params_file
-    ...
-    Only sudden : True
-    ...
+# param_file
+...
+Only sudden : True
+...
 \end{lstlisting}
 By default, this option is set to \py{False} and dynamics are found like other parameters of the demographic model.
 
-\subsection{Specifying structure of the model}
+\subsection{Specifying the structure of the model}
 
-GADMA infers a demographic model from an AFS with nothing required from the user, except simple information, that determines how much the detailed model is required --- the \textbf{structure of the model}.
+GADMA infers a demographic model from an AFS with nothing required from the user, except simple information, that determines how much the detailed model is required --- \textbf{the structure of the model}.
 
-Assume a division of one population into two new subpopulations and fixed temporal order of the populations: from the ancient to the most recently formed population. 
+Assume a division of one population into two new subpopulations and a fixed temporal order of the populations: from the most anciently to the most recently formed population. 
 
-We can divide time of our model into splits events and time intervals, during which a certain dynamics of change of effective size is maintained for each population and migration rates are constant. The number of split events is one less than the number of populations under consideration. Now we can define the concept of the structure of the demographic model:
+We can divide time of our model into split events and time intervals, during which a certain dynamics of change of effective size is maintained for each population and migration rates are constant. The number of split events is one less than the number of populations under consideration. Now we can define the concept of the structure of the demographic model:
 
 \textbf{Structure of the demographic model is}:
 \begin{itemize}
@@ -335,62 +393,61 @@ We can divide time of our model into splits events and time intervals, during wh
 \begin{figure}[b!]
   \centering
   \includegraphics[width=0.7\linewidth]{dem_model_col.eps}
-  \caption{Example of representation of demographic model. Time is on the axis of abscissa and population size is on the axis of ordinates. The structure of that model is (2,1,1). Here colors are just a formality and are used for highlighting different demographic dynamics.}
+  \caption{Example of representation of demographic model. Time is on the axis of abscissa and population size is on the axis of ordinates. The structure of that model is (2,1,1). The colours reflect different demographic dynamics.}
   \label{fig:exaple_of_model_plot}
 \end{figure}
 
-For example, we can divide time of the model on the Figure~\ref{fig:exaple_of_model_plot} to 4 time intervals: $T_1$, $T_2$, $T_3$ and $T_4$, and two populations' splits: $S_1$ and $S_2$. The structure of this model is $2,1,1$, because two intervals ($T_1$ as $T_2$) before first split $S_1$, one interval ($T_3$) between first and second splits and one interval ($T_4$) after second split $S_2$.
+For example, we can divide into time of the model on the Figure~\ref{fig:exaple_of_model_plot} to four time intervals: $T_1$, $T_2$, $T_3$ and $T_4$, and two populations' splits: $S_1$ and $S_2$. The structure of this model is $2,1,1$, because two intervals ($T_1$ as $T_2$) before first split $S_1$, one interval ($T_3$) between first and second splits and one interval ($T_4$) after second split $S_2$.
 
 \subsubsection{Initial structure}
-To specify Structure of the inferred model one should set \py{Initial structure} in the parameters file:
+To specify the structure of the inferred model one should set \py{Initial structure} in the parameter file:
 
 \begin{lstlisting}
-    # params file
+    # param_file
     ...
     Initial structure : 2
     ...
 \end{lstlisting}
 or
 \begin{lstlisting}
-    # params file
+    # param_file
     ...
     Initial structure : 2,1
     ...
 \end{lstlisting}
 or
 \begin{lstlisting}
-    # params file
+    # param_file
     ...
     Initial structure : 2,1,1
     ...
 \end{lstlisting}
-
 By default the simplest structure is used (1 or 1,1 or 1,1,1).
 
 \subsubsection{Final structure}
-It is also possible to start with more simple structure in order to get more complex. To do so one should specify option \py{Final structure} in the parameters file. For example:
+It is also possible to start with a simpler structure in order to get to a more complex one. To do so one should specify option \py{Final structure} in the parameter file. For example:
 
 \begin{lstlisting}
-    # params file
-    Input file : some_2d_fs.fs
+# param_file
+Input file : some_2d_fs.fs
     
-    Initial structure : 1,1
-    Final   structure : 2,1
-    ...
+Initial structure : 1,1
+Final   structure : 2,1
+...
 \end{lstlisting}
-During this parameters file GADMA will find parameters for demographic model with 1,1 structure, then increase structure for 2,1 and find parameters for the model with this structure. Found parameters for more simple structure (in this case it is 1,1) are used in search of the parameters of more complex structure (2,1).
+Within this parameter file GADMA will find parameters for demographic model with 1,1 structure, then increase structure  2,1 and find parameters for the model with this structure. Parameters identify within a more simple structure (in this case it is 1,1) are used further to define the parameters of a more complex structure (2,1).
 
-\textbf{Note: } Structure increases random, so if one specify initial structure to 1,1 and final to 2,2, it is not garanteed to finad optimal parameters for demographic models with structures between 1,1 and 2,2, i.e. intermediate state can be either 1,2 or 2,1.
+\textbf{Note:} Structure increases random, so if one specifies initial structure to 1,1 and final to 2,2, it is not guaranteed to final optimal parameters for demographic models with structures between 1,1 and 2,2, i.e. intermediate state can be either 1,2 or 2,1.
 
-\textbf{Recommendation: } Use scheme with increase of the structure, as it produce more stable solutions.
+\textbf{Recommendation:} Use scheme with a more complex structure, as it produce more stable solutions.
 
-\textbf{Recommendation: } Choose not very large values for model's structure. Final structure is recommended to be differ by one element from initial structure, for example, 1,1 and 2,1; 1,2,1 and  2,2,1.
+\textbf{Recommendation:} Choose recommended values for model's structure. Final structure should differ by one element from initial structure, for example, 1,1 and 2,1; 1,2,1 and  2,2,1.
 
 
-\subsection{Specifying model in details}
+\subsection{Specifying a model in details}
 \label{sec:spec-model-in-det}
 
-It is also possible to use Genetic algorithm from GADMA to a proposed model that is defined as Python function using \dadi or \moments. It is the way that \dadi and \moments work with demographic models inference. To understand how to specify model like that one can read manuals to the packages. 
+It is also possible to use Genetic algorithm from GADMA to a proposed model that is defined as Python function using \dadi or \moments. It is the way that \dadi and \moments work with demographic models inference. To understand how to specify a model like that one can read manuals to the packages. 
 
 For example, consider simple bottleneck model for one population: at time \py{TF + TB} in the past, an equilibrium population goes through a bottleneck of depth \py{nuB}, recovering to relative size \py{nuF}:
 
@@ -407,7 +464,7 @@ def bottleneck(params, ns, pts):
     return fs
 \end{lstlisting}
 
-To run optimization from GADMA one need to run optimization function just like in \dadi and \moments:
+To run optimization from GADMA one needs to run optimization function just like in \dadi and \moments:
 
 \begin{lstlisting}
 # Import GADMA's optimization function:
@@ -426,8 +483,10 @@ upper_bound = [100, 100, 3, 3]
 lower_bound = [1e-2, 1e-2, 0, 0]
 
 # Run optimizations:
+ run the optimization 
 # Beginning GADMA optimization
 popt = gadma.Inference.optimize_ga(4, data, func_ex, pts_l,
+                                   p_ids = ['n', 'n', 't', 't'],
                                    lower_bound=lower_bound,
                                    upper_bound=upper_bound)
 # Beginning local optimization from dadi
@@ -439,18 +498,18 @@ popt = dadi.Inference.optimize_log(popt, data, func_ex, pts_l,
 print('Found parameters: {0}'.format(popt))
 \end{lstlisting}
 
-\textbf{Note: } No initial parameters \py{p0} are set in \py{gadma.Inference.optimize_ga} function as GADMA optimization is global search algorithm. However it is possible to specify \py{p0}:
+\textbf{Note:} As GADMA optimization is a global search algorithm, no initial parameters \py{p0} are set in \py{gadma.Inference.optimize_ga} function. However, it is possible to specify \py{p0}:
 \begin{lstlisting}
 # Initial parameters can be set too:
 p0 = [0.01, 1.5, 0.2, 0.2]
 
 # Beginning GADMA optimization
-popt = gadma.Inference.optimize_ga(4, data, func_ex, pts_l, p0=p0
+popt = gadma.Inference.optimize_ga(4, data, func_ex, pts_l, p0=p0, 
+                                   p_ids = ['n', 'n', 't', 't'],
                                    lower_bound=lower_bound,
                                    upper_bound=upper_bound)
 \end{lstlisting}
-
-If one want to find other parameters fo \py{gadma.Inference.optimize_ga} function:
+If one wants to find other parameters for \py{gadma.Inference.optimize_ga} function:
 
 \begin{lstlisting}
 >>> import gadma
@@ -459,16 +518,16 @@ If one want to find other parameters fo \py{gadma.Inference.optimize_ga} functio
 
 \section{Several repeats and parallel computing}
 
-By default GADMA run optimization that uses Genetic algorithm once. However it is recomended to run optimization several times and get best model among the result ones. Option \py{Number of repeats} in parameters file tell GADMA to execute optimization the necessary number of times. Moreover there are another option \py{Number of processes} allows GADMA to parallelize those runs. 
+By default, GADMA runs optimization that uses Genetic algorithm once. However, it is recommended to run optimization several times and choose the best model among the resieved ones. Option \py{Number of repeats} in the parameter file tells GADMA how many times an optimization should be executed. Moreover, there is another option \py{Number of processes} that allows GADMA to run all the processes in parallel. 
 
-\textbf{Note: } GADMA parallelize exactly several runs, not every of them. So if one ask to repeat optimization 2 times and parallelize in more than 2 processes, only two processes will be used eventually. 
+\textbf{Note:} GADMA parallelize exactly several runs, not every of them. So if one asks to repeat optimization twice and parallelize in more than 2 processes, only two processes will be used eventually. 
 
-\textbf{Recomendation: } \py{Number of processes} should be lesser than \py{Number of repeats} and it will be better if it is aliquot to the \py{Number of repeats}.
+\textbf{Recommendation:} \py{Number of processes} should be less than \py{Number of repeats} and it will be better if it is aliquot to the \py{Number of repeats}.
 
-\textbf{Note: } \py{Number of processes} shouldn't be greater than number of kernels on one's computer. Otherwise there will be no sence in parallelization.
+\textbf{Note:} \py{Number of processes} shouldn't be greater than the number of kernels on one's computer. Otherwise there will be no sense in parallelization.
 
 \begin{lstlisting}
-# params file
+# param_file
 ...
 Number of repeats : 6
 Number of processes : 2 # or 3 or 6
@@ -476,18 +535,17 @@ Number of processes : 2 # or 3 or 6
 \end{lstlisting}
 
 \section{Output}
-GADMA put all files to the directory that user set through \py{-o/--output} command-line option:
-\begin{lstlisting}
-$ gadma -o output_dir -i input_fs.fs
-\end{lstlisting}
-
-or through \py{Output directory} option in parameters file:
-\begin{lstlisting}
-# params file
-
-Output directory : output_dir
-...
-\end{lstlisting}
+GADMA puts all files to the directory that user set through \py{-o/--output} command-line option:
+    \begin{lstlisting}
+    $ gadma -o output_dir -i input_fs.fs
+    \end{lstlisting}
+or through \py{Output directory} option in the parameter file:
+    \begin{lstlisting}
+    # param_file
+    ...
+    Output directory : output_dir
+    ...
+    \end{lstlisting}
 
 \subsection{Stdout and log file}
 GADMA prints its progress about every minute in stdout and in \py{output_dir/GADMA.log} file:
@@ -511,10 +569,10 @@ with AIC score:         Best AIC score
 Model:  representation of best AIC model 
 \end{lstlisting}
  
-\textbf{Note: } One can set \py{Silence} option in parameters file to \py{True} to disable output in stdout, file \py{output_dir/GADMA.log} will still have it.
+\textbf{Note:} One can set \py{Silence} option in the parameter file to \py{True} to disable output in stdout, file \py{output_dir/GADMA.log} will still have it.
 
 \subsection{Model representation}
-Every model is printed as a line of parameters. All model parameters, except mutation rates, have precision equals to 2.
+Every model is printed as a line of parameters. All model parameters, except mutation rates, have precision equaled to 2.
 
 Consider designations:
 \begin{itemize}
@@ -529,10 +587,10 @@ Dynamic of population size change has numerical values:
 \begin{itemize}
     \item \py{di = 0} --- sudden change of size for population number \py{i};
     \item \py{di = 1} --- linear change of size for population number \py{i};
-    \item \py{di = 2} --- exponential change of size for population number \py{i};
+    \item \py{di = 2} --- exponential change of size for population number \py{i}.
 \end{itemize}
 
-Model is printed as sequence of time intervals and splits that are represented the following way:
+Model is printed as sequence of time intervals and splits that are represented in the following way:
 
 \begin{itemize}
     \item First period (\py{NA} --- size of ancestry population):
@@ -571,15 +629,17 @@ Model is printed as sequence of time intervals and splits that are represented t
 
 \end{itemize}
 
-At the end of the string, that corresponds to the model, there is information about model's ancestry in the genetic algorithm: 
+At the end of the string, that corresponds to the model, there is an information about model's ancestry in the genetic algorithm: 
 \begin{itemize}
     \item \py{c} --- for model, that is child of crossover,
     \item \py{r} --- if it was formed random way,
     \item \py{m} --- if it was mutated,
     \item \py{f} --- final model of genetic algorithm.
-\end{itemize} 
-\textbf{Note: } \py{m} is added as many times as model was mutated.\\
-\textbf{Example} of the demographic model for two populations:
+\end{itemize}
+
+\textbf{Note:} \py{m} is added as many times as model is mutated.\\
+
+\textbf{Example of the demographic model for two populations}:
 
 \py{[ [144.38] ][ 16.00\%, [23.10, 121.28] ][ 375.77, [143.31, 30.07],}
 
@@ -588,13 +648,13 @@ At the end of the string, that corresponds to the model, there is information ab
 
 \subsection{Output directory content}
 
-For every repeat of Genetic algorithm GADMA create new folder in output directory with correspond number.
+For every repeat of Genetic algorithm GADMA creates a new folder in output directory with corresponding number.
 
 In every folder there is \py{GADMA_GA.log}, where every iteration of algorithm is saved, folders \py{pictures} and \py{python_code}.
 
-When genetic algorithm finishes GADMA saves picture and python code of result model in the corresponding folder.
+When genetic algorithm finishes GADMA saves picture and python code of received model in the corresponding folder.
 
-When all GA finishes picture and code of best model among them are saved in root directory.
+When all GA's are executed, the codes are saved in the root directory.
 \begin{lstlisting}
 - <output_dir>
 	- 1
@@ -627,11 +687,11 @@ When all GA finishes picture and code of best model among them are saved in root
 \subsection{Generated code of models}
 
 
-By default GADMA generates python code only for final models both for \dadi and \moments. However it can do it every $N$ iteration of genetic algorithm also. In this case option \py{} should be set in the parameters file. GADMA save files with code to the \py{output_dir/<GA_number>/python_code} directory. Both \dadi and \moments code are generated and saved in different folders there. 
+By default, GADMA generates python code only for final models both for \dadi and \moments. However, it can do it every $N$ iteration of genetic algorithm. In this case option \py{} should be set in the parameter file. GADMA saves files with code to the \py{output_dir/<GA_number>/python_code} directory. Both \dadi and \moments code are generated and saved in different folders there. 
 
-Each code contain function of the model, which takes values of the parameters as input, and strings that load observed AFS, simulate expected AFS from the model's function and calculate log likelihood between two AFS'. The result log likelihood is printed to stdout. For the \moments code picture is also draw.
+Each code contains function of the model, which takes values of the parameters as input, and strings that load observed AFS, simulates expected AFS from the model's function and calculates log likelihood between two AFS'. The result log likelihood is printed to stdout. For the \moments code picture is also drawn.
 
-All code can be run the following way:
+All codes can be run in the following way:
 \begin{lstlisting}
 $ python file_with_code.py
 \end{lstlisting}
@@ -643,27 +703,27 @@ Example of generated code one can find at the end of this manual in \hyperref[se
 \begin{figure}[h]
     \centering
     \includegraphics[width=\linewidth]{example_model_plot.png}
-    \caption{Exaple of demographic model plot that GADMA draw during run.}
+    \caption{Example of demographic model plot that GADMA draws during run.}
     \label{fig:my_label}
 \end{figure}
 
 GADMA always draws final best models during genetic algorithms search for best solutions.
 
-However models can be drawing during the pipeline every $N$'s iteration of each genetic algorithm. $N$ is equal to the value of \py{Draw models every N iteration } option in parameters file. So to enable drawing one should set this option in file.
+However, models can be drawn during the pipeline every $N$'s iteration of each genetic algorithm. $N$ is equal to the value of \py{Draw models every N iteration } option in the parameter file. So to enable drawing one should set this option in file.
 
-\textbf{Recommendation: } Don't draw models very often, because changes are usually not very significant and drawing takes some time, so optimization will be slower.
+\textbf{Recommendation:} Don't draw models very often, because changes are usually not very significant and drawing takes some time, so optimization will be slower.
 
-\textbf{Note: } One can disable drawing by setting \py{Draw models every N iteration : 0 } in the parameters file. This is also default behaviour.
+\textbf{Note:} One can disable drawing by setting \py{Draw models every N iteration : 0 } in the parameter file. This is also default behaviour.
 
-Models are drawn with \moments library, so it should be installed if one want to have pictures. In the top left corner there is size of ancestry population. Other parameters one can find in string representation of the model in the log files.
+Models are drawn with \moments library, so it should be installed if one wants to have pictures. In the top left corner there is a size of ancestry population. Other parameters one can find in string representation of the model in the log files.
 
 \subsection{Time units on model's plot}
-Time on the demographic model's plot can be drawn in units of years,  thousand years or in genetic units. By default choice depends on the \py{Time for generation} option in the parameters file: if it is set to some value (in years) then time will be shown in years, otherwise it will be in genetic units.
+Time on the demographic model's plot can be drawn in units of years,  thousand years or in genetic units. By default choice depends on the \py{Time for generation} option in the parameter file: if it is set to some value (in years) then time will be shown in years, otherwise it will be in genetic units.
 
-But, of course, it is possible to tell GADMA what units are preferable. For example, if one wants time to be in thousand of years on the pictures, as it is big values in years:
+But, of course, it is possible to tell GADMA which units are preferable. For example, if one wants time to be in thousands of years on the pictures, as it is a big value in years:
 
 \begin{lstlisting}
-# params file
+# param_file
 ...
 Units of time in drawing : thousand years
 ...
@@ -678,35 +738,35 @@ Units of time in drawing : thousand years
     \label{fig:my_label}
 \end{figure}
 
-Sometimes final pictures aren't satisfying or one didn't draw for some reasons (don't want to install \moments, want fast launch) it is possible to plot demographic model (and only it) again.
+Sometimes final pictures aren't satisfying or one didn't draw for some reasons (didn't want to install \moments, wanted fast launch) it is possible to plot demographic model (and only it) again.
 
-To do it one should run corresponding generated python script for the model. For example, final model can be draw again the following way:
+To do it one should run corresponding generated python script for the model. For example, final model can be drawn again in the following way:
 \begin{lstlisting}
 $ python best_logll_model_moments_code.py
 \end{lstlisting}
 
-\textbf{Note: } Again it's possible only if one have \moments installed.
+\textbf{Note:} Again it's possible only if one has \moments installed.
 
-\textbf{Note: } One can change code inside file and draw again if picture isn't satisfying.
+\textbf{Note:} One can change code inside the file and drawn again if picture isn't satisfying.
 
 \section{Usefull options}
 \subsection{Time for generation}
-Option \py{Time for generation} in parameters file is corresponding to the time per one generation in Wright-Fisher model. It is responsible basically for one thing: time on the model's plots. If it is specified, then time on the pictures will be converted from genetic units by scaling with this value. Otherwise, if it is not set, time will be shown in genetic units. 
+Option \py{Time for generation} in the parameter file is corresponding to the time per one generation in Wright-Fisher model. It is responsible basically for one thing: time on the model's plots. If it is specified, then time on the pictures will be converted from genetic units by scaling with this value. Otherwise, if it is not set, time will be shown in genetic units. 
 
-\textbf{Note: } If \py{Time for generation} is specified, it should be consistent with another option: \py{Theta0}, which is described in \hyperref[sec:est-theta]{the corresponding section}.
+\textbf{Note:} If \py{Time for generation} is specified, it should be consistent with another option: \py{Theta0}, which is described in \hyperref[sec:est-theta]{the corresponding section}.
 
 \subsection{\py{Theta0}}
-\py{Theta0} is equal to the expected number of mutation that occur in one chromosome in one generation in the infinite-sited model. GADMA can scale all values of demographic model parameters due to known value of \py{Theta0}. However, it is not always possible to find it. There is a way to solve this problem: one can to set \py{Theta0} to \py{None} or just not to specify it at all, so GADMA will take it as $1.0$ and after launch one can scale result values due to found \py{Theta0} (how to do it is described in the \hyperref[sec:change-theta]{corresponding section}). 
+\py{Theta0} is equal to the expected number of mutations that occur in one chromosome in one generation in the infinite-sited model. GADMA can scale all values of demographic model parameters due to known value of \py{Theta0}. However, it is not always possible to find it. There is a way to solve this problem: one can set \py{Theta0} to \py{None} or just not specify it at all, so GADMA will take it as $1.0$ and after launch one can scale result values due to found \py{Theta0} (how to do it is described in the \hyperref[sec:change-theta]{corresponding section}). 
 
 \subsubsection{Estimating \py{Theta0}}
 \label{sec:est-theta}
-If $\mu$ --- is the neutral mutation rate per site per generation and $L$ --- length of the sequence, then:
+If $\mu$ --- is the neutral mutation rate per site per generation and $L$ --- is the length of the sequence, then:
 
-$$\theta_0 = 4 * \mu * L$$
+$$\theta_0 = 4 \cdot \mu \cdot L$$
 
-\textbf{Note: } $L$ is the effective sequenced length, which accounts for losses in alignment and missed calls.
+\textbf{Note:} $L$ is the effective sequence length, which accounts for losses in alignment and missed calls.
 
-\textbf{Note:  $\mu$ should be estimated based on generation time}. One can leave \py{Time per generation} option in parameters file unspecified (then time on the model's plots will be in the genetic units), but don't forget to recalculate $\mu$! \\
+\textbf{Note:} $\mu$ should be estimated based on generation time. One can leave \py{Time per generation} option in the parameter file unspecified (then time on the model's plots will be in the genetic units), but one should recalculate $\mu$! \\
 
 \textbf{For example (Gutenkunst et al, 2009 \cite{gutenkunst2009})}:
 
@@ -718,18 +778,18 @@ $$\mu = 0.0113 \cdot 25 / (2 \cdot 6 \cdot 10^6) = 2.35 \times 10^{-8}\text{ per
 
 \subsubsection{Changing \py{Theta0}}
 \label{sec:change-theta}
-If GADMA was launched with one \py{Theta0} and now one want to use another or if it was launched with default \py{Theta0} $ = 1.0$ and now one have estimated its real value,  model's parameters can be simply scaled:
+If GADMA was launched with one \py{Theta0} and now one wants to use another or if it was launched with default \py{Theta0} $ = 1.0$ and now one has estimated its real value, model's parameters can be simply scaled:\\
 
 Let  $a = \frac{\displaystyle \theta_0^{NEW}}{\displaystyle \theta_0^{OLD}},$
 \begin{itemize}
     \item Size of population $/ a$,
     \item Time $/ a$,
-    \item Migration rates $* a$,
+    \item Migration rates $\cdot a$,
     \item Split percent stay the same.
 \end{itemize}
 
 \subsection{Examples of \py{Theta0} and time for generation}
-The following tables produces different possible values for the demographic model inference for three populations of modern people: YRI, CEU, CHB.
+The following tables produce different possible values for the demographic model inference for three populations of modern people: YRI, CEU, CHB.
 \begin{table}[h]
     \centering
     \begin{tabular}{|l|c|c|c|c|l|}
@@ -747,70 +807,68 @@ The following tables produces different possible values for the demographic mode
     \label{tab:my_label}
 \end{table}
 
-In Gutenkunst et al. \cite{gutenkunst2009} generation time for human populations was equal to $25$ years and mutation rate $\mu$ was estimated as $2.35 \cdot 10^{-8}$. If one want to change time for one generation to $24$ years, one need to scale $\mu$: $\mu / 25 \cdot 24 = 2.26 \cdot 10^{-8}$.
+In Gutenkunst et al. \cite{gutenkunst2009} generation time for human populations was equal to $25$ years and mutation rate $\mu$ was estimated as $2.35 \cdot 10^{-8}$. If one wants to change time for one generation to $24$ years, one needs to scale $\mu$: $\mu / 25 \cdot 24 = 2.26 \cdot 10^{-8}$.
 
-In Jouganous et al. \cite{Jouganous1549} generation time was grater --- $29$ years and mutation rate was equal to $1.44 \cdot 10^{-8}$. To change generation time to $24$, one need to change value of mutation rate: $\mu_{NEW} = \mu / 29 \cdot 24 = 1.2 \cdot 10^{-8}$. \py{Theta0} is calculated then by the formula above.\\
+In Jouganous et al. \cite{Jouganous1549} generation time was grater --- $29$ years and mutation rate was equal to $1.44 \cdot 10^{-8}$. To change generation time to $24$, one needs to change value of the mutation rate: $\mu_{NEW} = \mu / 29 \cdot 24 = 1.2 \cdot 10^{-8}$. \py{Theta0} is calculated then by the formula above.
 
-\textbf{Note: } One can find FS files in \py{fs\_examples} directory.
+\textbf{Note:} One can find FS files in \py{fs\_examples} directory.
 
 \subsection{Relative to $N_A$ parameters}
-Sometimes it is more important to see parameters scaled to $N_{ref} = N_A$. To tell GADMA show models with scaled parameters, option \py{Relative parameters} should be set to \py{True}. By default, it is \py{False}. It is conveniently when \py{Theta0} is unknown.
+Sometimes it is more important to see parameters scaled to $N_{ref} = N_A$. To tell GADMA shows models with scaled parameters, option \py{Relative parameters} should be set to \py{True}. By default, it is \py{False}. It is conveniently when \py{Theta0} is unknown.
 
 \subsection{Disable migrations}
-GADMA can to exclude migrations rates from optimization and consider them be equal to zero. In that case all migrations are disabled. One should set option \py{No migrations} to \py{True} in the parameters file.
+GADMA can to exclude migrations rates from optimization and consider them be equal to zero. In that case all migrations are disabled. One should set option \py{No migrations} to \py{True} in the parameter file.
 
 \subsection{Upper bound for time split}
-To limit time of some split one should specify option in parameters file. Splits are numerated from the most ancient. So split 1 is split that occurred with ancient population and split 2 is next division of second population (exist only for three populations). There are two appropriate options: \py{Upper bound of first split} and \py{Upper bound of second split}.
+To limit time of some split one should specify option in the parameter file. Splits are numerated from the most ancient. So split 1 is split that occurred with ancient population and split 2 is next division of second population (exist only for three populations). There are two appropriate options: \py{Upper bound of first split} and \py{Upper bound of second split}.
 
-One should translate time from years into genetic units, therefore divide it by $2 \cdot T_g$, where $T_g$ is time (in years) for one generation. For example, one want to limit last split with 2000 years. Time for one generation is estimated as 24 years, then one should specify in parameters file:
+One should translate time from years into genetic units, therefore divide it by $2 \cdot T_g$, where $T_g$ is time (in years) for one generation. For example, one wants to limit last split with 2000 years. Time for one generation is estimated as 24 years, then one should specify in the parameter file:
 \begin{lstlisting}
+# param_file
 ...
 Upper bound of second split : 83.333
 ...
 \end{lstlisting}
 
 \subsection{Resume launch}
-To resume interrupted launch one can use \py{--resume} command-line option or set \py{Resume from} in the parmeters file. One need to set output directory of previous run.
+To resume interrupted launch one can use \py{--resume} command-line option or set \py{Resume from} in the parameter file. One needs to set output directory of previous run.
 
-If neither \py{Output directory} or \py{-o/--output} aren't specified, GADMA will continue evaluation in the directory: \py{<previous_output_dir>_resumed}.
+If neither \py{Output directory} or \py{-o/--output} is not specified, GADMA will continue evaluation in the directory: \py{<previous_output_dir>_resumed}.
 
 \subsubsection{Only models}
-GADMA can resume launch taking final models only from previous run. This means, that it is not resumption, but run from some initial values. It is usufull, for example, when one have run GADMA with some small grid size for dadi and then want to restart it with greater number of grid points. To do so, one should set command-line option \py{--only_models} with \py{--resume} or specify \py{Only models} option in parameters file to \py{True}.
+GADMA can resume launch taking final models only from previous run. This means, that it is not resumption, but run from some initial values. It is useful, for example, when one has to run GADMA with some small grid size for dadi and then wants to restart it with greater number of grid points. To do so, one should set command-line option \py{--only_models} with \py{--resume} or specify \py{Only models} option in the parameter file to \py{True}.
 
-\section{Extra parameters file}
-GADMA take extra parameters file as input. \textbf{However one probably do not need them}. Nevertheless, if one is interested, \py{extra_params_template} with all options and their descriptions can be found in \py{gadma} folder.
+\section{Extra parameter file}
+GADMA take an extra parameter file as input. \textbf{However one probably do not need them}. Nevertheless, if one is interested, \py{extra_params_template} with all options and their descriptions can be found in \py{gadma} folder.
 
 \section{Units}
 GADMA shows model parameters in genetic units. To scale them from one should multiply migration rates by 2 only. Other units are as usual. In case when option \py{Relative parameters} is set to \py{True} one should first rescale from units of $N_{ref}$: sizes of populations and time --- multiply by \py{NA}, migration rates --- divide by \py{NA}.
 
-\section{Decreasing number of model's parameters}
-There are several ways to decrease number of demographic model's parameters in GADMA. Firstly, as it was discussed above, one can consider only sudden dynamics of population size changes (\py{Only sudden : True}). Second way to decrease number of parameters is so-called multinom scheme: when at every step $N_A$ is chosen to fit the observed data best. This scheme leads to faster work of GADMA, however it is more possible to get stuck in local optima. To use it one should set option \py{Multinom} to \py{True} in parameters file. Third way is to disable migration by setting \py{No migrations} to \py{True} in parameters file.
+\section{Decreasing the number of model's parameters}
+There are several ways to decrease the number of demographic model's parameters in GADMA. The first way as it was discussed above, is to consider only sudden dynamics of population size changes (\py{Only sudden : True}). The second way to decrease the number of parameters is so-called multinom scheme: when at every step $N_A$ is chosen to fit the observed data best. This scheme leads to faster work of GADMA, however it is more possible to get stuck in local optima. To use it one should set option \py{Multinom} to \py{True} in the parameter file. The third way is to disable migration by setting \py{No migrations} to \py{True} in the parameter file.
 
-The last and more reliable way to decrease number of model's parameters is to use GADMA optimization on the custom model written with \dadi or \moments (section \hyperref[sec:spec-model-in-det]{Specifying model in details}). However it requires some extra work for user.
+The last and more reliable way to decrease the of model's parameters is to use GADMA optimization on the custom model written with \dadi or \moments (section \hyperref[sec:spec-model-in-det]{Specifying model in details}). However, it requires some extra work for user.
 
 \newpage
-\section{Dependencies}
-The absolute dependencies for GADMA are:
+\section{Installation}
+
+\subsection{Dependencies}
+GADMA requires the following dependencies:
 \begin{itemize}
     \item Python (2.5, 2.6, 2.7)
     \item NumPy ($\geq 1.2.0$)
     \item Scipy ($\geq 0.6.0$)
     \item \dadi ($\geq 1.7.0$) or \moments ($\geq 1.0.0$)
 \end{itemize}
-
-To draw demographic models install:
+To draw demographic models install the following:
 \begin{itemize}
     \item matplotlib ($\geq 0.98.1$)
     \item Pillow ($\geq 4.2.1$)
     \item \moments ($\geq 1.0.0$)
 \end{itemize}
 
-
-\section{Installation}
-Before GADMA installation one need either \dadi or \moments to be installed.
-
 \subsection{\dadi}
-To install \dadi, go to the work directory and run:
+To install \dadi, run the following command in the work directory:
 
 \begin{lstlisting}
 $ git clone https://bitbucket.org/gutenkunstlab/dadi/
@@ -823,7 +881,7 @@ $ cd dadi
 $ python setup.py install
 \end{lstlisting}
 
-To check \dadi's installation, type in python interpreter:
+To check \dadi's installation, use the command:
 
 \begin{lstlisting}
 $ python
@@ -838,7 +896,7 @@ To install \moments, go to the work directory and run:
 $ git clone https://bitbucket.org/simongravel/moments/
 \end{lstlisting}
 
-Check that Cython is installed:
+Cython can be installed using pip:
 \begin{lstlisting}
 $ python -m pip install --upgrade Cython
 \end{lstlisting}
@@ -850,7 +908,7 @@ $ cd moments
 $ python setup.py install
 \end{lstlisting}
 
-To check \moments's installation, run in python interpreter:
+To check \moments's installation, use the command:
 
 \begin{lstlisting}
 $ python
@@ -859,13 +917,13 @@ $ python
 
 \subsection{Pillow}
 
-Install Pillow through \py{pip}:
+Install Pillow with \py{pip}:
 
 \begin{lstlisting}
 $ python -m pip install Pillow
 \end{lstlisting}
 
-To check Pillow's installation, type in python interpreter:
+To check Pillow's installation, use the command:
 
 \begin{lstlisting}
 $ python
@@ -891,13 +949,13 @@ $ gadma --help
 \end{lstlisting}
 
 \subsubsection{Verifying installation}
-To verify installation run test:
+To verify the installation, run a test:
 
 \begin{lstlisting}
 $ gadma --test
 \end{lstlisting}
 
-If the installation is successful, one (you) will find the following information at the end:
+If the installation was successful, one will find the following information at the end:
 \begin{lstlisting}
 --Finish pipeline--
 
@@ -907,21 +965,21 @@ Thank you for using GADMA!
 
 \newpage
 \begin{appendices}
-\section{Appendix A: Example of full parameters file}
+\section{Example of the parameter file}
 \label{sec:example-params}
 \begin{lstlisting}
-#	It is parameters file for GADMA software.
+#   It is a parameter file for GADMA software.
 
 #   Lines started from # are ignored.
 #   Also comments at the end of a line are ignored too.
-#   Every line contains: Identificator of parameter : value.
-#   If one want to change some default parameters, one need to
-#   remove # at the begining of line and change corresponding
+#   Every line contains: Identifier of parameter : value.
+#   If one wants to change some default parameters, one needs to
+#   remove # at the beginning of a line and change corresponding
 #   parameter.
 
 
 #   Output directory to write all GADMA out.
-#   One need to set it to not existing or empty directory.
+#   One needs to set it to not existing or empty directory.
 #   If it is resumed from other directory and output directory 
 #   isn't set, GADMA will add '_resumed' for previous output 
 #   directory.
@@ -932,17 +990,19 @@ Output directory : my_example_run
 #   output directory of it to 'Resume from' parameter.
 #   You can set again new parameters of resumed launch.
 #Resume from : another_output_dir
-#
-#	If you want to take only models from previous run set this 
-#	flag.  Then iterations of GA will start from 0 and values of
-#	mutation rate and strength will be initial.
-#	Default: None
-#Only models : None
+
+
+#   If one wants to take only models from previous run set this 
+#   flag. Then iterations of GA will start from 0 and values of
+#   mutation rate and strength will be initial.
+#   Default : None
+Only models : None
 
 
 #   Input file can be sfs file (should end with .fs) or 
 #   file of SNP's in dadi format (should end with .txt).
 Input file : fs_examples/YRI_CEU.fs
+
 
 #   'Population labels' is sequence of population names (the same
 #   names as in input file)
@@ -953,12 +1013,13 @@ Input file : fs_examples/YRI_CEU.fs
 #   It is important, because the last of formed populations take
 #   part in next split.
 #   For example, if we have YRI - African population,
-#   CEU - European population and CHB - Chineese populaion,
+#   CEU - European population and CHB - Chinese population,
 #   then we can write YRI, CEU, CHB or YRI, CHB, CEU 
 #   (YRI must be at the first place)
 #   Default: from input file
 Population labels : CEU, YRI # we change populations order 
                              # (in input file YRI is first)
+
 
 #   Also one can project your spectrum to less size.
 #   For example, we have 80 individuals in each of three 
@@ -983,8 +1044,9 @@ Projections : None # will be 20, 20
 #   Default: 1.0
 Theta0 : 0.37976 # the same as in Gutenkunst et al 2009
 
+
 #   Time (years) for one generation. Can be float. 
-#   Is important for drawing models. If one don't want to draw, 
+#   It is important for drawing models. If one doesn't want to draw, 
 #   one can pass it.
 #   Default: 1.0
 Time for generation : 25 # the same as in Gutenkunst et al 2009
@@ -996,6 +1058,7 @@ Time for generation : 25 # the same as in Gutenkunst et al 2009
 #   Default: dadi
 Use moments or dadi : moments
 
+
 #   Use multinom scheme: N_A is not parameter for search, 
 #   it is calculated through optimal_sfs_scaling.
 #   Multinom scheme decrease number of parameter by one and 
@@ -1004,11 +1067,44 @@ Use moments or dadi : moments
 #   Default: False
 Multinom : False
 
+
 #   If you choose to use dadi, please set pts parameter - number
 #   of points in grid
 #   Default: Let n = max number of individuals in one population, 
 #   then pts = n, n+10, n+20
 #Pts : 20, 30, 40
+
+
+#   Using a custom demographic model.
+#   Please, specify file with function named 'model_func' in it. 
+#   So file should contain:
+#   def model_func(params, ns, pts) in case of dadi
+#   or
+#   def model_func(params, ns) in case of moments
+#   Default: None
+Custom filename : None
+
+#   Now one should specify either bounds or identifications 
+#   of custom model's parameters. All values are in Nref units.
+#   Lower and upper bounds - lists of numbers.
+#   List of usual bounds:
+#   N: 1e-2 - 100
+#   T: 0 - 5
+#   m: 0 - 10
+#   s: 0 - 1
+#   This bounds will be taken automatically if identifications are set.
+#   Default: None
+Lower bounds : None
+Upper bounds : None
+#   An identifier list:
+#   T - time
+#   N - size of population
+#   m - migration
+#   s - split event,  proportion in which population size
+#    is divided to form two new populations.
+#   Default: None
+Parameter identifiers : None
+
 
 #   Structure of model for one population - number of time periods 
 #   (e.g. 5).
@@ -1022,9 +1118,11 @@ Multinom : False
 #   Default: all is ones - 1 or 1,1 or 1,1,1
 Initial structure : 2,1
 
+
 #   Structure of final model:
 #   Default: equals to initial structure
 #Final structure : 2,2
+
 
 #   It is possible to limit time of splits.
 #   Split 1 is the most ancient split.
@@ -1036,14 +1134,17 @@ Initial structure : 2,1
 #   Default: None
 #Upper bound of first split : None
 
+
 #   Upper bound for split 2 (in case of 3 populations).
 #   Default: None
 #Upper bound of second split : None
+
 
 #	Print parameters of model in units of N_ref = N_A.
 #   N_A will be placed in brackets at the end of string.
 #   Default: False
 Relative parameters : False
+
 
 #   Disable migrations in demographic models.
 #   Default: False
@@ -1058,12 +1159,14 @@ No migrations : false
 #   Default: 10
 Size of population in GA : 10
 
+
 #   Fractions of current models, mutated models and crossed models 
 #   to be taken to new population.
 #   Sum of fractions should be <= 1, the remaining fraction is 
 #   fraction of random models.
 #   Default: 0.2,0.3,0.3
 #Fractions in GA : 0.2,0.3,0.3
+
 
 #   Mutation strength - fraction of parameters in model to mutate 
 #   during global mutation process of model.
@@ -1080,16 +1183,18 @@ Mean mutation strength : 0.3
 #   Default: 1.0
 Const for mutation strength : 1.05
 
+
 #   Mutation rate - fraction of any parameter to change during
 #   its mutation.
 #   Mutation rate is sampled from truncated normal distribution, 
-#   so we need mean (std can be specified in extra params).
+#   so we need mean (std can be specified in extra_params).
 #   Default 0.2
 Mean mutation rate : 0.1
 #
 #   Mutation rate also can be adaptive as mutation strength.
 #   Default: 1.02
 Const for mutation rate : 1.01 #very small changes
+
 
 #   Genetic algorithm stops when it couldn't improve model by
 #   more that epsilon in logLL
@@ -1131,8 +1236,6 @@ Stop iteration : 50
 #   Default: optimize_powell
 Name of local optimization : optimize_log
 
-
-
 #   Parameters of pipeline
 #
 #   One can automatically draw models every N iteration. 
@@ -1140,6 +1243,7 @@ Name of local optimization : optimize_log
 #   Pictures are saved in GA's directory in picture folder.
 #   Default: 0
 Draw models every N iteration : 100
+
 
 #   One can automatically generate dadi and moments code for models.
 #   If 0 then only current best model will be printed in GA's 
@@ -1150,19 +1254,23 @@ Draw models every N iteration : 100
 #   Default: 0
 Print models' code every N iteration : 100
 
+
 #   One can choose time units in models' plots: years or thousand 
 #   years (kya, KYA). If time for one generation isn't specified 
 #   then time is in genetic units.
 #   Default: years
 Units of time in drawing : thousand years
 
+
 #   No std output.
 #   Default: False
 Silence : False
 
+
 #   How many times launch GADMA with this parameters.
 #   Default: 1
 Number of repeats : 3
+
 
 #   How many processes to use for this repeats.
 #   Note that one repeat isn't parallelized, so increasing number
@@ -1173,12 +1281,17 @@ Number of repeats : 3
 Number of processes : 3
 \end{lstlisting}
 
-\section{Appendix B: Example of generated code}
+\newpage
+\section{Example of generated code}
 \label{sec:ex-gen-code}
-For example, \moments generated code for 2d AFS for YRI, CEU populations from \cite{gutenkunst2009}:
+For example, \moments generated code for 2D AFS for YRI, CEU populations from \cite{gutenkunst2009}:
 
 \begin{lstlisting}[language=Python]
-#current best params = [7194.792822462478, 13410.251542201073, 0.9582544565961783, 13542.979276844108, 12114.968575519626, 2683.3787253409746, 846.6668954957415, 0.00014172779289593632, 0.00012195685425105608]
+#current best params = [7194.792822462478, 13410.251542201073, 
+#                       0.9582544565961783, 13542.979276844108, 
+#                       12114.968575519626, 2683.3787253409746, 
+#                       846.6668954957415, 0.00014172779289593632, 
+#                       0.00012195685425105608]
 import matplotlib
 matplotlib.use("Agg")
 import moments
@@ -1189,7 +1302,7 @@ def generated_model(params, ns):
 	Ms = params[7:]
 	theta1 = 0.37976
 	sts = moments.LinearSystem_1D.steady_state_1D(sum(ns), 
-	        theta=theta1, N=Ns[0])
+	                                theta=theta1, N=Ns[0])
 	fs = moments.Spectrum(sts)
 
 	before = [Ns[0]]
@@ -1198,7 +1311,7 @@ def generated_model(params, ns):
 	growth_funcs = [lambda t: after[0]]
 	list_growth_funcs = lambda t: [ f(t) for f in growth_funcs]
 	fs.integrate(Npop=list_growth_funcs, tf=T, dt_fac=0.1, 
-	        theta=theta1)
+	             theta=theta1)
 
 	before = after
 	fs = moments.Manips.split_1D_to_2D(fs, ns[0], sum(ns[1:]))
@@ -1208,7 +1321,8 @@ def generated_model(params, ns):
 	T = Ts[1]
 	after = Ns[3:5]
 	growth_funcs = [lambda t: after[0], 
-	        lambda t: before[1] * (after[1] / before[1]) ** (t / T)]
+	                lambda t: 
+	                before[1] * (after[1] / before[1]) ** (t / T)]
 	list_growth_funcs = lambda t: [ f(t) for f in growth_funcs]
 	m = np.array([[0, params[7]],[params[8], 0]])
 	fs.integrate(Npop=list_growth_funcs, tf=T, m=m, dt_fac=0.1,
@@ -1218,28 +1332,28 @@ def generated_model(params, ns):
 	return fs
 data = moments.Spectrum.from_file('data/YRI_CEU.fs')
 
+
 popt = [7194.792822462478, 13410.251542201073, 0.9582544565961783,
         13542.979276844108, 12114.968575519626, 2683.3787253409746,
-        846.6668954957415, 0.00014172779289593632, 0.00012195685425105608]
+        846.6668954957415, 0.00014172779289593632, 
+        0.00012195685425105608]
 ns = [20, 20]
 model = generated_model(popt, ns)
 ll_model = moments.Inference.ll(model, data)
 print('Model log likelihood (LL(model, data)): {0}'.format(ll_model))
 #now we need to norm vector of params so that first value is 1:
 popt_norm = [1.0, 1.8638829321580523, 0.9582544565961783,
-            1.8823306815120924, 1.6838523185401713, 0.3729612223111333,
-            0.1176777311575127, 1.0197021070711312, 0.8774542996156008]
+             1.8823306815120924, 1.6838523185401713, 0.3729612223111333, 
+             0.1176777311575127, 1.0197021070711312, 0.8774542996156008]
 print('Drawing model to model_from_GADMA_from_simple.png')
-model = moments.ModelPlot.generate_model(generated_model, popt_norm, ns)
-moments.ModelPlot.plot_model(model, 
-	save_file='model_from_GADMA_from_simple.png',
-	fig_title='',
-	pop_labels=['YRI', 'CEU'],
-	nref=7194,
-	draw_scale=True,
-	gen_time=0.025,
-	gen_time_units="Thousand years",
-	reverse_timeline=True)
+model = moments.ModelPlot.generate_model(generated_model, 
+                                        popt_norm, ns)
+moments.ModelPlot.plot_model(model,
+                            save_file='model_from_GADMA_from_simple.png',
+                            fig_title='', pop_labels=['YRI', 'CEU'],
+                            nref=7194, draw_scale=True, gen_time=0.025,
+                            gen_time_units="Thousand years",
+                            reverse_timeline=True)
 \end{lstlisting}
 \end{appendices}
 

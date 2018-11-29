@@ -34,13 +34,13 @@ def run_genetic_algorithm(params_tuple):
     number = 'ID'
     try:
         def write_func(string): return support.write_log(log_file, string,
-                                                         write_to_stdout=not options.options_storage.silence)
+                                                         write_to_stdout=not params.silence)
 
-        number, log_file, shared_dict = params_tuple
+        number, params, log_file, shared_dict = params_tuple
 
         write_func('Run genetic algorithm number ' + str(number))
 
-        ga_instance = GA(options.options_storage, prefix=str(number))
+        ga_instance = GA(params, prefix=str(number))
         ga_instance.run(shared_dict=shared_dict)
 
         write_func('Finish genetic algorithm number ' + str(number))
@@ -58,8 +58,8 @@ def worker_init():
     signal.signal(signal.SIGINT, sig_int)
 
 
-def print_best_solution_now(start_time, shared_dict,
-                            log_file, precision, draw_model=True):
+def print_best_solution_now(start_time, shared_dict, params,
+                            log_file, precision, draw_model):
     """Prints best demographic model by logLL among all processes.
 
     start_time :    time when equation was started.
@@ -69,7 +69,7 @@ def print_best_solution_now(start_time, shared_dict,
     """
 
     def write_func(string): return support.write_log(log_file, string,
-                                                     write_to_stdout=not options.options_storage.silence)
+                                                     write_to_stdout=not params.silence)
 
     def my_str(x): return support.float_representation(x, precision)
 
@@ -95,7 +95,7 @@ def print_best_solution_now(start_time, shared_dict,
                    my_str(res.get_aic_score()) + '\t' +
                    str(res))
 
-    if options.options_storage.initial_structure is not None and (options.options_storage.final_structure != options.options_storage.initial_structure).any():
+    if params.initial_structure is not None and (params.final_structure != params.initial_structure).any():
         all_aic_models = [(i, all_models_data[i][1]) for i in all_models_data]
         all_aic_models = sorted(all_aic_models, key=lambda x: x[1].get_aic_score())
         write_func('\nAll best AIC models:')
@@ -113,7 +113,7 @@ def print_best_solution_now(start_time, shared_dict,
                my_str(all_models[0][1].get_aic_score()))
     write_func('Model:\t' + str(all_models[0][1]))
 
-    if options.options_storage.model_func_file is None and (options.options_storage.final_structure != options.options_storage.initial_structure).any():
+    if params.model_func_file is None and (params.final_structure != params.initial_structure).any():
         write_func('\n--Best model by AIC score--')
         write_func('Log likelihood:\t' +
                    my_str(-all_aic_models[0][1].get_fitness_func_value()))
@@ -123,59 +123,59 @@ def print_best_solution_now(start_time, shared_dict,
 
     if draw_model:
         all_models[0][1].draw(
-            os.path.join(options.options_storage.output_dir,
+            os.path.join(params.output_dir,
                          'best_logLL_model.png'),
             title='logLL: ' +
             support.float_representation(-all_models[0][1].get_fitness_func_value(), precision) +
             ', AIC: ' + support.float_representation(all_models[0][1].get_aic_score(), precision))
-        if options.options_storage.model_func_file is None and (options.options_storage.final_structure != options.options_storage.initial_structure).any():
+        if params.model_func_file is None and (params.final_structure != params.initial_structure).any():
             all_aic_models[0][1].draw(
-                os.path.join(options.options_storage.output_dir,
+                os.path.join(params.output_dir,
                              'best_aic_model.png'),
                 title='logLL: ' +
                 support.float_representation(-all_aic_models[0][1].get_fitness_func_value(), precision) +
                 ', AIC: ' + support.float_representation(all_aic_models[0][1].get_aic_score(), precision))
 
-    if not options.options_storage.initial_structure is None or not options.options_storage.moments_scenario:
+    if not params.initial_structure is None or not params.moments_scenario:
         all_models[0][1].dadi_code_to_file(
-            os.path.join(options.options_storage.output_dir, 'best_logLL_model_dadi_code.py'))
-    if not options.options_storage.initial_structure is None or options.options_storage.moments_scenario:
+            os.path.join(params.output_dir, 'best_logLL_model_dadi_code.py'))
+    if not params.initial_structure is None or params.moments_scenario:
         all_models[0][1].moments_code_to_file(
-            os.path.join(options.options_storage.output_dir, 'best_logLL_model_moments_code.py'))
-    if options.options_storage.model_func_file is None and (options.options_storage.final_structure != options.options_storage.initial_structure).any():
-        if not options.options_storage.initial_structure is None or not options.options_storage.moments_scenario:
+            os.path.join(params.output_dir, 'best_logLL_model_moments_code.py'))
+    if params.model_func_file is None and (params.final_structure != params.initial_structure).any():
+        if not params.initial_structure is None or not params.moments_scenario:
             all_aic_models[0][1].dadi_code_to_file(
-                os.path.join(options.options_storage.output_dir, 'best_aic_model_dadi_code.py'))
-        if not options.options_storage.initial_structure is None or options.options_storage.moments_scenario:
+                os.path.join(params.output_dir, 'best_aic_model_dadi_code.py'))
+        if not params.initial_structure is None or params.moments_scenario:
             all_aic_models[0][1].moments_code_to_file(
-                os.path.join(options.options_storage.output_dir, 'best_aic_model_moments_code.py'))
+                os.path.join(params.output_dir, 'best_aic_model_moments_code.py'))
 
-    if not options.options_storage.test:
+    if not params.test:
         write_func(
             '\nYou can find its picture and python code in output directory')
 
 
 def main():
-    options.parse_args()
+    params = options.parse_args()
 
     log_file = os.path.join(
-        options.options_storage.output_dir, 'GADMA.log')
+        params.output_dir, 'GADMA.log')
     open(log_file, 'w').close()
 
     support.write_log(log_file, "--Successful arguments' parsing--\n")
     params_filepath = os.path.join(
-        options.options_storage.output_dir, 'params')
-    options.options_storage.save(options.options_storage.output_dir)
-    if not options.options_storage.test:
+        params.output_dir, 'params')
+    params.save(params.output_dir)
+    if not params.test:
         support.write_log(
             log_file, 'You can find all parameters of this run in:\t\t' + params_filepath + '\n')
         support.write_log(log_file, 'All output is saved (without warnings and errors) in:\t' +
-                          os.path.join(options.options_storage.output_dir, 'GADMA.log\n'))
+                          os.path.join(params.output_dir, 'GADMA.log\n'))
 
     support.write_log(log_file, '--Start pipeline--\n')
 
     # For debug
-#    run_genetic_algorithm((1, log_file, None))
+#    run_genetic_algorithm((1, params, log_file, None))
 
     # Create shared dictionary
     m = Manager()
@@ -184,40 +184,41 @@ def main():
     # Start pool of processes
     start_time = datetime.now()
     
-    pool = Pool(processes=options.options_storage.processes,
+    pool = Pool(processes=params.processes,
                 initializer=worker_init)
     try:
         pool_map = pool.map_async(
             run_genetic_algorithm,
-            [(i + 1, log_file, shared_dict)
-             for i in range(options.options_storage.repeats)])
+            [(i + 1, params, log_file, shared_dict)
+             for i in range(params.repeats)])
         pool.close()
 
-        precision = 1 - int(math.log(options.options_storage.epsilon, 10))
+        precision = 1 - int(math.log(params.epsilon, 10))
 
         # graceful way to interrupt all processes by Ctrl+C
         min_counter = 0
         while True:
             try:
                 multiple_results = pool_map.get(
-                    60 * options.options_storage.time_for_print)
+                    60 * params.time_for_print)
                 break
             # catch TimeoutError and get again
             except multiprocessing.TimeoutError as ex:
                 print_best_solution_now(
-                    start_time, shared_dict, log_file, precision)
+                    start_time, shared_dict, params, log_file, 
+                    precision, draw_model=params.matplotlib_available)
             except Exception, e:
                 pool.terminate()
                 support.error(str(e))
-        print_best_solution_now(start_time, shared_dict,
-                                log_file, precision)
+        print_best_solution_now(start_time, shared_dict, params,log_file, 
+                precision, draw_model=params.matplotlib_available)
         support.write_log(log_file, '\n--Finish pipeline--\n')
-        if options.options_storage.test:
+        if params.test:
             support.write_log(log_file, '--Test passed correctly--')
-        if options.options_storage.theta is None:
+        if params.theta is None:
             support.write_log(
                 log_file, "\nYou didn't specify theta at the beginning. If you want change it and rescale parameters, please see tutorial.\n")
-        if options.options_storage.resume_dir is not None and (options.options_storage.initial_structure != options.options_storage.final_structure).any():
+        if params.resume_dir is not None and (params.initial_structure != params.final_structure).any():
             support.write_log(
                 log_file, '\nYou have resumed from another launch. Please, check best AIC model, as information about it was lost.\n')
 

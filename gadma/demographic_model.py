@@ -296,7 +296,7 @@ class Demographic_model:
 
         self.params = params
 
-        if structure is None and self.params.initial_structure is None:
+        if structure is None and self.params.model_func_file is not None:
             self.popt = []
             self.is_custom_model = True
             self.number_of_populations = len(self.params.ns)
@@ -1565,7 +1565,7 @@ class Demographic_model:
             if self.is_custom_model:
                 output.write('import imp\nfile_with_model_func = imp.load_source("file_with_model_func", "' + 
                         self.params.model_func_file + '")\n')
-                output.write('generated_model = file_with_model_func.model\n')
+                output.write('generated_model = file_with_model_func.model_func\n')
             else:
                 output.write('def generated_model(params, ns, pts):\n')
                 Ns_len = 0
@@ -1731,7 +1731,7 @@ class Demographic_model:
                 real_spectrum, real_ns, real_labels  = support.read_fs_file(os.path.
                              abspath(self.params.input_file), proj=None, pop_labels=None)
                 if not (real_ns == self.params.ns).all():
-                    output.write("data.project(" + str(list(self.params.ns)) + ")\n")
+                    output.write("data = data.project(" + str(list(self.params.ns)) + ")\n")
                 if not real_labels == self.params.pop_labels:
                     d = {x: i for i, x in enumerate(real_labels)}
                     d = [d[x] for x in self.params.pop_labels]
@@ -1870,7 +1870,7 @@ class Demographic_model:
             if self.is_custom_model:
                 output.write('import imp\nfile_with_model_func = imp.load_source("file_with_model_func'
                         '= file_with_model_func", "' + self.params.model_func_file + '")\n')
-                output.write('generated_model = file_with_model_func.model\n')
+                output.write('generated_model = file_with_model_func.model_func\n')
             else:
                 pop_to_split_3 = None
                 if self.number_of_populations == 3:
@@ -2032,7 +2032,7 @@ class Demographic_model:
                 real_spectrum, real_ns, real_labels  = support.read_fs_file(os.path.
                              abspath(self.params.input_file), proj=None, pop_labels=None)
                 if not (real_ns == self.params.ns).all():
-                    output.write("data.project(" + str(list(self.params.ns)) + ")\n")
+                    output.write("data = data.project(" + str(list(self.params.ns)) + ")\n")
                 if not real_labels == self.params.pop_labels:
                     d = {x: i for i, x in enumerate(real_labels)}
                     d = [d[x] for x in self.params.pop_labels]
@@ -2204,7 +2204,7 @@ class Demographic_model:
             save_file=save_file,
             fig_title=title,
             pop_labels=self.params.pop_labels,
-            nref=int(size_of_first_pop) if draw_scale else 1.0,
+            nref=int(size_of_first_pop) if draw_scale else None,
             draw_scale=draw_scale,
             gen_time=gen_time,
             gen_time_units=units,
@@ -2213,39 +2213,31 @@ class Demographic_model:
 
     def draw(self, filename, title):
         """Draw big picture of the model and data."""
-        try:
-            import moments
-            import matplotlib
-            import matplotlib.pyplot as plt
-            import PIL
-        except ImportError:
-            return
+        import matplotlib
+        import matplotlib.pyplot as plt
         import warnings
         warnings.filterwarnings(
             'ignore', category=matplotlib.cbook.MatplotlibDeprecationWarning)
-        buf1 = io.BytesIO()
-        
-        if not self.is_custom_model or self.params.moments_scenario:
-            try:
-                size_of_first_pop = self.get_N_A()
-                self.draw_with_moments(buf1, title)
-            except support.TimeoutError:
-                support.warning("Can't draw model to " + filename +
-                                ' (Timeout for drawing)')
-                if self.get_N_A() == 1.0:
-                    self.normalize_by_Nref(size_of_first_pop, remove_fitness_func_value=False)
-                return
-            except RuntimeError as e:
-                if e.message == 'Factor is exactly singular':
-                    support.warning("Can't draw model to " + filename +
-                                    ' (Scipy version less than 0.19.0)')
-                    if self.get_N_A() == 1.0:
-                        self.normalize_by_Nref(size_of_first_pop, remove_fitness_func_value=False)
-                    return
-                else:
-                    raise e
 
-        buf1.seek(0)
+        if self.params.moments_available:
+            import moments
+
+        pos = filename.rfind('.')
+        if pos == -1:
+            pos = len(filename)
+        filename_2 = filename[:pos] + '_model' + filename[pos:]
+        filename_1 = filename[:pos] + '_sfs' + filename[pos:]
+
+        if self.is_custom_model and not self.params.moments_scenario:
+            out = filename
+        else:
+            if self.params.pil_available:
+                buf1 = io.BytesIO()
+                out = buf1
+            else:
+                out = filename_1
+
+        # Draw sfs
 
         matplotlib.rcParams.update({'font.size': 18})
         fig = plt.figure(1, figsize=(13.8, 10.8))
@@ -2270,16 +2262,51 @@ class Demographic_model:
             else:
                 dadi.Plotting.plot_3d_comp_Poisson(
                     self.get_sfs(), self.params.input_data, vmin=1, show=False)
-        buf2 = io.BytesIO()
-        plt.savefig(buf2, format='png')
+        plt.savefig(out)
+
+        if self.is_custom_model and not self.params.moments_scenario or not self.params.moments_available:
+            return
+
+        # Draw model
+        if self.params.pil_available:
+            buf2 = io.BytesIO()
+            out = buf2
+        else:
+            out = filename_2
+
+        try:
+            size_of_first_pop = self.get_N_A()
+            self.draw_with_moments(out, title)
+        except support.TimeoutError:
+            support.warning("Can't draw model to " + filename +
+                            ' (Timeout for drawing)')
+            if self.get_N_A() == 1.0:
+                self.normalize_by_Nref(size_of_first_pop, remove_fitness_func_value=False)
+            return
+        except RuntimeError as e:
+            if e.message == 'Factor is exactly singular':
+                support.warning("Can't draw model to " + filename +
+                                ' (Scipy version less than 0.19.0)')
+                if self.get_N_A() == 1.0:
+                    self.normalize_by_Nref(size_of_first_pop, remove_fitness_func_value=False)
+                return
+            else:
+                raise e
+    
+        if not self.params.pil_available:
+            return
+
+        import PIL
+        buf1.seek(0)
         buf2.seek(0)
+
         plt.close('all')
         
         if self.is_custom_model and not self.params.moments_scenario:
             img1 = PIL.Image.new('RGB', (0, 0))
         else:
-            img1 = PIL.Image.open(buf1)
-        img2 = PIL.Image.open(buf2)
+            img1 = PIL.Image.open(buf2)
+        img2 = PIL.Image.open(buf1)
 
         weight = img1.size[0] + img2.size[0]
         height = max(img1.size[1], img2.size[1])

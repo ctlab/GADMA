@@ -135,6 +135,11 @@ class Options_storage:
         self.distribution = 'normal'  # can be 'uniform'
         self.std = None  # std for normal dist
 
+        # Some options about drawing plots:
+        self.matplotlib_available = False
+        self.pil_available = False
+        self.moments_available = False
+
     def from_file(self, input_filename):
         with open(input_filename) as f:
             line_number = 0
@@ -294,13 +299,13 @@ class Options_storage:
                     self.std = None if value.lower() == 'none' else float(value)
                 elif identity == 'only sudden':
                     self.only_sudden = value.lower() == 'true'
-                elif identity == 'model filename':
+                elif identity == 'custom filename':
                     self.model_func_file = value if value.lower() != 'none' else None
                 elif identity == 'lower bounds':
                     self.lower_bound = value if value.lower() != 'none' else None
                 elif identity == 'upper bounds':
                     self.upper_bound = value if value.lower() != 'none' else None
-                elif identity == 'parameters identificators':
+                elif identity == 'parameter identifiers':
                     self.p_ids = value if value.lower() != 'none' else None
                 else:
                     support.error(
@@ -409,21 +414,26 @@ class Options_storage:
         If some parameters aren't defined, put default values.
         '''
         # if not custom model then fill structures
+        if self.initial_structure is not None:
+            self.initial_structure = support.check_comma_sep_list(
+                self.initial_structure)
+        if self.final_structure is not None:
+            self.final_structure = support.check_comma_sep_list(
+                self.final_structure)
+
+
+
         if self.model_func_file is None:
             if self.initial_structure is None:
                 self.initial_structure = [
                     START_MODEL_NUMBER_OF_PERIODS
-                ] * self.number_of_populations
-            else:
-                self.initial_structure = support.check_comma_sep_list(
-                    self.initial_structure)
+                    for _ in xrange(self.number_of_populations)]
             if self.final_structure is None:
                 self.final_structure = np.array(self.initial_structure)
-            else:
-                self.final_structure = support.check_comma_sep_list(
-                    self.final_structure)
+        if self.initial_structure is not None:
             self.initial_structure = np.array(
                 self.initial_structure)
+        if self.final_structure is not None:
             self.final_structure = np.array(
                 self.final_structure)
         else:
@@ -510,10 +520,10 @@ class Options_storage:
             self.model_func_file = support.check_file_existence(self.model_func_file)
             file_with_model_func = imp.load_source('module', self.model_func_file)
             try:
-                self.model_func = file_with_model_func.model  
+                self.model_func = file_with_model_func.model_func  
             except:
                 support.error(
-                    "File " + self.model_func_file + ' does not contain function named `model`.')
+                    "File " + self.model_func_file + ' does not contain function named `model_func`.')
 
         
         if self.model_func_file is not None:
@@ -547,6 +557,12 @@ class Options_storage:
                 support.error(
                         "Either parameters identificators or lower and upper bounds should be specified.")
 
+        if self.model_func_file is not None and self.initial_structure is not None:
+            support.warning(
+                    "Both structure and custom model are specified. Custom model will be optimized, structure will be ignored.")
+        if self.model_func_file is not None and self.only_sudden:
+            support.warning(
+                    "Both custom model and `Only sudden: True` are specified. `Only sudden` will be ignored.")
 
         if (self.frac_of_old_models +
                 self.frac_of_crossed_models +
@@ -641,31 +657,58 @@ class Options_storage:
                 "There is no first split in case of 1 populations. Upper bound for it will be ignored.")
             self.split_1_lim = None
 
+        if self.moments_scenario:
+            if not 'moments' in sys.modules:
+                if self.model_func_file is not None:
+                    support.error("moments is not installed. You tried to use custom model and moments.")
+                if 'dadi' in sys.modules:
+                    options_storage.moments_scenario = False
+                    support.warning("moments is not installed, dadi with " + str(self.dadi_pts) +"grid size will be used instead.")
+                else:
+                    support.error("None of the dadi or the moments are installed.")
+        else:
+            if not 'dadi' in sys.modules:
+                if self.model_func_file is not None:
+                    support.error("dadi is not installed. You tried to use custom model and moments.")
+                if 'moments' in sys.modules:
+                    options_storage.moments_scenario = True
+                    support.warning("dadi is not installed, moments will be used instead.")
+                else:
+                    support.error("None of the dadi or the moments are installed.")
+
         if self.optimize_name == 'optimize_powell' and not self.moments_scenario:
-            try:
-                import moments
-            except:
+            if not 'moments' in sys.modules:
                 support.warning(
                     "To use Powell optimization one need moments installed. BFGS (optimize_log) will be used instead.")
                 self.optimize_name = 'optimize_log'
-        if not self.draw_iter == 0:
-            packages = []
-            try:
-                import matplotlib
-            except ImportError as e:
-                packages.append('matplotlib')
-            try:
-                import PIL
-            except ImportError as e:
+
+        packages = []
+        self.matplotlib_available = 'matplotlib' in sys.modules
+        if not self.matplotlib_available:
+            packages.append('matplotlib')
+        
+        # If custom model and dadi is used we can ignore PIL absence
+        if self.model_func_file is None or self.moments_scenario:
+            self.pil_available = 'PIL' in sys.modules
+            if not self.pil_available:
                 packages.append('Pillow')
-            try:
-                import moments
-            except ImportError as e:
-                packages.append('moments')
-            if len(packages) > 0:
-                support.warning(
-                    "To draw models you should install: " +
-                    ', '.join(packages))
+        
+        self.moments_available = 'moments' in sys.modules
+        if not self.moments_available:
+            packages.append('moments')
+            
+        if not self.matplotlib_available:
+            support.warning(
+                "To draw models and SFS plots you should install: " +
+                ', '.join(packages))
+        elif not self.pil_available and self.moments_available:
+            support.warning(
+                "To draw concatenated plots you should install: Pillow")
+        elif not self.moments_available:
+            support.warning(
+                "To draw models plots you should install: " +
+                ', '.join(packages))
+
         if self.distribution != 'normal' and self.distribution != 'uniform':
             support.error(
                 "Distribution in extra parameters must be `normal` or `uniform`.")
@@ -741,35 +784,7 @@ def test_args():
     options_storage.frac_of_mutated_models = options_storage.fracs[1]
     options_storage.frac_of_crossed_models = options_storage.fracs[2]
     options_storage.optimize_name = 'hill_climbing'
-
-    try:
-        import moments
-        options_storage.moments_scenario = True
-    except:
-        try:
-            import dadi
-            options_storage.moments_scenario = False
-        except:
-            support.error("None of the dadi or the moments are installed")
-
-    options_storage.draw_iter = 0
-    packages = []
-    try:
-        import matplotlib
-    except ImportError as e:
-        packages.append('matplotlib')
-    try:
-        import PIL
-    except ImportError as e:
-        packages.append('Pillow')
-    try:
-        import moments
-    except ImportError as e:
-        packages.append('moments')
-    if len(packages) > 0:
-        support.warning(
-            "To draw models you should install: " + ', '.join(packages))
-        options_storage.draw_iter = 0
+    options_storage.moments_scenario = True
 
     options_storage.relative_params = False
     options_storage.dadi_pts = [20, 30, 40]
@@ -778,6 +793,10 @@ def test_args():
     options_storage.epsilon = 1
     options_storage.test = True
     options_storage.multinom = True
+
+    options_storage.final_check()
+
+    return options_storage
 
 
 def parse_args():
@@ -836,9 +855,8 @@ def parse_args():
 
     if args.test:
         print("--Running test case--\n")
-        test_args()
-        return
-
+        return test_args()
+        
     if args.only_models and args.resume is None:
         support.error("Option --only_models  must be used with --resume option.")
 
@@ -894,3 +912,5 @@ def parse_args():
             "Resume directory in parameters file doesn't match to one from --resume option")
 
     options_storage.check()
+
+    return options_storage
