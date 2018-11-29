@@ -852,6 +852,13 @@ The last and more reliable way to decrease the of model's parameters is to use G
 \newpage
 \section{Installation}
 
+One can try to install GADMA and all its possible dependencies via shell script from GADMA home directory the following way:
+\begin{lstlisting}
+$ ./install
+\end{lstlisting}
+
+If some problems occur please try to install GADMA by steps that are described below.
+
 \subsection{Dependencies}
 GADMA requires the following dependencies:
 \begin{itemize}
@@ -866,6 +873,12 @@ To draw demographic models install the following:
     \item Pillow ($\geq 4.2.1$)
     \item \moments ($\geq 1.0.0$)
 \end{itemize}
+
+NumPy and SciPy can be installed via \py{pip}:
+\begin{lstlisting}
+$ python -m pip install numpy
+$ python -m pip install scipy
+\end{lstlisting}
 
 \subsection{\dadi}
 To install \dadi, run the following command in the work directory:
@@ -896,9 +909,14 @@ To install \moments, go to the work directory and run:
 $ git clone https://bitbucket.org/simongravel/moments/
 \end{lstlisting}
 
-Cython can be installed using pip:
+Cython can be installed using \py{pip}:
 \begin{lstlisting}
 $ python -m pip install --upgrade Cython
+\end{lstlisting}
+
+Also \moments requires \py{mpmath}, which can be installed via \py{pip}:
+\begin{lstlisting}
+$ python -m pip install mpmath
 \end{lstlisting}
 
 Then go to the \py{moments} directory and install package:

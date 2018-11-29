@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+python2 -m pip install -r requirements.txt
+
+if [ -d "dadi" ]; then
+	cd dadi
+	git pull
+else
+	git clone https://bitbucket.org/gutenkunstlab/dadi
+	cd dadi
+fi
+
+python2 setup.py install
+cd ..
+
+if [ -d "moments" ]; then
+	cd moments
+	git pull
+else
+	git clone https://bitbucket.org/simongravel/moments
+	cd moments
+fi
+
+python2 setup.py install
+cd ..
+
+python2 setup.py install
