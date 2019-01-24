@@ -95,7 +95,7 @@ class Options_storage:
         self.code_iter = 0
         self.silence = False
         self.draw_iter = 0
-        self.time_units = 1.0
+        self.gen_time_units = 1.0
 
         self.repeats = 1
         self.processes = 1
@@ -222,9 +222,9 @@ class Options_storage:
                     self.code_iter = int(value)
                 elif identity == 'units of time in drawing':
                     if value.lower() == 'years':
-                        self.time_units = 1
+                        self.gen_time_units = 1
                     elif value.lower() == 'kya' or value.lower() == 'thousand years':
-                        self.time_units = 1000
+                        self.gen_time_units = 1000
                     else:
                         support.warning(
                         'Cannot understand units of time in line ' +\
@@ -359,7 +359,7 @@ class Options_storage:
                     str(self.optimize_name),
                     str(self.draw_iter),
                     str(self.code_iter),
-                    'Thousand Years' if self.time_units == 1000 else 'Years',
+                    'Thousand Years' if self.gen_time_units == 1000 else 'Years',
                     str(self.silence),
                     str(self.repeats),
                     str(self.processes),
@@ -554,9 +554,9 @@ class Options_storage:
 
     def final_check(self):
         if self.model_func_file is not None and self.model_func_file is None:
-            if self.lower_bound is None or self.upper_bound is None:
+            if self.p_ids is None and (self.lower_bound is None or self.upper_bound is None):
                 support.error(
-                        "Either parameters identificators or lower and upper bounds should be specified.")
+                        "Either parameter identifiers or lower and upper bounds should be specified.")
 
         if self.model_func_file is not None and self.initial_structure is not None:
             support.warning(

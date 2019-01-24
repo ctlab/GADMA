@@ -65,10 +65,18 @@ def check_dir_existence(input_dirname):
 
 def check_comma_sep_list(l_str, is_int=True):
     try:
+        splited_list = l_str.split(',')
+        if splited_list[0].startswith('['):
+            splited_list[0] = splited_list[0][1:]
+        if splited_list[-1].endswith(']'):
+            splited_list[-1] = splited_list[-1][:1]
+        for i in xrange(len(splited_list)):
+            if splited_list[i].startswith("'") and splited_list[i].endswith("'"):
+                splited_list[i] = splited_list[i][1:-1]
         if is_int:
-            return np.array([int(x) for x in l_str.split(',')])
+            return np.array([int(x) for x in splited_list])
         else:
-            return np.array([x.strip().lower() for x in l_str.split(',')])
+            return np.array([x.strip().lower() for x in splited_list])
     except:
         if is_int:
             error("can't read comma-separated list of ints: " + str(l_str))

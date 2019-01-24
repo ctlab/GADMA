@@ -1106,6 +1106,9 @@ class Demographic_model:
     
     def normalize_by_Nref(self, N_ref=None, remove_fitness_func_value=True):
         """Change all parameter accordingly to new N_ref."""
+        if self.is_custom_model and (self.params.multinom or self.params.p_ids is None):
+            return
+        
         if N_ref is None:
             if self.params.moments_scenario:
                 opt_scale = moments.Inference.optimal_sfs_scaling(
@@ -1122,10 +1125,9 @@ class Demographic_model:
                                 sum([p.time for p in self.periods[self.split_2_pos:]]))
             N_ref = opt_scale
         if self.is_custom_model:
-            if not self.params.multinom and self.params.p_ids is not None:
-                for i in xrange(self.popt_len - int(not self.params.multinom)):
-                    self.popt[i] = self.normalize_param_by_Nref(self.popt[i], 
-                            N_ref, self.params.p_ids[i])
+            for i in xrange(self.popt_len - int(not self.params.multinom)):
+                self.popt[i] = self.normalize_param_by_Nref(self.popt[i], 
+                        N_ref, self.params.p_ids[i])
         else:
             if N_ref == 1.0:
                 return
@@ -1300,10 +1302,12 @@ class Demographic_model:
                             self.dt_fac /= 2
 
             if self.is_custom_model and self.params.multinom:
+                # self.optimal_theta is used on drawing with moments and only there!
                 if self.params.moments_scenario:
-                    self.sfs *= moments.Inference.optimal_sfs_scaling(self.sfs, self.params.input_data)
+                    self.optimal_theta = moments.Inference.optimal_sfs_scaling(self.sfs, self.params.input_data)           
                 else:
-                    self.sfs *= dadi.Inference.optimal_sfs_scaling(self.sfs, self.params.input_data)
+                    self.optimal_theta = dadi.Inference.optimal_sfs_scaling(self.sfs, self.params.input_data)
+                self.sfs *= self.optimal_theta
 
         return self.sfs
 
@@ -1770,6 +1774,12 @@ class Demographic_model:
             output.write(
                 "print('Model log likelihood (LL(model, data)): {0}'.format(ll_model))\n")
 
+            if self.params.multinom:
+                output.write(
+                        "\ntheta = dadi.Inference.optimal_sfs_scaling(model, data)\n")
+                output.write(
+                        "print('Optimal value of theta: {0}'.format(theta))\n")
+
     def moments_code(self, normalized_params, ns=None):
         """Model function for moments to get SFS."""
         theta = self.params.theta if self.params.theta is not None else 1
@@ -2067,14 +2077,42 @@ class Demographic_model:
 
             output.write(
                 "print('Model log likelihood (LL(model, data)): {0}'.format(ll_model))\n")
+            
+            if self.params.multinom:
+                output.write(
+                        "\ntheta = moments.Inference.optimal_sfs_scaling(model, data)\n")
+                output.write(
+                        "print('Optimal value of theta: {0}'.format(theta))\n")
+
 
             size_of_first_pop = self.get_N_A()
             self.normalize_by_Nref(1 / size_of_first_pop, remove_fitness_func_value=False)
             output.write(
-                '#now we need to norm vector of params so that first value is 1:\n'
+                '#now we need to norm vector of params so that N_A is 1:\n'
                 'popt_norm = ' + str(
                     self.as_vector()) + '\n')
             self.normalize_by_Nref(size_of_first_pop, remove_fitness_func_value=False)
+
+            draw_scale = self.params.theta is not None
+            if self.params.multinom and draw_scale:
+                output.write("theta0 = " + str(self.params.theta) + '\n')
+                nref = 'int(theta / theta0)'
+            else:
+                if draw_scale:
+                    nref = str(size_of_first_pop)
+                else:
+                    nref = 'None'
+
+            if self.params.gen_time is not None:
+                if self.params.gen_time_units == 1:
+                    gen_time_units = 'Years'
+                elif self.params.gen_time_units == 1000:
+                    gen_time_units = 'Thousand years'
+                else:
+                    gen_time_units = 'Genetic units'
+            else:
+                gen_time_units = 'Genetic units'
+                
             output.write("print('Drawing model to model_from_GADMA.png')\n"
                          'model = moments.ModelPlot.generate_model(generated_model, popt_norm, ns)\n'
                          'moments.ModelPlot.plot_model(model, \n'
@@ -2083,16 +2121,14 @@ class Demographic_model:
                          '\tpop_labels=' +
                          str(self.params.pop_labels) +
                          ',\n'
-                         '\tnref=' +
-                         str(int(size_of_first_pop)) +
+                         '\tnref=' + nref +
                          ',\n'
-                         '\tdraw_scale=' + str(self.params.theta is not None and not self.params.multinom) + ',\n'
+                         '\tdraw_scale=' + str(draw_scale) + ',\n'
                          '\tgen_time=' +
                          str(float(self.params.gen_time) /
-                             1000 if self.params.gen_time is not None else 1.0) +
+                             self.params.gen_time_units if self.params.gen_time_units is not None else 1.0) +
                          ',\n'
-                         '\tgen_time_units=' +
-                         ('"Thousand years"' if self.params.gen_time is not None else '"Genetic units"') +
+                         '\tgen_time_units=' + gen_time_units +
                          ',\n'
                          '\treverse_timeline=True)')
 
@@ -2192,19 +2228,27 @@ class Demographic_model:
         else:
             model = moments.ModelPlot.generate_model(self.moments_code, [],
                                                  self.params.ns)
-        draw_scale = self.params.theta is not None and not self.params.multinom
-        if self.params.gen_time is None or not (self.params.time_units not in [1, 1000]):
+        draw_scale = self.params.theta is not None
+        if self.params.multinom and self.is_custom_model and draw_scale:
+            nref = int(self.optimal_theta / self.params.theta)
+        else:
+            if draw_scale:
+                nref = size_of_first_pop
+            else:
+                nref = None
+
+        if self.params.gen_time is None or (self.params.gen_time_units not in [1, 1000]):
             gen_time = 1.0
             units = 'Genetic units'
         else:
-            gen_time = self.params.gen_time / self.params.time_units
-            units = 'Years' if self.params.time_units == 1 else 'Thousand years'
+            gen_time = self.params.gen_time / self.params.gen_time_units
+            units = 'Years' if self.params.gen_time_units == 1 else 'Thousand years'
         moments.ModelPlot.plot_model(
             model,
             save_file=save_file,
             fig_title=title,
             pop_labels=self.params.pop_labels,
-            nref=int(size_of_first_pop) if draw_scale else None,
+            nref=nref,
             draw_scale=draw_scale,
             gen_time=gen_time,
             gen_time_units=units,

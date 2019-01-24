@@ -84,6 +84,7 @@ But we know that spectrum should be $20 \times 20$! To specify size of AFS we ne
 # param_file
 Projections : 20,20
 \end{lstlisting}
+
 Order of populations can be changed as:
 \begin{lstlisting}
 # param_file
@@ -180,7 +181,7 @@ We can add a custom model using a parameter \py{Custom filename} in the paramete
 Custom filename : YRI_CEU_demographic_model.py
 \end{lstlisting}
 
-Our custom file needы to contain a function with a fixed name \py{model_func} (see Appendix A). For example:
+Our custom file need to contain a function with a fixed name \py{model_func} (see Appendix A). For example:
 
 \begin{lstlisting}
 # YRI_CEU_demographic_model.py
@@ -203,8 +204,8 @@ In addition, we can easily specify values for lower and upper bounds through a p
 
 \begin{lstlisting}
 # param_file
-Lower bounds : [1e-2, 1e-2, 1e-2, 0, 0, 0]
-Upper bounds : [100, 100, 100, 10, 3, 3]
+Lower bounds : 1e-2, 1e-2, 1e-2, 0, 0, 0
+Upper bounds : 100, 100, 100, 10, 3, 3
 \end{lstlisting}
 
 \paragraph{Example 8}\mbox{}\\
@@ -224,10 +225,10 @@ For example, we set a lower bound for the model we defined above (see Example 7)
 
 \begin{lstlisting}
 # param_file
-Lower bound : [1e-2, 1e-2, 1e-2, 0, 0, 0]
+Lower bound : 1e-2, 1e-2, 1e-2, 0, 0, 0
 Upper bound : None
 
-Parameter identifiers : ['n', 'n', 'n', 'm', 't', 't']
+Parameter identifiers : n, n, n, m, t, t
 \end{lstlisting}
 
 \paragraph{Example YRI, CEU}\mbox{}\\

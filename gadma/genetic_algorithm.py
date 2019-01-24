@@ -43,7 +43,7 @@ class GA(object):
             out_dir :   output directory
             final_structure :   structure of final model
         (Other fields in params are for Demographic model class)
-        prefix :    prefix for output folder and so on.
+        prefix :    prefix for output folder.
         """
         # all parameters
         self.params = params
@@ -188,11 +188,11 @@ class GA(object):
         if pos_of_last_empty_str - 11 > size:
             if iter_out[-1].startswith(
                     'BEST') and iter_out[-2].startswith('Try to improve'):
-                # when we don't print final result
+                # when we have not print final result
                 self.select(size)
                 return
             if iter_out[-1].startswith('Try to improve'):
-                # when we don't print final result too
+                # when we have not print final result too
                 self.select(size)
                 return
             if iter_out[-1].startswith('BEST'):
@@ -716,7 +716,8 @@ class GA(object):
                 self.best_model().draw(
                     os.path.join(self.out_dir, 'result_model' + '.png'),
                     'Iteration ' + str(self.cur_iteration) + ', logLL: ' +
-                    support.float_representation(-self.models[0].get_fitness_func_value(), self.ll_precision))
+                    support.float_representation(-self.models[0].get_fitness_func_value(), 
+                        self.ll_precision))
             if not self.is_custom_model or not self.params.moments_scenario:
                 self.models[0].dadi_code_to_file(
                     os.path.join(self.out_dir,
