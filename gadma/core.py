@@ -5,6 +5,11 @@
 # All Rights Reserved
 # See the LICENSE file for details
 ############################################################################
+if 'matplotlib' in sys.modules:
+    # First we make matplotlib backend as Agg
+    import matplotlib.pyplot as plt
+    plt.switch_backend('agg')
+
 from __future__ import print_function
 import numpy as np
 import os
