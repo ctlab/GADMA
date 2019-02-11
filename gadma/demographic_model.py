@@ -2126,7 +2126,7 @@ class Demographic_model:
                          '\tdraw_scale=' + str(draw_scale) + ',\n'
                          '\tgen_time=' +
                          str(float(self.params.gen_time) /
-                             self.params.gen_time_units if self.params.gen_time_units is not None else 1.0) +
+                             self.params.gen_time_units if self.params.gen_time is not None else 1.0) +
                          ',\n'
                          '\tgen_time_units=' + gen_time_units +
                          ',\n'
