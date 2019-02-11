@@ -30,6 +30,12 @@ except ImportError:
         except ImportError:
             support.error('None of the dadi or the moments are installed')
 
+if 'matplotlib' in sys.modules:
+    # First we make matplotlib backend as Agg
+    import matplotlib.pyplot as plt
+    plt.switch_backend('agg')
+
+
 
 class Period(object):
     """Class Period.
