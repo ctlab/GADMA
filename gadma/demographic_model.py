@@ -17,6 +17,7 @@ import signal
 import support
 import ast
 import math
+import sys
 
 try:
     import dadi
