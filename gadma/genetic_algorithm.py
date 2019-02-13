@@ -142,11 +142,11 @@ class GA(object):
                     with open(code_file) as f:
                         key_start_1 = '#current best params = '
                         key_start_2 = 'popt = '
-                        for key in [key_start_1, key_start_2]
-                        for line in f:
-                            if line.startswith(key):
-                                par_values = [float(x) for x in line.strip()[len(key) + 1: -1].split(',')]
-                                break
+                        for key in [key_start_1, key_start_2]:
+                            for line in f:
+                                if line.startswith(key):
+                                    par_values = [float(x) for x in line.strip()[len(key) + 1: -1].split(',')]
+                                    break
                     break
             if par_values is not None:
                 self.models[0].from_vector(par_values)
