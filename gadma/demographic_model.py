@@ -1504,7 +1504,7 @@ class Demographic_model:
             else:  # change population size
                 growth_funcs = []
                 for i in xrange(period.number_of_populations):
-                    if period.growth_types[i] == 0:
+                    if period.time == 0 or period.growth_types[i] == 0:
                         growth_funcs.append(
                             period.get_sizes_of_populations()[i])
                     elif period.growth_types[i] == 1:
@@ -1668,7 +1668,10 @@ class Demographic_model:
                         ns_index += period.number_of_populations
 
                         for i in xrange(period.number_of_populations):
-                            if period.growth_types[i] == 0:
+                            if period.time == 0 or period.growth_types[i] == 0:
+                                if period.time == 0:
+                                    output.write('\t# Time of period is equal to 0, so we ignore dynamics and\n'\
+                                            '\t# linear and exponential change are considered to be sudden.\n')
                                 growth_funcs.append('after[' + str(i) + ']')
                             elif period.growth_types[i] == 1:
                                 growth_funcs.append(
@@ -1836,7 +1839,7 @@ class Demographic_model:
             else:
                 growth_funcs = []
                 for p in xrange(period.number_of_populations):
-                    if period.growth_types[p] == 0:
+                    if period.time == 0 or period.growth_types[p] == 0:
                         growth_funcs.append(
                             _sudden_growth_func(
                                 period.get_sizes_of_populations()[p]))
@@ -1991,7 +1994,10 @@ class Demographic_model:
 
                         growth_funcs = '['
                         for i in xrange(period.number_of_populations):
-                            if period.growth_types[i] == 0:
+                            if period.time == 0 or period.growth_types[i] == 0:
+                                if period.time == 0:
+                                    output.write('\t# Time of period is equal to 0, so we ignore dynamics and\n'\
+                                            '\t# linear and exponential change are considered to be sudden.\n')
                                 growth_funcs += 'lambda t: after[' + str(i) + '], '
                             elif period.growth_types[i] == 1:
                                 growth_funcs += _linear_growth_func_str(
