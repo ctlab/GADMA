@@ -133,6 +133,25 @@ class GA(object):
             self.models[0] = Demographic_model(
                 self.params, restore_string=ls_string.strip().split('\t')[index])
 
+        def read_values_properly():
+            dadi_code_file = os.path.join(params.restore_dir, 'best_model_logLL_dadi_code.py')
+            moments_code_file = os.path.join(params.restore_dir, 'best_model_logLL_moments_code.py')
+            par_values = None
+            for code_file in [dadi_code_file, moments_code_file]:
+                if os.path.isfile(code_file):
+                    with open(code_file) as f:
+                        key_start_1 = '#current best params = '
+                        key_start_2 = 'popt = '
+                        for key in [key_start_1, key_start_2]
+                        for line in f:
+                            if line.startswith(key):
+                                par_values = [float(x) for x in line.strip()[len(key) + 1: -1].split(',')]
+                                break
+                    break
+            if par_values is not None:
+                self.models[0].from_vector(par_values)
+
+
         if not os.path.isfile(
             os.path.join(
                 self.params.resume_dir,
@@ -184,7 +203,10 @@ class GA(object):
                 if line != '':
                     break
                 pos_of_last_empty_str -= 1
-
+                
+        # try to find file with all parameters
+        read_values_properly()
+        
         if pos_of_last_empty_str - 11 > size:
             if iter_out[-1].startswith(
                     'BEST') and iter_out[-2].startswith('Try to improve'):
@@ -210,6 +232,7 @@ class GA(object):
             # now we want to restore model from last string
             restore_from_ls_string(
                 iter_out[-1], iter_out[-2].startswith('BEST'))
+        read_values_properly()
         self.select(size)
 
     def init_first_population_of_models(self):
