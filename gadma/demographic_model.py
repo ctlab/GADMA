@@ -641,9 +641,9 @@ class Demographic_model:
                 p0 = self.popt[:-1]
         else:
             if self.params.multinom:
-                p0 = self.as_vector()
-            else:
                 p0 = self.as_vector()[1:]
+            else:
+                p0 = self.as_vector()
         if self.params.ls_verbose is not None:
             verbose = self.params.ls_verbose
         else:
