@@ -134,8 +134,8 @@ class GA(object):
                 self.params, restore_string=ls_string.strip().split('\t')[index])
 
         def read_values_properly():
-            dadi_code_file = os.path.join(self.params.resume_dir, 'best_model_logLL_dadi_code.py')
-            moments_code_file = os.path.join(self.params.resume_dir, 'best_model_logLL_moments_code.py')
+            dadi_code_file = os.path.join(self.params.resume_dir, self.prefix, 'current_best_logLL_model_dadi_code.py')
+            moments_code_file = os.path.join(self.params.resume_dir, self.prefix, 'current_best_logLL_model_moments_code.py')
             par_values = None
             for code_file in [dadi_code_file, moments_code_file]:
                 if os.path.isfile(code_file):
@@ -149,6 +149,11 @@ class GA(object):
                                     break
                     break
             if par_values is not None:
+                support.write_log(
+                        self.log_file, 
+                        'GA number ' +
+                        self.prefix +
+                        ' find good file to restore')
                 self.models[0].from_vector(par_values)
 
 
