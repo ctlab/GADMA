@@ -654,6 +654,7 @@ class GA(object):
             if not self.run_before_ls:
                 self.run_before_ls = True
             if self.run_ls:
+                best_model = copy.deepcopy(self.models[0])
                 support.write_to_file(
                     self.log_file,
                     '\nTry to improve best model (' +
@@ -674,6 +675,7 @@ class GA(object):
                     if e.message == 'Factor is exactly singular':
                         support.write_log(self.log_file, 
                                 'Local search failed of the following error: Factor is exactly singular.')
+                    self.models[0] = best_model
                         
             if not self.run_ls:
                 self.run_ls = True
