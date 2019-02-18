@@ -659,16 +659,22 @@ class GA(object):
                     '\nTry to improve best model (' +
                     self.params.optimize_name +
                     ')')
-                if self.params.optimize_name != 'hill_climbing':
-                    if self.out_dir is not None:
-                        self.models[0].run_local_search(self.params.optimize_name, os.path.join(
-                            self.out_dir, self.params.optimize_name + '_' + str(self.cur_iteration) + '_out'))
+                try: # catch error of `Factor is exactly singular`
+                    if self.params.optimize_name != 'hill_climbing':
+                        if self.out_dir is not None:
+                            self.models[0].run_local_search(self.params.optimize_name, os.path.join(
+                                self.out_dir, self.params.optimize_name + '_' + str(self.cur_iteration) + '_out'))
+                        else:
+                            self.models[0].run_local_search(self.params.optimize_name, None)
+                        self.check_best_aic()
                     else:
-                        self.models[0].run_local_search(self.params.optimize_name, None)
-                    self.check_best_aic()
-                else:
-                    self.run_hill_climbing_of_best()
-                self.print_and_draw_best_model(suffix='_ls')
+                        self.run_hill_climbing_of_best()
+                    self.print_and_draw_best_model(suffix='_ls')
+                except RuntimeError as e:
+                    if e.message == 'Factor is exactly singular':
+                        support.write_log(self.log_file, 
+                                'Local search failed of the following error: Factor is exactly singular.')
+                        
             if not self.run_ls:
                 self.run_ls = True
 
