@@ -80,6 +80,10 @@ class GA(object):
         self.work_time = 0
         self.models = []
 
+        # options that can be False after restore
+        self.run_before_ls = True
+        self.run_ls = True
+
         # variables for stops
         self.without_changes = 0
 
@@ -216,10 +220,13 @@ class GA(object):
             if iter_out[-1].startswith(
                     'BEST') and iter_out[-2].startswith('Try to improve'):
                 # when we have not print final result
+                self.run_before_ls = False
+                self.run_ls = False
                 self.select(size)
                 return
             if iter_out[-1].startswith('Try to improve'):
                 # when we have not print final result too
+                self.run_before_ls = False
                 self.select(size)
                 return
             if iter_out[-1].startswith('BEST'):
@@ -235,6 +242,7 @@ class GA(object):
                 iter_out.pop()
 
             # now we want to restore model from last string
+            self.run_before_ls = False
             restore_from_ls_string(
                 iter_out[-1], iter_out[-2].startswith('BEST'))
         read_values_properly()
@@ -433,7 +441,7 @@ class GA(object):
                         os.path.join(self.out_dir,
                                      'current_best_aic_model_moments_code.py'))
 
-    def print_and_draw_best_model(self):
+    def print_and_draw_best_model(self, suffix=''):
         # print currrent best model
         if self.out_dir is None:
             return
@@ -451,19 +459,19 @@ class GA(object):
             if not self.is_custom_model or not self.params.moments_scenario:
                 self.models[0].dadi_code_to_file(
                     os.path.join(self.out_dir, 'python_code', 'dadi',
-                                 'iteration_' + str(self.cur_iteration) + '.py'))
+                                 'iteration_' + str(self.cur_iteration) + suffix + '.py'))
             if not self.is_custom_model or self.params.moments_scenario:
                 self.models[0].moments_code_to_file(
                     os.path.join(self.out_dir, 'python_code', 'moments',
-                                 'iteration_' + str(self.cur_iteration) + '.py'))
+                                 'iteration_' + str(self.cur_iteration) + suffix + '.py'))
 
         # draw its picture every self.params.draw_iter iteration
         if not self.params.draw_iter == 0 and self.cur_iteration % self.params.draw_iter == 0:
             if self.params.matplotlib_available:
                 self.best_model().draw(
                     os.path.join(self.out_dir, 'pictures',
-                                 'iteration_' + str(self.cur_iteration) + '.png'),
-                    'Iteration ' + str(self.cur_iteration) + ', logLL: ' +
+                                 'iteration_' + str(self.cur_iteration) + suffix + '.png'),
+                    'Iteration ' + str(self.cur_iteration) + suffix + ', logLL: ' +
                     support.float_representation(-self.best_fitness_value(), self.ll_precision) + ', AIC: ' +
                     support.float_representation(self.best_model().get_aic_score(), self.ll_precision))
                 
@@ -638,41 +646,35 @@ class GA(object):
 
         # help functions
         def run_one_ga_and_one_ls():
-            while (not self.is_stoped()):
+            while (not self.is_stoped() and self.run_before_ls):
                 self.run_one_iteration()
                 if shared_dict is not None:
                     shared_dict[self.prefix] = (
                         copy.deepcopy(self.models[0]), self.best_model_by_aic)
-            support.write_to_file(
-                self.log_file,
-                '\nTry to improve best model (' +
-                self.params.optimize_name +
-                ')')
-            if self.params.optimize_name != 'hill_climbing':
-                if self.out_dir is not None:
-                    self.models[0].run_local_search(self.params.optimize_name, os.path.join(
-                        self.out_dir, self.params.optimize_name + '_' + str(self.cur_iteration) + '_out'))
+            if not self.run_before_ls:
+                self.run_before_ls = True
+            if self.run_ls:
+                support.write_to_file(
+                    self.log_file,
+                    '\nTry to improve best model (' +
+                    self.params.optimize_name +
+                    ')')
+                if self.params.optimize_name != 'hill_climbing':
+                    if self.out_dir is not None:
+                        self.models[0].run_local_search(self.params.optimize_name, os.path.join(
+                            self.out_dir, self.params.optimize_name + '_' + str(self.cur_iteration) + '_out'))
+                    else:
+                        self.models[0].run_local_search(self.params.optimize_name, None)
+                    self.check_best_aic()
                 else:
-                    self.models[0].run_local_search(self.params.optimize_name, None)
-                self.check_best_aic()
-            else:
-                self.run_hill_climbing_of_best()
+                    self.run_hill_climbing_of_best()
+                self.print_and_draw_best_model(suffix='_ls')
+            if not self.run_ls:
+                self.run_ls = True
 
             if shared_dict is not None:
                 shared_dict[self.prefix] = (
                     copy.deepcopy(self.models[0]), self.best_model_by_aic)
-
-            if self.params.code_iter != 0 and self.cur_iteration % self.params.code_iter == 0:
-                if self.out_dir is not None and (not self.is_custom_model or not self.params.moments_scenario):
-                    self.models[0].dadi_code_to_file(
-                        os.path.join(self.out_dir, 'python_code', 'dadi',
-                                     'iteration_' + str(self.cur_iteration) +
-                                     '_after_local_search.py'))
-                if self.out_dir is not None and (not self.is_custom_model or self.params.moments_scenario):
-                    self.models[0].moments_code_to_file(
-                        os.path.join(self.out_dir, 'python_code', 'moments',
-                                     'iteration_' + str(self.cur_iteration) +
-                                     '_after_local_search.py'))
             self.check_best_aic()
 
             support.write_to_file(self.log_file, 'BEST:')
@@ -682,17 +684,8 @@ class GA(object):
                     -self.best_fitness_value(),
                     self.ll_precision),
                 self.models[0])
+            self.cur_iteration += 1
 
-            if self.out_dir is not None and self.params.matplotlib_available:
-                if (not self.params.draw_iter == 0 and self.cur_iteration % self.params.draw_iter == 0):
-                    self.best_model().draw(
-                        os.path.join(self.out_dir, 'pictures',
-                                     'iteration_' + str(self.cur_iteration) + '_after_local_search.png'),
-                        'Iteration ' + str(self.cur_iteration) + '(LS), logLL: ' +
-                        support.float_representation(-self.best_model().get_fitness_func_value(),
-                                                     self.ll_precision) + ', AIC: ' +
-                        support.float_representation(self.best_model().get_aic_score(),
-                                                     self.ll_precision))
 
         def increase_models_complexity():
             support.write_to_file(self.log_file,
