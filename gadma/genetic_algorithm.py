@@ -154,7 +154,7 @@ class GA(object):
                         'GA number ' +
                         self.prefix +
                         ' find good file to restore')
-                self.models[0].from_vector(par_values)
+                self.models[0].construct_from_vector(par_values)
 
 
         if not os.path.isfile(
