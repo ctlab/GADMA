@@ -112,7 +112,7 @@ class Period(object):
         # otherwise change corresponding parameter
         elif param_index == 0:
             self.time *= 1 + sign * change
-            self.time = max(self.time, bounds.min_T * N_A)
+            self.time = max(self/.time, bounds.min_T * N_A)
             self.time = min(self.time, bounds.max_T * N_A)
         elif param_index <= self.number_of_populations:
             self.get_sizes_of_populations()[
@@ -596,13 +596,15 @@ class Demographic_model:
             return self.lower_bound, self.upper_bound
         lower_bound = []
         upper_bound = []
-        for period in self.periods:
+        for i, period in enumerate(self.periods):
             n_pop = period.number_of_populations
             if period.is_first_period:
                 continue
             if period.is_split_of_population:
-                lower_bound.append(0.0)
-                upper_bound.append(1.0)
+                all_sudden = (np.array(self.periods[i + 1].growth_types) == 0).all()
+                if not all_sudden:
+                    lower_bound.append(0.0)
+                    upper_bound.append(1.0)
             else:
                 lower_bound.extend(
                     [self.params.min_N for _ in xrange(n_pop)])
@@ -614,6 +616,7 @@ class Demographic_model:
                 upper_bound.append(self.params.max_T)
         for period in self.periods:
             if period.migration_rates is not None:
+                n_pop = period.number_of_populations
                 for p1 in xrange(n_pop):
                     for p2 in xrange(n_pop):
                         if p1 == p2:
@@ -641,9 +644,9 @@ class Demographic_model:
                 p0 = self.popt[:-1]
         else:
             if self.params.multinom:
-                p0 = self.as_vector()[1:]
-            else:
                 p0 = self.as_vector()
+            else:
+                p0 = self.as_vector()[1:]
         if self.params.ls_verbose is not None:
             verbose = self.params.ls_verbose
         else:
@@ -2160,7 +2163,8 @@ class Demographic_model:
         vector = []
         for i, period in enumerate(self.periods):
             if period.is_first_period:
-                vector.append(period.get_sizes_of_populations()[0])
+                if not self.params.multinom:
+                    vector.append(period.get_sizes_of_populations()[0])
             elif period.is_split_of_population:
                 all_sudden = (np.array(self.periods[i + 1].growth_types) == 0).all()
                 if not all_sudden:
