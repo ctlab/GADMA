@@ -112,7 +112,7 @@ class Period(object):
         # otherwise change corresponding parameter
         elif param_index == 0:
             self.time *= 1 + sign * change
-            self.time = max(self/.time, bounds.min_T * N_A)
+            self.time = max(self.time, bounds.min_T * N_A)
             self.time = min(self.time, bounds.max_T * N_A)
         elif param_index <= self.number_of_populations:
             self.get_sizes_of_populations()[
