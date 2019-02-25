@@ -87,6 +87,31 @@ class Period(object):
                 0 if self.migration_rates is None else
                 (2 if self.number_of_populations == 2 else 6))
 
+    def check_params(self, bounds, N_A):
+        if self.is_first_period:
+            return
+        if self.is_split_of_population:
+            self.check_prop(bounds.min_N, N_A)
+            return
+        self.time = max(self.time, bounds.min_T * N_A)
+        self.time = min(self.time, bounds.max_T * N_A)
+
+        for i in xrange(self.number_of_populations):
+            self.get_sizes_of_populations()[i] = max(
+                self.get_sizes_of_populations()[i],
+                bounds.min_N * N_A)
+            self.get_sizes_of_populations()[i] = min(
+                self.get_sizes_of_populations()[i],
+                bounds.max_N * N_A)
+
+            if self.migration_rates is not None:
+                for j in xrange(self.number_of_populations):
+                    if i != j:
+                        self.migration_rates[i][j] = max(
+                            self.migration_rates[i][j], bounds.min_M / N_A)
+                        self.migration_rates[i][j] = min(
+                            self.migration_rates[i][j], bounds.max_M / N_A)
+
     def populations(self):
         """Iterator over populations."""
         return xrange(self.number_of_populations)
@@ -339,6 +364,8 @@ class Demographic_model:
 
         if restore_string is not None:
             self.from_string(restore_string)
+            for i in xrange(self.number_of_periods):
+                self.periods[i].check_params(self.get_N_A())
 
         if random and restore_string is None and initial_vector is None:
             self.init_random_model(structure)
