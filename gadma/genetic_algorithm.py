@@ -247,6 +247,8 @@ class GA(object):
             self.run_before_ls = False
             restore_from_ls_string(
                 iter_out[-1], iter_out[-2].startswith('BEST'))
+            if iter_out[-2].startswith('BEST'):
+                self.run_ls = False
         read_values_properly()
         self.select(size)
 
@@ -517,7 +519,7 @@ class GA(object):
         for i in xrange(self.number_of_random_models):
             new_models.append(
                 self.get_random_model(
-                    structure=self.models[0].cur_structure))
+                    structure=self.models[0].get_structure()))
 
         # remember prev best value of fitness function
         prev_value_of_fit = self.models[0].get_fitness_func_value()
@@ -728,7 +730,7 @@ class GA(object):
         # main part
         run_one_ga_and_one_ls()
         if not self.is_custom_model:
-            while not (self.models[0].cur_structure ==
+            while not (self.models[0].get_structure() ==
                        self.params.final_structure).all():
                 increase_models_complexity()
                 run_one_ga_and_one_ls()
