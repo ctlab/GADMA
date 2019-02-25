@@ -152,9 +152,9 @@ class Period(object):
                 self.migration_rates[x][
                     y] *= 1 + sign * change
                 self.migration_rates[x][y] = max(
-                    self.migration_rates[x][y], bounds.min_M / size_of_pop)
+                    self.migration_rates[x][y], bounds.min_M / N_A)
                 self.migration_rates[x][y] = min(
-                    self.migration_rates[x][y], bounds.max_M / size_of_pop)
+                    self.migration_rates[x][y], bounds.max_M / N_A)
             if self.migration_rates[x][y] * size_of_pop < 1e-3 and sign == -1:
                 self.migration_rates[x][y] *= random.choice([0, 1])
 
@@ -1482,7 +1482,12 @@ class Demographic_model:
             pts = ns
             ns = normalized_params
         else:
-            self.construct_from_vector(normalized_params)
+            if not self.params.multinom:
+                params = [1.0]
+                params.extend(normalized_params)
+            else:
+                params = normalized_params
+            self.construct_from_vector(params)
 
         xx = dadi.Numerics.default_grid(pts)
         for pos, period in enumerate(self.periods):
@@ -1794,7 +1799,13 @@ class Demographic_model:
         if ns is None:
             ns = normalized_params
         else:
-            self.construct_from_vector(normalized_params)
+            if not normalized_params == []:
+                if not self.params.multinom:
+                    params = [1.0]
+                    params.extend(normalized_params)
+                else:
+                    params = normalized_params
+                self.construct_from_vector(params)
 
 
         import moments
