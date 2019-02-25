@@ -1482,12 +1482,7 @@ class Demographic_model:
             pts = ns
             ns = normalized_params
         else:
-            if not self.params.multinom:
-                params = [1.0]
-                params.extend(normalized_params)
-            else:
-                params = normalized_params
-            self.construct_from_vector(params)
+            self.construct_from_vector(normalized_params)
 
         xx = dadi.Numerics.default_grid(pts)
         for pos, period in enumerate(self.periods):
@@ -1799,13 +1794,7 @@ class Demographic_model:
         if ns is None:
             ns = normalized_params
         else:
-            if not normalized_params == []:
-                if not self.params.multinom:
-                    params = [1.0]
-                    params.extend(normalized_params)
-                else:
-                    params = normalized_params
-                self.construct_from_vector(params)
+            self.construct_from_vector(normalized_params)
 
 
         import moments
