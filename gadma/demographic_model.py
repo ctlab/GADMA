@@ -365,7 +365,7 @@ class Demographic_model:
         if restore_string is not None:
             self.from_string(restore_string)
             for i in xrange(self.number_of_periods):
-                self.periods[i].check_params(self.get_N_A())
+                self.periods[i].check_params(self.params, self.get_N_A())
 
         if random and restore_string is None and initial_vector is None:
             self.init_random_model(structure)
