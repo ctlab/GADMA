@@ -117,17 +117,19 @@ class GA(object):
                 return
 
             if not iter_out[end_ind].startswith('Current mean mutation rate:'):
-                raise RuntimeError(
+                support.warning(
                     "Expect 'Current mean mutation rate:' after current population during restoring.")
-            self.cur_mutation_rate = float(iter_out[end_ind].split(':')[-1])
+            else:
+                self.cur_mutation_rate = float(iter_out[end_ind].split(':')[-1])
 
             if not iter_out[
                     end_ind +
                     1].startswith('Current mean number of params to change:'):
-                raise RuntimeError(
+                support.warning(
                     "Expect 'Current mean number of params to change:' after current population during restoring.")
-            self.cur_mutation_strength = float(
-                iter_out[end_ind + 1].split(':')[-1]) / self.models[0].get_number_of_params()
+            else:
+                self.cur_mutation_strength = float(
+                    iter_out[end_ind + 1].split(':')[-1]) / self.models[0].get_number_of_params()
 
         def restore_from_ls_string(ls_string, is_best=False):
             if is_best:
