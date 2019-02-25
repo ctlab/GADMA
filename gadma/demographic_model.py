@@ -614,6 +614,8 @@ class Demographic_model:
                     period.migration_rates[2][1] = vector[cur_index + 5]
                     cur_index += 6
 
+        for i in xrange(self.number_of_periods):
+            self.periods[i].check_params(self.params, self.get_N_A())
         self.has_changed()
         self.normalize_by_Nref()
         self.check_time_and_correct_it()
