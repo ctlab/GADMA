@@ -18,7 +18,7 @@ import support
 import ast
 import math
 import sys
-from gadma import Inference
+import gadma
 
 try:
     import dadi
@@ -562,12 +562,15 @@ class Demographic_model:
 
             self.check_time_and_correct_it()
 
-    def construct_from_vector(self, vector):
+    def construct_from_vector(self, vector, short=False):
         """The model can change its parameters to parameters from vector.
 
         N_A is missed. It is equal to 1.0. Structure of model doesn't
         change.
         """
+        if short:
+            vector = np.insert(vector, 0, 1.0)
+
         cur_index = 0
         vector = list(vector)
         if self.is_custom_model:
@@ -580,9 +583,6 @@ class Demographic_model:
 
         for i, period in enumerate(self.periods):
             if period.is_first_period:
-                if self.params.multinom:
-                    period.sizes_of_populations = [1.0]
-                else:
                     period.sizes_of_populations = [vector[cur_index]]
                     cur_index += 1
             elif period.is_split_of_population:
@@ -675,10 +675,7 @@ class Demographic_model:
             else:
                 p0 = self.popt[:-1]
         else:
-            if self.params.multinom:
-                p0 = self.as_vector()
-            else:
-                p0 = self.as_vector()[1:]
+            p0 = self.as_short_vector()
         if self.params.ls_verbose is not None:
             verbose = self.params.ls_verbose
         else:
@@ -766,11 +763,11 @@ class Demographic_model:
             p0 = np.array(x)
 
         if not np.isnan(p_opt).any() and not (p_opt < 0).any():
-            self.construct_from_vector(p_opt)
+            self.construct_from_vector(p_opt, short=True)
             if self.get_fitness_func_value(data_sample) > old_func_value:
-                self.construct_from_vector(p0)
+                self.construct_from_vector(p0, short=True)
         else:
-            self.construct_from_vector(p0)
+            self.construct_from_vector(p0, short=True)
 
     def has_changed(self):
         """If the model has been changed, then old spectra and fitness function
@@ -1405,24 +1402,24 @@ class Demographic_model:
             while eps <= 1e-2:
                 try:
                     if self.params.moments_available and not self.is_custom_model:
-                        self.claic_score = Inference.get_claic(
-                                self.moments_code, self.as_vector, 
+                        self.claic_score = 2 * gadma.Inference.get_claic_component(
+                                self.moments_code, self.as_short_vector(), 
                                 self.params.input_data, pts=None, 
-                                all_boot=None, eps=eps)
+                                all_boot=None, eps=eps) + 2 * self.get_fitness_func_value()
                         break
                     else:
                         if self.is_custom_model:
-                            self.claic_score = Inference.get_claic(
-                                    self.moedel_func, self.as_vector, 
+                            self.claic_score = 2 *  gadma.Inference.get_claic_component(
+                                    self.moedel_func, self.as_short_vector(), 
                                     self.params.input_data, 
                                     pts=None if self.params.moments_scenario else self.params.dadi_pts, 
-                                    all_boot=None, eps=eps)
+                                    all_boot=None, eps=eps) + 2 * self.get_fitness_func_value()
                             break
                         else:
-                            self.claic_score = Inference.get_claic(
-                                    self.moments_code, self.as_vector, 
+                            self.claic_score = 2 * gadma.Inference.get_claic_component(
+                                    self.moments_code, self.as_short_vector(), 
                                     self.params.input_data, pts=self.params.dadi_pts, 
-                                    all_boot=None, eps=eps)
+                                    all_boot=None, eps=eps) + 2 * self.get_fitness_func_value()
                             break
                 except np.linalg.linalg.LinAlgError as e:
                     if e.message == 'Singular matrix':
@@ -1555,12 +1552,8 @@ class Demographic_model:
             pts = ns
             ns = normalized_params
         else:
-            if not self.params.multinom:
-                params = [1.0]
-                params.extend(normalized_params)
-            else:
-                params = normalized_params
-            self.construct_from_vector(params)
+            params = normalized_params
+            self.construct_from_vector(params, short=True)
 
         xx = dadi.Numerics.default_grid(pts)
         for pos, period in enumerate(self.periods):
@@ -1645,7 +1638,7 @@ class Demographic_model:
         """Print a python code to the file for a function to run in DaDi."""
         theta = self.params.theta if self.params.theta is not None else 1
         with open(filename, 'w') as output:
-            output.write('#current best params = ' + str(self.as_vector()) +
+            output.write('#current best params = ' + str(self.as_full_vector()) +
                          '\n')
             output.write(
                 'import dadi\nimport numpy as np\n\n')
@@ -1838,7 +1831,7 @@ class Demographic_model:
                              ', polarized=' +
                              str(not self.params.input_data.folded) +
                              ')\n')
-            output.write('\npopt = ' + str(self.as_vector()) + '\n')
+            output.write('\npopt = ' + str(self.as_full_vector()) + '\n')
             output.write('pts = ' + str(list(self.params.dadi_pts)) + '\n')
             output.write('ns = ' + str(list(self.params.ns)) + '\n')
             output.write(
@@ -1873,12 +1866,8 @@ class Demographic_model:
             ns = normalized_params
         else:
             if not normalized_params == []:
-                if not self.params.multinom:
-                    params = [1.0]
-                    params.extend(normalized_params)
-                else:
-                    params = normalized_params
-                self.construct_from_vector(params)
+                params = normalized_params
+                self.construct_from_vector(params, short=True)
 
 
         import moments
@@ -1957,7 +1946,7 @@ class Demographic_model:
     def moments_code_to_file(self, filename):
         """Print a python code to the file for a function to run in moments."""
         with open(filename, 'w') as output:
-            output.write('#current best params = ' + str(self.as_vector()) +
+            output.write('#current best params = ' + str(self.as_full_vector()) +
                          '\n')
             output.write(
                 'import matplotlib\nmatplotlib.use("Agg")\nimport moments\n'
@@ -2149,7 +2138,7 @@ class Demographic_model:
                              ', polarized=' +
                              str(not self.params.input_data.folded) +
                              ')\n')
-            output.write('\npopt = ' + str(self.as_vector()) + '\n')
+            output.write('\npopt = ' + str(self.as_full_vector()) + '\n')
             output.write('ns = ' + str(list(self.params.ns)) + '\n')
             output.write('model = generated_model(popt, ns)\n')
             if self.params.multinom:
@@ -2179,7 +2168,7 @@ class Demographic_model:
             output.write(
                 '#now we need to norm vector of params so that N_A is 1:\n'
                 'popt_norm = ' + str(
-                    self.as_vector()) + '\n')
+                    self.as_full_vector()) + '\n')
             self.normalize_by_Nref(size_of_first_pop, remove_fitness_func_value=False)
 
             draw_scale = self.params.theta is not None
@@ -2221,7 +2210,7 @@ class Demographic_model:
                          ',\n'
                          '\treverse_timeline=True)')
 
-    def as_vector(self):
+    def as_full_vector(self):
         """Vector representaton of the model in order to put it in python code
         for DaDi."""
         if self.params.multinom:
@@ -2261,9 +2250,19 @@ class Demographic_model:
                     vector.append(period.migration_rates[2][1])
 
         if self.params.multinom:
-            vector = vector[1:]
+#            vector = vector[1:]
             self.normalize_by_Nref(Nref, remove_fitness_func_value=False)
         return vector
+
+    def as_short_vector(self):
+        if self.params.multinom:
+            p0 = self.as_full_vector()
+        else:
+            Nref = self.get_N_A()
+            self.normalize_by_Nref(1.0 / Nref, remove_fitness_func_value=False)
+            p0 = self.as_full_vector()[1:]
+            self.normalize_by_Nref(Nref, remove_fitness_func_value=False)
+        return p0
 
     def get_bounds_to_dadi(self):
         """Bound for parameters of the demographic model in order to run DaDi
@@ -2313,7 +2312,7 @@ class Demographic_model:
         size_of_first_pop = self.get_N_A()
         self.normalize_by_Nref(1 / size_of_first_pop, remove_fitness_func_value=False)
         if self.is_custom_model:
-            model = moments.ModelPlot.generate_model(self.params.model_func, self.as_vector(),
+            model = moments.ModelPlot.generate_model(self.params.model_func, self.as_full_vector(),
                                                  self.params.ns)
         else:
             model = moments.ModelPlot.generate_model(self.moments_code, [],

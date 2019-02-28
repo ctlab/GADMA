@@ -22,7 +22,7 @@ except ImportError:
         except ImportError:
             support.error("None of the dadi or the moments are installed")
 
-def get_claic(func_ex, p0, data, pts=None, all_boot=None, eps=1e-2):
+def get_claic_component(func_ex, p0, data, pts=None, all_boot=None, eps=1e-2):
     '''
     if pts is None, then moments is used.
     Some help:
@@ -67,7 +67,7 @@ def get_claic(func_ex, p0, data, pts=None, all_boot=None, eps=1e-2):
     # G = J*H^-1
     G = np.dot(J, H_inv)
 
-    return 2 * np.trace(G) - 2 * ll_model
+    return np.trace(G)
 
 
 def optimize_ga(number_of_params, data, model_func, pts=None, lower_bound=None, upper_bound=None, p0=None,

@@ -420,8 +420,8 @@ class GA(object):
     def check_claic(self):
         if self.params.linked_snp:
             self.best_model().get_claic_score() 
-            self.print_and_draw_best_model(best_by='CLAIC', final=final)
-            supprt.print_one_model_long(log_file, self.best_model(), params, heading='\n--Calculate CLAIC of the current best model--')
+            self.print_and_draw_best_model(best_by='CLAIC', final=True)
+            support.print_one_model_long(self.log_file, self.best_model(), self.params, heading='\n--Calculate CLAIC of the current best model--')
 
 
     def print_and_draw_best_model(self, suffix='', best_by='logLL', final=False):

@@ -164,7 +164,7 @@ def main():
     support.write_log(log_file, '--Start pipeline--\n')
 
     # For debug
-#    run_genetic_algorithm((1, params, log_file, None))
+    run_genetic_algorithm((1, params, log_file, None))
 
     # Create shared dictionary
     m = Manager()

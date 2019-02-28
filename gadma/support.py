@@ -301,7 +301,7 @@ def print_set_of_models(log_file, set_of_enum_models, params, first_col='N', hea
             if has_claic:
                 claic_str = float_representation(
                 model.claic_score,
-                ll_precision) + '(%.2e)' % model.claic_eps
+                ll_precision) + ' (eps=%.1e)' % model.claic_eps
                 write_log(log_file, '\t'.join([('Model %3s' % i), ll_str, claic_str, str(model)]), write_to_stdout=not silence)
             else:
                 write_log(log_file, '\t'.join([('Model %3s' % i), ll_str, str(model)]), write_to_stdout=not silence)
@@ -328,11 +328,11 @@ def print_one_model_long(log_file, model, params, heading='', silence=True):
                 model.get_aic_score(),
                 ll_precision), write_to_stdout=not silence)
     elif model.claic_score is not None:
-        claic, eps = model.get_claic_score()
+        claic, eps = model.get_claic_score(get_eps=True)
         write_log(
             log_file,
             'with CLAIC score:\t\t' + float_representation(
-                claic, ll_precision) + '(%.2e)' % eps, write_to_stdout=not silence)
+                claic, ll_precision) + ' (eps=%.1e)' % eps, write_to_stdout=not silence)
 
     write_log(log_file, 'Model:\t' + str(model), write_to_stdout=not silence)
 
