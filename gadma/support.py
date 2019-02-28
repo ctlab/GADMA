@@ -15,6 +15,7 @@ import numpy as np
 from threading import Thread
 import functools
 import importlib
+import math
 
 ERROR_PREFIX = "Error:"
 WARNING_PREFIX = "Warning:"
@@ -259,3 +260,125 @@ def timeout(timeout):
         return wrapper
 
     return deco
+
+
+# Very specific help functions for main part and genetic algorithm
+
+def get_ll_precision(params):
+    return 1 - int(math.log(params.epsilon, 10))
+
+def print_set_of_models(log_file, set_of_enum_models, params, first_col='N', heading='', silence=True):
+    '''
+    log_file : log file to write.
+    set_of_enum_models : set of enumerated models - (num, model).
+    params : params of run.
+    first_col : name of first column.
+    heading : heading before print.
+    silence : if True then stdout is empty.
+    '''
+    ll_precision = get_ll_precision(params)
+    write_log(log_file, heading, write_to_stdout=not silence)
+    has_claic = False
+    for i, model in set_of_enum_models:
+        if model.claic_score is not None:
+            has_claic = True
+    if params.linked_snp:
+        if has_claic:
+            write_log(log_file, first_col + '\tlogLL\t\t\tCLAIC\t\t\t\tmodel', write_to_stdout=not silence)
+        else:
+            write_log(log_file, first_col + '\tlogLL\t\t\t\tmodel', write_to_stdout=not silence)
+    else:
+        write_log(log_file, first_col + '\tlogLL\t\t\tAIC\t\t\t\tmodel', write_to_stdout=not silence)
+    
+    for i, model in set_of_enum_models:
+        ll_str = float_representation(
+                -model.get_fitness_func_value(),
+                ll_precision)
+        aic_str = float_representation(
+                model.get_aic_score(),
+                ll_precision)
+        if params.linked_snp:
+            if has_claic:
+                claic_str = float_representation(
+                model.claic_score,
+                ll_precision) + '(%.2e)' % model.claic_eps
+                write_log(log_file, '\t'.join([('Model %3s' % i), ll_str, claic_str, str(model)]), write_to_stdout=not silence)
+            else:
+                write_log(log_file, '\t'.join([('Model %3s' % i), ll_str, str(model)]), write_to_stdout=not silence)
+        else:
+            write_log(log_file, '\t'.join([('Model %3s' % i), ll_str, aic_str, str(model)]), write_to_stdout=not silence)
+
+def print_one_model_long(log_file, model, params, heading='', silence=True):
+    '''
+    log_file : log file to write.
+    model : model that should be printed.
+    params : params of run.
+    heading : heading before print.
+    silence : if True then stdout is empty.
+    '''
+    ll_precision = get_ll_precision(params)
+    write_log(log_file, heading, write_to_stdout=not silence)
+    write_log(log_file,
+                          'Log likelihood:\t' + float_representation(-model.get_fitness_func_value(),
+                                                       ll_precision), write_to_stdout=not silence)
+    if not params.linked_snp:
+        write_log(
+            log_file,
+            'with AIC score:\t\t' + float_representation(
+                model.get_aic_score(),
+                ll_precision), write_to_stdout=not silence)
+    elif model.claic_score is not None:
+        claic, eps = model.get_claic_score()
+        write_log(
+            log_file,
+            'with CLAIC score:\t\t' + float_representation(
+                claic, ll_precision) + '(%.2e)' % eps, write_to_stdout=not silence)
+
+    write_log(log_file, 'Model:\t' + str(model), write_to_stdout=not silence)
+
+def print_best_logll_model_long(log_file, model, params, silence=True):
+    print_one_model_long(log_file, model, params, heading='\n--Best model by log likelihood--', silence=silence)
+
+def print_best_aic_model_long(log_file, model, params, silence=True):
+    print_one_model_long(log_file, model, params, heading='\n--Best model by AIC--', silence=silence)
+
+def print_one_model_short(log_file, model, params, heading='', first_col='', silence=True):
+    ll_precision = get_ll_precision(params)
+    write_log(log_file, heading, write_to_stdout=not silence)
+    write_log(
+        log_file, '\t'.join([str(first_col),
+        float_representation(
+            -model.get_fitness_func_value(),
+            ll_precision), str(model)]), write_to_stdout=not silence)
+
+def print_final_model(log_file, model, params, silence=True):
+    print_one_model_short(log_file, model, params, heading='BEST:', silence=silence)
+
+def print_model_code(out_dir, model, params, prefix, suffix='', sub_folders=False):
+    if not params.model_func is not None or not params.moments_scenario:
+        if sub_folders:
+            dadi_out_dir = os.path.join(out_dir, 'dadi')
+        else:
+            dadi_out_dir = out_dir
+        model.dadi_code_to_file(
+            os.path.join(dadi_out_dir, prefix + '_dadi_code' + suffix + '.py'))
+    if not params.model_func is not None or params.moments_scenario:
+        if sub_folders:
+            moments_out_dir = os.path.join(out_dir, 'moments')
+        else:
+            moments_out_dir = out_dir
+
+        model.moments_code_to_file(
+            os.path.join(moments_out_dir, prefix + '_moments_code' + suffix + '.py'))
+
+def save_model_plot(out_file, model, params, title):
+    if params.matplotlib_available:
+        ll_precision = get_ll_precision(params)
+        plot_title = title + ', logLL: '\
+                + float_representation(-model.get_fitness_func_value(), ll_precision)
+        if not params.linked_snp:
+            plot_title += ', AIC: '\
+                    + float_representation(model.get_aic_score(), ll_precision)
+             
+        model.draw(out_file, plot_title)
+

@@ -79,6 +79,7 @@ class GA(object):
         self.first_iteration = 0  # is not 0 if we restore ga
         self.work_time = 0
         self.models = []
+        self.final_models = []
 
         # options that can be False after restore
         self.run_before_ls = True
@@ -279,17 +280,7 @@ class GA(object):
         self.select(self.params.size_of_generation)
         self.print_mutation_rate_and_strength()
 
-        support.write_to_file(self.log_file,
-                              'Best log likelihood:',
-                              support.float_representation(-self.best_fitness_value(),
-                                                           self.ll_precision))
-        support.write_to_file(
-            self.log_file,
-            'with AIC score:\t',
-            support.float_representation(
-                self.best_model().get_aic_score(),
-                self.ll_precision))
-        support.write_to_file(self.log_file, 'Model:', self.models[0])
+        support.print_best_logll_model_long(self.log_file, self.models[0], self.params)
 
     def get_mutated_model(
             self,
@@ -349,21 +340,9 @@ class GA(object):
         if print_iter:
             support.write_to_file(self.log_file,
                                   '\n\nIteration #' + str(self.cur_iteration) + '.')
-        support.write_to_file(
-            self.log_file,
-            'Current population of models:\nN\tlogLL\t\t\tAIC\t\t\t\tmodel')
-        for i, model in enumerate(self.models):
-            support.write_to_file(
-                self.log_file,
-                i,
-                support.float_representation(
-                    -model.get_fitness_func_value(),
-                    self.ll_precision),
-                support.float_representation(
-                    model.get_aic_score(),
-                    self.ll_precision),
-                model)
-        self.check_best_aic()
+
+        support.print_set_of_models(self.log_file, enumerate(self.models), 
+                self.params, first_col='N\t', heading='Current population of models:')
 
     def upgrade_model(self, model, mutation_rate=None):
         """Step for hill climbing.
@@ -425,60 +404,66 @@ class GA(object):
         return self.without_changes >= self.it_without_changes_to_stop_ga or (
             self.models[0].get_number_of_params() - int(not self.params.multinom) == 0)
 
-    def check_best_aic(self):
+    def check_best_aic(self, final=True):
         """Check if we have best by AIC model on current iteration.
 
         If so, we print it to file.
         """
-        if self.is_custom_model or (self.params.initial_structure == self.params.final_structure).all():
+        if self.params.linked_snp or self.is_custom_model or (self.params.initial_structure == self.params.final_structure).all():
             return 
         if self.best_model_by_aic is None or self.best_model_by_aic.get_aic_score() - \
                 self.best_model().get_aic_score() > 1e-8:
             self.best_model_by_aic = copy.deepcopy(self.best_model())
-            if self.out_dir is not None:
-                if not self.is_custom_model or not self.params.moments_scenario:
-                    self.best_model_by_aic.dadi_code_to_file(
-                        os.path.join(self.out_dir,
-                                     'current_best_aic_model_dadi_code.py'))
-                if not self.is_custom_model or self.params.moments_scenario:
-                    self.best_model_by_aic.moments_code_to_file(
-                        os.path.join(self.out_dir,
-                                     'current_best_aic_model_moments_code.py'))
 
-    def print_and_draw_best_model(self, suffix=''):
+            self.print_and_draw_best_model(best_by='AIC', final=final)
+
+    def check_claic(self):
+        if self.params.linked_snp:
+            self.best_model().get_claic() 
+            self.print_and_draw_best_model(best_by='CLAIC', final=final)
+            supprt.print_one_model_long(log_file, self.best_model(), params, heading='\n--Calculate CLAIC of the current best model--')
+
+
+    def print_and_draw_best_model(self, suffix='', best_by='logLL', final=False):
         # print currrent best model
         if self.out_dir is None:
             return
-        if not self.is_custom_model or not self.params.moments_scenario:
-            self.models[0].dadi_code_to_file(
-                os.path.join(self.out_dir,
-                             'current_best_logLL_model_dadi_code.py'))
-        if not self.is_custom_model or self.params.moments_scenario:
-            self.models[0].moments_code_to_file(
-                os.path.join(self.out_dir,
-                             'current_best_logLL_model_moments_code.py'))
+        if final:
+            prefix = 'result_'
+        else:
+            prefix = 'current_'
+            
+        if best_by == 'logLL' or best_by == 'CLAIC':
+            model = self.models[0]
+        elif best_by == 'AIC':
+            model = self.best_model_by_aic
+
+        support.print_model_code(self.out_dir, model, self.params, prefix=prefix + 'best_' + best_by.lower() + '_model')
+
+        if final:
+            support.save_model_plot(
+                    os.path.join(self.out_dir, prefix + 'best_' + best_by.lower() + '_model.png'), 
+                    model,
+                    self.params, 
+                    title='Iteration ' + str(self.cur_iteration) + suffix)
+
+        if best_by != 'logLL':
+            return
         if (not self.params.code_iter ==
                     0) and self.cur_iteration % self.params.code_iter == 0:
-                # print best model's code
-            if not self.is_custom_model or not self.params.moments_scenario:
-                self.models[0].dadi_code_to_file(
-                    os.path.join(self.out_dir, 'python_code', 'dadi',
-                                 'iteration_' + str(self.cur_iteration) + suffix + '.py'))
-            if not self.is_custom_model or self.params.moments_scenario:
-                self.models[0].moments_code_to_file(
-                    os.path.join(self.out_dir, 'python_code', 'moments',
-                                 'iteration_' + str(self.cur_iteration) + suffix + '.py'))
+            # print best model's code
+            code_dir = os.path.join(self.out_dir, 'python_code')
+            support.print_model_code(code_dir, model, self.params, 
+                    prefix='iteration_' + str(self.cur_iteration), suffix=suffix, sub_folders=True)
 
         # draw its picture every self.params.draw_iter iteration
         if not self.params.draw_iter == 0 and self.cur_iteration % self.params.draw_iter == 0:
-            if self.params.matplotlib_available:
-                self.best_model().draw(
-                    os.path.join(self.out_dir, 'pictures',
-                                 'iteration_' + str(self.cur_iteration) + suffix + '.png'),
-                    'Iteration ' + str(self.cur_iteration) + suffix + ', logLL: ' +
-                    support.float_representation(-self.best_fitness_value(), self.ll_precision) + ', AIC: ' +
-                    support.float_representation(self.best_model().get_aic_score(), self.ll_precision))
-                
+            support.save_model_plot(
+                    os.path.join(self.out_dir, 'pictures', 'iteration_' + str(self.cur_iteration) + '.png'), 
+                    model, 
+                    self.params, 
+                    title='Iteration ' + str(self.cur_iteration) + suffix)
+
 
     def run_one_iteration(self):
         """Iteration step for genetic algorithm."""
@@ -547,6 +532,8 @@ class GA(object):
         # update our adaptive mutation_rate and print it to log file
         self.update_mutation_rate_and_strength(prev_value_of_fit)
         self.print_mutation_rate_and_strength()
+        self.check_best_aic()
+
 
         # check if we get stuck
         if abs(
@@ -557,18 +544,9 @@ class GA(object):
             self.without_changes = 0
         self.cur_iteration += 1
 
-        # print results and statistics to log file
-        support.write_to_file(self.log_file,
-                              '\nBest log likelihood:',
-                              support.float_representation(-self.best_fitness_value(),
-                                                           self.ll_precision))
-        support.write_to_file(
-            self.log_file,
-            'with AIC score:\t',
-            support.float_representation(
-                self.best_model().get_aic_score(),
-                self.ll_precision))
-        support.write_to_file(self.log_file, 'Model:', self.models[0])
+        # print results to log file
+        support.print_best_logll_model_long(self.log_file, self.best_model(), self.params)
+
         stop = time.time()
         self.work_time += stop - start
         support.write_to_file(self.log_file, '\nMean time: ', self.mean_time())
@@ -590,26 +568,13 @@ class GA(object):
 
             if flag:
                 local_without_changes = 0
-                support.write_to_file(
-                    self.log_file,
-                    it,
-                    support.float_representation(
-                        -self.models[0].get_fitness_func_value(),
-                        self.ll_precision),
-                    self.models[0])
-                if self.out_dir is not None and (not self.params.code_iter == 0 and self.cur_iteration % self.params.code_iter == 0):
-                    if not self.is_custom_model or not self.params.moments_scenario:
-                        self.models[0].dadi_code_to_file(
-                            os.path.join(self.out_dir, 'python_code', 'dadi',
-                                         'iteration_' + str(self.cur_iteration) + '_after_hc.py'))
-                    if not self.is_custom_model or self.params.moments_scenario:
-                        self.models[0].moments_code_to_file(
-                            os.path.join(self.out_dir, 'python_code', 'moments',
-                                         'iteration_' + str(self.cur_iteration) + '_after_hc.py'))
+                support.print_one_model_short(self.log_file, self.models[0], self.params, first_col=str(it))
+                
+                print_and_draw_best_model(self, suffix='')
                 self.check_best_aic()
                 if shared_dict is not None:
                     shared_dict[self.prefix] = (
-                        self.models[0], self.best_model_by_aic)
+                        self.models[0], self.final_models)
             else:
                 local_without_changes += 1
             self.update_mutation_rate(flag)
@@ -654,7 +619,7 @@ class GA(object):
                 self.run_one_iteration()
                 if shared_dict is not None:
                     shared_dict[self.prefix] = (
-                        copy.deepcopy(self.models[0]), self.best_model_by_aic)
+                        copy.deepcopy(self.models[0]), self.final_models)
             if not self.run_before_ls:
                 self.run_before_ls = True
             if self.run_ls:
@@ -686,16 +651,13 @@ class GA(object):
 
             if shared_dict is not None:
                 shared_dict[self.prefix] = (
-                    copy.deepcopy(self.models[0]), self.best_model_by_aic)
+                    copy.deepcopy(self.models[0]), self.final_models)
             self.check_best_aic()
+            self.check_claic()
+            self.final_models.append(copy.deepcopy(self.best_model()))
 
-            support.write_to_file(self.log_file, 'BEST:')
-            support.write_to_file(
-                self.log_file,
-                support.float_representation(
-                    -self.best_fitness_value(),
-                    self.ll_precision),
-                self.models[0])
+            support.print_final_model(self.log_file, self.models[0], self.params)
+
             self.cur_iteration += 1
 
 
@@ -721,7 +683,7 @@ class GA(object):
                 self.prefix] = (
                 copy.deepcopy(
                     self.models[0]),
-                self.best_model_by_aic)
+                self.final_models)
         self.print_and_draw_best_model()
  
 
@@ -729,6 +691,7 @@ class GA(object):
 
         # main part
         run_one_ga_and_one_ls()
+        
         if not self.is_custom_model:
             while not (self.models[0].get_structure() ==
                        self.params.final_structure).all():
@@ -741,24 +704,12 @@ class GA(object):
 
         if shared_dict is not None:
             shared_dict[self.prefix] = (
-                copy.deepcopy(self.models[0]), self.best_model_by_aic)
+                copy.deepcopy(self.models[0]), self.final_models)
 
         # final part
-        if self.out_dir is not None and self.params.matplotlib_available:
-            if not self.params.draw_iter == 0 and self.cur_iteration % self.params.draw_iter == 0:
-                self.best_model().draw(
-                    os.path.join(self.out_dir, 'result_model' + '.png'),
-                    'Iteration ' + str(self.cur_iteration) + ', logLL: ' +
-                    support.float_representation(-self.models[0].get_fitness_func_value(), 
-                        self.ll_precision))
-            if not self.is_custom_model or not self.params.moments_scenario:
-                self.models[0].dadi_code_to_file(
-                    os.path.join(self.out_dir,
-                                 'result_model_dadi_code.py'))
-            if not self.is_custom_model or self.params.moments_scenario:
-                self.models[0].moments_code_to_file(
-                    os.path.join(self.out_dir,
-                                 'result_model_moments_code.py'))
+        if self.out_dir is not None:
+            self.print_and_draw_best_model(final=True)
+
         return self.best_model()
 
     def update_mutation_rate(self, flag):

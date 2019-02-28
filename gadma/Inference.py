@@ -1,7 +1,5 @@
 import os,sys
 
-import numpy
-from numpy import logical_and, logical_not
 import support
 from genetic_algorithm import GA
 
@@ -20,9 +18,56 @@ except ImportError:
         import moments as sim_sfs_lib
     except ImportError:
         try:
-            import dadi
+            import dadi as sim_sfs_lib
         except ImportError:
             support.error("None of the dadi or the moments are installed")
+
+def get_claic(func_ex, p0, data, pts=None, all_boot=None, eps=1e-2):
+    '''
+    if pts is None, then moments is used.
+    Some help:
+    moments.Godambe.get_hess(func, p0, eps, args=())
+    moments.Godambe.get_grad(func, p0, eps, args=())
+    '''
+    if pts is None:
+        import moments as sim_lib
+        func_ex_ = func_ex
+    else:
+        import dadi as sim_lib
+        def func_ex_(p, ns):
+            return func_ex(p, ns, pts)
+    if all_boot is None:
+        all_boot = [data.sample() for _ in xrange(100)]
+
+    ns = data.sample_sizes
+
+    # Cache evaluations of the frequency spectrum inside our hessian/J 
+    # evaluation function
+    cache = {}
+    def func(params, data):
+        key = (tuple(params), tuple(ns))
+        if key not in cache:
+            cache[key] = func_ex_(params, ns)
+        fs = cache[key]
+        return sim_lib.Inference.ll(fs, data)
+        
+    H = - sim_lib.Godambe.get_hess(func, p0, eps, args=[data])
+    H_inv = np.linalg.inv(H)
+
+    J = np.zeros((len(p0), len(p0)))
+    for ii, boot in enumerate(all_boot):
+        boot = sim_lib.Spectrum(boot)
+        grad_temp = sim_lib.Godambe.get_grad(func, p0, eps, args=[boot])
+
+        J_temp = np.outer(grad_temp, grad_temp)
+        J += J_temp
+        
+    J = J/len(all_boot)
+
+    # G = J*H^-1
+    G = np.dot(J, H_inv)
+
+    return 2 * np.trace(G) - 2 * ll_model
 
 
 def optimize_ga(number_of_params, data, model_func, pts=None, lower_bound=None, upper_bound=None, p0=None,

@@ -56,6 +56,14 @@ Population labels : {4}
 #	Default: from input file
 Projections : {5}
 
+#	Are SNP's linked or unlinked?
+#	If they are linked, then Composite Likelihood Akaike
+#	Information Criterion (CLAIC) will be used to compare models.
+#	If they are unlinked, then usual Akaike Information Criterion 
+#	(AIC) will be used.
+#	Default: True
+Linked SNP's : {37}
+
 
 
 

@@ -356,6 +356,8 @@ class Demographic_model:
         self.sfs = None
         self.fitness_func_value = None
         self.aic_score = None
+        self.claic_score = None
+        self.claic_eps = None
 
         self.param_ids = None
         self.number_of_changes = np.array(
@@ -775,6 +777,7 @@ class Demographic_model:
         self.sfs = None
         self.fitness_func_value = None
         self.aic_score = None
+        self.claic_score = None
 
     def add_period(self, period):
         """Add one period to the list of periods."""
@@ -1134,6 +1137,7 @@ class Demographic_model:
         self.number_of_changes = np.array(number_of_changes)
 
         self.get_aic_score()
+        self.claic_score = None
         return period_index_to_divide
 
     def normalize_param_by_Nref(self, value, N_ref, identificator):
@@ -1388,6 +1392,45 @@ class Demographic_model:
         if data_sample is not None:
             self.has_changed()
         return return_value
+
+    def get_claic_score(self, get_eps=False):
+        """Calculate CLAIC score for the model."""
+        if self.claic_score is None:
+            if self.number_of_populations < 3:
+                eps = 1e-14
+            else:
+                eps = 1e-10
+            n_attemts = 0
+            while eps <= 1e-2:
+                try:
+                    if self.params.moments_available and not self.is_custom_model:
+                        self.claic_score = gadma.Inference.get_claic(
+                                self.moments_code, self.as_vector, 
+                                self.params.input_data, pts=None, 
+                                all_boot=None, eps=eps)
+                        break
+                    else:
+                        if self.is_custom_model:
+                            self.claic_score = gadma.Inference.get_claic(
+                                    self.moedel_func, self.as_vector, 
+                                    self.params.input_data, 
+                                    pts=None if self.params.moments_scenario else self.params.dadi_pts, 
+                                    all_boot=None, eps=eps)
+                            break
+                        else:
+                            self.claic_score = gadma.Inference.get_claic(
+                                    self.moments_code, self.as_vector, 
+                                    self.params.input_data, pts=self.params.dadi_pts, 
+                                    all_boot=None, eps=eps)
+                            break
+                except np.linalg.linalg.LinAlgError as e:
+                    if e.message == 'Singular matrix':
+                        eps *= 10
+            self.claic_eps = eps
+        if get_eps:
+            return self.claic_score, self.claic_eps
+        else:
+            return self.claic_score
 
     def cross_with_other(self, other):
         """Crossover with other model for genetic algorithm."""

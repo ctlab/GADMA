@@ -59,6 +59,14 @@ Population labels : CEU, YRI # we change populations order
 #   Default: from input file
 Projections : None # will be 20, 20
 
+#	Are SNP's linked or unlinked?
+#	If they are linked, then Composite Likelihood Akaike
+#	Information Criterion (CLAIC) will be used to compare models.
+#	If they are unlinked, then usual Akaike Information Criterion 
+#	(AIC) will be used.
+#	Default: True
+Linked SNP's : True
+
 
 
 
@@ -146,12 +154,12 @@ Parameter identifiers : None
 #
 #   Structure of initial model:
 #   Default: all is ones - 1 or 1,1 or 1,1,1
-Initial structure : 2,1
+Initial structure : 1,1
 
 
 #   Structure of final model:
 #   Default: equals to initial structure
-#Final structure : 2,2
+Final structure : 2,2
 
 
 #   It is possible to limit time of splits.

@@ -46,6 +46,7 @@ class Options_storage:
         self.number_of_populations = None
         self.pop_labels = None
         self.ns = None
+        self.linked_snp = True
 
         # Pipeline
         self.theta = None
@@ -308,6 +309,10 @@ class Options_storage:
                     self.upper_bound = value if value.lower() != 'none' else None
                 elif identity == 'parameter identifiers':
                     self.p_ids = value if value.lower() != 'none' else None
+                elif identity == "linked snp's" or identity == "linked snp":
+                    self.linked_snp = value.lower() == 'true'
+                elif identity == "unlinked snp's" or identity == "unlinked snp":
+                    self.linked_snp = value.lower() == 'false'
                 else:
                     support.error(
                         'Cannot recognize identifier: ' +
@@ -367,8 +372,8 @@ class Options_storage:
                     str(self.model_func_file),
                     comma_sep_repr(self.lower_bound),
                     comma_sep_repr(self.upper_bound),
-                    comma_sep_repr(self.p_ids)
-
+                    comma_sep_repr(self.p_ids),
+                    str(self.linked_snp)
                 ))
 
     def to_file_extra(self, output_filename):

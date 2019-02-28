@@ -32,21 +32,21 @@ def run_genetic_algorithm(params_tuple):
     """
     np.random.seed()
     number = 'ID'
-    try:
-        def write_func(string): return support.write_log(log_file, string,
-                                                         write_to_stdout=not params.silence)
+#    try:
+    def write_func(string): return support.write_log(log_file, string,
+                                                     write_to_stdout=not params.silence)
 
-        number, params, log_file, shared_dict = params_tuple
+    number, params, log_file, shared_dict = params_tuple
 
-        write_func('Run genetic algorithm number ' + str(number))
+    write_func('Run genetic algorithm number ' + str(number))
 
-        ga_instance = GA(params, prefix=str(number))
-        ga_instance.run(shared_dict=shared_dict)
+    ga_instance = GA(params, prefix=str(number))
+    ga_instance.run(shared_dict=shared_dict)
 
-        write_func('Finish genetic algorithm number ' + str(number))
-        return number, ga_instance.best_model()
-    except Exception, e:
-        raise RuntimeError('GA number ' + str(number) + ': ' + str(e))
+    write_func('Finish genetic algorithm number ' + str(number))
+    return number, ga_instance.best_model()
+#    except Exception, e:
+#        raise RuntimeError('GA number ' + str(number) + ': ' + str(e))
 
 
 def worker_init():
@@ -65,13 +65,19 @@ def print_best_solution_now(start_time, shared_dict, params,
     start_time :    time when equation was started.
     shared_dict :   dictionary to share information between processes.
     log_file :      file to write logs.
-    draw_model :    plot model best by logll and best by AIC.
+    draw_model :    plot model best by logll and best by AIC (if needed).
     """
 
     def write_func(string): return support.write_log(log_file, string,
                                                      write_to_stdout=not params.silence)
 
     def my_str(x): return support.float_representation(x, precision)
+
+
+    has_aic_or_claic = params.model_func_file is None and (params.final_structure != params.initial_structure).any()
+    has_aic = not params.linked_snp and has_aic_or_claic
+    has_claic =  params.linked_snp and has_aic_or_claic
+    
 
     all_models_data = dict(shared_dict)
     if not all_models_data:
@@ -87,68 +93,51 @@ def print_best_solution_now(start_time, shared_dict, params,
         'seconds': s % 60
     })
 
-    write_func('All best logLL models:')
-    write_func('GA number\tlogLL\t\tAIC\t\tModel')
-    for number, res in all_models:
-        write_func(('Model %3s' % number) + '\t' +
-                   my_str(-res.get_fitness_func_value()) + '\t' +
-                   my_str(res.get_aic_score()) + '\t' +
-                   str(res))
+    support.print_set_of_models(log_file, all_models, 
+                params, first_col='GA number', heading='All best logLL models:', silence=params.silence)
 
-    if params.initial_structure is not None and (params.final_structure != params.initial_structure).any():
-        all_aic_models = [(i, all_models_data[i][1]) for i in all_models_data]
+    if has_aic:
+        all_aic_models = []
+        for i in all_models_data:
+            best_model, final_models = all_models_data[i]
+            all_aic_models.append((i, best_model))
+            for model in final_models:
+                if model.get_aic_score() < best_model.get_aic_score():
+                    all_aic_models[-1] = (i, model)
+
         all_aic_models = sorted(all_aic_models, key=lambda x: x[1].get_aic_score())
-        write_func('\nAll best AIC models:')
-        write_func('GA number\tlogLL\t\tAIC\t\tModel')
-        for number, res in all_aic_models:
-            write_func(('Model %3s' % number) + '\t' +
-                       my_str(-res.get_fitness_func_value()) + '\t' +
-                       my_str(res.get_aic_score()) + '\t' +
-                       str(res))
+        support.print_set_of_models(log_file, all_aic_models, 
+                params, first_col='GA number', heading='\nAll best AIC models:', silence=params.silence)
+    if has_claic:
+        all_claic_models = []
+        for i in all_models_data:
+            best_model, final_models = all_models_data[i]
+            if len(final_models) > 0:
+                all_claic_models.append((i, final_models[0]))
+            for model in final_models:
+                if model.get_claic_score() < best_model.get_claic_score():
+                    all_claic_models[-1] = (i, model)
 
-    write_func('\n--Best model by log likelihood--')
-    write_func('Log likelihood:\t' +
-               my_str(-all_models[0][1].get_fitness_func_value()))
-    write_func('with AIC score:\t' +
-               my_str(all_models[0][1].get_aic_score()))
-    write_func('Model:\t' + str(all_models[0][1]))
+        if len(all_claic_models) != 0:
+            all_claic_models = sorted(all_claic_models, key=lambda x: x[1].get_claic_score())
+            support.print_set_of_models(log_file, all_claic_models, 
+                    params, first_col='GA number', heading='\nAll best CLAIC models:', silence=params.silence)
 
-    if params.model_func_file is None and (params.final_structure != params.initial_structure).any():
-        write_func('\n--Best model by AIC score--')
-        write_func('Log likelihood:\t' +
-                   my_str(-all_aic_models[0][1].get_fitness_func_value()))
-        write_func('with AIC score:\t' +
-                   my_str(all_aic_models[0][1].get_aic_score()))
-        write_func('Model:\t' + str(all_aic_models[0][1]))
+    support.print_best_logll_model_long(log_file, all_models[0][1], params, silence=params.silence)
+
+    if has_aic:
+        support.print_best_aic_model_long(log_file, all_aic_models[0][1], params, silence=params.silence)
 
     if draw_model:
-        all_models[0][1].draw(
-            os.path.join(params.output_dir,
-                         'best_logLL_model.png'),
-            title='logLL: ' +
-            support.float_representation(-all_models[0][1].get_fitness_func_value(), precision) +
-            ', AIC: ' + support.float_representation(all_models[0][1].get_aic_score(), precision))
-        if params.model_func_file is None and (params.final_structure != params.initial_structure).any():
-            all_aic_models[0][1].draw(
-                os.path.join(params.output_dir,
-                             'best_aic_model.png'),
-                title='logLL: ' +
-                support.float_representation(-all_aic_models[0][1].get_fitness_func_value(), precision) +
-                ', AIC: ' + support.float_representation(all_aic_models[0][1].get_aic_score(), precision))
+        support.save_model_plot(os.path.join(params.output_dir, 'best_logLL.png'), all_models[0][1], params, title='')
 
-    if not params.initial_structure is None or not params.moments_scenario:
-        all_models[0][1].dadi_code_to_file(
-            os.path.join(params.output_dir, 'best_logLL_model_dadi_code.py'))
-    if not params.initial_structure is None or params.moments_scenario:
-        all_models[0][1].moments_code_to_file(
-            os.path.join(params.output_dir, 'best_logLL_model_moments_code.py'))
-    if params.model_func_file is None and (params.final_structure != params.initial_structure).any():
-        if not params.initial_structure is None or not params.moments_scenario:
-            all_aic_models[0][1].dadi_code_to_file(
-                os.path.join(params.output_dir, 'best_aic_model_dadi_code.py'))
-        if not params.initial_structure is None or params.moments_scenario:
-            all_aic_models[0][1].moments_code_to_file(
-                os.path.join(params.output_dir, 'best_aic_model_moments_code.py'))
+        if has_aic:
+            support.save_model_plot(os.path.join(params.output_dir, 'best_aic.png'), all_aic_models[0][1], params, title='')
+
+    support.print_model_code(params.output_dir, all_models[0][1], params, prefix='best_logLL_model')
+    
+    if has_aic:
+        support.print_model_code(params.output_dir, all_aic_models[0][1], params, prefix='best_aic_model')
 
     if not params.test:
         write_func(
