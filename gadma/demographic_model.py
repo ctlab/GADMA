@@ -18,6 +18,7 @@ import support
 import ast
 import math
 import sys
+from gadma import Inference
 
 try:
     import dadi
@@ -1404,21 +1405,21 @@ class Demographic_model:
             while eps <= 1e-2:
                 try:
                     if self.params.moments_available and not self.is_custom_model:
-                        self.claic_score = gadma.Inference.get_claic(
+                        self.claic_score = Inference.get_claic(
                                 self.moments_code, self.as_vector, 
                                 self.params.input_data, pts=None, 
                                 all_boot=None, eps=eps)
                         break
                     else:
                         if self.is_custom_model:
-                            self.claic_score = gadma.Inference.get_claic(
+                            self.claic_score = Inference.get_claic(
                                     self.moedel_func, self.as_vector, 
                                     self.params.input_data, 
                                     pts=None if self.params.moments_scenario else self.params.dadi_pts, 
                                     all_boot=None, eps=eps)
                             break
                         else:
-                            self.claic_score = gadma.Inference.get_claic(
+                            self.claic_score = Inference.get_claic(
                                     self.moments_code, self.as_vector, 
                                     self.params.input_data, pts=self.params.dadi_pts, 
                                     all_boot=None, eps=eps)
