@@ -341,7 +341,7 @@ class GA(object):
             support.write_to_file(self.log_file,
                                   '\n\nIteration #' + str(self.cur_iteration) + '.')
 
-        support.print_set_of_models(self.log_file, enumerate(self.models), 
+        support.print_set_of_models(self.log_file, list(enumerate(self.models)), 
                 self.params, first_col='N\t', heading='Current population of models:')
 
     def upgrade_model(self, model, mutation_rate=None):
