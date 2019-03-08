@@ -299,9 +299,9 @@ def print_set_of_models(log_file, set_of_enum_models, params, first_col='N', hea
                 ll_precision)
         if params.linked_snp:
             if has_claic:
-                claic_str = float_representation(
-                model.claic_score,
-                ll_precision) + ' (eps=%.1e)' % model.claic_eps
+                claic_str = 'None' if model.claic_score is None else (float_representation(
+                        model.claic_score,
+                        ll_precision) + ' (eps=%.1e)' % model.claic_eps)
                 write_log(log_file, '\t'.join([('Model %3s' % i), ll_str, claic_str, str(model)]), write_to_stdout=not silence)
             else:
                 write_log(log_file, '\t'.join([('Model %3s' % i), ll_str, str(model)]), write_to_stdout=not silence)
