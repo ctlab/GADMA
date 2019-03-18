@@ -12,6 +12,7 @@ import numpy as np
 import os
 import sys
 import math
+import cPickle as pickle
 
 from gadma.demographic_model import Demographic_model
 from gadma import options
@@ -93,13 +94,22 @@ class GA(object):
         self.log_file = None
         self.best_model_by_aic = None
 
+    def pickle_final_models(self, load=None):
+        if load is None:
+            pickle_file = os.path.join(self.out_dir, 'final_models_pickle')
+            with (open(pickle_file, "wb")) as f:
+                pickle.dump(self.final_models, f)
+        else:
+            with (open(load, "rb")) as f:
+                self.final_models = pickle.load(f)
+
     def restore(self):
         def restore_from_cur_pop_of_models(list_of_str):
             for restore_str in list_of_str:
                 self.models.append(
                     Demographic_model(
                         self.params,
-                        restore_string=restore_str.strip().split('\t')[3]))
+                        restore_string=restore_str.strip().split('\t')[-2]))
             if not (self.models[0].get_structure() <=
                     self.params.final_structure).all():
                 raise RuntimeError(
@@ -218,6 +228,8 @@ class GA(object):
                 
         # try to find file with all parameters
         read_values_properly()
+
+        load_final_models_file = os.path.join(self.params.resume_dir, self.prefix, 'final_models_pickle')
         
         if pos_of_last_empty_str - 11 > size:
             if iter_out[-1].startswith(
@@ -226,11 +238,13 @@ class GA(object):
                 self.run_before_ls = False
                 self.run_ls = False
                 self.select(size)
+                self.pickle_final_models(load=load_final_models_file)
                 return
             if iter_out[-1].startswith('Try to improve'):
                 # when we have not print final result too
                 self.run_before_ls = False
                 self.select(size)
+                self.pickle_final_models(load=load_final_models_file)
                 return
             if iter_out[-1].startswith('BEST'):
                 # remove string with BEST
@@ -251,6 +265,7 @@ class GA(object):
             if iter_out[-2].startswith('BEST'):
                 self.run_ls = False
         read_values_properly()
+        self.pickle_final_models(load=load_final_models_file)
         self.select(size)
 
     def init_first_population_of_models(self):
@@ -654,7 +669,8 @@ class GA(object):
                     copy.deepcopy(self.models[0]), self.final_models)
             self.check_best_aic()
             self.check_claic()
-            self.final_models.append(copy.deepcopy(self.best_model()))
+            self.final_models.append(self.best_model())
+            self.pickle_final_models()
 
             support.print_final_model(self.log_file, self.models[0], self.params)
 
@@ -664,6 +680,7 @@ class GA(object):
         def increase_models_complexity():
             support.write_to_file(self.log_file,
                                   "\nIncrease models' complexities:")
+            self.models = copy.deepcopy(self.models)
             index = None
             for model in self.models:
                 index = model.increase_complexity(index)

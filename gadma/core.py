@@ -112,16 +112,18 @@ def print_best_solution_now(start_time, shared_dict, params,
         all_claic_models = []
         for i in all_models_data:
             best_model, final_models = all_models_data[i]
-            if len(final_models) > 0:
-                all_claic_models.append((i, final_models[0]))
-            for model in final_models:
-                if model.get_claic_score() < best_model.get_claic_score():
-                    all_claic_models[-1] = (i, model)
+            for final_model in final_models:
+                all_claic_models.append((i, final_model))
+#            if len(final_models) > 0:
+#                all_claic_models.append((i, final_models[0]))
+#            for model in final_models:
+#                if model.get_claic_score() < best_model.get_claic_score():
+#                    all_claic_models[-1] = (i, model)
 
         if len(all_claic_models) != 0:
             all_claic_models = sorted(all_claic_models, key=lambda x: x[1].get_claic_score())
             support.print_set_of_models(log_file, all_claic_models, 
-                    params, first_col='GA number', heading='\nAll best CLAIC models:', silence=params.silence)
+                    params, first_col='GA number', heading='\nAll intermediate and final models (with CLAIC):', silence=params.silence)
 
     support.print_best_logll_model_long(log_file, all_models[0][1], params, silence=params.silence)
 

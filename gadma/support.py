@@ -278,10 +278,10 @@ def print_set_of_models(log_file, set_of_enum_models, params, first_col='N', hea
     '''
     ll_precision = get_ll_precision(params)
     write_log(log_file, heading, write_to_stdout=not silence)
-    has_claic = False
+    has_claic = True
     for i, model in set_of_enum_models:
-        if model.claic_score is not None:
-            has_claic = True
+        if model.claic_score is None:
+            has_claic = False
     if params.linked_snp:
         if has_claic:
             write_log(log_file, first_col + '\tlogLL\t\t\tCLAIC\t\t\t\tmodel', write_to_stdout=not silence)
@@ -299,7 +299,7 @@ def print_set_of_models(log_file, set_of_enum_models, params, first_col='N', hea
                 ll_precision)
         if params.linked_snp:
             if has_claic:
-                claic_str = 'None' if model.claic_score is None else (float_representation(
+                claic_str = 'None' if (model.claic_score is None) else (float_representation(
                         model.claic_score,
                         ll_precision) + ' (eps=%.1e)' % model.claic_eps)
                 write_log(log_file, '\t'.join([('Model %3s' % i), ll_str, claic_str, str(model)]), write_to_stdout=not silence)
