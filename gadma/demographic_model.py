@@ -809,6 +809,8 @@ class Demographic_model:
 
     def get_structure(self):
         """Get a current structure from the list of periods."""
+        if self.is_custom_model:
+            return None
         self.cur_structure = [0]
         for p in self.periods:
             if p.is_split_of_population:
@@ -2202,9 +2204,9 @@ class Demographic_model:
                          '\tnref=' + nref +
                          ',\n'
                          '\tdraw_scale=' + str(draw_scale) + ',\n'
-                         '\tgen_time=' +
+                         '\tgen_time=' + "'"
                          str(float(self.params.gen_time) /
-                             self.params.gen_time_units if self.params.gen_time is not None else 1.0) +
+                             self.params.gen_time_units if self.params.gen_time is not None else 1.0) + "'"
                          ',\n'
                          '\tgen_time_units=' + gen_time_units +
                          ',\n'
