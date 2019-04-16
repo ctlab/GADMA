@@ -110,10 +110,15 @@ class GA(object):
                     Demographic_model(
                         self.params,
                         restore_string=restore_str.strip().split('\t')[-2]))
-            if not (self.models[0].get_structure() <=
-                    self.params.final_structure).all():
-                raise RuntimeError(
-                    'New final structure is less than current structure.')
+            if self.is_custom_model:
+                if len(self.params.lower_bound) != len(self.params.upper_bound):
+                    raise RuntimeError(
+                        'New number of parameters is different than in previous run.')
+            else:
+                if not (self.models[0].get_structure() <=
+                        self.params.final_structure).all():
+                    raise RuntimeError(
+                        'New final structure is less than current structure.')
 
         def restore_iteration_state(iter_out, size):
             if not self.params.only_models:
