@@ -344,10 +344,11 @@ class Demographic_model:
             self.is_custom_model = False
             self.number_of_periods = 0
             self.periods = []
-            self.info = ''
-
+            
             self.cur_structure = None
             self.get_structure()
+
+        self.info = ''
 
         self.split_1_pos = None
         self.split_2_pos = None
