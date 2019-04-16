@@ -504,7 +504,7 @@ class Demographic_model:
             string = string[:last_occ - 1]
 
         if self.is_custom_model:
-            self.popt = [float(x) for x in string[1:].split(', ')]
+            self.popt = [float(x) for x in string[1:-1].split(', ')]
             if not self.params.multinom:
                 self.popt.append(real_Nref)
             self.popt_len = len(self.popt)
