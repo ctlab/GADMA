@@ -374,7 +374,7 @@ class Demographic_model:
                 lower_bound, upper_bound = self.get_lower_and_upper_bounds()
                 for i in xrange(self.get_number_of_parameters()):
                     self.popt[i] = min(self.popt[i], upper_bound[i])
-                    self.popt[i] = max(self.popt[i[, lower_bound[i])
+                    self.popt[i] = max(self.popt[i], lower_bound[i])
 
         if random and restore_string is None and initial_vector is None:
             self.init_random_model(structure)
