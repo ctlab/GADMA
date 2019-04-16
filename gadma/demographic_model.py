@@ -367,8 +367,14 @@ class Demographic_model:
 
         if restore_string is not None:
             self.from_string(restore_string)
-            for i in xrange(self.number_of_periods):
-                self.periods[i].check_params(self.params, self.get_N_A())
+            if not self.is_custom_model:
+                for i in xrange(self.number_of_periods):
+                    self.periods[i].check_params(self.params, self.get_N_A())
+            else:
+                lower_bound, upper_bound = self.get_lower_and_upper_bounds()
+                for i in xrange(self.get_number_of_parameters()):
+                    self.popt[i] = min(self.popt[i], upper_bound[i])
+                    self.popt[i] = max(self.popt[i[, lower_bound[i])
 
         if random and restore_string is None and initial_vector is None:
             self.init_random_model(structure)
