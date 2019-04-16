@@ -100,6 +100,8 @@ class GA(object):
             with (open(pickle_file, "wb")) as f:
                 pickle.dump(self.final_models, f)
         else:
+            if not os.path.isfile(load):
+                return
             with (open(load, "rb")) as f:
                 self.final_models = pickle.load(f)
 
