@@ -575,7 +575,7 @@ class Demographic_model:
         N_A is missed. It is equal to 1.0. Structure of model doesn't
         change.
         """
-        if short:
+        if short and not self.is_custom_model:
             vector = np.insert(vector, 0, 1.0)
 
         cur_index = 0
