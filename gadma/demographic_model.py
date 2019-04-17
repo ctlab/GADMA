@@ -1419,7 +1419,7 @@ class Demographic_model:
                     else:
                         if self.is_custom_model:
                             self.claic_score = 2 *  gadma.Inference.get_claic_component(
-                                    self.model_func, self.as_short_vector(), 
+                                    self.params.model_func, self.as_short_vector(), 
                                     self.params.input_data, 
                                     pts=None if self.params.moments_scenario else self.params.dadi_pts, 
                                     all_boot=None, eps=eps) + 2 * self.get_fitness_func_value()
