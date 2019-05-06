@@ -70,6 +70,23 @@ def get_claic_component(func_ex, p0, data, pts=None, all_boot=None, eps=1e-2):
     return np.trace(G)
 
 
+def get_claic_score(func_ex, p0, data, pts=None, boot_size=100, eps=1e-2):
+    '''
+    if pts is None, then moments is used.
+    '''
+    boots = [data.sample() for _ in xrange(boot_size)]
+    ns = data.sample_sizes
+    if pts is None:
+        import moments
+        model = func_ex(p0, ns)
+        ll_model = moments.Inference.ll_multinom(model, data)
+    else:
+        import dadi
+        model = func_ex(p0, ns, pts)
+        ll_model = dadi.Inference.ll_multinom(model, data)
+    return 2 * get_claic_component(func_ex, p0, data, pts=pts, all_boot=boots, eps=eps) - 2 * ll_model
+
+
 def optimize_ga(number_of_params, data, model_func, pts=None, lower_bound=None, upper_bound=None, p0=None,
                  multinom=True, p_ids = None, mutation_strength=0.2, const_for_mut_strength=1.1, mutation_rate=0.2, const_for_mut_rate=1.2,
                  epsilon=1e-2, stop_iter=100, size_of_generation_in_ga=10, frac_of_old_models=0.2, frac_of_mutated_models=0.3, 
