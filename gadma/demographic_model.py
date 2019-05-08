@@ -7,7 +7,6 @@
 ############################################################################
 
 import random
-from datetime import datetime
 import numpy as np
 import copy
 import os
@@ -1362,7 +1361,7 @@ class Demographic_model:
 
         return self.sfs
 
-    def get_fitness_func_value(self, log_file=None, start_time=None, data_sample=None):
+    def get_fitness_func_value(self, data_sample=None):
         """Calculate fitness function value for the model."""
         if data_sample is not None:
             self.has_changed()
@@ -1384,11 +1383,6 @@ class Demographic_model:
             log_likelihood = ll_func(self.sfs, data)
             self.fitness_func_value = - log_likelihood
             self.aic_score = self.get_number_of_params() * 2 - 2 * log_likelihood
-
-            if log_file is  not None:
-                s = (datetime.now() - start_time).total_seconds()
-                t = '\n[%(hours)03d:%(minutes)02d:%(seconds)02d]' % {'hours': s / 3600, 'minutes': s % 3600 / 60, 'seconds': s % 60}
-                support.write_to_file(log_file, t, self.fitness_func_value, self)
 
         return_value = self.fitness_func_value
         if data_sample is not None:

@@ -7,7 +7,6 @@
 ############################################################################
 
 import time
-from datetime import datetime
 import copy
 import numpy as np
 import os
@@ -80,7 +79,6 @@ class GA(object):
         self.cur_iteration = 0
         self.first_iteration = 0  # is not 0 if we restore ga
         self.work_time = 0
-        self.start_time = datetime.now()
         self.models = []
         self.final_models = []
 
@@ -94,7 +92,6 @@ class GA(object):
         # connected files and directories
         self.out_dir = None
         self.log_file = None
-        self.log_file_2 = None
         self.best_model_by_aic = None
 
     def pickle_final_models(self, load=None):
@@ -336,16 +333,16 @@ class GA(object):
                 (ind, -sgn) for ind, sgn in inds_and_signs])
 
         # if change is good then we increase prob to choose it again
-        if new_model_1.get_fitness_func_value(self.log_file_2, self.start_time
-        ) < new_model_2.get_fitness_func_value(self.log_file_2, self.start_time):
-            if model.get_fitness_func_value(self.log_file_2, self.start_time
-            ) > new_model_1.get_fitness_func_value(self.log_file_2, self.start_time):
+        if new_model_1.get_fitness_func_value(
+        ) < new_model_2.get_fitness_func_value():
+            if model.get_fitness_func_value(
+            ) > new_model_1.get_fitness_func_value():
                 for index, sign in inds_and_signs:
                     new_model_1.number_of_changes[index] -= 1
             return new_model_1
         else:
-            if model.get_fitness_func_value(self.log_file_2, self.start_time
-            ) > new_model_2.get_fitness_func_value(self.log_file_2, self.start_time):
+            if model.get_fitness_func_value(
+            ) > new_model_2.get_fitness_func_value():
                 for index, sign in inds_and_signs:
                     new_model_2.number_of_changes[index] -= 1
             return new_model_2
@@ -361,7 +358,7 @@ class GA(object):
         If size of current population is bigger than size, then we discard the worst.
         """
         self.models = sorted(
-            self.models, key=lambda x: x.get_fitness_func_value(self.log_file_2, self.start_time))[:size]
+            self.models, key=lambda x: x.get_fitness_func_value())[:size]
         if print_iter:
             support.write_to_file(self.log_file,
                                   '\n\nIteration #' + str(self.cur_iteration) + '.')
@@ -392,16 +389,16 @@ class GA(object):
                     mutation_rate, index_and_sign=(index, -sign))
                 new_model.info = new_model.info[:-1]
 
-            if new_model.get_fitness_func_value(self.log_file_2, self.start_time
-            ) < model.get_fitness_func_value(self.log_file_2, self.start_time):
+            if new_model.get_fitness_func_value(
+            ) < model.get_fitness_func_value():
                 new_new_model = copy.deepcopy(new_model)
                 index, sign = new_new_model.mutate_one(
                     mutation_rate, (index, sign))
                 new_new_model.info = new_new_model.info[:-1]
                 counter = 0
                 # if improvement is good then try again
-                while (new_new_model.get_fitness_func_value(self.log_file_2, self.start_time) <
-                       new_model.get_fitness_func_value(self.log_file_2, self.start_time)) and counter < 50:
+                while (new_new_model.get_fitness_func_value() <
+                       new_model.get_fitness_func_value()) and counter < 50:
                     new_model = new_new_model
                     new_model.number_of_changes[index] -= 1
                     new_new_model = copy.deepcopy(new_new_model)
@@ -422,7 +419,7 @@ class GA(object):
 
     def best_fitness_value(self):
         """Get best fitness value of current population of models."""
-        return self.best_model().get_fitness_func_value(self.log_file_2, self.start_time)
+        return self.best_model().get_fitness_func_value()
 
     def is_stoped(self):
         """Check if we need to stop."""
@@ -500,7 +497,7 @@ class GA(object):
         # create probabilities to choose models for crossing and mutation
         p = []
         for m in self.models:
-            p.append(m.get_fitness_func_value(self.log_file_2, self.start_time))
+            p.append(m.get_fitness_func_value())
         p = np.array(p)
         p -= max(p) + 1
         p = -p
@@ -532,7 +529,7 @@ class GA(object):
                     structure=self.models[0].get_structure()))
 
         # remember prev best value of fitness function
-        prev_value_of_fit = self.models[0].get_fitness_func_value(self.log_file_2, self.start_time)
+        prev_value_of_fit = self.models[0].get_fitness_func_value()
 
         # new population become current population
         self.models = new_models
@@ -582,7 +579,7 @@ class GA(object):
         old_cur_mut_rate = self.cur_mutation_rate
         self.cur_mutation_rate = self.params.hc_mutation_rate
         while local_without_changes < self.params.hc_stop_iter:
-            prev_value_of_fit = self.models[0].get_fitness_func_value(self.log_file_2, self.start_time)
+            prev_value_of_fit = self.models[0].get_fitness_func_value()
 
             flag, self.models[0] = self.upgrade_model(
                 self.models[0], self.cur_mutation_rate)
@@ -634,9 +631,7 @@ class GA(object):
                 support.ensure_dir_existence(os.path.join(
                     self.out_dir, 'python_code', 'moments'))
             self.log_file = os.path.join(self.out_dir, 'GADMA_GA.log')
-            self.log_file_2 = os.path.join(self.out_dir, 'log_file.log')
             open(self.log_file, 'a').close()
-            open(self.log_file_2, 'a').close()
         else:
             self.log_file = None
 
@@ -768,7 +763,7 @@ class GA(object):
     def update_mutation_rate_and_strength(self, prev_value_of_fit):
         flag = (
             prev_value_of_fit -
-            self.models[0].get_fitness_func_value(self.log_file_2, self.start_time)) > 1e-8
+            self.models[0].get_fitness_func_value()) > 1e-8
         self.update_mutation_rate(flag)
         self.update_mutation_strength(flag)
 
