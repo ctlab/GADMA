@@ -340,6 +340,23 @@ Then follows an arbitrary number of columns which will be concatenated with \py{
 The \py{Allele1} and \py{Allele2} headers must be exactly those values because the number of columns between those two is used to infer the number of populations in the file.
 
 ~\
+\subsection{Unlinked SNP's}
+
+By default, SNP's that were used to build AFS are considered to be linked. In this case it is possible to compare demographic models with different number of parameters by Composite Likelihood Akaike Information Criterion ($CLAIC$). This procedure can be necessary as a model with a large number of parameters will be better able to find parameter values corresponding to the observed data than a model with a smaller number of parameters, but at the same time it will correspond less to reality, for example, due to data errors. It is called overfitting and we do not want it to happen.
+
+Actually, $CLAIC$ is modification of usual Akaike Information Criterion ($AIC$), but $AIC$ can be used only for AFS built from unlinked SNP's. The smaller the $AIC$ or $CLAIC$ score is, the better the model fits the observed data.
+
+It is possible to inform GADMA about linkage of SNP's and unlock the usage of $AIC$ insted of $CLAIC$:
+
+\begin{lstlisting}
+# param_file
+
+# Inform if SNP's are not linked
+Linked SNP's : False
+...
+\end{lstlisting}
+
+~\
 \section{Specifying a scheme}
 
 GADMA uses either \dadi or \moments to simulate expected AFS from the demographic model. \dadi is used by default. To use \dadi it is recommended to check the value of the \py{Pts} option in the \py{params_file}. \py{Pts} is sequence of three numbers, each of which is equal to the number of points in grid size. The greater the numbers are, the more accurate \dadi numerical solution of partial differential equation is. However, finding such a solution take more time. By default, GADMA takes \py{Pts : n, n + 10, n + 20}, where \py{n} — is the largest sample size among populations of interest. 
@@ -1047,6 +1064,15 @@ Population labels : CEU, YRI # we change populations order
 #   to 20, 20, 20.
 #   Default: from input file
 Projections : None # will be 20, 20
+
+
+#	Are SNP's linked or unlinked?
+#	If they are linked, then Composite Likelihood Akaike
+#	Information Criterion (CLAIC) will be used to compare models.
+#	If they are unlinked, then usual Akaike Information Criterion 
+#	(AIC) will be used.
+#	Default: True
+Linked SNP's : True
 
 
 

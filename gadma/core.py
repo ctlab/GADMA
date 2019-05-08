@@ -32,21 +32,21 @@ def run_genetic_algorithm(params_tuple):
     """
     np.random.seed()
     number = 'ID'
-#    try:
-    def write_func(string): return support.write_log(log_file, string,
-                                                     write_to_stdout=not params.silence)
+    try:
+        def write_func(string): return support.write_log(log_file, string,
+                                                         write_to_stdout=not params.silence)
 
-    number, params, log_file, shared_dict = params_tuple
+        number, params, log_file, shared_dict = params_tuple
 
-    write_func('Run genetic algorithm number ' + str(number))
+        write_func('Run genetic algorithm number ' + str(number))
 
-    ga_instance = GA(params, prefix=str(number))
-    ga_instance.run(shared_dict=shared_dict)
+        ga_instance = GA(params, prefix=str(number))
+        ga_instance.run(shared_dict=shared_dict)
 
-    write_func('Finish genetic algorithm number ' + str(number))
-    return number, ga_instance.best_model()
-#    except Exception, e:
-#        raise RuntimeError('GA number ' + str(number) + ': ' + str(e))
+        write_func('Finish genetic algorithm number ' + str(number))
+        return number, ga_instance.best_model()
+    except Exception, e:
+        raise RuntimeError('GA number ' + str(number) + ': ' + str(e))
 
 
 def worker_init():

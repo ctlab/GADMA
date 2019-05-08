@@ -780,6 +780,7 @@ def test_args():
         ".fs"](options_storage.input_file, None, None)
     options_storage.ns = np.array(options_storage.ns)
     options_storage.number_of_populations = 1
+    options_storage.linked_snp = False
     options_storage.theta = 0.37976
     options_storage.gen_time = 25
     options_storage.initial_structure = np.array([1])
