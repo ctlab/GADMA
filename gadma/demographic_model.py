@@ -1060,8 +1060,12 @@ class Demographic_model:
                 p.append(self.periods[i].time)
 
             if self.periods[
-                    start_index_to_divide].is_first_period and len(p) > 1:
-                p[0] = min(p[1:])
+                    start_index_to_divide].is_first_period:
+                if len(p) > 1:
+                    p[0] = min(p[1:])
+                else:
+                    p[0] = 1.0
+
             p = np.array(p)
             p /= sum(p)
 
