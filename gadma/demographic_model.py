@@ -642,8 +642,9 @@ class Demographic_model:
             if period.is_split_of_population:
                 all_sudden = (np.array(self.periods[i + 1].growth_types) == 0).all()
                 if not all_sudden:
-                    lower_bound.append(0.0)
-                    upper_bound.append(1.0)
+                    bias = self.params.min_N
+                    lower_bound.append(0.0 + bias)
+                    upper_bound.append(1.0 - bias)
             else:
                 lower_bound.extend(
                     [self.params.min_N for _ in xrange(n_pop)])
