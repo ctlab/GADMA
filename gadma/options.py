@@ -453,7 +453,7 @@ class Options_storage:
                     elif p_id == 'm':
                         self.lower_bound.append(self.min_M)
                     elif p_id == 's':
-                        self.lower_bound.append(0.0)
+                        self.lower_bound.append(0.0 + self.min_N)
             else:
                 self.lower_bound = [float(x) for x in support.check_comma_sep_list(self.lower_bound, is_int=False)]
 
@@ -467,7 +467,7 @@ class Options_storage:
                     elif p_id == 'm':
                         self.upper_bound.append(self.max_M)
                     elif p_id == 's':
-                        self.upper_bound.append(1.0)
+                        self.upper_bound.append(1.0 - self.min_N)
             else:
                 self.upper_bound = [float(x) for x in support.check_comma_sep_list(self.upper_bound, is_int=False)]
 
