@@ -392,8 +392,6 @@ class Demographic_model:
             low_bound = 1e-15
         normal = True
 
-        if normal:
-            np.exp(sample_from_truncated_normal(np.log(m), max(np.log(m) - np.log(l), np.log(r) - np.log(m)) / 3, np.log(l), np.log(r)))
         mode = 1.0
 
         # remember bounds and mean
@@ -412,7 +410,7 @@ class Demographic_model:
             u = np.log(u)
             m = np.log(m)
         if normal:
-            random_generator = lambda a,b,c: return support.sample_from_truncated_normal(b, max(b-a, c-b) / 3, a, c)
+            random_generator = lambda a,b,c:  support.sample_from_truncated_normal(b, max(b-a, c-b) / 3, a, c)
         else:
             random_generator = np.random.triangular
         # generate sample
