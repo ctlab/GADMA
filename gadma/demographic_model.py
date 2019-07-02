@@ -387,29 +387,41 @@ class Demographic_model:
         if identificator == 't' or identificator == 's':
             return np.random.uniform(low_bound, upp_bound)
         # if identificator == 'm' or identificator == 'n' or None
-        if identificator == 'n':
-            log = True
-            if low_bound <= 0:
-                low_bound = 1e-15
-        else: # when identificator == 'm'
-            log = False
+        log = True
+        if low_bound <= 0:
+            low_bound = 1e-15
+        normal = True
+
+        if normal:
+            np.exp(sample_from_truncated_normal(np.log(m), max(np.log(m) - np.log(l), np.log(r) - np.log(m)) / 3, np.log(l), np.log(r)))
         mode = 1.0
+
+        # remember bounds and mean
+        l = low_bound # left bound
+        u = upp_bound # right bound
+        # mean
         if low_bound >= mode:
-            if log:
-                sample = np.exp(np.random.triangular(np.log(low_bound), np.log(low_bound), np.log(upp_bound)))
-            else: 
-                sample = np.random.triangular(low_bound, low_bound, upp_bound)
+            m = low_bound
         elif upp_bound <= mode:
-            if log:
-                sample = np.exp(np.random.triangular(np.log(low_bound), np.log(upp_bound), np.log(upp_bound)))
-            else:
-                sample = np.random.triangular(low_bound, upp_bound, upp_bound)
+            m = upp_bound
         else:
-            if log:
-                sample = np.exp(np.random.triangular(np.log(low_bound), np.log(mode), np.log(upp_bound)))
-            else:
-                sample = np.random.triangular(low_bound, mode, upp_bound)
+            m = mode
+        # determine random function and transform to log if need
+        if log:
+            l = np.log(l)
+            u = np.log(u)
+            m = np.log(m)
+        if normal:
+            random_generator = lambda a,b,c: return support.sample_from_truncated_normal(b, max(b-a, c-b) / 3, a, c)
+        else:
+            random_generator = np.random.triangular
+        # generate sample
+        sample = random_generator(l, m, u)
+
+        if log:
+            sample = np.exp(sample)
         return sample
+
     def init_random_model(self, structure):
         """Generate random model of a given structure.
         This method is MAGIC, real magic. It is strange just because it is the best way to do it."""
