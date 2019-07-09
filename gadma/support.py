@@ -78,7 +78,7 @@ def check_comma_sep_list(l_str, is_int=True, is_float=False):
             return np.array([int(x) for x in splited_list])
         elif is_float:
             return np.array([float(x) for x in splited_list])
-        else
+        else:
             return np.array([x.strip().lower() for x in splited_list])
     except:
         if l_str.strip().lower() == 'none':
