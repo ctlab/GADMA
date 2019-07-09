@@ -22,7 +22,23 @@ except ImportError:
         except ImportError:
             support.error("None of the dadi or the moments are installed")
 
-def get_claic_component(func_ex, p0, data, pts=None, all_boot=None, eps=1e-2):
+
+def load_bootstrap_data_from_dir(dirname,  projections=None, pop_ids=None, filenames=False):
+    from gadma.support import READ_ALLOWED_EXTENSIONS
+    all_boot = []
+    for filename in os.listdir(dirname):
+        extention = '.' + filename.split('.')[-1]
+        if extention in READ_ALLOWED_EXTENSIONS.keys():
+            filename = os.path.join(dirname, filename)
+            fs, _1, _2 = support.load_spectrum(filename, projections, pop_ids)
+            if filenames:
+                all_boot.append([filename, fs])
+            else:
+                all_boot.append(fs)
+    return all_boot
+
+
+def get_claic_component(func_ex, all_boot, p0, data, pts=None, eps=1e-2):
     '''
     if pts is None, then moments is used.
     Some help:
@@ -30,14 +46,13 @@ def get_claic_component(func_ex, p0, data, pts=None, all_boot=None, eps=1e-2):
     moments.Godambe.get_grad(func, p0, eps, args=())
     '''
     if pts is None:
-        import moments as sim_lib
+        import moments
         func_ex_ = func_ex
     else:
         import dadi as sim_lib
+        import moments
         def func_ex_(p, ns):
             return func_ex(p, ns, pts)
-    if all_boot is None:
-        all_boot = [data.sample() for _ in xrange(100)]
 
     ns = data.sample_sizes
 
@@ -49,15 +64,15 @@ def get_claic_component(func_ex, p0, data, pts=None, all_boot=None, eps=1e-2):
         if key not in cache:
             cache[key] = func_ex_(params, ns)
         fs = cache[key]
-        return sim_lib.Inference.ll(fs, data)
+        return moments.Inference.ll(fs, data)
         
-    H = - sim_lib.Godambe.get_hess(func, p0, eps, args=[data])
+    H = - moments.Godambe.get_hess(func, p0, eps, args=[data])
     H_inv = np.linalg.inv(H)
 
     J = np.zeros((len(p0), len(p0)))
     for ii, boot in enumerate(all_boot):
-        boot = sim_lib.Spectrum(boot)
-        grad_temp = sim_lib.Godambe.get_grad(func, p0, eps, args=[boot])
+        boot = moments.Spectrum(boot)
+        grad_temp = moments.Godambe.get_grad(func, p0, eps, args=[boot])
 
         J_temp = np.outer(grad_temp, grad_temp)
         J += J_temp
@@ -70,11 +85,10 @@ def get_claic_component(func_ex, p0, data, pts=None, all_boot=None, eps=1e-2):
     return np.trace(G)
 
 
-def get_claic_score(func_ex, p0, data, pts=None, boot_size=100, eps=1e-2):
+def get_claic_score(func_ex, all_boot, p0, data, pts=None, eps=1e-2):
     '''
     if pts is None, then moments is used.
     '''
-    boots = [data.sample() for _ in xrange(boot_size)]
     ns = data.sample_sizes
     if pts is None:
         import moments
@@ -84,7 +98,21 @@ def get_claic_score(func_ex, p0, data, pts=None, boot_size=100, eps=1e-2):
         import dadi
         model = func_ex(p0, ns, pts)
         ll_model = dadi.Inference.ll_multinom(model, data)
-    return 2 * get_claic_component(func_ex, p0, data, pts=pts, all_boot=boots, eps=eps) - 2 * ll_model
+    return 2 * get_claic_component(func_ex, all_boot, p0, data, pts=pts, eps=eps) - 2 * ll_model
+
+
+def get_95_confidence_intervals(func_ex, p0, data, pts=None, log=False, multinom=True, eps=1e-2):
+    '''
+    if pts is None, then moments is used.
+    '''
+    ns = data.sample_sizes
+    if pts is None:
+        import moments as sim_lib
+        stds = sim_lib.Godambe.FIM_uncert(func_ex, p0, data, log=log, multinom=multinom, eps=eps)
+    else:
+        import dadi as sim_lib
+        stds = FIM_uncert(func_ex, pts, p0, data, log=log, multinom=multinom, eps=eps)
+    return np.array([[7000* (m - 1.96 * s), 7000 * (m + 1.96 * s)] for m,s in zip(p0, stds)])
 
 
 def optimize_ga(number_of_params, data, model_func, pts=None, lower_bound=None, upper_bound=None, p0=None,

@@ -64,7 +64,7 @@ def check_dir_existence(input_dirname):
     return dirname
 
 
-def check_comma_sep_list(l_str, is_int=True):
+def check_comma_sep_list(l_str, is_int=True, is_float=False):
     try:
         splited_list = l_str.split(',')
         if splited_list[0].startswith('['):
@@ -76,13 +76,17 @@ def check_comma_sep_list(l_str, is_int=True):
                 splited_list[i] = splited_list[i][1:-1]
         if is_int:
             return np.array([int(x) for x in splited_list])
-        else:
+        elif is_float:
+            return np.array([float(x) for x in splited_list])
+        else
             return np.array([x.strip().lower() for x in splited_list])
     except:
         if l_str.strip().lower() == 'none':
             return None
         if is_int:
             error("can't read comma-separated list of ints: " + str(l_str))
+        if is_float:
+            error("can't read comma-separated list of floats: " + str(l_str))
         else:
             error("can't read comma-separated list: " + str(l_str))
 
@@ -148,7 +152,7 @@ def get_dadi_or_moments():
         except:
             error("None of the dadi or the moments are installed")
 
-
+# read input file
 def read_fs_file(filename, proj, pop_labels):
     dadi_or_moments = get_dadi_or_moments()
     data = dadi_or_moments.Spectrum.from_file(filename)
@@ -224,6 +228,23 @@ def read_dadi_file(filename, proj, pop_labels):
     data = dadi_or_moments.Spectrum.from_data_dict(
         dd, pop_ids=pop_ids, projections=proj, polarized=polarized)
     return data, proj, pop_ids
+
+
+READ_ALLOWED_EXTENSIONS = {
+    '.txt': read_dadi_file,
+    '.fs': read_fs_file,
+    '.sfs': read_fs_file
+}
+
+
+def load_spectrum(filename, proj, pop_labels):
+    ext = "." + os.path.splitext(filename)[1][1:]
+    if ext not in READ_ALLOWED_EXTENSIONS.keys():
+        error(
+            "File " +
+            filename +
+            " doesn't end with one of {}". format(ALLOWED_READS_EXTENSIONS))
+    return READ_ALLOWED_EXTENSIONS[ext](filename, proj, pop_labels)
 
 
 # for interrupting models drawing

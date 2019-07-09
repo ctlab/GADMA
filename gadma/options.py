@@ -19,11 +19,6 @@ import imp
 import pkgutil
 
 
-READ_ALLOWED_EXTENSIONS = {
-    '.txt': support.read_dadi_file,
-    '.fs': support.read_fs_file,
-    '.sfs': support.read_fs_file
-}
 
 # default options
 START_MODEL_NUMBER_OF_PERIODS = 1
@@ -488,13 +483,7 @@ class Options_storage:
             self.ns = support.check_comma_sep_list(self.ns)
 
         self.input_file = support.check_file_existence(self.input_file)
-        ext = "." + os.path.splitext(self.input_file)[1][1:]
-        if ext not in READ_ALLOWED_EXTENSIONS.keys():
-            support.error(
-                "File " +
-                self.input_file +
-                " doesn't end with one of {}". format(ALLOWED_READS_EXTENSIONS))
-
+        
         if self.resume_dir is not None:
             self.resume_dir = support.check_dir_existence(self.resume_dir)
         if self.resume_dir is not None and self.output_dir is None:
@@ -516,8 +505,8 @@ class Options_storage:
             support.warning(
                 "`Time for one generation` is not specified. Time will be in genetic units.")
 
-        self.input_data, self.ns, self.pop_labels = READ_ALLOWED_EXTENSIONS[
-            ext](self.input_file, self.ns, self.pop_labels)
+        self.input_data, self.ns, self.pop_labels = support.load_spectrum(
+                self.input_file, self.ns, self.pop_labels)
         self.ns = np.array(self.ns)
         self.number_of_populations = len(self.ns)
 
@@ -776,8 +765,8 @@ def test_args():
 
     options_storage.input_file = os.path.join(
         support.get_home_dir(), "..", "fs_examples", "test.fs")
-    options_storage.input_data, options_storage.ns, options_storage.pop_labels = READ_ALLOWED_EXTENSIONS[
-        ".fs"](options_storage.input_file, None, None)
+    options_storage.input_data, options_storage.ns, options_storage.pop_labels = support.load_spectrum(
+            options_storage.input_file, None, None)
     options_storage.ns = np.array(options_storage.ns)
     options_storage.number_of_populations = 1
     options_storage.linked_snp = False
