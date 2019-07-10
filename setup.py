@@ -67,5 +67,6 @@ setup(
     install_requires=['numpy>=1.2.0', 'scipy>=0.6.0'],
     entry_points={
         'console_scripts': ['gadma = gadma.core:main']
-    }
+    },
+    zip_safe=False
 )
