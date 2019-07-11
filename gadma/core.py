@@ -46,7 +46,7 @@ def run_genetic_algorithm(params_tuple):
         write_func('Finish genetic algorithm number ' + str(number))
         return number, ga_instance.best_model()
     except Exception, e:
-        raise RuntimeError('GA number ' + str(number) + ': ' + str(e), error_instanse=e)
+        raise RuntimeError('GA number ' + str(number) + ': ' + str(e), error_instance=e)
 
 
 def worker_init():
