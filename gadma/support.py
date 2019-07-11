@@ -16,13 +16,16 @@ from threading import Thread
 import functools
 import importlib
 import math
+import traceback
 
 ERROR_PREFIX = "Error:"
 WARNING_PREFIX = "Warning:"
 SUPPORT_STRING = "\nIn case of any questions or problems, please contact: ekaterina.e.noskova@gmail.com\n"
 
 
-def error(error_str, prefix=ERROR_PREFIX, exit=True):
+def error(error_str, prefix=ERROR_PREFIX, error_instanse=None,exit=True):
+    if error_instanse is not None:
+        sys.stderr.write(traceback.format_exc())
     sys.stderr.write("\n\033[1;31m" + prefix + "\033[0;0m " + error_str + "\n")
     sys.stderr.write(SUPPORT_STRING)
     sys.stderr.flush()
