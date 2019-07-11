@@ -26,25 +26,32 @@ except ImportError:
 def load_bootstrap_data_from_dir(dirname,  projections=None, pop_ids=None, filenames=False):
     from gadma.support import READ_ALLOWED_EXTENSIONS
     all_boot = []
+    set_of_seen_files = set()
     for filename in os.listdir(dirname):
         extention = '.' + filename.split('.')[-1]
+        filename_without_ext = '.'.join(filename.split('.')[:-1])
         if extention in READ_ALLOWED_EXTENSIONS.keys():
+            if filename_without_ext in set_of_seen_files:
+                continue
             filename = os.path.join(dirname, filename)
             fs, _1, _2 = support.load_spectrum(filename, projections, pop_ids)
             if filenames:
                 all_boot.append([filename, fs])
             else:
                 all_boot.append(fs)
+            set_of_seen_files.add(filename_without_ext)
+            
     return all_boot
 
 
-def get_claic_component(func_ex, all_boot, p0, data, pts=None, eps=1e-2):
+def get_claic_component(func_ex, all_boot, p0, data, pts=None, eps=1e-2, version=3):
     '''
     if pts is None, then moments is used.
     Some help:
     moments.Godambe.get_hess(func, p0, eps, args=())
     moments.Godambe.get_grad(func, p0, eps, args=())
     '''
+    from dadi import Godambe
     if pts is None:
         import moments
         func_ex_ = func_ex
@@ -66,13 +73,13 @@ def get_claic_component(func_ex, all_boot, p0, data, pts=None, eps=1e-2):
         fs = cache[key]
         return moments.Inference.ll(fs, data)
         
-    H = - moments.Godambe.get_hess(func, p0, eps, args=[data])
+    H = - Godambe.get_hess(func, p0, eps, args=[data], version=version)
     H_inv = np.linalg.inv(H)
 
     J = np.zeros((len(p0), len(p0)))
     for ii, boot in enumerate(all_boot):
         boot = moments.Spectrum(boot)
-        grad_temp = moments.Godambe.get_grad(func, p0, eps, args=[boot])
+        grad_temp = Godambe.get_grad(func, p0, eps, args=[boot], version=version)
 
         J_temp = np.outer(grad_temp, grad_temp)
         J += J_temp
