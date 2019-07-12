@@ -60,6 +60,12 @@ def run_one_job(params):
 			popt = sim_lib.Inference.optimize_log(**kwargs)
 
 	popt = np.array(popt)
+	if pts is not None:
+		model_fs = func_ex(popt, fs.sample_sizes, pts)
+	else:
+		model_fs = func_ex(popt, fs.sample_sizes)
+	theta = sim_lib.Inference.optimal_sfs_scaling(model_fs, fs)
+	popt = np.append(popt, theta)
 	np.save(res_file, popt)
 	return  fs_filename, popt
 
@@ -142,7 +148,7 @@ if __name__ == '__main__':
 	try:
                 file_with_model_func = imp.load_source('module', args.dem_model)
         except Exception, e:
-                support.error('File ' + model_func + " is not valid python file.", error_instance=e)
+                support.error('File ' + args.dem_model + " is not valid python file.", error_instance=e)
         try:
                 model_func = file_with_model_func.model_func
                 name = 'model_func'
@@ -173,7 +179,7 @@ if __name__ == '__main__':
 	if p0 is not None:
 		print('Found initial parameters values: ' + str(p0))
 	if par_labels is not None:
-		print('Found parameters labels: ' + str(par_labels))
+		print('Found parameters labels (+ `Theta` will be at the end): ' + str(par_labels))
 	if p0 is None:
 		print("Could not detect p0/popt in files. Please enter:")
 		p0 = support.check_comma_sep_list(raw_input(), is_int=False, is_float=True)
@@ -189,10 +195,22 @@ if __name__ == '__main__':
 	
 	if len(lower_bound) != len(upper_bound):
 		support.error("Lengths of upper and lower bound must be the same.")
+	
+	if par_labels is not None and len(par_labels) != len(lower_bound):
+		support.error("Lengths of `par_labels` and lower/upper_bound must be the same.")
 
+	if len(p0) != len(lower_bound):
+		support.error("Lengths of initial values (p0) and lower/upper_bound must be the same.")
+
+	for l, p, u in zip(lower_bound, p0, upper_bound):
+		if l > p:
+			support.error("Lower bound is greater than p0.")
+		if p > u:
+			support.error("Upper bound is less than p0.")
 	if par_labels is None or len(lower_bound) != len(par_labels):
 		par_labels = ['par_' + str(i) for i in xrange(len(lower_bound))]
-
+	
+	par_labels.append('Theta')
 	print('Parameters labels will be: ' + ','.join(par_labels))
 
 	import multiprocessing as mp
