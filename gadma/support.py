@@ -24,7 +24,7 @@ SUPPORT_STRING = "\nIn case of any questions or problems, please contact: ekater
 
 
 def error(error_str, prefix=ERROR_PREFIX, error_instance=None,exit=True):
-    if error_instanse is not None:
+    if error_instance is not None:
         sys.stderr.write(traceback.format_exc())
     sys.stderr.write("\n\033[1;31m" + prefix + "\033[0;0m " + error_str + "\n")
     sys.stderr.write(SUPPORT_STRING)
