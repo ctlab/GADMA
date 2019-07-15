@@ -66,6 +66,8 @@ setup(
     data_files=[('fs_examples', [os.path.join('fs_examples', 'test.fs')]), ("", ["LICENSE"])],
     install_requires=['numpy>=1.2.0', 'scipy>=0.6.0'],
     entry_points={
-        'console_scripts': ['gadma = gadma.core:main']
+        'console_scripts': ['gadma = gadma.core:main',
+            'gadma-run_ls_on_boot_data = gadma.run_ls_on_boot_data:main',
+            'gadma-get_confidence_intervals = gadma.get_confidence_intervals:main']
     }
 )
