@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import sys
 import argparse
+from scipy import stats
 from gadma import support
 
 def main():
@@ -26,14 +27,28 @@ def main():
     means = np.mean(a, axis=0)
     stds = np.std(a, axis=0)
 
-    for m,s, par_name in zip(means, stds, df.columns):
+    for m,s, x,par_name in zip(means, stds, a.T, df.columns):
         l = m - 1.96 * s
         u = m + 1.96 * s
         if args.log:
             l = np.exp(l)
             u = np.exp(u)
-        if args.tex:
-            format_string = '%s:\t$[%.' + str(args.acc) + 'f - %.' + str(args.acc) + 'f]$'
+        k2, p = stats.normaltest(x)
+        if p < 0.05:
+            normtest_str = 'data looks '
+            if args.log:
+                normtest_str += 'log-normal (fail to reject H0)'
+            else:
+                normtest_str += 'normal (fail to reject H0)'
         else:
-            format_string = '%s:\t%.' + str(args.acc) + 'f\t%.' + str(args.acc) + 'f'
-        print(format_string % (par_name.strip(), l, u))
+            normtest_str = 'data does not look '
+            if args.log:
+                normtest_str += 'log-normal (reject H0)'
+            else: 
+                normtest_str += 'normal (reject H0)'
+        normtest_str += ' p-value=%.2e' % p
+        if args.tex:
+            format_string = '%s:\t$[%.' + str(args.acc) + 'f - %.' + str(args.acc) + 'f]$\t%s'
+        else:
+            format_string = '%s:\t%.' + str(args.acc) + 'f\t%.' + str(args.acc) + 'f\t%s'
+        print(format_string % (par_name.strip(), l, u, normtest_str))
