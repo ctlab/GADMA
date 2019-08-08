@@ -1670,6 +1670,129 @@ class Demographic_model:
             phi, ns, [xx] * self.number_of_populations)
         return sfs
 
+    def code_of_main_to_file(self, mode, filename):
+        with open(filename, 'a') as output:
+            # main
+            # read data
+            ext = os.path.splitext(self.params.input_file)[1][1:]
+            if ext == 'fs':
+                output.write("data = %s.Spectrum.from_file('" % (mode) + os.path.
+                             abspath(self.params.input_file) + "')\n")
+                # we need check if we change spectrum from file:
+                real_spectrum, real_ns, real_labels  = support.read_fs_file(os.path.
+                             abspath(self.params.input_file), proj=None, pop_labels=None)
+                if not (real_ns == self.params.ns).all():
+                    output.write("data = data.project(" + str(list(self.params.ns)) + ")\n")
+                if not real_labels == self.params.pop_labels:
+                    d = {x: i for i, x in enumerate(real_labels)}
+                    d = [d[x] for x in self.params.pop_labels]
+                    output.write("new_axis = " + str(d) + '\n')
+                    output.write("data = np.transpose(data, new_axis)\n")
+                    output.write("data.pop_ids = " + str(self.params.pop_labels) + '\n')
+            else:
+                output.write("dd = %s.Misc.make_data_dict('" % (mode) + os.path.
+                             abspath(self.params.input_file) + "')\n")
+                output.write('data = %s.Spectrum.from_data_dict(dd, pop_ids=' % (mode) +
+                             str(self.params.pop_labels) +
+                             ', projections=' +
+                             str(list(self.params.ns)) +
+                             ', polarized=' +
+                             str(not self.params.input_data.folded) +
+                             ')\n')
+            output.write('\npopt = ' + str(self.as_short_vector()) + '\n')
+            output.write('ns = ' + str(list(self.params.ns)) + '\n')
+
+            if mode == 'dadi':
+                output.write('pts = ' + str(list(self.params.dadi_pts)) + '\n')
+                func_name = 'func_ex'
+                output.write(
+                    '%s = %s.Numerics.make_extrap_log_func(generated_model)\n' % (func_name, mode)
+                )
+                output.write('model = %s(popt, ns, pts)\n' % (func_name))
+            elif mode == 'moments':
+                func_name = 'generated_model'
+                output.write('model = %s(popt, ns)\n' % (func_name))
+
+            multinom_flag = True
+            if not self.is_custom_model:
+                model = self.get_sfs()
+                data = self.params.input_data
+                if self.params.moments_scenario:
+                    optimal_scaling = moments.Inference.optimal_sfs_scaling(model, data)
+                else:
+                    optimal_scaling = dadi.Inference.optimal_sfs_scaling(model, data)
+                N_A = self.get_N_A()
+                N_ref = optimal_scaling / self.params.theta
+                if abs(N_A - N_ref) > 1e-10:
+                    output.write('N_A = %f\n' % (N_A))
+                    output.write(
+                        'll_model = %s.Inference.ll(N_A * model, data)\n' % (mode))
+                    multinom_flag = False
+                else:
+                    output.write(
+                        'll_model = %s.Inference.ll_multinom(model, data)\n' % mode)
+            else:
+                if self.is_custom_model:
+                    output.write('Nref = ' + self.popt[-1] + '# It is also optimized parameter by GADMA\n')
+                    output.write(
+                        'll_model = Nref * dadi.Inference.ll(model, data)\n')
+                    multinom_flag = False
+                else:
+                    output.write(
+                        'll_model = %s.Inference.ll_multinom(model, data)\n' % mode)
+
+            output.write(
+                "print('Model log likelihood (LL(model, data)): {0}'.format(ll_model))\n")
+
+            if multinom_flag:
+                output.write(
+                        "\ntheta = %s.Inference.optimal_sfs_scaling(model, data)\n" % mode)
+                output.write(
+                        "print('Optimal value of theta: {0}'.format(theta))\n")
+
+            if mode == 'moments': # draw model
+                size_of_first_pop = self.get_N_A()
+
+                draw_scale = self.params.theta is not None
+                if self.params.multinom and draw_scale:
+                    output.write("theta0 = " + str(self.params.theta) + '\n')
+                    nref = 'int(theta / theta0)'
+                else:
+                    if draw_scale:
+                        nref = str(size_of_first_pop)
+                    else:
+                        nref = 'None'
+
+                if self.params.gen_time is not None:
+                    if self.params.gen_time_units == 1:
+                        gen_time_units = 'Years'
+                    elif self.params.gen_time_units == 1000:
+                        gen_time_units = 'Thousand years'
+                    else:
+                        gen_time_units = 'Genetic units'
+                else:
+                    gen_time_units = 'Genetic units'
+                    
+                output.write("print('Drawing model to model_from_GADMA.png')\n"
+                             'model = moments.ModelPlot.generate_model(generated_model, popt, ns)\n'
+                             'moments.ModelPlot.plot_model(model, \n'
+                             "\tsave_file='model_from_GADMA.png',\n"
+                             "\tfig_title='Demographic model from GADMA',\n"
+                             '\tpop_labels=' +
+                             str(self.params.pop_labels) +
+                             ',\n'
+                             '\tnref=' + nref +
+                             ',\n'
+                             '\tdraw_scale=' + str(draw_scale) + ',\n'
+                             '\tgen_time=' + 
+                             str(float(self.params.gen_time) /
+                                 self.params.gen_time_units if self.params.gen_time is not None else 1.0) +
+                             ',\n'
+                             '\tgen_time_units=' + "'" + gen_time_units + "'" +
+                             ',\n'
+                             '\treverse_timeline=True)')
+
+
     def dadi_code_to_file(self, filename):
         """Print a python code to the file for a function to run in DaDi."""
         theta = self.params.theta if self.params.theta is not None else 1
@@ -1683,30 +1806,27 @@ class Demographic_model:
                         self.params.model_func_file + '")\n')
                 output.write('generated_model = file_with_model_func.model_func\n')
             else:
-                output.write('def generated_model(params, ns, pts):\n')
-                Ns_len = 0
-                Ts_len = 0
-                for i, period in enumerate(self.periods):
-                    if period.is_first_period:
-                        if not self.params.multinom:
-                            Ns_len += 1
-                    elif period.is_split_of_population:
-                        all_sudden = (np.array(self.periods[i+1].growth_types) == 0).all()
-                        if not all_sudden:
-                            Ns_len += 1
-                    else:
-                        Ns_len += period.number_of_populations
-                        Ts_len += 1
-                output.write('\tNs = params[:' + str(Ns_len) + ']\n')
-                output.write('\tTs = params[' + str(Ns_len) + ':' +
-                             str(Ns_len + Ts_len) + ']\n')
-                output.write('\tMs = params[' + str(Ns_len + Ts_len) + ':]\n')
-
+                output.write('def generated_model((')
+                chunk_size = 10
+                par_labels = self.get_params_labels_str()
+                output.write(', '.join(par_labels[:chunk_size]))
+                for ind in xrange(chunk_size, len(par_labels), chunk_size):
+                    output.write(',\n\t\t' + ', '.join(par_labels[ind:ind + chunk_size]))
+                output.write('), ns, pts):\n')
+                
                 ns_index = 0
                 ts_index = 0
                 ms_index = 0
+                for label in par_labels:
+                    if label.startswith('nu') or label.startswith('s'):
+                        ts_index += 1
+                        ms_index += 1
+                    if label.startswith('t'):
+                        ms_index += 1
+
                 output.write('\ttheta1 = ' + str(theta) + '\n')
                 output.write('\txx = dadi.Numerics.default_grid(pts)\n')
+                first_split = True
                 for pos, period in enumerate(self.periods):
                     if self.params.only_sudden:
                         all_sudden_later = True
@@ -1724,52 +1844,48 @@ class Demographic_model:
                     if period.is_first_period:
                         output.write(
                             '\tphi = dadi.PhiManip.phi_1D(xx, theta0=theta1')
-                        if self.params.multinom:
-                            output.write(')\n')
-                            if not all_sudden_later:
-                                output.write('\tbefore = [1.0]\n')
-                        else:
-                            output.write(', nu=Ns[' + str(ns_index) + '])\n')
-                            if not all_sudden_later:
-                                output.write('\tbefore = [Ns[' + str(ns_index) + ']]\n')
-                            ns_index += 1
-
+                        output.write(')\n')
+                        
                     elif period.is_split_of_population:
                         if period.number_of_populations == 2:
                             output.write(
                                 '\tphi = dadi.PhiManip.phi_1D_to_2D(xx, phi)\n')
                             if not all_sudden_later:
-                                output.write('\tbefore.append((1 - Ns[' +
-                                             str(ns_index) + ']) * before[-1])\n')
-                                output.write(
-                                    '\tbefore[-2] *= Ns[' + str(ns_index) + ']\n')
+                                if first_split:
+                                    output.write('\tbefore = [{0}, 1 - {0}]\n'.format(par_labels[ns_index]))
+                                    first_split = False
+                                else:
+                                    output.write('\tbefore.append((1 - ' +
+                                                 par_labels[ns_index] + ') * before[-1])\n')
+                                    output.write(
+                                        '\tbefore[-2] *= ' + par_labels[ns_index] + '\n')
                                 ns_index += 1
                         if period.number_of_populations == 3:
                             if period.population_to_split == 0:
                                 output.write(
                                     '\tphi = dadi.PhiManip.phi_2D_to_3D_split_1(xx, phi)\n')
                                 if not all_sudden_later:
-                                    output.write('\tbefore.append((1 - Ns[' +
-                                                 str(ns_index) + ']) * before[-1])\n')
+                                    output.write('\tbefore.append((1 - ' +
+                                                 par_labels[ns_index] + ') * before[-1])\n')
                                     output.write(
-                                        '\tbefore[0] *= Ns[' + str(ns_index) + ']\n')
+                                        '\tbefore[0] *= ' + par_labels[ns_index] + '\n')
                                     ns_index += 1
                             else:
                                 output.write(
                                     '\tphi = dadi.PhiManip.phi_2D_to_3D_split_2(xx, phi)\n')
                                 if not all_sudden_later:
-                                    output.write('\tbefore.append((1 - Ns[' +
-                                                 str(ns_index) + ']) * before[-1])\n')
+                                    output.write('\tbefore.append((1 - ' +
+                                                 par_labels[ns_index] + ') * before[-1])\n')
                                     output.write(
-                                        '\tbefore[-2] *= Ns[' + str(ns_index) + ']\n')
+                                        '\tbefore[-2] *= ' + par_labels[ns_index] + ']\n')
                                     ns_index += 1
 
                     else:  # change population size
                         growth_funcs = []
-                        output.write('\tT = Ts[' + str(ts_index) + ']\n')
+                        output.write('\tT = ' + par_labels[ts_index] + '\n')
                         ts_index += 1
-                        output.write('\tafter = Ns[' + str(ns_index) + ':'
-                                     + str(ns_index + period.number_of_populations) + ']\n')
+                        output.write('\tafter = [' + ', '.join(
+                            par_labels[ns_index : ns_index + period.number_of_populations]) + ']\n')
                         ns_index += period.number_of_populations
 
                         for i in xrange(period.number_of_populations):
@@ -1803,12 +1919,12 @@ class Demographic_model:
                             output.write('\tgrowth_func_2 = ' + growth_funcs[1] +
                                          '\n')
                             output.write(
-                                '\tphi = dadi.Integration.two_pops(phi, xx,  T=T,'
+                                '\tphi = dadi.Integration.two_pops(phi, xx,  T=T, '
                                 'nu1=growth_func_1, nu2=growth_func_2, m12='
                                 + ('0' if period.migration_rates is None else
-                                   'Ms[' + str(ms_index) + ']') + ', m21=' +
+                                   par_labels[ms_index]) + ', m21=' +
                                 ('0' if period.migration_rates is None else
-                                 'Ms[' + str(ms_index + 1) + ']') +
+                                 par_labels[ms_index + 1]) +
                                 ', theta0=theta1)\n')
                             ms_index += 2
                         else:
@@ -1822,79 +1938,26 @@ class Demographic_model:
                                 '\tphi = dadi.Integration.three_pops(phi, xx,  T=T, '
                                 'nu1=growth_func_1, nu2=growth_func_2, nu3=growth_func_3, m12='
                                 + ('0' if period.migration_rates is None else
-                                   'Ms[' + str(ms_index) + ']') + ', m13=' +
+                                    par_labels[ms_index]) + ', m13=' +
                                 ('0' if period.migration_rates is None else
-                                 'Ms[' + str(ms_index + 1) + ']') + ', m21=' +
+                                 par_labels[ms_index + 1]) + ', m21=' +
                                 ('0' if period.migration_rates is None else
-                                 'Ms[' + str(ms_index + 2) + ']') + ', m23=' +
+                                 par_labels[ms_index + 2]) + ', m23=' +
                                 ('0' if period.migration_rates is None else
-                                 'Ms[' + str(ms_index + 3) + ']') + ', m31=' +
+                                 par_labels[ms_index + 3]) + ', m31=' +
                                 ('0' if period.migration_rates is None else
-                                 'Ms[' + str(ms_index + 4) + ']') + ', m32=' +
+                                 par_labels[ms_index] + 4) + ', m32=' +
                                 ('0' if period.migration_rates is None else
-                                 'Ms[' + str(ms_index + 5) + ']') +
+                                 par_labels[ms_index] + 5) +
                                 ', theta0=theta1)\n')
                             ms_index += 6
                         if not all_sudden_later or (pos+1 != len(self.periods) and self.periods[pos+1].is_split_of_population):
                             output.write('\tbefore = after\n')
                 output.write('\tsfs = dadi.Spectrum.from_phi(phi, ns, [xx]*' + str(
                     self.params.number_of_populations) + ')\n\treturn sfs\n')
+        self.code_of_main_to_file('dadi', filename)
 
-            # main
-            # read data
-            ext = os.path.splitext(self.params.input_file)[1][1:]
-            if ext == 'fs':
-                output.write("data = dadi.Spectrum.from_file('" + os.path.
-                             abspath(self.params.input_file) + "')\n")
-                # we need check if we change spectrum from file:
-                real_spectrum, real_ns, real_labels  = support.read_fs_file(os.path.
-                             abspath(self.params.input_file), proj=None, pop_labels=None)
-                if not (real_ns == self.params.ns).all():
-                    output.write("data = data.project(" + str(list(self.params.ns)) + ")\n")
-                if not real_labels == self.params.pop_labels:
-                    d = {x: i for i, x in enumerate(real_labels)}
-                    d = [d[x] for x in self.params.pop_labels]
-                    output.write("new_axis = " + str(d) + '\n')
-                    output.write("data = np.transpose(data, new_axis)\n")
-                    output.write("data.pop_ids = " + str(self.params.pop_labels) + '\n')
-            else:
-                output.write("dd = dadi.Misc.make_data_dict('" + os.path.
-                             abspath(self.params.input_file) + "')\n")
-                output.write('data = dadi.Spectrum.from_data_dict(dd, pop_ids=' +
-                             str(self.params.pop_labels) +
-                             ', projections=' +
-                             str(list(self.params.ns)) +
-                             ', polarized=' +
-                             str(not self.params.input_data.folded) +
-                             ')\n')
-            output.write('\npopt = ' + str(self.as_full_vector()) + '\n')
-            output.write('pts = ' + str(list(self.params.dadi_pts)) + '\n')
-            output.write('ns = ' + str(list(self.params.ns)) + '\n')
-            output.write(
-                'func_ex = dadi.Numerics.make_extrap_log_func(generated_model)\n'
-            )
-            output.write('model =  func_ex(popt, ns, pts)\n')
-            if self.params.multinom:
-                output.write(
-                    'll_model = dadi.Inference.ll_multinom(model, data)\n')
-            else:
-                if self.is_custom_model:
-                    output.write('Nref = ' + self.popt[-1] + '# It is also optimized parameter by GADMA\n')
-                    output.write(
-                        'll_model = Nref * dadi.Inference.ll(model, data)\n')
-                else:
-                    output.write(
-                        'll_model = dadi.Inference.ll(model, data)\n')
-
-            output.write(
-                "print('Model log likelihood (LL(model, data)): {0}'.format(ll_model))\n")
-
-            if self.params.multinom:
-                output.write(
-                        "\ntheta = dadi.Inference.optimal_sfs_scaling(model, data)\n")
-                output.write(
-                        "print('Optimal value of theta: {0}'.format(theta))\n")
-
+            
     def moments_code(self, normalized_params, ns=None):
         """Model function for moments to get SFS."""
         theta = self.params.theta if self.params.theta is not None else 1
@@ -1979,6 +2042,7 @@ class Demographic_model:
                         theta=theta)
         return fs
 
+
     def moments_code_to_file(self, filename):
         """Print a python code to the file for a function to run in moments."""
         with open(filename, 'w') as output:
@@ -2000,30 +2064,27 @@ class Demographic_model:
                             pop_to_split_3 = period.population_to_split
                             break
 
-                output.write('def generated_model(params, ns):\n')
-                Ns_len = 0
-                Ts_len = 0
-                for i, period in enumerate(self.periods):
-                    if period.is_first_period:
-                        if not self.params.multinom:
-                            Ns_len += 1
-                    elif period.is_split_of_population:
-                        all_sudden = (np.array(self.periods[i+1].growth_types) == 0).all()
-                        if not all_sudden:
-                            Ns_len += 1
-                    else:
-                        Ns_len += period.number_of_populations
-                        Ts_len += 1
-                output.write('\tNs = params[:' + str(Ns_len) + ']\n')
-                output.write('\tTs = params[' + str(Ns_len) + ':' +
-                             str(Ns_len + Ts_len) + ']\n')
-                output.write('\tMs = params[' + str(Ns_len + Ts_len) + ':]\n')
-
+                output.write('def generated_model((')
+                chunk_size = 10
+                par_labels = self.get_params_labels_str()
+                output.write(', '.join(par_labels[:chunk_size]))
+                for ind in xrange(chunk_size, len(par_labels), chunk_size):
+                    output.write(',\n\t\t' + ', '.join(par_labels[ind:ind + chunk_size]))
+                output.write('), ns):\n')
+                
                 ns_index = 0
                 ts_index = 0
                 ms_index = 0
+                for label in par_labels:
+                    if label.startswith('nu') or label.startswith('s'):
+                        ts_index += 1
+                        ms_index += 1
+                    if label.startswith('t'):
+                        ms_index += 1
+
                 output.write(
                     '\ttheta1 = ' + str(self.params.theta if self.params.theta is not None else 1) + '\n')
+                first_split = True
                 for pos, period in enumerate(self.periods):
                     if self.params.only_sudden:
                         all_sudden_later = True
@@ -2040,16 +2101,7 @@ class Demographic_model:
 
                     if period.is_first_period:
                         output.write(
-                            '\tsts = moments.LinearSystem_1D.steady_state_1D(sum(ns), theta=theta1')
-                        if self.params.multinom:
-                            output.write(')\n')
-                            if not all_sudden_later:
-                                output.write('\tbefore = [1.0]\n')
-                        else:
-                            output.write(', N=Ns[' + str(ns_index) + '])\n')
-                            if not all_sudden_later:
-                                output.write('\tbefore = [Ns[' + str(ns_index) + ']]\n')
-                            ns_index += 1
+                            '\tsts = moments.LinearSystem_1D.steady_state_1D(sum(ns), theta=theta1)\n')
                         output.write('\tfs = moments.Spectrum(sts)\n\n')
 
                     elif period.is_split_of_population:
@@ -2061,36 +2113,40 @@ class Demographic_model:
                                 output.write(
                                     '\tfs = moments.Manips.split_1D_to_2D(fs, ns[0] + ns[2], ns[1])\n\n')
                             if not all_sudden_later:
-                                output.write('\tbefore.append((1 - Ns[' +
-                                             str(ns_index) + ']) * before[-1])\n')
-                                output.write(
-                                    '\tbefore[-2] *= Ns[' + str(ns_index) + ']\n')
+                                if first_split:
+                                    output.write('\tbefore = [{0}, 1 - {0}]\n'.format(par_labels[ns_index]))
+                                    first_split = False
+                                else:
+                                    output.write('\tbefore.append((1 - ' +
+                                                 par_labels[ns_index] + ') * before[-1])\n')
+                                    output.write(
+                                        '\tbefore[-2] *= ' + par_labels[ns_index] + '\n')
                                 ns_index += 1
                         if period.number_of_populations == 3:
                             if period.population_to_split == 0:
                                 output.write(
                                     '\tfs = moments.Manips.split_2D_to_3D_1(fs, ns[0], ns[2])\n')
                                 if not all_sudden_later:
-                                    output.write('\tbefore.append((1 - Ns[' +
-                                                 str(ns_index) + ']) * before[-1])\n')
+                                    output.write('\tbefore.append((1 - ' +
+                                                 par_labels[ns_index] + ') * before[-1])\n')
                                     output.write(
-                                        '\tbefore[0] *= Ns[' + str(ns_index) + ']\n')
+                                        '\tbefore[0] *= ' + par_labels[ns_index] + '\n')
                                     ns_index += 1
                             else:
                                 output.write(
                                     '\tfs = moments.Manips.split_2D_to_3D_2(fs, ns[1], ns[2])\n')
                                 if not all_sudden_later:
-                                    output.write('\tbefore.append((1 - Ns[' +
-                                                 str(ns_index) + ']) * before[-1])\n')
+                                    output.write('\tbefore.append((1 - ' +
+                                                 par_labels[ns_index] + ') * before[-1])\n')
                                     output.write(
-                                        '\tbefore[-2] *= Ns[' + str(ns_index) + ']\n')
+                                        '\tbefore[-2] *= ' + par_labels[ns_index] + '\n')
                                     ns_index += 1
 
                     else:  # change population size
-                        output.write('\tT = Ts[' + str(ts_index) + ']\n')
+                        output.write('\tT = ' + par_labels[ts_index] + '\n')
                         ts_index += 1
-                        output.write('\tafter = Ns[' + str(ns_index) + ':'
-                                     + str(ns_index + period.number_of_populations) + ']\n')
+                        output.write('\tafter = ' + ', '.join(
+                            par_labels[ns_index : ns_index + period.number_of_populations]) + '\n')
                         ns_index += period.number_of_populations
 
                         growth_funcs = '['
@@ -2121,22 +2177,22 @@ class Demographic_model:
                                 str(self.dt_fac) + ', theta=theta1)\n\n'
                             )
                         elif period.number_of_populations == 2:
-                            output.write('\tm = np.array([[0, Ms[' +
-                                         str(ms_index) + ']],[Ms[' +
-                                         str(ms_index + 1) + '], 0]])\n')
+                            output.write('\tm = np.array([[0, ' +
+                                         par_labels[ms_index] + '],[' +
+                                         par_labels[ms_index + 1] + ', 0]])\n')
                             output.write(
                                 '\tfs.integrate(Npop=list_growth_funcs, tf=T, m=m, dt_fac=' +
                                 str(self.dt_fac) + ', theta=theta1)\n\n'
                             )
                             ms_index += 2
                         else:
-                            output.write('\tm = np.array([[0.0, Ms[' +
-                                         str(ms_index) + '], Ms[' +
-                                         str(ms_index + 1) + ']],[Ms[' +
-                                         str(ms_index + 2) + '], 0.0, Ms[' +
-                                         str(ms_index + 3) + ']], [Ms[' +
-                                         str(ms_index + 4) + '], Ms[' +
-                                         str(ms_index + 5) + '], 0.0]])\n')
+                            output.write('\tm = np.array([[0.0, ' +
+                                         par_labels[ms_index] + ', ' +
+                                         par_labels[ms_index + 1] + '],[' +
+                                         par_labels[ms_index + 2] + ', 0.0, ' +
+                                         par_labels[ms_index + 3] + '], [' +
+                                         par_labels[ms_index + 4] + ', ' +
+                                         par_labels[ms_index + 5] + ', 0.0]])\n')
                             output.write(
                                 '\tfs.integrate(Npop=list_growth_funcs, tf=T, m=m, dt_fac=' +
                                 str(self.dt_fac) + ', theta=theta1)\n\n'
@@ -2145,107 +2201,9 @@ class Demographic_model:
                         if not all_sudden_later or (pos+1 != len(self.periods) and self.periods[pos+1].is_split_of_population):
                             output.write('\tbefore = after\n')
                 output.write('\treturn fs\n')
+        self.code_of_main_to_file('moments', filename)
 
-            # main
-            # read data
-            ext = os.path.splitext(self.params.input_file)[1][1:]
-            if ext == 'fs':
-                output.write("data = moments.Spectrum.from_file('" + os.path.
-                             abspath(self.params.input_file) + "')\n")
-                # we need check if we change spectrum from file:
-                real_spectrum, real_ns, real_labels  = support.read_fs_file(os.path.
-                             abspath(self.params.input_file), proj=None, pop_labels=None)
-                if not (real_ns == self.params.ns).all():
-                    output.write("data = data.project(" + str(list(self.params.ns)) + ")\n")
-                if not real_labels == self.params.pop_labels:
-                    d = {x: i for i, x in enumerate(real_labels)}
-                    d = [d[x] for x in self.params.pop_labels]
-                    output.write("new_axis = " + str(d) + '\n')
-                    output.write("data = np.transpose(data, new_axis)\n")
-                    output.write("data.pop_ids = " + str(self.params.pop_labels) + '\n')
-
-            else:
-                output.write("dd = moments.Misc.make_data_dict('" + os.path.
-                             abspath(self.params.input_file) + "')\n")
-                output.write('data = moments.Spectrum.from_data_dict(dd, pop_ids=' +
-                             str(self.params.pop_labels) +
-                             ', projections=' +
-                             str(list(self.params.ns)) +
-                             ', polarized=' +
-                             str(not self.params.input_data.folded) +
-                             ')\n')
-            output.write('\npopt = ' + str(self.as_full_vector()) + '\n')
-            output.write('ns = ' + str(list(self.params.ns)) + '\n')
-            output.write('model = generated_model(popt, ns)\n')
-            if self.params.multinom:
-                output.write(
-                    'll_model = moments.Inference.ll_multinom(model, data)\n')
-            else:
-                if self.is_custom_model:
-                    output.write('Nref = ' + self.popt[-1] + '# It is also optimized parameter by GADMA\n')
-                    output.write(
-                        'll_model = Nref * moments.Inference.ll(model, data)\n')
-                else:
-                    output.write(
-                        'll_model = moments.Inference.ll(model, data)\n')
-
-            output.write(
-                "print('Model log likelihood (LL(model, data)): {0}'.format(ll_model))\n")
             
-            if self.params.multinom:
-                output.write(
-                        "\ntheta = moments.Inference.optimal_sfs_scaling(model, data)\n")
-                output.write(
-                        "print('Optimal value of theta: {0}'.format(theta))\n")
-
-
-            size_of_first_pop = self.get_N_A()
-            self.normalize_by_Nref(1 / size_of_first_pop, remove_fitness_func_value=False)
-            output.write(
-                '#now we need to norm vector of params so that N_A is 1:\n'
-                'popt_norm = ' + str(
-                    self.as_full_vector()) + '\n')
-            self.normalize_by_Nref(size_of_first_pop, remove_fitness_func_value=False)
-
-            draw_scale = self.params.theta is not None
-            if self.params.multinom and draw_scale:
-                output.write("theta0 = " + str(self.params.theta) + '\n')
-                nref = 'int(theta / theta0)'
-            else:
-                if draw_scale:
-                    nref = str(size_of_first_pop)
-                else:
-                    nref = 'None'
-
-            if self.params.gen_time is not None:
-                if self.params.gen_time_units == 1:
-                    gen_time_units = 'Years'
-                elif self.params.gen_time_units == 1000:
-                    gen_time_units = 'Thousand years'
-                else:
-                    gen_time_units = 'Genetic units'
-            else:
-                gen_time_units = 'Genetic units'
-                
-            output.write("print('Drawing model to model_from_GADMA.png')\n"
-                         'model = moments.ModelPlot.generate_model(generated_model, popt_norm, ns)\n'
-                         'moments.ModelPlot.plot_model(model, \n'
-                         "\tsave_file='model_from_GADMA.png',\n"
-                         "\tfig_title='Demographic model from GADMA',\n"
-                         '\tpop_labels=' +
-                         str(self.params.pop_labels) +
-                         ',\n'
-                         '\tnref=' + nref +
-                         ',\n'
-                         '\tdraw_scale=' + str(draw_scale) + ',\n'
-                         '\tgen_time=' + 
-                         str(float(self.params.gen_time) /
-                             self.params.gen_time_units if self.params.gen_time is not None else 1.0) +
-                         ',\n'
-                         '\tgen_time_units=' + "'" + gen_time_units + "'" +
-                         ',\n'
-                         '\treverse_timeline=True)')
-
     def as_full_vector(self):
         """Vector representaton of the model in order to put it in python code
         for DaDi."""
@@ -2299,6 +2257,35 @@ class Demographic_model:
             p0 = self.as_full_vector()[1:]
             self.normalize_by_Nref(Nref, remove_fitness_func_value=False)
         return p0
+
+    def get_params_labels_str(self):
+        params_labels_str = []
+        if self.is_custom_model:
+            return None
+        split_ind = 0
+        ns_labels = []
+        ts_labels = []
+        ms_labels = []
+        for i, period in enumerate(self.periods):
+            if period.is_first_period:
+                continue
+            if period.is_split_of_population:
+                all_sudden = (np.array(self.periods[i + 1].growth_types) == 0).all()
+                if not all_sudden:
+                    params_labels_str.append('s%d' % (split_ind))
+                split_ind += 1
+            else:
+                loc_labels = ['nu%d%d' % (i - split_ind + 1, ii + 1) for ii in xrange(period.number_of_populations)]
+                params_labels_str.extend(loc_labels)
+            if not period.is_first_period and not period.is_split_of_population:
+                params_labels_str.append('t%d' % (i - split_ind))
+            if period.migration_rates is not None:
+                if period.number_of_populations == 2:
+                    loc_labels = ['m{0:d}_12', 'm{0:d}_21']
+                else:
+                    loc_labels = ['m{0:d}_12', 'm{0:d}_13', 'm{0:d}_21', 'm{0:d}_23', 'm{0:d}_31', 'm{0:d}_32']
+                params_labels_str.extend([s.format(i - split_ind) for s in loc_labels])
+        return params_labels_str
 
     def get_bounds_to_dadi(self):
         """Bound for parameters of the demographic model in order to run DaDi
