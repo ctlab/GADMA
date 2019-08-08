@@ -565,7 +565,7 @@ class Demographic_model:
                             None,
                             -1,
                             self.periods[-1].get_sizes_of_populations()))
-
+                    continue
 
                 if params[0].endswith('%'):
                     sizes = params[1][:-1].split(',')
