@@ -1454,7 +1454,7 @@ class Demographic_model:
                             func = self.moments_code
                             pts = self.params.dadi_pts
                     self.claic_score = 2 * gadma.Inference.get_claic_component(
-                            func, all_boot=self.params.boots,
+                            func, self.params.boots,
                             self.as_short_vector(), self.params.input_data, 
                             pts=pts, eps=eps) + 2 * self.get_fitness_func_value()
                 except np.linalg.linalg.LinAlgError as e:
