@@ -1722,7 +1722,8 @@ class Demographic_model:
                 else:
                     optimal_scaling = dadi.Inference.optimal_sfs_scaling(model, data)
                 N_A = self.get_N_A()
-                N_ref = optimal_scaling / self.params.theta
+                theta = self.params.theta is self.params.theta is not None else 1.0
+                N_ref = optimal_scaling / theta
                 if abs(N_A - N_ref) > 1e-10:
                     output.write('N_A = %f\n' % (N_A))
                     output.write(
