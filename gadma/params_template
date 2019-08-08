@@ -64,6 +64,12 @@ Projections : {5}
 #	Default: True
 Linked SNP's : {37}
 
+#	If SNP's are linked in order to calculate CLAIC, please, set
+#	the directory with bootstrapped data. 
+#	Bootstrap should be done over the regions of genome.
+#	Default: None
+Directory with bootstrap: {38}
+
 
 
 

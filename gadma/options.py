@@ -42,6 +42,8 @@ class Options_storage:
         self.pop_labels = None
         self.ns = None
         self.linked_snp = True
+        self.boot_dir = None
+        self.boots = None
 
         # Pipeline
         self.theta = None
@@ -308,7 +310,7 @@ class Options_storage:
                     self.linked_snp = value.lower() == 'true'
                 elif identity == "unlinked snp's" or identity == "unlinked snp":
                     self.linked_snp = value.lower() == 'false'
-                elif identity == 'directory of bootstrap':
+                elif identity == 'directory with bootstrap' or identity == 'directory of bootstrap':
                     self.boot_dir = value
                 else:
                     support.error(
@@ -370,7 +372,8 @@ class Options_storage:
                     comma_sep_repr(self.lower_bound),
                     comma_sep_repr(self.upper_bound),
                     comma_sep_repr(self.p_ids),
-                    str(self.linked_snp)
+                    str(self.linked_snp),
+                    str(self.boot_dir)
                 ))
 
     def to_file_extra(self, output_filename):
@@ -423,8 +426,6 @@ class Options_storage:
         if self.final_structure is not None:
             self.final_structure = support.check_comma_sep_list(
                 self.final_structure)
-
-
 
         if self.model_func_file is None:
             if self.initial_structure is None:
@@ -511,6 +512,14 @@ class Options_storage:
                 self.input_file, self.ns, self.pop_labels)
         self.ns = np.array(self.ns)
         self.number_of_populations = len(self.ns)
+
+        # Linked or unlinked data
+        if not self.linked_snp and self.boot_dir is not None:
+            support.warning(
+                    "SNP's are marked as unlinked, so the directory with bootstrap will be ignored.")
+        elif self.linked_snp:
+            if self.boot_dir is not None:
+                self.boots = gadma.Inference.load_bootstrap_data_from_dir(self.ns, self.pop_labels)
 
         # Custom model
         if self.model_func_file is not None:

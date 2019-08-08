@@ -23,7 +23,7 @@ except ImportError:
             support.error("None of the dadi or the moments are installed")
 
 
-def load_bootstrap_data_from_dir(dirname,  projections=None, pop_ids=None, filenames=False):
+def load_bootstrap_data_from_dir(dirname,  projections=None, pop_ids=None, return_filenames=False):
     from gadma.support import READ_ALLOWED_EXTENSIONS
     all_boot = []
     set_of_seen_files = set()
@@ -35,7 +35,7 @@ def load_bootstrap_data_from_dir(dirname,  projections=None, pop_ids=None, filen
                 continue
             filename = os.path.join(dirname, filename)
             fs, _1, _2 = support.load_spectrum(filename, projections, pop_ids)
-            if filenames:
+            if return_filenames:
                 all_boot.append([filename, fs])
             else:
                 all_boot.append(fs)
