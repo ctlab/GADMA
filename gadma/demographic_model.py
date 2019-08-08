@@ -552,13 +552,21 @@ class Demographic_model:
                 if len(self.periods) == 0:
                     NA = float(params[0][1:-1])
 
-                if len(params) == 1:
+                if len(params) == 1 and params[0] != 'Split':
                     self.add_period(
                         Period(
                             0.0,
                             [float(params[0][1:-1])],
                             is_first_period=True))
                     continue
+                if params[0] == 'Split':
+                    self.add_period(
+                        Split(
+                            None,
+                            -1,
+                            self.periods[-1].get_sizes_of_populations()))
+
+
                 if params[0].endswith('%'):
                     sizes = params[1][:-1].split(',')
                     proportion = float(sizes[-2]) / self.periods[-1].get_sizes_of_populations()[-1]
@@ -570,7 +578,7 @@ class Demographic_model:
                         proportion = 1 / NA
                     self.add_period(
                         Split(
-                            None if self.params.only_sudden else proportion,
+                            proportion,
                             -1,
                             self.periods[-1].get_sizes_of_populations()))
                     self.periods[-1].update(self.periods[-2].get_sizes_of_populations(), self.params.min_N, N_A=NA)
@@ -1431,34 +1439,24 @@ class Demographic_model:
 
     def get_claic_score(self, get_eps=False):
         """Calculate CLAIC score for the model."""
-        if self.claic_score is None:
-            if self.number_of_populations < 3:
-                eps = 1e-14
-            else:
-                eps = 1e-10
-            n_attemts = 0
+        if self.params.boots is not None and self.claic_score is None:
+            eps = 1e-5
             while eps <= 1e-2:
                 try:
                     if self.params.moments_available and not self.is_custom_model:
-                        self.claic_score = 2 * gadma.Inference.get_claic_component(
-                                self.moments_code, self.as_short_vector(), 
-                                self.params.input_data, pts=None, 
-                                all_boot=None, eps=eps) + 2 * self.get_fitness_func_value()
-                        break
+                        func = self.moments_code
+                        pts = None
                     else:
                         if self.is_custom_model:
-                            self.claic_score = 2 *  gadma.Inference.get_claic_component(
-                                    self.params.model_func, self.as_short_vector(), 
-                                    self.params.input_data, 
-                                    pts=None if self.params.moments_scenario else self.params.dadi_pts, 
-                                    all_boot=None, eps=eps) + 2 * self.get_fitness_func_value()
-                            break
+                            func = self.params.model_func
+                            pts = None if self.params.moments_scenario else self.params.dadi_pts
                         else:
-                            self.claic_score = 2 * gadma.Inference.get_claic_component(
-                                    self.moments_code, self.as_short_vector(), 
-                                    self.params.input_data, pts=self.params.dadi_pts, 
-                                    all_boot=None, eps=eps) + 2 * self.get_fitness_func_value()
-                            break
+                            func = self.moments_code
+                            pts = self.params.dadi_pts
+                    self.claic_score = 2 * gadma.Inference.get_claic_component(
+                            func, all_boot=self.params.boots,
+                            self.as_short_vector(), self.params.input_data, 
+                            pts=pts, eps=eps) + 2 * self.get_fitness_func_value()
                 except np.linalg.linalg.LinAlgError as e:
                     if e.message == 'Singular matrix':
                         eps *= 10
