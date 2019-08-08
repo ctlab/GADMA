@@ -108,10 +108,14 @@ class GA(object):
     def restore(self):
         def restore_from_cur_pop_of_models(list_of_str):
             for restore_str in list_of_str:
+                split = restore_str.strip().split('\t')
+                for i in reversed(xrange(len(split))):
+                    if split[i].startswith('['):
+                        break
                 self.models.append(
                     Demographic_model(
                         self.params,
-                        restore_string=restore_str.strip().split('\t')[-2]))
+                        restore_string=split[i]))
             if self.is_custom_model:
                 if len(self.params.lower_bound) != len(self.params.upper_bound):
                     raise RuntimeError(
