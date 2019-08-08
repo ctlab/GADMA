@@ -1791,6 +1791,22 @@ class Demographic_model:
                              '\tgen_time_units=' + "'" + gen_time_units + "'" +
                              ',\n'
                              '\treverse_timeline=True)')
+            if self.params.linked_snp and self.params.boot_dir is not None:
+                pts_str = self.params.dadi_pts if mode == 'dadi' else 'None'
+                output.write('try:\n'\
+                    'import gadma\n'\
+                    '\tprint "Calculation of CLAIC (time consuming, enter Ctrl+C to stop)"\n'\
+                    '\tall_boot = gadma.Inference.load_bootstrap_data_from_dir("%s")\n'\
+                    '\tfor eps in [1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8]:\n'\
+                    '\ttry:\n'\
+                    '\t\tclaic_score = gadma.Inference.get_claic_score(func_ex, all_boot, popt, data, pts=%s, eps=eps)\n'\
+                    '\texcept Exception, e:\n'\
+                    '\t\tprint("Error for eps = {0:.1e} : ".format(eps) + str(e))\n'\
+                    '\t\tclaic_score = None\n'\
+                    '\tprint("Model Composite Likelihood AIC score (CLAIC(p0, eps={0:.1e})): {1}".format(eps, claic_score))\n'\
+                    'except ImportError:\n'\
+                    '\tprint("Install GADMA to calculate CLAIC score")' % (self.params.boot_dir, pts_str))
+
 
 
     def dadi_code_to_file(self, filename):

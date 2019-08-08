@@ -163,7 +163,8 @@ def read_fs_file(filename, proj, pop_labels):
     if data.pop_ids is None:
         if pop_labels is not None:
             warning(
-                "Spectrum file is in old format - without population labels, so they will be taken from corresponding parameter: " +
+                "Spectrum file %s is in old format - without population labels,"\
+                        " so they will be taken from corresponding parameter: " % filename +
                 ', '.join(pop_labels) +
                 ".")
             data.pop_ids = pop_labels
