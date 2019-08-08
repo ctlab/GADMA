@@ -44,7 +44,7 @@ def load_bootstrap_data_from_dir(dirname,  projections=None, pop_ids=None, filen
     return all_boot
 
 
-def get_claic_component(func_ex, all_boot, p0, data, pts=None, eps=1e-2, version=3):
+def get_claic_component(func_ex, all_boot, p0, data, pts=None, eps=1e-2):
     '''
     if pts is None, then moments is used.
     Some help:
@@ -73,13 +73,13 @@ def get_claic_component(func_ex, all_boot, p0, data, pts=None, eps=1e-2, version
         fs = cache[key]
         return moments.Inference.ll(fs, data)
         
-    H = - Godambe.get_hess(func, p0, eps, args=[data], version=version)
+    H = - Godambe.get_hess(func, p0, eps, args=[data])
     H_inv = np.linalg.inv(H)
 
     J = np.zeros((len(p0), len(p0)))
     for ii, boot in enumerate(all_boot):
         boot = moments.Spectrum(boot)
-        grad_temp = Godambe.get_grad(func, p0, eps, args=[boot], version=version)
+        grad_temp = Godambe.get_grad(func, p0, eps, args=[boot])
 
         J_temp = np.outer(grad_temp, grad_temp)
         J += J_temp

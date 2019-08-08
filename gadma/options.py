@@ -308,6 +308,8 @@ class Options_storage:
                     self.linked_snp = value.lower() == 'true'
                 elif identity == "unlinked snp's" or identity == "unlinked snp":
                     self.linked_snp = value.lower() == 'false'
+                elif identity == 'directory of bootstrap':
+                    self.boot_dir = value
                 else:
                     support.error(
                         'Cannot recognize identifier: ' +
