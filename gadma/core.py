@@ -46,8 +46,9 @@ def run_genetic_algorithm(params_tuple):
         write_func('Finish genetic algorithm number ' + str(number))
         return number, ga_instance.best_model()
     except Exception, e:
-        support.error('GA number ' + str(number) + ': ' + str(e), error_instance=e)
-        raise RuntimeError
+        err_str = 'GA number ' + str(number) + ': ' + str(e)
+        support.error(err_str, error_instance=e, exit=False)
+        raise RuntimeError(err_str)
 
 
 def worker_init():
@@ -219,7 +220,6 @@ def main():
     except KeyboardInterrupt:
         pool.terminate()
         support.error('KeyboardInterrupt')
-
 
 if __name__ == '__main__':
     main()
