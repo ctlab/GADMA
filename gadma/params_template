@@ -95,7 +95,7 @@ Time for generation : {7}
 #	Parameters for demographic models:
 #
 #	Use moments or dadi
-#	Default: dadi
+#	Default: moments
 Use moments or dadi : {8}
 
 #	Use multinom scheme: N_A is not parameter for search, 

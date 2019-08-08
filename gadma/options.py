@@ -17,6 +17,7 @@ import ast
 from gadma.version import __version__
 import imp 
 import pkgutil
+import gadma
 
 
 
@@ -51,7 +52,7 @@ class Options_storage:
         self.multinom = None
         self.only_sudden = False
         self.dadi_pts = None
-        self.moments_scenario = False
+        self.moments_scenario = True
         self.relative_params = False
         self.no_mig = False
 
@@ -519,7 +520,8 @@ class Options_storage:
                     "SNP's are marked as unlinked, so the directory with bootstrap will be ignored.")
         elif self.linked_snp:
             if self.boot_dir is not None:
-                self.boots = gadma.Inference.load_bootstrap_data_from_dir(self.ns, self.pop_labels)
+                self.boot_dir = support.check_dir_existence(self.boot_dir)
+                self.boots = gadma.Inference.load_bootstrap_data_from_dir(self.boot_dir, self.ns, self.pop_labels)
 
         # Custom model
         if self.model_func_file is not None:

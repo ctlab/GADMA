@@ -7,6 +7,7 @@
 #   remove # at the beginning of a line and change corresponding
 #   parameter.
 
+Directory with bootstrap: ../dadi/examples/YRI_CEU/bootstraps
 
 #   Output directory to write all GADMA out.
 #   One needs to set it to not existing or empty directory.
@@ -93,7 +94,7 @@ Time for generation : 25 # the same as in Gutenkunst et al 2009
 #   Parameters for demographic models:
 #
 #   Use moments or dadi
-#   Default: dadi
+#   Default: moments
 Use moments or dadi : moments
 
 
