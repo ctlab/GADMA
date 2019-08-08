@@ -10,6 +10,14 @@ In contrast, GADMA is a command-line tool. It presents a series of launches of t
 
 GADMA is implemented by Ekaterina Noskova (ekaterina.e.noskova@gmail.com)
 
+Contributors:
+
+* Ekaterina Noskova
+
+* Vladimir Ulyantsev
+
+* Pavel Dobrynin
+
 ## Getting help
 GADMA manual can be found in `doc/manual/` directory.
 Please don't be afraid to contact me for different problems and offers via email ekaterina.e.noskova@gmail.com. I will be glad to answer all questions. 
