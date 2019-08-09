@@ -1963,9 +1963,9 @@ class Demographic_model:
                                 ('0' if period.migration_rates is None else
                                  par_labels[ms_index + 3]) + ', m31=' +
                                 ('0' if period.migration_rates is None else
-                                 par_labels[ms_index] + 4) + ', m32=' +
+                                 par_labels[ms_index + 4]) + ', m32=' +
                                 ('0' if period.migration_rates is None else
-                                 par_labels[ms_index] + 5) +
+                                 par_labels[ms_index + 5]) +
                                 ', theta0=theta1)\n')
                             ms_index += 6
                         if not all_sudden_later or (pos+1 != len(self.periods) and self.periods[pos+1].is_split_of_population):
