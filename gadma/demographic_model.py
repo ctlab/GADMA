@@ -1734,7 +1734,7 @@ class Demographic_model:
                         'll_model = %s.Inference.ll_multinom(model, data)\n' % mode)
             else:
                 if self.is_custom_model:
-                    output.write('Nref = ' + self.popt[-1] + '# It is also optimized parameter by GADMA\n')
+                    output.write('Nref = ' + str(self.popt[-1]) + '# It is also optimized parameter by GADMA\n')
                     output.write(
                         'll_model = Nref * dadi.Inference.ll(model, data)\n')
                     multinom_flag = False
