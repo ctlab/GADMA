@@ -13,6 +13,7 @@ import os
 import sys
 import math
 import cPickle as pickle
+import datetime
 
 from gadma.demographic_model import Demographic_model
 from gadma import options
@@ -701,6 +702,7 @@ class GA(object):
             self.cur_mutation_strength = self.params.mutation_strength
 
         # begin
+        around_time = datetime.datetime.now()
         support.write_to_file(self.log_file,
                               '--Start genetic algorithm pipeline--')
 
@@ -734,10 +736,13 @@ class GA(object):
             shared_dict[self.prefix] = (
                 copy.deepcopy(self.models[0]), self.final_models)
 
+        around_time = datetime.datetime.now() - around_time
+        support.write_to_file(self.log_file,
+                              '\nTotal time: {0} (H:M:S)'.format(around_time))
+
         # final part
         if self.out_dir is not None:
             self.print_and_draw_best_model(final=True)
-
         return self.best_model()
 
     def update_mutation_rate(self, flag):
