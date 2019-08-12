@@ -199,7 +199,10 @@ def read_dadi_file(filename, proj, pop_labels):
         error("Wrong input file: " + str(e))
     polarized = True
     with open(filename) as f:
-        splited_line = f.readline().split()
+        line = f.readline()
+        while line.startswith('#'):
+            line = f.readline()
+        splited_line = line.split()
         if (len(splited_line) - 6) % 2 != 0:
             error(
                 "Cannot calculate number of populations in dadi's input file. Maybe it's wrong?"
@@ -243,6 +246,7 @@ READ_ALLOWED_EXTENSIONS = {
 
 def load_spectrum(filename, proj, pop_labels):
     ext = "." + os.path.splitext(filename)[1][1:]
+    global READ_ALLOWED_EXTENSIONS
     if ext not in READ_ALLOWED_EXTENSIONS.keys():
         error(
             "File " +
