@@ -147,7 +147,7 @@ def main():
     args = parser.parse_args()
 
     output = support.ensure_dir_existence(args.output, False)
-    all_boot = gadma.Inference.load_bootstrap_data_from_dir(args.boots, filenames=True)
+    all_boot = gadma.Inference.load_bootstrap_data_from_dir(args.boots, return_filenames=True)
     
     print(str(len(all_boot)) + ' bootstrapped data found.')
 
