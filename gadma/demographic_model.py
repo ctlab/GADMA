@@ -928,7 +928,7 @@ class Demographic_model:
         # mutate by parameter
         if self.is_custom_model:
             self.popt[i] *= 1 + sign * change
-            if i != self.popt_len - 1:
+            if self.params.multinom or i != self.popt_len - 1:
                 low_bound = self.lower_bound[i]
                 upp_bound = self.upper_bound[i]
                 if not self.params.multinom:
