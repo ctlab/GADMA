@@ -22,7 +22,7 @@ min_M : {4}
 max_M : {5}
 
 #	Parameter for sfs plots. vmin - minimum value plotted for sfs.
-#	Default: 1
+#	Default: 1 or 0 if all values of fs are <= 1.0
 Vmin : {20}
 
 

@@ -409,7 +409,7 @@ class Options_storage:
                     str(self.time_for_print),
                     str(self.distribution),
                     str(self.std),
-                    str(vmin)
+                    str(self.vmin)
                 ))
 
     def save(self, out_dir):
@@ -517,6 +517,10 @@ class Options_storage:
                 self.input_file, self.ns, self.pop_labels)
         self.ns = np.array(self.ns)
         self.number_of_populations = len(self.ns)
+
+        # Set vmin to 0 if all entries of fs are < 1.0
+        if (self.input_data <= 1.0).all():
+            self.vmin = 0.0
 
         # Linked or unlinked data
         if not self.linked_snp and self.boot_dir is not None:
