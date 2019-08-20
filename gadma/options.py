@@ -315,7 +315,7 @@ class Options_storage:
                 elif identity == 'directory with bootstrap' or identity == 'directory of bootstrap':
                     self.boot_dir = value if value.lower() != 'none' else None
                 elif identity == 'vmin':
-                    self.boot_dir = float(value.lower()) if value.lower() != 'none' else None
+                    self.vmin = float(value.lower()) if value.lower() != 'none' else None
                 else:
                     support.error(
                         'Cannot recognize identifier: ' +
