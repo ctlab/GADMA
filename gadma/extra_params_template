@@ -21,6 +21,10 @@ max_T : {3}
 min_M : {4}
 max_M : {5}
 
+#	Parameter for sfs plots. vmin - minimum value plotted for sfs.
+#	Default: 1
+Vmin : {20}
+
 
 
 #	Parameters for local search algorithms (exclude hill climbing)

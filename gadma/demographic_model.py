@@ -2427,17 +2427,17 @@ class Demographic_model:
         elif (self.number_of_populations == 2):
             if self.params.moments_scenario:
                 moments.Plotting.plot_2d_comp_Poisson(
-                    self.get_sfs(), self.params.input_data, vmin=1, show=False)
+                    self.get_sfs(), self.params.input_data, vmin=self.params.vmin, show=False)
             else:
                 dadi.Plotting.plot_2d_comp_Poisson(
-                    self.get_sfs(), self.params.input_data, vmin=1, show=False)
+                    self.get_sfs(), self.params.input_data, vmin=self.params.vmin, show=False)
         elif (self.number_of_populations == 3):
             if self.params.moments_scenario:
                 moments.Plotting.plot_3d_comp_Poisson(
-                    self.get_sfs(), self.params.input_data, vmin=1, show=False)
+                    self.get_sfs(), self.params.input_data, vmin=self.params.vmin, show=False)
             else:
                 dadi.Plotting.plot_3d_comp_Poisson(
-                    self.get_sfs(), self.params.input_data, vmin=1, show=False)
+                    self.get_sfs(), self.params.input_data, vmin=self.params.vmin, show=False)
         plt.savefig(out)
 
         if self.is_custom_model and not self.params.moments_scenario or not self.params.moments_available:

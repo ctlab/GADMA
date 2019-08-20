@@ -95,6 +95,7 @@ class Options_storage:
         self.silence = False
         self.draw_iter = 0
         self.gen_time_units = 1.0
+        self.vmin = 1
 
         self.repeats = 1
         self.processes = 1
@@ -313,6 +314,8 @@ class Options_storage:
                     self.linked_snp = value.lower() == 'false'
                 elif identity == 'directory with bootstrap' or identity == 'directory of bootstrap':
                     self.boot_dir = value if value.lower() != 'none' else None
+                elif identity == 'vmin':
+                    self.boot_dir = float(value.lower()) if value.lower() != 'none' else None
                 else:
                     support.error(
                         'Cannot recognize identifier: ' +
@@ -405,7 +408,8 @@ class Options_storage:
                     str(self.multinom_mutate),
                     str(self.time_for_print),
                     str(self.distribution),
-                    str(self.std)
+                    str(self.std),
+                    str(vmin)
                 ))
 
     def save(self, out_dir):
