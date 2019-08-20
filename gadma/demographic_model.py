@@ -1678,7 +1678,7 @@ class Demographic_model:
             # main
             # read data
             ext = os.path.splitext(self.params.input_file)[1][1:]
-            if ext == 'fs':
+            if ext == 'fs' or ext == 'sfs':
                 output.write("data = %s.Spectrum.from_file('" % (mode) + os.path.
                              abspath(self.params.input_file) + "')\n")
                 # we need check if we change spectrum from file:
