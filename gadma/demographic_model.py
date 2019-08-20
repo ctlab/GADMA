@@ -384,13 +384,16 @@ class Demographic_model:
 
     def generate_random_value(self, low_bound, upp_bound, identificator=None):
         """Generate random value for different parameters of models"""
-        if identificator == 't' or identificator == 's':
+        if identificator == 's':
             return np.random.uniform(low_bound, upp_bound)
-        # if identificator == 'm' or identificator == 'n' or None
+        # if identificator == 'm' or identificator == 'n' or 't' or None
         log = True
         if low_bound <= 0:
             low_bound = 1e-15
-        normal = True
+	if identificator == 't':
+		normal = False
+	else:
+        	normal = True
 
         mode = 1.0
 
