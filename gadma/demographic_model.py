@@ -2306,9 +2306,9 @@ class Demographic_model:
                 else:
                     loc_labels = ['m{0:d}_12', 'm{0:d}_13', 'm{0:d}_21', 'm{0:d}_23', 'm{0:d}_31', 'm{0:d}_32']
                 ms_labels.extend([s.format(i - split_ind) for s in loc_labels])
-            params_labels_str = ns_labels
-            params_labels_str.extend(ts_labels)
-            params_labels_str.extend(ms_labels)
+        params_labels_str = ns_labels
+        params_labels_str.extend(ts_labels)
+        params_labels_str.extend(ms_labels)
         return params_labels_str
 
     def get_bounds_to_dadi(self):
