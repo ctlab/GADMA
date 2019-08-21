@@ -2420,36 +2420,41 @@ class Demographic_model:
 
         # Draw sfs
 
-        matplotlib.rcParams.update({'font.size': 18})
-        fig = plt.figure(1, figsize=(13.8, 10.8))
-        if (self.number_of_populations == 1):
-            if self.params.moments_scenario:
-                moments.Plotting.plot_1d_comp_Poisson(
-                    self.get_sfs(), self.params.input_data, show=False)
-            else:
-                dadi.Plotting.plot_1d_comp_Poisson(
-                    self.get_sfs(), self.params.input_data, show=False)
-        elif (self.number_of_populations == 2):
-            if self.params.moments_scenario:
-                moments.Plotting.plot_2d_comp_Poisson(
-                    self.get_sfs(), self.params.input_data, vmin=self.params.vmin, show=False)
-            else:
-                dadi.Plotting.plot_2d_comp_Poisson(
-                    self.get_sfs(), self.params.input_data, vmin=self.params.vmin, show=False)
-        elif (self.number_of_populations == 3):
-            if self.params.moments_scenario:
-                moments.Plotting.plot_3d_comp_Poisson(
-                    self.get_sfs(), self.params.input_data, vmin=self.params.vmin, show=False)
-            else:
-                dadi.Plotting.plot_3d_comp_Poisson(
-                    self.get_sfs(), self.params.input_data, vmin=self.params.vmin, show=False)
-        plt.savefig(out)
+        success = True
+        try:
+            matplotlib.rcParams.update({'font.size': 18})
+            fig = plt.figure(1, figsize=(13.8, 10.8))
+            if (self.number_of_populations == 1):
+                if self.params.moments_scenario:
+                    moments.Plotting.plot_1d_comp_Poisson(
+                        self.get_sfs(), self.params.input_data, show=False)
+                else:
+                    dadi.Plotting.plot_1d_comp_Poisson(
+                        self.get_sfs(), self.params.input_data, show=False)
+            elif (self.number_of_populations == 2):
+                if self.params.moments_scenario:
+                    moments.Plotting.plot_2d_comp_Poisson(
+                        self.get_sfs(), self.params.input_data, vmin=self.params.vmin, show=False)
+                else:
+                    dadi.Plotting.plot_2d_comp_Poisson(
+                        self.get_sfs(), self.params.input_data, vmin=self.params.vmin, show=False)
+            elif (self.number_of_populations == 3):
+                if self.params.moments_scenario:
+                    moments.Plotting.plot_3d_comp_Poisson(
+                        self.get_sfs(), self.params.input_data, vmin=self.params.vmin, show=False)
+                else:
+                    dadi.Plotting.plot_3d_comp_Poisson(
+                        self.get_sfs(), self.params.input_data, vmin=self.params.vmin, show=False)
+            plt.savefig(out)
+        except Exception as e:
+            support.warning("Could not draw sfs plots for " + filename + ' : ' + e.message)
+            success = False
 
         if self.is_custom_model and not self.params.moments_scenario or not self.params.moments_available:
             return
 
         # Draw model
-        if self.params.pil_available:
+        if self.params.pil_available and success:
             buf2 = io.BytesIO()
             out = buf2
         else:
@@ -2474,7 +2479,7 @@ class Demographic_model:
             else:
                 raise e
     
-        if not self.params.pil_available:
+        if not self.params.pil_available or not success:
             return
 
         import PIL
