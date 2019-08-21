@@ -1846,7 +1846,7 @@ class Demographic_model:
 
                 output.write('\ttheta1 = ' + str(theta) + '\n')
                 output.write('\txx = dadi.Numerics.default_grid(pts)\n')
-                first_split = True
+                first_period_is_split = True
                 for pos, period in enumerate(self.periods):
                     if self.params.only_sudden:
                         all_sudden_later = True
@@ -1871,9 +1871,9 @@ class Demographic_model:
                             output.write(
                                 '\tphi = dadi.PhiManip.phi_1D_to_2D(xx, phi)\n')
                             if not all_sudden_later:
-                                if first_split:
+                                if first_period_is_split:
                                     output.write('\tbefore = [{0}, 1 - {0}]\n'.format(par_labels[ns_index]))
-                                    first_split = False
+                                    first_period_is_split = False
                                 else:
                                     output.write('\tbefore.append((1 - ' +
                                                  par_labels[ns_index] + ') * before[-1])\n')
@@ -1901,6 +1901,7 @@ class Demographic_model:
                                     ns_index += 1
 
                     else:  # change population size
+                        first_period_is_split = False
                         growth_funcs = []
                         output.write('\tT = ' + par_labels[ts_index] + '\n')
                         ts_index += 1
@@ -2292,19 +2293,22 @@ class Demographic_model:
             if period.is_split_of_population:
                 all_sudden = (np.array(self.periods[i + 1].growth_types) == 0).all()
                 if not all_sudden:
-                    params_labels_str.append('s%d' % (split_ind))
+                    ns_labels.append('s%d' % (split_ind))
                 split_ind += 1
             else:
                 loc_labels = ['nu%d%d' % (i - split_ind + 1, ii + 1) for ii in xrange(period.number_of_populations)]
-                params_labels_str.extend(loc_labels)
+                ns_labels.extend(loc_labels)
             if not period.is_first_period and not period.is_split_of_population:
-                params_labels_str.append('t%d' % (i - split_ind))
+                ts_labels.append('t%d' % (i - split_ind))
             if period.migration_rates is not None:
                 if period.number_of_populations == 2:
                     loc_labels = ['m{0:d}_12', 'm{0:d}_21']
                 else:
                     loc_labels = ['m{0:d}_12', 'm{0:d}_13', 'm{0:d}_21', 'm{0:d}_23', 'm{0:d}_31', 'm{0:d}_32']
-                params_labels_str.extend([s.format(i - split_ind) for s in loc_labels])
+                ms_labels.extend([s.format(i - split_ind) for s in loc_labels])
+            params_labels_str = ns_labels
+            params_labels_str.extend(ts_labels)
+            params_labels_str.extend(ms_labels)
         return params_labels_str
 
     def get_bounds_to_dadi(self):
