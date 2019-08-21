@@ -2105,7 +2105,7 @@ class Demographic_model:
 
                 output.write(
                     '\ttheta1 = ' + str(self.params.theta if self.params.theta is not None else 1) + '\n')
-                first_split = True
+                first_period_is_split = True
                 for pos, period in enumerate(self.periods):
                     if self.params.only_sudden:
                         all_sudden_later = True
@@ -2134,9 +2134,9 @@ class Demographic_model:
                                 output.write(
                                     '\tfs = moments.Manips.split_1D_to_2D(fs, ns[0] + ns[2], ns[1])\n\n')
                             if not all_sudden_later:
-                                if first_split:
+                                if first_period_is_split:
                                     output.write('\tbefore = [{0}, 1 - {0}]\n'.format(par_labels[ns_index]))
-                                    first_split = False
+                                    first_period_is_split = False
                                 else:
                                     output.write('\tbefore.append((1 - ' +
                                                  par_labels[ns_index] + ') * before[-1])\n')
@@ -2164,10 +2164,11 @@ class Demographic_model:
                                     ns_index += 1
 
                     else:  # change population size
+                        first_period_is_split = False
                         output.write('\tT = ' + par_labels[ts_index] + '\n')
                         ts_index += 1
-                        output.write('\tafter = ' + ', '.join(
-                            par_labels[ns_index : ns_index + period.number_of_populations]) + '\n')
+                        output.write('\tafter = [' + ', '.join(
+                            par_labels[ns_index : ns_index + period.number_of_populations]) + ']\n')
                         ns_index += period.number_of_populations
 
                         growth_funcs = '['
