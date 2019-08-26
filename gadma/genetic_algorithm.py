@@ -244,6 +244,8 @@ class GA(object):
         load_final_models_file = os.path.join(self.params.resume_dir, self.prefix, 'final_models_pickle')
         
         if pos_of_last_empty_str - 11 > size:
+            if iter_out[-1].startswith("Total time:"):
+                iter_out = iter_out[:-2]
             if iter_out[-1].startswith(
                     'BEST') and iter_out[-2].startswith('Try to improve'):
                 # when we have not print final result
