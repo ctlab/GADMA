@@ -3,11 +3,10 @@
 #	Lines started from # are ignored.
 #	Also comments at the end of a line are ignored too.
 #	Every line contains: Identificator of parameter : value.
-#	If one want to change some default parameters, one need to
-#	remove # at the begining of line and change corresponding
-#	parameter.
 
+#!!! 	means pay attention to this parameter, they are basical.
 
+#!!!
 #	Output directory to write all GADMA out.
 #	One need to set it to not existing or empty directory.
 #	If it is resumed from other directory and output directory 
@@ -16,19 +15,7 @@
 Output directory : {0}
 
 
-#	One can resume from some other launch of GADMA by setting
-#	output directory of it to 'Resume from' parameter.
-#	You can set again new parameters of resumed launch.
-Resume from : {1}
-#
-#	If you want to take only models from previous run set this 
-#	flag.  Then iterations of GA will start from 0 and values of
-#	mutation rate and strength will be initial.
-#	Default: None
-Only models : {2}
-
-
-
+#!!!
 #	Input file can be sfs file (should end with .fs) or 
 #	file of SNP's in dadi format (should end with .txt).
 Input file : {3}
@@ -56,6 +43,7 @@ Population labels : {4}
 #	Default: from input file
 Projections : {5}
 
+#!!!
 #	Are SNP's linked or unlinked?
 #	If they are linked, then Composite Likelihood Akaike
 #	Information Criterion (CLAIC) will be used to compare models.
@@ -64,6 +52,7 @@ Projections : {5}
 #	Default: True
 Linked SNP's : {37}
 
+#!!!
 #	If SNP's are linked in order to calculate CLAIC, please, set
 #	the directory with bootstrapped data. 
 #	Bootstrap should be done over the regions of genome.
@@ -71,10 +60,25 @@ Linked SNP's : {37}
 Directory with bootstrap: {38}
 
 
-
-
+#!!!
 #	Now all main parameters:
 #
+#	Use moments or dadi
+#	Default: moments
+Use moments or dadi : {8}
+
+#	If you choose to use dadi, please set pts parameter - number
+#	of points in grid. Otherwise this pts would be used in dadi's code.
+#	Default: Let n = max number of individuals in one population, 
+#	then pts = n, n+10, n+20
+Pts : {10}
+
+#!!!
+#	Print parameters of model in units of N_ref = N_A.
+#	N_A will be placed in brackets at the end of string.
+#	Default: False
+Relative parameters : {15}
+
 #	Total mutation flux - theta.
 #	It is equal to:
 #	theta = 4 * μ * L
@@ -91,63 +95,51 @@ Theta0 : {6}
 #	Default: 1.0
 Time for generation : {7}
 
-
-#	Parameters for demographic models:
-#
-#	Use moments or dadi
-#	Default: moments
-Use moments or dadi : {8}
-
-#	Use multinom scheme: N_A is not parameter for search, 
-#	it is calculated through optimal_sfs_scaling.
-#	Multinom scheme decrease number of parameter by one and 
-#	is usually faster, however non multinom scheme usually 
-#	finds better solutions.
-#	Default: False if not custom model and True if custom
-Multinom : {9}
-
 #	Use sudden changes of population sizes only. Decreases 
 #	the number of parameters.
 #	Default: False
 Only sudden : {32}
 
-#	If you choose to use dadi, please set pts parameter - number
-#	of points in grid
-#	Default: Let n = max number of individuals in one population, 
-#	then pts = n, n+10, n+20
-Pts : {10}
+#	Disable migrations in demographic models.
+#	Default: False
+No migrations : {16}
 
-#   Using a custom demographic model.
-#   Please, specify file with function named 'model_func' in it. 
-#   So file should contain:
-#   def model_func(params, ns, pts) in case of dadi
-#   or
-#   def model_func(params, ns) in case of moments
-#   Default: None
+
+#!!!
+#	One should choose the demographic history to infer.
+#	It can be custom or setted up with structure.
+
+# 1. Using a custom demographic model.
+#	Please, specify file with function named 'model_func' in it. 
+#	So file should contain:
+#	def model_func(params, ns, pts) in case of dadi
+#	or
+#	def model_func(params, ns) in case of moments
+#	Default: None
 Custom filename : {33}
 
-#   Now one should specify either bounds or identifications 
-#   of custom model's parameters. All values are in Nref units.
-#   Lower and upper bounds - lists of numbers.
-#   List of usual bounds:
-#   N: 1e-2 - 100
-#   T: 0 - 5
-#   m: 0 - 10
-#   s: 0 - 1
-#   This bounds will be taken automatically if identifications are set.
-#   Default: None
+#	Now one should specify either bounds or identifications 
+#	of custom model's parameters. All values are in Nref units.
+#	Lower and upper bounds - lists of numbers.
+#	List of usual bounds:
+#	N: 1e-2 - 100
+#	T: 0 - 5
+#	m: 0 - 10
+#	s: 0 - 1
+#	This bounds will be taken automatically if identifications are set.
+#	Default: None
 Lower bounds : {34}
 Upper bounds : {35}
-#   An identifier list:
-#   T - time
-#   N - size of population
-#   m - migration
-#   s - split event,  proportion in which population size
-#    is divided to form two new populations.
-#   Default: None
+#	An identifier list:
+#	T - time
+#	N - size of population
+#	m - migration
+#	s - split event,  proportion in which population size
+#	is divided to form two new populations.
+#	Default: None
 Parameter identifiers : {36}
 
-#	Structure is for not custom models!
+# 2. Structure is for not custom models!
 #	Structure of model for one population - number of time periods 
 #	(e.g. 5).
 #	Structure of model for two populations - number of time periods
@@ -164,81 +156,8 @@ Initial structure : {11}
 #	Default: equals to initial structure
 Final structure : {12}
 
-#	It is possible to limit time of splits.
-#	Split 1 is the most ancient split.
-#	!Note that time is in genetic units (2 * time for 1 generation):
-#	e.g. we want to limit by 150 kya, time for one generation is 
-#	25 years, then bound will be 150000 / (2*25) = 3000.
-#
-#	Upper bound for split 1 (in case of 2 or 3 populations).
-#	Default: None
-Upper bound of first split : {13}
 
-#	Upper bound for split 2 (in case of 3 populations).
-#	Default: None
-Upper bound of second split : {14}
-
-#	Print parameters of model in units of N_ref = N_A.
-#	N_A will be placed in brackets at the end of string.
-#	Default: False
-Relative parameters : {15}
-
-#	Disable migrations in demographic models.
-#	Default: False
-No migrations : {16}
-
-
-
-
-#	Parameters for Genetic Algorithm.
-#
-#	Size of population of demographic models in GA:
-#	Default: 10
-Size of population in GA : {17}
-
-#	Fractions of current models, mutated models and crossed models 
-#	to be taken to new population.
-#	Sum of fractions should be <= 1, the remaining fraction is 
-#	fraction of random models.
-#	Default: 0.2,0.3,0.3
-Fractions in GA : {18}
-
-#	Mutation strength - fraction of parameters in model to mutate 
-#	during global mutation process of model.
-#	Number of parameters to mutate is sampled from binomial 
-#	distribution, so we need to set mean.
-#	Default: 0.2
-Mean mutation strength : {19}
-#
-#	Mutation strength can be adaptive: if mutation is good, 
-#	i.e. has the best fitness function (log likelihood),
-#	then mutation strength is increased multiplying by const 
-#	otherwise it decreases dividing by (1/4)^const.
-#	When const is 1.0 it is not adaptive.
-#	Default: 1.0
-Const for mutation strength : {20}
-
-#	Mutation rate - fraction of any parameter to change during
-#	its mutation.
-#	Mutation rate is sampled from truncated normal distribution, 
-#	so we need mean (std can be specified in extra params).
-#	Default 0.2
-Mean mutation rate : {21}
-#
-#	Mutation rate also can be adaptive as mutation strength.
-#	Default: 1.02
-Const for mutation rate : {22}
-
-#	Genetic algorithm stops when it couldn't improve model by
-#	more that epsilon in logLL
-#	Default: 1e-2
-Epsilon : {23}
-#	
-#	and it happens during N iterations:
-#	Default: 100
-Stop iteration : {24}
-
-
+#!!!
 #	Local optimization.
 #
 #	Choice of local optimization, that is launched after 
@@ -309,3 +228,38 @@ Number of repeats : {30}
 #	the number of processes.
 #	Default: 1
 Number of processes : {31}
+
+
+
+#	It is possible to limit time of splits.
+#	Split 1 is the most ancient split.
+#	!Note that time is in genetic units (2 * time for 1 generation):
+#	e.g. we want to limit by 150 kya, time for one generation is 
+#	25 years, then bound will be 150000 / (2*25) = 3000.
+#
+#	Upper bound for split 1 (in case of 2 or 3 populations).
+#	Default: None
+Upper bound of first split : {13}
+
+#	Upper bound for split 2 (in case of 3 populations).
+#	Default: None
+Upper bound of second split : {14}
+
+#	Use multinom scheme: N_A is not parameter for search, 
+#	it is calculated through optimal_sfs_scaling.
+#	Multinom scheme decrease number of parameter by one and 
+#	is usually faster, however non multinom scheme usually 
+#	finds better solutions.
+#	Default: False if not custom model and True if custom
+Multinom : {9}
+
+#	One can resume from some other launch of GADMA by setting
+#	output directory of it to 'Resume from' parameter.
+#	You can set again new parameters of resumed launch.
+Resume from : {1}
+#
+#	If you want to take only models from previous run set this 
+#	flag.  Then iterations of GA will start from 0 and values of
+#	mutation rate and strength will be initial.
+#	Default: None
+Only models : {2}

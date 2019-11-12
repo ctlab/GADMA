@@ -26,6 +26,13 @@ START_MODEL_NUMBER_OF_PERIODS = 1
 FINAL_MODEL_NUMBER_OF_PERIODS = 2
 
 
+def comma_sep_repr(l):
+    if l is None:
+        return 'None'
+    if len(l) == 1:
+        return str(l[0])
+    return ', '.join([str(x) for x in l])
+
 class Options_storage:
     '''
     Class to handle great amount of options for
@@ -324,12 +331,6 @@ class Options_storage:
                 line_number += 1
 
     def to_file(self, output_filename):
-        def comma_sep_repr(l):
-            if l is None:
-                return 'None'
-            if len(l) == 1:
-                return str(l[0])
-            return ', '.join([str(x) for x in l])
 
         home_dir = support.get_home_dir()
         with open(os.path.join(home_dir, "params_template")) as t:
@@ -409,7 +410,16 @@ class Options_storage:
                     str(self.time_for_print),
                     str(self.distribution),
                     str(self.std),
-                    str(self.vmin)
+                    str(self.vmin),
+                    (self.size_of_generation),
+                    comma_sep_repr(self.fracs),
+                    str(self.mutation_strength),
+                    str(self.const_for_mut_strength),
+                    str(self.mutation_rate),
+                    str(self.const_for_mut_rate),
+                    str(self.epsilon),
+                    str(self.stop_iter)
+
                 ))
 
     def save(self, out_dir):

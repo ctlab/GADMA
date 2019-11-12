@@ -26,6 +26,55 @@ max_M : {5}
 Vmin : {20}
 
 
+#	Parameters for Genetic Algorithm.
+#
+#	Size of population of demographic models in GA:
+#	Default: 10
+Size of population in GA : {21}
+
+#	Fractions of current models, mutated models and crossed models 
+#	to be taken to new population.
+#	Sum of fractions should be <= 1, the remaining fraction is 
+#	fraction of random models.
+#	Default: 0.2,0.3,0.3
+Fractions in GA : {22}
+
+#	Mutation strength - fraction of parameters in model to mutate 
+#	during global mutation process of model.
+#	Number of parameters to mutate is sampled from binomial 
+#	distribution, so we need to set mean.
+#	Default: 0.2
+Mean mutation strength : {23}
+#
+#	Mutation strength can be adaptive: if mutation is good, 
+#	i.e. has the best fitness function (log likelihood),
+#	then mutation strength is increased multiplying by const 
+#	otherwise it decreases dividing by (1/4)^const.
+#	When const is 1.0 it is not adaptive.
+#	Default: 1.0
+Const for mutation strength : {24}
+
+#	Mutation rate - fraction of any parameter to change during
+#	its mutation.
+#	Mutation rate is sampled from truncated normal distribution, 
+#	so we need mean (std can be specified in extra params).
+#	Default 0.2
+Mean mutation rate : {25}
+#
+#	Mutation rate also can be adaptive as mutation strength.
+#	Default: 1.02
+Const for mutation rate : {26}
+
+#	Genetic algorithm stops when it couldn't improve model by
+#	more that epsilon in logLL
+#	Default: 1e-2
+Epsilon : {27}
+#	
+#	and it happens during N iterations:
+#	Default: 100
+Stop iteration : {28}
+
+
 
 #	Parameters for local search algorithms (exclude hill climbing)
 
