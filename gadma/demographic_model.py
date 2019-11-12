@@ -1763,7 +1763,7 @@ class Demographic_model:
                     nref = 'int(theta / theta0)'
                 else:
                     if draw_scale:
-                        nref = str(size_of_first_pop)
+                        nref = str(int(size_of_first_pop))
                     else:
                         nref = 'None'
 
@@ -2385,7 +2385,7 @@ class Demographic_model:
             save_file=save_file,
             fig_title=title,
             pop_labels=self.params.pop_labels,
-            nref=nref,
+            nref=int(nref),
             draw_scale=draw_scale,
             gen_time=gen_time,
             gen_time_units=units,
