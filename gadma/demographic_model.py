@@ -2385,7 +2385,7 @@ class Demographic_model:
             save_file=save_file,
             fig_title=title,
             pop_labels=self.params.pop_labels,
-            nref=int(nref),
+            nref=int(nref) if nref is not None else nref,
             draw_scale=draw_scale,
             gen_time=gen_time,
             gen_time_units=units,
