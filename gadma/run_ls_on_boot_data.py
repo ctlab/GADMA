@@ -31,7 +31,7 @@ def run_one_job(params):
     fs_filename = os.path.basename(os.path.normpath(fs_filename))
     prefix = opt_name + '_' + fs_filename
     out_file = os.path.join(output, "opt_" + str(prefix) + ".out")
-    res_file = os.path.join(args.output, str(prefix) + "_params.npy")
+    res_file = os.path.join(output, str(prefix) + "_params.npy")
     if os.path.isfile(res_file):
         return fs_filename, np.load(res_file)
  

@@ -2193,7 +2193,8 @@ class Demographic_model:
                             '\tlist_growth_funcs = lambda t: [ f(t) for f in growth_funcs]\n'
                         )
 
-                        if period.number_of_populations == 1:
+                        # The first case is when there is no migration
+                        if period.number_of_populations == 1 or self.params.no_mig:
                             output.write(
                                 '\tfs.integrate(Npop=list_growth_funcs, tf=T, dt_fac=' +
                                 str(self.dt_fac) + ', theta=theta1)\n\n'
