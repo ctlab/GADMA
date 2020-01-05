@@ -69,5 +69,6 @@ setup(
         'console_scripts': ['gadma = gadma.core:main',
             'gadma-run_ls_on_boot_data = gadma.run_ls_on_boot_data:main',
             'gadma-get_confidence_intervals = gadma.get_confidence_intervals:main']
-    }
+    },
+    zip_safe=False
 )
