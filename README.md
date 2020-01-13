@@ -1,4 +1,4 @@
-# GADMA
+# GADMA ![](http://jb.gg/badges/research-flat-square.svg)
 
 Welcome to GADMA!
 
