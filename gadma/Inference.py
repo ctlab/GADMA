@@ -1,3 +1,12 @@
+#!/usr/bin/env python3
+
+############################################################################
+# Copyright (c) 2018 Noskova Ekaterina
+# All Rights Reserved
+# See the LICENSE file for details
+############################################################################
+
+
 import os,sys
 
 import support

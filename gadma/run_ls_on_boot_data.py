@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 ############################################################################
-# Copyright (c) 2018 Noskova Ekaterina
+# Copyright (c) 2020 Noskova Ekaterina
 # All Rights Reserved
 # See the LICENSE file for details
 ############################################################################

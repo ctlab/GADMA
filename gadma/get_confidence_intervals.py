@@ -1,3 +1,12 @@
+#!/usr/bin/env python3
+
+############################################################################
+# Copyright (c) 2020 Noskova Ekaterina
+# All Rights Reserved
+# See the LICENSE file for details
+############################################################################
+
+
 import numpy as np
 import pandas as pd
 import sys
