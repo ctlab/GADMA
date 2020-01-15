@@ -12,5 +12,5 @@ if 'matplotlib' in sys.modules:
     import matplotlib.pyplot as plt
     plt.switch_backend('agg')
 
-from version import __version__
-import Inference
+from . version import __version__
+from . import Inference

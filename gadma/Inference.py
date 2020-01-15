@@ -9,15 +9,15 @@
 
 import os,sys
 
-import support
-from genetic_algorithm import GA
+from . import support
+from . genetic_algorithm import GA
+from . import options
+from . demographic_model import Demographic_model
 
 import numpy as np
 import math
 import random
 import copy
-from gadma import options
-from gadma.demographic_model import Demographic_model
 
 try:
     import dadi as sim_sfs_lib

@@ -74,7 +74,7 @@ def check_comma_sep_list(l_str, is_int=True, is_float=False):
             splited_list[0] = splited_list[0][1:]
         if splited_list[-1].endswith(']'):
             splited_list[-1] = splited_list[-1][:1]
-        for i in xrange(len(splited_list)):
+        for i in range(len(splited_list)):
             if splited_list[i].startswith("'") and splited_list[i].endswith("'"):
                 splited_list[i] = splited_list[i][1:-1]
         if is_int:
@@ -83,15 +83,17 @@ def check_comma_sep_list(l_str, is_int=True, is_float=False):
             return np.array([float(x) for x in splited_list])
         else:
             return np.array([x.strip().lower() for x in splited_list])
-    except:
+    except Exception as e:
         if l_str.strip().lower() == 'none':
             return None
         if is_int:
-            error("can't read comma-separated list of ints: " + str(l_str))
+            er_str = "can't read comma-separated list of ints: "
         if is_float:
-            error("can't read comma-separated list of floats: " + str(l_str))
+            er_str = "can't read comma-separated list of floats: "
         else:
-            error("can't read comma-separated list: " + str(l_str))
+            er_str = "can't read comma-separated list: "
+        er_str += str(l_str) + ' (' + str(e) + ')' 
+        error(er_str)
 
 
 
@@ -169,7 +171,7 @@ def read_fs_file(filename, proj, pop_labels):
                 ".")
             data.pop_ids = pop_labels
         else:
-            data.pop_ids = ['pop ' + str(i) for i in xrange(len(data.shape))]
+            data.pop_ids = ['pop ' + str(i) for i in range(len(data.shape))]
 
     if proj is not None and not list(ns) == list(proj):
         try:
@@ -213,21 +215,21 @@ def read_dadi_file(filename, proj, pop_labels):
                 pop_ids = splited_line[3:3 + number_of_pops]
                 splited_line = f.readline().split()
             else:
-                pop_ids = ["Pop_" + str(x) for x in xrange(number_of_pops)]
+                pop_ids = ["Pop_" + str(x) for x in range(number_of_pops)]
         else:
             pop_ids = pop_labels
         if proj is None:
             proj = [
                 int(splited_line[3 + x]) +
                 int(splited_line[4 + number_of_pops + x])
-                for x in xrange(number_of_pops)
+                for x in range(number_of_pops)
             ]
         for line in f:
             splited_line = line.split()
             if splited_line[1][1].lower() not in ['a', 't', 'c', 'g']:
                 polarized = False
             if proj is None:
-                for x in xrange(number_of_pops):
+                for x in range(number_of_pops):
                     sum_of_ind = int(
                         splited_line[3 + x]) + int(splited_line[4 + number_of_pops + x])
                     if sum_of_ind > proj[x]:

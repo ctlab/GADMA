@@ -12,7 +12,7 @@ import pandas as pd
 import sys
 import argparse
 from scipy import stats
-from gadma import support
+from . import support
 
 def main():
     parser = argparse.ArgumentParser('GADMA module for calculating confidence intervals from the result table of local search runs on bootstrapped data.')

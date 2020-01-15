@@ -14,7 +14,7 @@ import os
 import io
 import signal
 
-import support
+from . import support
 import ast
 import math
 import sys
@@ -97,7 +97,7 @@ class Period(object):
         self.time = max(self.time, bounds.min_T * N_A)
         self.time = min(self.time, bounds.max_T * N_A)
 
-        for i in xrange(self.number_of_populations):
+        for i in range(self.number_of_populations):
             self.get_sizes_of_populations()[i] = max(
                 self.get_sizes_of_populations()[i],
                 bounds.min_N * N_A)
@@ -106,7 +106,7 @@ class Period(object):
                 bounds.max_N * N_A)
 
             if self.migration_rates is not None:
-                for j in xrange(self.number_of_populations):
+                for j in range(self.number_of_populations):
                     if i != j:
                         self.migration_rates[i][j] = max(
                             self.migration_rates[i][j], bounds.min_M / N_A)
@@ -115,7 +115,7 @@ class Period(object):
 
     def populations(self):
         """Iterator over populations."""
-        return xrange(self.number_of_populations)
+        return range(self.number_of_populations)
 
     def get_sizes_of_populations(self):
         return self.sizes_of_populations
@@ -161,8 +161,8 @@ class Period(object):
             def find_pos(i):
                 x = 0
                 y = 0
-                for x in xrange(self.number_of_populations):
-                    for y in xrange(self.number_of_populations):
+                for x in range(self.number_of_populations):
+                    for y in range(self.number_of_populations):
                         if i == 0 and x != y:
                             return x, y
                         if x != y:
@@ -369,11 +369,11 @@ class Demographic_model:
         if restore_string is not None:
             self.from_string(restore_string)
             if not self.is_custom_model:
-                for i in xrange(self.number_of_periods):
+                for i in range(self.number_of_periods):
                     self.periods[i].check_params(self.params, self.get_N_A())
             else:
                 lower_bound, upper_bound = self.get_lower_and_upper_bounds()
-                for i in xrange(self.get_number_of_params()):
+                for i in range(self.get_number_of_params()):
                     self.popt[i] = min(self.popt[i], upper_bound[i])
                     self.popt[i] = max(self.popt[i], lower_bound[i])
 
@@ -390,10 +390,10 @@ class Demographic_model:
         log = True
         if low_bound <= 0:
             low_bound = 1e-15
-	if identificator == 't':
-		normal = False
-	else:
-        	normal = True
+        if identificator == 't':
+            normal = False
+        else:
+            normal = True
 
         mode = 1.0
 
@@ -462,7 +462,7 @@ class Demographic_model:
                     sizes_of_populations=[N_A],
                     is_first_period=True))
             # add other periods
-            for i in xrange(structure[0] - 1):
+            for i in range(structure[0] - 1):
                 self.add_period(
                     Period(
                         time=self.generate_random_value(
@@ -479,10 +479,10 @@ class Demographic_model:
                         population_to_split=num_of_pops - 2,
                         sizes_of_populations_before_split=self.periods[-1]
                         .get_sizes_of_populations()))
-                for i in xrange(number_of_periods):
+                for i in range(number_of_periods):
                     sizes_of_pops = [
                         self.generate_random_value(self.params.min_N, self.params.max_N, 'n')
-                        for x in xrange(num_of_pops)
+                        for x in range(num_of_pops)
                     ]
                     self.add_period(
                         Period(
@@ -491,14 +491,14 @@ class Demographic_model:
                             sizes_of_populations=sizes_of_pops,
                             growth_types=None if self.params.only_sudden else [
                                 random.choice([0, 1, 2])
-                                for x in xrange(num_of_pops)
+                                for x in range(num_of_pops)
                             ],
                             migration_rates=None if self.params.no_mig else self.generate_migration_rates(
                                 sizes_of_pops)))
             for i, period in enumerate(self.periods):
                 period.time = max(period.time, N_A * self.params.min_T)
                 period.time = min(period.time, N_A * self.params.max_T)
-                for p in xrange(period.number_of_populations):
+                for p in range(period.number_of_populations):
                     not_last = (i + 1 < self.number_of_periods)
                     if not_last:
                         next_is_split = self.periods[i + 1].is_split_of_population
@@ -542,7 +542,7 @@ class Demographic_model:
             if not self.params.multinom:
                 self.popt.append(real_Nref)
             self.popt_len = len(self.popt)
-            self.number_of_changes = np.array([0 for _ in xrange(self.popt_len)])
+            self.number_of_changes = np.array([0 for _ in range(self.popt_len)])
             self.normalize_by_Nref(real_Nref)
         else:
             periods = string.split(' ][ ')
@@ -659,7 +659,7 @@ class Demographic_model:
                     period.migration_rates[2][1] = vector[cur_index + 5]
                     cur_index += 6
 
-        for i in xrange(self.number_of_periods):
+        for i in range(self.number_of_periods):
             self.periods[i].check_params(self.params, self.get_N_A())
         self.has_changed()
         self.normalize_by_Nref()
@@ -682,9 +682,9 @@ class Demographic_model:
                     upper_bound.append(1.0 - bias)
             else:
                 lower_bound.extend(
-                    [self.params.min_N for _ in xrange(n_pop)])
+                    [self.params.min_N for _ in range(n_pop)])
                 upper_bound.extend(
-                    [self.params.max_N for _ in xrange(n_pop)])
+                    [self.params.max_N for _ in range(n_pop)])
         for period in self.periods:
             if not period.is_first_period and not period.is_split_of_population:
                 lower_bound.append(self.params.min_T)
@@ -692,8 +692,8 @@ class Demographic_model:
         for period in self.periods:
             if period.migration_rates is not None:
                 n_pop = period.number_of_populations
-                for p1 in xrange(n_pop):
-                    for p2 in xrange(n_pop):
+                for p1 in range(n_pop):
+                    for p2 in range(n_pop):
                         if p1 == p2:
                             continue
                         lower_bound.append(self.params.min_M)
@@ -840,7 +840,7 @@ class Demographic_model:
             self.cur_structure[-1] += 1
 
         if not (period.is_first_period and self.params.multinom):
-            for i in xrange(period.number_of_parameters):
+            for i in range(period.number_of_parameters):
                 self.param_ids.append((self.number_of_periods - 1, i))
                 self.number_of_changes = np.append(self.number_of_changes, 0.0)
         self.has_changed()
@@ -881,11 +881,11 @@ class Demographic_model:
         if self.param_ids is not None:
             return self.param_ids
         if self.is_custom_model:
-            self.param_ids = xrange(self.popt_len)
+            self.param_ids = range(self.popt_len)
         else:
             self.param_ids = []
-            for i in xrange(self.number_of_periods):
-                for j in xrange(self.periods[i].number_of_parameters):
+            for i in range(self.number_of_periods):
+                for j in range(self.periods[i].number_of_parameters):
                     # ignore N_A if we are multinom
                     if self.periods[i].is_first_period and self.params.multinom:
                         continue
@@ -913,7 +913,7 @@ class Demographic_model:
             # calculate probabilities and choose parameter
             p = max(self.number_of_changes) + 1 - self.number_of_changes
             p /= sum(p)
-            i = np.random.choice(xrange(len(p)), p=p)
+            i = np.random.choice(range(len(p)), p=p)
             sign = random.choice([-1, 1])
         else:
             i, sign = index_and_sign
@@ -1044,7 +1044,7 @@ class Demographic_model:
 
             # choose parameters
             inds = np.random.choice(
-                xrange(
+                range(
                     len(p)),
                 size=number_of_params_to_change,
                 replace=False,
@@ -1052,9 +1052,9 @@ class Demographic_model:
             signs = np.random.choice([-1, 1], size=number_of_params_to_change)
 
             inds_and_signs = [(inds[i], signs[i])
-                              for i in xrange(number_of_params_to_change)]
+                              for i in range(number_of_params_to_change)]
 
-        for i in xrange(number_of_params_to_change):
+        for i in range(number_of_params_to_change):
             self.mutate_one(mutation_rate, inds_and_signs[i])
 
         self.info += 'm'
@@ -1083,7 +1083,7 @@ class Demographic_model:
                 structure_index += 1
         else:
             structure_index = np.random.choice(
-                xrange(len(self.cur_structure)), p=diff / sum(diff))
+                range(len(self.cur_structure)), p=diff / sum(diff))
             number_of_periods_to_divide = self.cur_structure[structure_index]
 
             start_index_to_divide = sum(
@@ -1092,7 +1092,7 @@ class Demographic_model:
                 self.cur_structure[structure_index]
             p = []
             
-            for i in xrange(start_index_to_divide, final_index_to_divide):
+            for i in range(start_index_to_divide, final_index_to_divide):
                 p.append(self.periods[i].time)
 
             if self.periods[
@@ -1129,7 +1129,7 @@ class Demographic_model:
             period_to_divide.time /= 2.0
             pops_sizes = []
             pops_exp = []
-            for p in xrange(period_to_divide.number_of_populations):
+            for p in range(period_to_divide.number_of_populations):
                 if period_to_divide.growth_types[p] == 0:
                     pops_sizes.append(
                         period_to_divide.get_sizes_of_populations()[p])
@@ -1173,7 +1173,7 @@ class Demographic_model:
         number_of_changes = list(self.number_of_changes)
         index_in_num_of_ch = sum([p.number_of_parameters for p in self.periods[
                                  :ind]]) - int(self.params.multinom)
-        for i in xrange(self.periods[ind].number_of_parameters):
+        for i in range(self.periods[ind].number_of_parameters):
             number_of_changes.insert(index_in_num_of_ch + i, 0)
 
         self.lower_bound, self.upper_bound = None, None
@@ -1215,7 +1215,7 @@ class Demographic_model:
                                 sum([p.time for p in self.periods[self.split_2_pos:]]))
             N_ref = opt_scale
         if self.is_custom_model:
-            for i in xrange(self.popt_len - int(not self.params.multinom)):
+            for i in range(self.popt_len - int(not self.params.multinom)):
                 self.popt[i] = self.normalize_param_by_Nref(self.popt[i], 
                         N_ref, self.params.p_ids[i])
         else:
@@ -1229,13 +1229,13 @@ class Demographic_model:
                             1].get_sizes_of_populations(),
                         self.params.min_N)
                     continue
-                for i in xrange(period.number_of_populations):
+                for i in range(period.number_of_populations):
                     period.sizes_of_populations[i] = self.normalize_param_by_Nref(
                             period.sizes_of_populations[i], N_ref, 'n')
                 period.time = self.normalize_param_by_Nref(period.time, N_ref, 't')
                 if period.migration_rates is not None:
-                    for x in xrange(len(period.migration_rates)):
-                        for y in xrange(len(period.migration_rates)):
+                    for x in range(len(period.migration_rates)):
+                        for y in range(len(period.migration_rates)):
                             if period.migration_rates[x][y] is not None:
                                 period.migration_rates[x][y] = self.normalize_param_by_Nref(
                                         period.migration_rates[x][y], N_ref, 'm')
@@ -1380,7 +1380,7 @@ class Demographic_model:
                 self.sfs = func_ex(self.params.ns, self.params.dadi_pts)
 
             else:
-                for i in xrange(10):
+                for i in range(10):
                     try:
                         self.sfs = func(self.params.ns)
                         break
@@ -1483,10 +1483,10 @@ class Demographic_model:
             return child
         # generate from whom parameters will be taken
         take_from_other = np.array(
-            [random.random() for _ in xrange(self.get_number_of_params())]) > 0.5
+            [random.random() for _ in range(self.get_number_of_params())]) > 0.5
         while not take_from_other.any():
             take_from_other = np.array(
-                [random.random() for _ in xrange(self.get_number_of_params())]) > 0.5
+                [random.random() for _ in range(self.get_number_of_params())]) > 0.5
 
         # create child
         child = copy.deepcopy(self)
@@ -1535,7 +1535,7 @@ class Demographic_model:
                 period.time = max(period.time, self.params.min_T * N_A)
                 cur_ind += 1
 
-                for p in xrange(period.number_of_populations):
+                for p in range(period.number_of_populations):
                     if take_from_other[cur_ind]:
                         period.sizes_of_populations[p] = other.periods[
                             i].sizes_of_populations[p]
@@ -1556,8 +1556,8 @@ class Demographic_model:
                     cur_ind += period.number_of_populations
                 if period.migration_rates is None:
                     continue
-                for p1 in xrange(period.number_of_populations):
-                    for p2 in xrange(period.number_of_populations):
+                for p1 in range(period.number_of_populations):
+                    for p2 in range(period.number_of_populations):
                         if p1 == p2:
                             continue
                         if take_from_other[cur_ind]:
@@ -1611,7 +1611,7 @@ class Demographic_model:
                         phi = dadi.PhiManip.phi_2D_to_3D_split_2(xx, phi)
             else:  # change population size
                 growth_funcs = []
-                for i in xrange(period.number_of_populations):
+                for i in range(period.number_of_populations):
                     if period.time == 0 or period.growth_types[i] == 0:
                         growth_funcs.append(
                             period.get_sizes_of_populations()[i])
@@ -1804,7 +1804,7 @@ class Demographic_model:
                     '\tfor eps in [1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8]:\n'\
                     '\ttry:\n'\
                     '\t\tclaic_score = gadma.Inference.get_claic_score(func_ex, all_boot, popt, data, pts=%s, eps=eps)\n'\
-                    '\texcept Exception, e:\n'\
+                    '\texcept Exception as e:\n'\
                     '\t\tprint("Error for eps = {0:.1e} : ".format(eps) + str(e))\n'\
                     '\t\tclaic_score = None\n'\
                     '\tprint("Model Composite Likelihood AIC score (CLAIC(p0, eps={0:.1e})): {1}".format(eps, claic_score))\n'\
@@ -1830,7 +1830,7 @@ class Demographic_model:
                 chunk_size = 10
                 par_labels = self.get_params_labels_str()
                 output.write(', '.join(par_labels[:chunk_size]))
-                for ind in xrange(chunk_size, len(par_labels), chunk_size):
+                for ind in range(chunk_size, len(par_labels), chunk_size):
                     output.write(',\n\t\t' + ', '.join(par_labels[ind:ind + chunk_size]))
                 output.write('), ns, pts):\n')
                 
@@ -1909,7 +1909,7 @@ class Demographic_model:
                             par_labels[ns_index : ns_index + period.number_of_populations]) + ']\n')
                         ns_index += period.number_of_populations
 
-                        for i in xrange(period.number_of_populations):
+                        for i in range(period.number_of_populations):
                             if period.time == 0 or period.growth_types[i] == 0:
                                 if period.time == 0:
                                     output.write('\t# Time of period is equal to 0, so we ignore dynamics and\n'\
@@ -2023,7 +2023,7 @@ class Demographic_model:
                     cur_ns = ns
             else:
                 growth_funcs = []
-                for p in xrange(period.number_of_populations):
+                for p in range(period.number_of_populations):
                     if period.time == 0 or period.growth_types[p] == 0:
                         growth_funcs.append(
                             _sudden_growth_func(
@@ -2089,7 +2089,7 @@ class Demographic_model:
                 chunk_size = 10
                 par_labels = self.get_params_labels_str()
                 output.write(', '.join(par_labels[:chunk_size]))
-                for ind in xrange(chunk_size, len(par_labels), chunk_size):
+                for ind in range(chunk_size, len(par_labels), chunk_size):
                     output.write(',\n\t\t' + ', '.join(par_labels[ind:ind + chunk_size]))
                 output.write('), ns):\n')
                 
@@ -2172,7 +2172,7 @@ class Demographic_model:
                         ns_index += period.number_of_populations
 
                         growth_funcs = '['
-                        for i in xrange(period.number_of_populations):
+                        for i in range(period.number_of_populations):
                             if period.time == 0 or period.growth_types[i] == 0:
                                 if period.time == 0:
                                     output.write('\t# Time of period is equal to 0, so we ignore dynamics and\n'\
@@ -2298,7 +2298,7 @@ class Demographic_model:
                     ns_labels.append('s%d' % (split_ind))
                 split_ind += 1
             else:
-                loc_labels = ['nu%d%d' % (i - split_ind + 1, ii + 1) for ii in xrange(period.number_of_populations)]
+                loc_labels = ['nu%d%d' % (i - split_ind + 1, ii + 1) for ii in range(period.number_of_populations)]
                 ns_labels.extend(loc_labels)
             if not period.is_first_period and not period.is_split_of_population:
                 ts_labels.append('t%d' % (i - split_ind))

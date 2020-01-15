@@ -12,12 +12,12 @@ import numpy as np
 import os
 import sys
 import math
-import cPickle as pickle
+import pickle
 import datetime
 
-from gadma.demographic_model import Demographic_model
-from gadma import options
-from gadma import support
+from . demographic_model import Demographic_model
+from . import options
+from . import support
 
 
 class GA(object):
@@ -110,7 +110,7 @@ class GA(object):
         def restore_from_cur_pop_of_models(list_of_str):
             for restore_str in list_of_str:
                 split = restore_str.strip().split('\t')
-                for i in reversed(xrange(len(split))):
+                for i in reversed(range(len(split))):
                     if split[i].startswith('['):
                         break
                 self.models.append(
@@ -293,13 +293,13 @@ class GA(object):
             self.restore()
 
         if len(self.models) > 0:
-            for i in xrange(self.params.size_of_generation - len(self.models)):
+            for i in range(self.params.size_of_generation - len(self.models)):
                 self.models.append(self.get_random_model())
             if self.params.size_of_generation > len(self.models):
                 self.select(self.params.size_of_generation)
             return
         # generate random models 5 times more than the population's size
-        for i in xrange(5 * self.size_of_generation):
+        for i in range(5 * self.size_of_generation):
             self.models.append(self.get_random_model())
 
         # if there was initial model
@@ -389,7 +389,7 @@ class GA(object):
         new_model.info = new_model.info[:-1]
 
         # first try to improve by sign, then if bad try to improve with -sign
-        for i in xrange(2):
+        for i in range(2):
             if i == 1:
                 new_model = copy.deepcopy(model)
                 index, sign = new_model.mutate_one(
@@ -511,7 +511,7 @@ class GA(object):
         p /= sum(p)
 
         # add mutated models to our new population
-        for i in xrange(self.number_of_mutated_models):
+        for i in range(self.number_of_mutated_models):
             model = self.get_mutated_model(
                 mutation_strength=self.cur_mutation_strength,
                 mutation_rate=self.cur_mutation_rate,
@@ -519,8 +519,8 @@ class GA(object):
             new_models.append(model)
 
         # add crossed models to our new population
-        for i in xrange(self.number_of_crossed_models):
-            first_model_index = np.random.choice(xrange(len(self.models)), p=p)
+        for i in range(self.number_of_crossed_models):
+            first_model_index = np.random.choice(range(len(self.models)), p=p)
             first_model = self.models[first_model_index]
 
             p[first_model_index] = 0
@@ -530,7 +530,7 @@ class GA(object):
             new_models.append(first_model.cross_with_other(second_model))
 
         # add random models to our new population
-        for i in xrange(self.number_of_random_models):
+        for i in range(self.number_of_random_models):
             new_models.append(
                 self.get_random_model(
                     structure=self.models[0].get_structure()))

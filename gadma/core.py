@@ -9,11 +9,11 @@ from __future__ import print_function
 import numpy as np
 import os
 
-from gadma import options
-from gadma import support
-from gadma.genetic_algorithm import GA
-from datetime import datetime
+from . import options
+from . import support
+from . genetic_algorithm import GA
 
+from datetime import datetime
 import operator
 from collections import defaultdict
 import multiprocessing
@@ -45,7 +45,7 @@ def run_genetic_algorithm(params_tuple):
 
         write_func('Finish genetic algorithm number ' + str(number))
         return number, ga_instance.best_model()
-    except Exception, e:
+    except Exception as e:
         err_str = 'GA number ' + str(number) + ': ' + str(e)
         support.error(err_str, error_instance=e, exit=False)
         raise RuntimeError(err_str)
@@ -200,7 +200,7 @@ def main():
                 print_best_solution_now(
                     start_time, shared_dict, params, log_file, 
                     precision, draw_model=params.matplotlib_available)
-            except Exception, e:
+            except Exception as e:
                 pool.terminate()
                 support.error(str(e))
         print_best_solution_now(start_time, shared_dict, params,log_file, 

@@ -8,7 +8,6 @@
 
 import argparse
 import sys
-import support
 import os
 import numpy as np
 import re
@@ -18,6 +17,7 @@ from gadma.version import __version__
 import imp 
 import pkgutil
 import gadma
+from . import support
 
 
 
@@ -446,7 +446,7 @@ class Options_storage:
             if self.initial_structure is None:
                 self.initial_structure = [
                     START_MODEL_NUMBER_OF_PERIODS
-                    for _ in xrange(self.number_of_populations)]
+                    for _ in range(self.number_of_populations)]
             if self.final_structure is None:
                 self.final_structure = np.array(self.initial_structure)
         if self.initial_structure is not None:
@@ -608,8 +608,8 @@ class Options_storage:
                         "Lengths of lower and upper bounds should be equal.")
             if self.p_ids is not None:
                 if len(self.p_ids) != len(self.lower_bound):
-                    print self.p_ids
-                    print self.lower_bound
+                    print(self.p_ids)
+                    print(self.lower_bound)
                     support.error(
                         "Lengths of lower, upper bounds and parameters identificators should be equal.")
 
