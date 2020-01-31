@@ -340,13 +340,13 @@ Then follows an arbitrary number of columns which will be concatenated with \py{
 The \py{Allele1} and \py{Allele2} headers must be exactly those values because the number of columns between those two is used to infer the number of populations in the file.
 
 ~\
-\subsection{Unlinked SNP's}
+\subsection{Unlinked SNP's, AIC and CLAIC}
 
 By default, SNP's that were used to build AFS are considered to be linked. In this case it is possible to compare demographic models with different number of parameters by Composite Likelihood Akaike Information Criterion ($CLAIC$). This procedure can be necessary as a model with a large number of parameters will be better able to find parameter values corresponding to the observed data than a model with a smaller number of parameters, but at the same time it will correspond less to reality, for example, due to data errors. It is called overfitting and we do not want it to happen.
 
 Actually, $CLAIC$ is modification of usual Akaike Information Criterion ($AIC$), but $AIC$ can be used only for AFS built from unlinked SNP's. The smaller the $AIC$ or $CLAIC$ score is, the better the model fits the observed data.
 
-It is possible to inform GADMA about linkage of SNP's and unlock the usage of $AIC$ insted of $CLAIC$:
+It is possible to inform GADMA about linkage of SNP's and unlock the usage of $AIC$:
 
 \begin{lstlisting}
 # param_file
@@ -355,6 +355,22 @@ It is possible to inform GADMA about linkage of SNP's and unlock the usage of $A
 Linked SNP's : False
 ...
 \end{lstlisting}
+
+If SNP's are linked and $CLAIC$ should be evaluated (by default it is not), then the bootstrapped data should be set. In order to receive reliable correct bootstrapped data, the bootstrap should be performed on the original SNP data over the unlinked regions of genome. For example, in case of exome data one could make it over genes. Then when bootstrap is done, it is required to set the directory with it in the parameters file for $CLAIC$ evaluation:
+
+\begin{lstlisting}
+# param_file
+
+# Inform if SNP's are not linked
+Linked SNP's : True
+
+# Tell where bootstrapped data is located
+Directory with bootstrap: /home/dadi/examples/YRI_CEU/bootstraps/
+
+...
+\end{lstlisting}
+
+This kind of bootstrap is called block-bootstrap and it is very important if one want to do some model selections for data with linked SNPs. \textbf{Please, be careful if it is your case}.
 
 ~\
 \section{Specifying a scheme}
@@ -863,16 +879,99 @@ GADMA take an extra parameter file as input. \textbf{However one probably do not
 GADMA shows model parameters in genetic units. To scale them from one should multiply migration rates by 2 only. Other units are as usual. In case when option \py{Relative parameters} is set to \py{True} one should first rescale from units of $N_{ref}$: sizes of populations and time --- multiply by \py{NA}, migration rates --- divide by \py{NA}.
 
 \section{Decreasing the number of model's parameters}
-There are several ways to decrease the number of demographic model's parameters in GADMA. The first way as it was discussed above, is to consider only sudden dynamics of population size changes (\py{Only sudden : True}). The second way to decrease the number of parameters is so-called multinom scheme: when at every step $N_A$ is chosen to fit the observed data best. This scheme leads to faster work of GADMA, however it is more possible to get stuck in local optima. To use it one should set option \py{Multinom} to \py{True} in the parameter file. The third way is to disable migration by setting \py{No migrations} to \py{True} in the parameter file.
+There are several ways to decrease the number of demographic model's parameters in GADMA. The first way as it was discussed above, is to consider only sudden dynamics of population size changes (\py{Only sudden : True}). The second way to disable migration by setting \py{No migrations} to \py{True} in the parameter file.
 
 The last and more reliable way to decrease the of model's parameters is to use GADMA optimization on the custom model written with \dadi or \moments (section \hyperref[sec:spec-model-in-det]{Specifying model in details}). However, it requires some extra work for user.
 
+\section{Confidence intervals}
+GADMA contains special scripts for Confidence Intervals evaluation. To get CI one will need correctly bootstrapped data (There is discussion in section \ref{}). If SNP's that were used for AFS are unlinked, then usual bootstrap over them should be performed. However, if they are linked then block bootstrap should be used. It is done over the unlinked regions of genome.
+
+When bootstrapped data is ready, one should run two scripts \py{gadma-run_ls_on_boot_data} and \py{gadma-get_confidence_intervals} in order to get CI. One can find example here: \url{https://bitbucket.org/noscode/gadma_results/src/master/YRI_CEU/model_1/}.
+
+\subsection{Run local search on bootstrapped data}
+First script \py{gadma-run_ls_on_boot_data} runs local search from known optimum for initial AFS (the one that GADMA found) for each AFS from bootstrap. The usage is following:
+
+\begin{lstlisting}
+$ gadma-run_ls_on_boot_data --help
+usage: GADMA module for runs of local search on bootstrapped data.
+Is needed for calculating confidence intervals.
+       [-h] -b <dir> -d <filename> -o <dir> [-j N]
+       [--opt log/powell] [-p <filename>]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -b <dir>, --boots <dir>
+                        Directory where bootstrapped data is 
+                        located.
+  -d <filename>, --dem_model <filename>
+                        File with demographic model. Should 
+                        contain `model_func` or `generated_model`
+                        function. One can put there several extra
+                        parameters and they will be taken 
+                        automatically, otherwise one will need to 
+                        enter them manually. Such parameters are: 
+                        1) p0 (or popt) - initial parameters values 
+                        2) lower_bound - list of lower bounds for 
+                        parameters values
+                        4) upper_bound - list of upper bounds for 
+                        parameters values 
+                        5) par_labels/param_labels - list of 
+                        string names for parameters 
+                        6) pts - pts for dadi (if there is no pts
+                        then moments will be run automatically).
+  -o <dir>, --output <dir>
+                        Output directory.
+  -j N, --jobs N        Number of threads for parallel run.
+  --opt log/powell      Local search algorithm, by now it can be: 
+                        1) `log` - Inference.optimize_log 
+                        2) `powell` - Inference.optimize_powell.
+  -p <filename>, --params <filename>
+                        Filename with parameters, should be valid
+                        python file.
+                        Parameters are presented in -d/--dem_model
+                        option description upper.
+\end{lstlisting}
+
+After the run, there will be pandas table in output directory with two different extensions - \py{result_table.pkl} and \py{result_table.csv}. It contains parameters for each bootstrap. At this point of time it is possible to change its units and add new parameters with additional manipulations in Python and then run \py{gadma-get_confidence_intervals} to get CI.
+
+\subsection{Get Confidence Intervals from table}
+After the \py{gadma-run_ls_on_boot_data} the result table will be in output directory. One can change its columns due to what parameters should be used for CI. For example, it is possible to translate units from genetic and add such parameter as size of ancestral population (N\_A). To do it user should write script.
+
+To calculate confidence intervals:
+\begin{lstlisting}
+$ gadma-get_confidence_intervals --help
+usage: GADMA module for calculating confidence 
+        intervals from the result table of local 
+        search runs on bootstrapped data.
+       [-h] [--log] [--tex] [--acc N] <filename>
+
+positional arguments:
+  <filename>  Filename (.csv or .pkl) with result from 
+              local search runs on bootstrapped data. 
+              Output of gadma-run_ls_on_boot_data.
+
+optional arguments:
+  -h, --help  show this help message and exit
+  --log       If log then logarithm will be used to
+              calculate confidence intervals.
+  --tex       Tex output.
+  --acc N     Accuracy of output (dafault: 5).
+\end{lstlisting}
+
+
+
 \newpage
 \section{Installation}
+First version of GADMA was for Python2, but current version supports either Python2 or Python3. The last is recommended.
 
-One can try to install GADMA and all its possible dependencies via shell script from GADMA home directory the following way:
+One can try to install GADMA and all its possible dependencies via shell script from GADMA home directory the following way (script will use Python3):
 \begin{lstlisting}
 $ ./install
+\end{lstlisting}
+
+if you want to install with 2 version of Python:
+\begin{lstlisting}
+$ ./install --py2
 \end{lstlisting}
 
 If some problems occur please try to install GADMA by steps that are described below.
@@ -880,7 +979,7 @@ If some problems occur please try to install GADMA by steps that are described b
 \subsection{Dependencies}
 GADMA requires the following dependencies:
 \begin{itemize}
-    \item Python (2.5, 2.6, 2.7)
+    \item Python (3 is recommended)
     \item NumPy ($\geq 1.2.0$)
     \item Scipy ($\geq 0.6.0$)
     \item \dadi ($\geq 1.7.0$) or \moments ($\geq 1.0.0$)
@@ -890,6 +989,10 @@ To draw demographic models install the following:
     \item matplotlib ($\geq 0.98.1$)
     \item Pillow ($\geq 4.2.1$)
     \item \moments ($\geq 1.0.0$)
+\end{itemize}
+To calculate Confidence Intervals:
+\begin{itemize}
+    \item pandas
 \end{itemize}
 
 NumPy and SciPy can be installed via \py{pip}:
@@ -1195,60 +1298,6 @@ Relative parameters : False
 #   Default: False
 No migrations : false
 
-
-
-
-#   Parameters for Genetic Algorithm.
-#
-#   Size of population of demographic models in GA:
-#   Default: 10
-Size of population in GA : 10
-
-
-#   Fractions of current models, mutated models and crossed models 
-#   to be taken to new population.
-#   Sum of fractions should be <= 1, the remaining fraction is 
-#   fraction of random models.
-#   Default: 0.2,0.3,0.3
-#Fractions in GA : 0.2,0.3,0.3
-
-
-#   Mutation strength - fraction of parameters in model to mutate 
-#   during global mutation process of model.
-#   Number of parameters to mutate is sampled from binomial 
-#   distribution, so we need to set mean.
-#   Default: 0.2
-Mean mutation strength : 0.3
-#
-#   Mutation strength can be adaptive: if mutation is good, 
-#   i.e. has the best fitness function (log likelihood),
-#   then mutation strength is increased multiplying by const 
-#   otherwise it decreases dividing by (1/4)^const.
-#   When const is 1.0 it is not adaptive.
-#   Default: 1.0
-Const for mutation strength : 1.05
-
-
-#   Mutation rate - fraction of any parameter to change during
-#   its mutation.
-#   Mutation rate is sampled from truncated normal distribution, 
-#   so we need mean (std can be specified in extra_params).
-#   Default 0.2
-Mean mutation rate : 0.1
-#
-#   Mutation rate also can be adaptive as mutation strength.
-#   Default: 1.02
-Const for mutation rate : 1.01 #very small changes
-
-
-#   Genetic algorithm stops when it couldn't improve model by
-#   more that epsilon in logLL
-#   Default: 1e-2
-Epsilon : 1e-2
-#	
-#   and it happens during N iterations:
-#   Default: 100
-Stop iteration : 50
 
 
 #   Local optimization.

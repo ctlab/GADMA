@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 
-python2 -m pip install -r requirements.txt
+if [ -d "py2" ]; then
+	python2 -m pip install -r requirements.txt 
+else
+	python3 -m pip install -r requirements.txt
+fi
 
 if [ -d "dadi" ]; then
 	cd dadi
@@ -10,7 +14,12 @@ else
 	cd dadi
 fi
 
-python2 setup.py install
+if [ -d "py2" ]; then
+	python2 setup.py install 
+else
+	python3 setup.py install
+fi
+
 cd ..
 
 if [ -d "moments" ]; then
@@ -21,7 +30,16 @@ else
 	cd moments
 fi
 
-python2 setup.py install
+if [ -d "py2" ]; then
+	python2 setup.py install 
+else
+	python3 setup.py install
+fi
+
 cd ..
 
-python2 setup.py install
+if [ -d "py2" ]; then
+	python2 setup.py install 
+else
+	python3 setup.py install
+fi

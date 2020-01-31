@@ -811,7 +811,7 @@ def test_args():
     options_storage.frac_of_old_models = options_storage.fracs[0]
     options_storage.frac_of_mutated_models = options_storage.fracs[1]
     options_storage.frac_of_crossed_models = options_storage.fracs[2]
-    options_storage.optimize_name = 'hill_climbing'
+    options_storage.optimize_name = 'optimize_log'
     options_storage.moments_scenario = True
 
     options_storage.relative_params = False
