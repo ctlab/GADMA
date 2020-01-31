@@ -24,10 +24,17 @@ Please don't be afraid to contact me for different problems and offers via email
 
 ## Installation
 
-One can try to install GADMA and all its possible dependencies via shell script from GADMA home directory the following way:
+One can try to install GADMA and all its possible dependencies via shell script from GADMA home directory the following way (for Python3):
 ```console
 $ ./install
 ```
+
+or (for Python2):
+
+```console
+$ ./install --py2
+```
+
 If some problems occur please try to install GADMA by steps that are described in the corresponding section of GADMA manual.
 
 ## Hands on
