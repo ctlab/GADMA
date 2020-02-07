@@ -78,7 +78,7 @@ def print_best_solution_now(start_time, shared_dict, params,
 
     has_aic_or_claic = params.model_func_file is None and (params.final_structure != params.initial_structure).any()
     has_aic = not params.linked_snp and has_aic_or_claic
-    has_claic =  params.linked_snp and has_aic_or_claic
+    has_claic =  params.linked_snp and has_aic_or_claic and params.boot_dir is not None
     
 
     all_models_data = dict(shared_dict)
