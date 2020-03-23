@@ -506,10 +506,11 @@ class Demographic_model:
                                                                1].population_to_split:
                             period.sizes_of_populations[p] = max(
                                 period.sizes_of_populations[p], 2 * N_A * self.params.min_N)
-                    period.sizes_of_populations[p] = max(
-                        period.sizes_of_populations[p], N_A * self.params.min_N)
-                    period.sizes_of_populations[p] = min(
-                        period.sizes_of_populations[p], N_A * self.params.max_N)
+                    if not self.params.only_sudden and period.is_split_of_population:
+                        period.sizes_of_populations[p] = max(
+                            period.sizes_of_populations[p], N_A * self.params.min_N)
+                        period.sizes_of_populations[p] = min(
+                            period.sizes_of_populations[p], N_A * self.params.max_N)
 
                     if period.migration_rates is None:
                         continue
@@ -2483,22 +2484,22 @@ class Demographic_model:
         if not self.params.pil_available or not success:
             return
 
-        import PIL
+        from PIL import Image
         buf1.seek(0)
         buf2.seek(0)
 
         plt.close('all')
         
         if self.is_custom_model and not self.params.moments_scenario:
-            img1 = PIL.Image.new('RGB', (0, 0))
+            img1 = Image.new('RGB', (0, 0))
         else:
-            img1 = PIL.Image.open(buf2)
-        img2 = PIL.Image.open(buf1)
+            img1 = Image.open(buf2)
+        img2 = Image.open(buf1)
 
         weight = img1.size[0] + img2.size[0]
         height = max(img1.size[1], img2.size[1])
 
-        new_img = PIL.Image.new('RGB', (weight, height))
+        new_img = Image.new('RGB', (weight, height))
 
         new_img.paste(img1, (0, 0))
         new_img.paste(img2, (img1.size[0], 0))
