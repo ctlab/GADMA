@@ -4,7 +4,7 @@ Custom demographic model for our example.
 import numpy
 import dadi
 
-def prior_onegrow_mig((nu1F, nu2B, nu2F, m, Tp, T), (n1,n2), pts):
+def prior_onegrow_mig(params, ns, pts):
     """
     Model with growth, split, bottleneck in pop2, exp recovery, migration
 
@@ -19,6 +19,8 @@ def prior_onegrow_mig((nu1F, nu2B, nu2F, m, Tp, T), (n1,n2), pts):
     n1,n2: Size of fs to generate.
     pts: Number of points to use in grid for evaluation.
     """
+
+    nu1F, nu2B, nu2F, m, Tp, T = params
     # Define the grid we'll use
     xx = yy = dadi.Numerics.default_grid(pts)
 
@@ -36,13 +38,14 @@ def prior_onegrow_mig((nu1F, nu2B, nu2F, m, Tp, T), (n1,n2), pts):
                                     m12=m, m21=m)
 
     # Finally, calculate the spectrum.
-    sfs = dadi.Spectrum.from_phi(phi, (n1,n2), (xx,yy))
+    sfs = dadi.Spectrum.from_phi(phi, ns, (xx,yy))
     return sfs
 
-def prior_onegrow_mig_mscore((nu1F, nu2B, nu2F, m, Tp, T)):
+def prior_onegrow_mig_mscore(params):
     """
     ms core command corresponding to prior_onegrow_mig
     """
+    nu1F, nu2B, nu2F, m, Tp, T = params
     # Growth rate
     alpha2 = numpy.log(nu2F/nu2B)/T
 
@@ -59,7 +62,7 @@ def prior_onegrow_mig_mscore((nu1F, nu2B, nu2F, m, Tp, T)):
 
     return command % sub_dict
 
-def prior_onegrow_nomig((nu1F, nu2B, nu2F, Tp, T), (n1,n2), pts):
+def prior_onegrow_nomig(params, ns, pts):
     """
     Model with growth, split, bottleneck in pop2, exp recovery, no migration
 
@@ -73,4 +76,5 @@ def prior_onegrow_nomig((nu1F, nu2B, nu2F, Tp, T), (n1,n2), pts):
     n1,n2: Size of fs to generate.
     pts: Number of points to use in grid for evaluation.
     """
-    return prior_onegrow_mig((nu1F, nu2B, nu2F, 0, Tp, T), (n1,n2), pts)
+    nu1F, nu2B, nu2F, Tp, T = params
+    return prior_onegrow_mig((nu1F, nu2B, nu2F, 0, Tp, T), ns, pts)
