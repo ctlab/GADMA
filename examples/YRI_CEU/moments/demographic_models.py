@@ -4,7 +4,7 @@ Custom demographic model for our example.
 import numpy
 import moments
 import time
-def prior_onegrow_mig((nu1F, nu2B, nu2F, m, Tp, T), ns):
+def prior_onegrow_mig(params, ns):
     """
     Model with growth, split, bottleneck in pop2, exp recovery, migration
 
@@ -18,6 +18,7 @@ def prior_onegrow_mig((nu1F, nu2B, nu2F, m, Tp, T), ns):
 
     ns = n1,n2: Size of fs to generate.
     """
+    nu1F, nu2B, nu2F, m, Tp, T = params
     # f for the equilibrium ancestral population
     sts = moments.LinearSystem_1D.steady_state_1D(ns[0]+ns[1])
     fs = moments.Spectrum(sts)
@@ -34,7 +35,7 @@ def prior_onegrow_mig((nu1F, nu2B, nu2F, m, Tp, T), ns):
 
     return fs
 
-def prior_onegrow_nomig((nu1F, nu2B, nu2F, Tp, T), ns):
+def prior_onegrow_nomig(params, ns):
     """
     Model with growth, split, bottleneck in pop2, exp recovery, no migration
 
@@ -47,4 +48,5 @@ def prior_onegrow_nomig((nu1F, nu2B, nu2F, Tp, T), ns):
 
     n1,n2: Size of fs to generate.
     """
+    nu1F, nu2B, nu2F, Tp, T = params
     return prior_onegrow_mig((nu1F, nu2B, nu2F, 0, Tp, T), ns)
