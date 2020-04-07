@@ -329,7 +329,7 @@ class Demographic_model:
 
         self.params = params
 
-        if structure is None and self.params.model_func_file is not None:
+        if structure is None and self.params.model_func is not None:
             self.popt = []
             self.is_custom_model = True
             self.number_of_populations = len(self.params.ns)

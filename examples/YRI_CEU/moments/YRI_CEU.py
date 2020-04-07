@@ -16,7 +16,7 @@ ns = data.sample_sizes
 # mostly as examples. We could use one of those.
 func = moments.Demographics2D.split_mig
 # Instead, we'll work with our custom model
-func = demographic_models.model
+func = demographic_models.prior_onegrow_mig
 
 # Now let's optimize parameters for this model.
 

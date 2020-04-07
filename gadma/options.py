@@ -578,6 +578,8 @@ class Options_storage:
         self.final_check()
 
     def final_check(self):
+        if self.number_of_populations is None:
+            self.number_of_populations = len(self.ns)
         if self.model_func_file is not None and self.model_func_file is None:
             if self.p_ids is None and (self.lower_bound is None or self.upper_bound is None):
                 support.error(
