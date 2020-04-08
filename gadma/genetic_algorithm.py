@@ -97,6 +97,8 @@ class GA(object):
 
     def pickle_final_models(self, load=None):
         if load is None:
+            if self.out_dir is None:
+                return
             pickle_file = os.path.join(self.out_dir, 'final_models_pickle')
             with (open(pickle_file, "wb")) as f:
                 pickle.dump(self.final_models, f)
