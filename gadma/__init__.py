@@ -1,16 +1,5 @@
-#!/usr/bin/env python3
-
-############################################################################
-# Copyright (c) 2018 Noskova Ekaterina
-# All Rights Reserved
-# See the LICENSE file for details
-############################################################################
-
-import sys
-if 'matplotlib' in sys.modules:
-    # First we make matplotlib backend as Agg
-    import matplotlib.pyplot as plt
-    plt.switch_backend('agg')
-
-from . version import __version__
-from . import Inference
+from .data import *
+from .engine import *
+from .dem_model import *
+from .code_generator import id2printfunc
+from .utils import *
