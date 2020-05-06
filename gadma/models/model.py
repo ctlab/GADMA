@@ -1,6 +1,7 @@
 import numpy as np
 from ..utils import Variable, VariablePool
 
+
 class Model(object):
     """
     Abstract class of model. Contains variables of class :class:`Variable`.
@@ -23,7 +24,8 @@ class Model(object):
         """
         if not isinstance(variable, Variable):
             if self.raise_excep:
-                raise ValueError("Only instances of class Variable could be added to the model as variables.")
+                raise ValueError("Only instances of class Variable could be"
+                                 " added to the model as variables.")
         else:
             if variable not in self.variables:
                 self.variables.append(variable)
@@ -34,7 +36,7 @@ class Model(object):
 
         :param variables: variables to add.
         :type variables: list
-        """ 
+        """
         for variable in np.array(variables).flatten():
             self.add_variable(variable)
 
@@ -62,12 +64,13 @@ class Model(object):
         """
         Sets variable values to `values`. `values` could be the list of values
         or a dictionary of values with names of the variables as the keys.
-        
+
         :param values: values of variables of the model.
         :type values: list or dict
         """
         if isinstance(values, list):
-            self.var2value = {var: value for var, value in zip(self.variables, values)}
+            self.var2value = {var: value for var, value in zip(self.variables,
+                                                               values)}
         elif isinstance(values, dict):
             self.var2value = {var: value[var.name] for var in self.variables}
         else:
@@ -84,7 +87,9 @@ class Model(object):
             were set for the model.
         """
         if self.var2value is None:
-            raise AttributeError("Model has no setted values of the variables. Please call set_values or randomize function first.")
+            raise AttributeError("Model has no setted values of the"
+                                 " variables. Please call set_values or"
+                                 " randomize function first.")
         return self.var2value[variable]
 
     def get_values(self):

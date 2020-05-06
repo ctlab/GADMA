@@ -1,5 +1,6 @@
 import functools
 
+
 class DataHolder(object):
     """
     Class for data holding.
@@ -23,10 +24,11 @@ class DataHolder(object):
         self.outgroup = outgroup
         self.pop_labels = pop_labels
 
+
 class SFSDataHolder(DataHolder):
     """
     Class for SFS data holding.
-    
+
     :param sfs_file: name of file with the SFS data
     :type sfs_file: str
     :param outgroup: information if there is an outgroup in the data
@@ -41,8 +43,10 @@ class SFSDataHolder(DataHolder):
      :note: if any parameter in :func:`__init__` is None then if it is\
         possible it will be taken from the file after reading.
    """
-    def __init__(self, sfs_file, outgroup=None, pop_labels=None, seq_len=None, sample_sizes=None):
-        super(SFSDataHolder, self).__init__(sfs_file, outgroup, pop_labels, seq_len)
+    def __init__(self, sfs_file, outgroup=None, pop_labels=None,
+                 seq_len=None, sample_sizes=None):
+        super(SFSDataHolder, self).__init__(sfs_file, outgroup,
+                                            pop_labels, seq_len)
         self.sample_sizes = sample_sizes
 
     def prepare_for_engine(self, engine):
@@ -62,8 +66,8 @@ class VCFDataHolder(DataHolder):
     :type outgroup: bool
     :params pop_labels: labels of populations in the SFS data
     :type pop_labels: list of str
-    :param seq_len: length of the sequence that was used to build the data, 
-        defaults to None
+    :param seq_len: length of the sequence that was used to build the
+                    data, defaults to None
     :type seq_len: int
     :param bed_file: name of bed file to filter SNP's in VCF file,
         defaults to None
@@ -73,11 +77,13 @@ class VCFDataHolder(DataHolder):
         possible it will be taken from the file after reading.
 
     """
-    def __init__(self, vcf_file, popmap_file, outgroup, seq_len=None,  bed_file=None):
+    def __init__(self, vcf_file, popmap_file, outgroup,
+                 seq_len=None,  bed_file=None):
         pop_labels = set()
         with open(popmap_file) as f:
             for line in f:
                 pop_labels.add(line.split()[-1])
-        super(VCFDataHolder, self).__init__(vcf_file, outgroup, pop_labels, seq_len)
+        super(VCFDataHolder, self).__init__(vcf_file, outgroup,
+                                            pop_labels, seq_len)
         self.popmap_file = popmap_file
-        self.bed_file=bed_file
+        self.bed_file = bed_file

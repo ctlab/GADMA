@@ -3,6 +3,7 @@ import copy
 import numpy as np
 from functools import lru_cache
 
+
 class Optimizer(object):
     """
     Base class for optimizer.

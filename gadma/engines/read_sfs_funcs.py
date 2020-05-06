@@ -1,6 +1,7 @@
 import os
 import numpy as np
 
+
 # Those functions are common for dadi and moments engines.
 def _check_missing_pop_labels(sfs, default_pop_labels=None):
     """
@@ -12,7 +13,10 @@ def _check_missing_pop_labels(sfs, default_pop_labels=None):
     """
     if sfs.pop_ids is None:
         if default_pop_labels is not None:
-            Warning("Spectrum file %s is in an old format - without population labels, so they will be taken from corresponding parameter: %s." % (filename, ', '.join(pop_labels)))
+            Warning("Spectrum file %s is in an old format - without"
+                    " population labels, so they will be taken from"
+                    " corresponding parameter: %s."
+                    % (filename, ', '.join(pop_labels)))
             sfs.pop_ids = pop_labels
         else:
             sfs.pop_ids = ['Pop %d' % (i+1) for i in range(sfs.ndim)]
@@ -34,8 +38,9 @@ def _new_pop_labels(sfs, new_labels):
         d = {x: i for i, x in enumerate(sfs.pop_ids)}
         try:
             d = [d[x] for x in new_labels]
-        except:
-            raise ValueError("Wrong Population labels parameter, population labels are: " + ', '.join(sfs.pop_ids))
+        except:  # NOQA
+            raise ValueError("Wrong Population labels parameter, population"
+                             " labels are: " + ', '.join(sfs.pop_ids))
         # Rotate axis
         sfs = np.transpose(sfs, d)
         sfs.pop_ids = new_labels
@@ -61,7 +66,6 @@ def _project(sfs, new_size):
     return sfs
 
 
-
 def _get_default_from_snp_format(filename):
     """
     Returns population labels, the possibility of outgroup and approximation
@@ -74,9 +78,10 @@ def _get_default_from_snp_format(filename):
         # Read the header of file
         info = line.split()
         if (len(info) - 6) % 2 != 0:
-            raise ValueError("Cannot calculate number of populations in dadi's SNP input file. Maybe it's wrong?")
+            raise ValueError("Cannot calculate number of populations in"
+                             " dadi's SNP input file. Maybe it's wrong?")
         n_pop = int((len(info) - 6) / 2)
-        pop_ids = info[3 : 3 + n_pop]
+        pop_ids = info[3: 3 + n_pop]
         # Find approximate size and check existence of the outgroup
         has_outgroup = True
         appr_size = np.zeros(n_pop, dtype=int)
@@ -90,9 +95,11 @@ def _get_default_from_snp_format(filename):
                     appr_size[num] = cur_size
     return pop_ids, has_outgroup, appr_size
 
+
 def _change_outgroup(sfs, new_outgroup):
     """
-    Change polarization of the data. If data does not have outgroup then error.
+    Change polarization of the data. If data does not have outgroup
+    then error.
     """
     if new_outgroup is not None:
         if new_outgroup and sfs.folded:
@@ -101,9 +108,11 @@ def _change_outgroup(sfs, new_outgroup):
             sfs.fold()
     return sfs
 
+
 def _read_data_sfs_type(module, data_holder):
     """
-    Read filename of dadi's sfs format. Check dadi's manual for further information.
+    Read filename of dadi's sfs format. Check dadi's manual for further
+    information.
 
     : param module: dadi or moments module (or analogue)
     : param data_holder: object holding the data.
@@ -111,7 +120,7 @@ def _read_data_sfs_type(module, data_holder):
     """
     sfs = module.Spectrum.from_file(data_holder.filename)
     ns = np.array(sfs.shape) - 1
-    
+
     sfs = _check_missing_pop_labels(sfs, data_holder.pop_labels)
     sfs = _new_pop_labels(sfs, data_holder.pop_labels)
     sfs = _project(sfs, data_holder.sample_sizes)
@@ -121,7 +130,8 @@ def _read_data_sfs_type(module, data_holder):
 
 def _read_data_snp_type(module, data_holder):
     """
-    Read filename of dadi's SNP format. Check dadi's manual for further information.
+    Read filename of dadi's SNP format. Check dadi's manual for further
+    information.
 
     : param module: dadi or moments module (or analogue)
     : param data_holder: object holding the data.
@@ -131,7 +141,8 @@ def _read_data_snp_type(module, data_holder):
         dd = module.Misc.make_data_dict(data_holder.filename)
     except Exception as e:
         raise SyntaxError("Construction of data_dict failed: " + str(e))
-    pop_labels, has_outgroup, size = _get_default_from_snp_format(data_holder.filename)
+    pop_labels, has_outgroup, size = _get_default_from_snp_format(
+        data_holder.filename)
     if data_holder.sample_sizes is not None:
         size = data_holder.sample_sizes
     if data_holder.pop_labels is not None:
@@ -161,8 +172,11 @@ def read_dadi_data(module, data_holder):
         # Try to guess
         try:
             return _read_data_sfs_type(module, data_holder)
-        except:
+        except:  # NOQA
             try:
                 return _read_data_snp_type(module, data_holder)
-            except:
-                raise SyntaxError("Data filename extension is neither .fs (.sfs) or .txt. Attempts to guess the file type failed.\nTo get the error message, please, change the extension.")
+            except:  # NOQA
+                raise SyntaxError("Data filename extension is neither .fs"
+                                  " (.sfs) or .txt. Attempts to guess the"
+                                  " file type failed.\nTo get the error "
+                                  "message, please, change the extension.")

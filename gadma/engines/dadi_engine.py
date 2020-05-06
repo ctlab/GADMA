@@ -44,7 +44,10 @@ class DadiEngine(Engine):
         :type data_holder: :class:`SFSDataHolder`
         """
         if data_holder.__class__ not in DadiEngine.supported_data:
-            raise ValueError(f"Data class {data_holder.__class__.__name__} is not supported by {self.id} engine.\nThe supported classes are: {self.supported_data} and {self.inner_data_type}")
+            raise ValueError(f"Data class {data_holder.__class__.__name__}"
+                             " is not supported by {self.id} engine.\nThe "
+                             "supported classes are: {self.supported_data}"
+                             " and {self.inner_data_type}")
         data = read_dadi_data(DadiEngine.base_module, data_holder)
         return data
 
@@ -109,12 +112,17 @@ class DadiEngine(Engine):
                         value = self.model.get_value(dyn_arg)
                         if value != 'Sud':
                             func = DynamicVariable.get_func_from_value(value)
+                            y1 = self.model.get_value(event.init_size_args[i])
+                            y2 = self.model.get_value(event.size_args[i])
+                            x_diff = self.model.get_value(event.time_arg)
                             addit_values['nu%d_func' % (i+1)] = func(
-                                y1=self.model.get_value(event.init_size_args[i]),
-                                y2=self.model.get_value(event.size_args[i]),
-                                x_diff=self.model.get_value(event.time_arg))
-                kwargs_with_vars = self._get_kwargs(event, self.model.var2value)
-                kwargs = {x: self.model.get_value(y) for x, y in kwargs_with_vars.items()}
+                                y1=y1,
+                                y2=y2,
+                                x_diff=x_diff)
+                kwargs_with_vars = self._get_kwargs(event,
+                                                    self.model.var2value)
+                kwargs = {x: self.model.get_value(y)
+                          for x, y in kwargs_with_vars.items()}
                 kwargs = {x: addit_values.get(y, y) for x, y in kwargs.items()}
                 if event.n_pop == 1:
                     phi = dadi.Integration.one_pop(phi, xx, **kwargs)
@@ -152,7 +160,8 @@ class DadiEngine(Engine):
         simulated SFS and observed SFS.
         """
         if self.data is None or self.model is None:
-            raise ValueError("Please set data and model for the engine or use set_and_evaluate function instead.")
+            raise ValueError("Please set data and model for the engine or"
+                             " use set_and_evaluate function instead.")
         dadi = self.base_module
         model = self.simulate(values, self.data.sample_sizes, pts)
         ll_model = dadi.Inference.ll_multinom(model, self.data)

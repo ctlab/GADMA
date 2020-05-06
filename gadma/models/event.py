@@ -3,13 +3,15 @@ import numpy as np
 from . import Model
 from ..utils import Variable
 
+
 class Event(Model):
     def __init__(self):
         super(Event, self).__init__(raise_excep=False)
 
 
 class Epoch(Event):
-    def __init__(self, time_arg, init_size_args, size_args, mig_args=None, dyn_args=None, sel_args=None):
+    def __init__(self, time_arg, init_size_args, size_args,
+                 mig_args=None, dyn_args=None, sel_args=None):
         self.n_pop = len(init_size_args)
         self.time_arg = time_arg
         self.init_size_args = init_size_args

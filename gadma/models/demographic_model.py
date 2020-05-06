@@ -2,6 +2,7 @@ from ..utils import Variable
 from . import Model, Epoch, Split
 from collections import OrderedDict
 
+
 class DemographicModel(Model):
     """
     Class for demographic model of epoch type.
@@ -24,7 +25,8 @@ class DemographicModel(Model):
             return [self.Nref]
         return self.events[-1].size_args
 
-    def add_epoch(self, time_arg, size_args, mig_args=None, dyn_args=None, sel_args=None):
+    def add_epoch(self, time_arg, size_args, mig_args=None,
+                  dyn_args=None, sel_args=None):
         """
         Adds new epoch to the demographic model events.
 
@@ -39,7 +41,8 @@ class DemographicModel(Model):
                class as well as different constants/values.
         """
         sizes = self._get_current_pop_sizes()
-        new_epoch = Epoch(time_arg, sizes, size_args, mig_args, dyn_args, sel_args) 
+        new_epoch = Epoch(time_arg, sizes, size_args,
+                          mig_args, dyn_args, sel_args)
         self.events.append(new_epoch)
         self.add_variables(new_epoch.variables)
 

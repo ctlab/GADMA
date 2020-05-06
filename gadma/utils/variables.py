@@ -1,7 +1,9 @@
 import numpy as np
 from .distributions import *
+from .utils import extract_args
 from functools import partial
 from keyword import iskeyword
+
 
 class Variable(object):
     '''
@@ -79,15 +81,16 @@ class ContinuousVariable(Variable):
 
     * :attr:`default_rand_gen` = uniform distribution over domain.
     """
-    default_domain   = np.array([-np.inf, np.inf])
-    default_rand_gen = lambda domain: np.random.uniform(domain[0], domain[1])
+    default_domain = np.array([-np.inf, np.inf])
+    default_rand_gen = extract_args(np.random.uniform)
 
     def __init__(self, name, domain=None, rand_gen=None):
         if domain is None:
             domain = self.__class__.default_domain
         if rand_gen is None:
             rand_gen = self.__class__.default_rand_gen
-        super(ContinuousVariable, self).__init__(name, 'continuous', domain, rand_gen)
+        super(ContinuousVariable, self).__init__(name, 'continuous',
+                                                 domain, rand_gen)
 
     def get_bounds(self):
         """
@@ -97,10 +100,11 @@ class ContinuousVariable(Variable):
 
     def get_possible_values(self):
         """
-        :raises AttributeError: it is impossible to get possible values for\
-        continuous variable.
+        :raises AttributeError: it is impossible to get possible values\
+        for continuous variable.
         """
-        raise AttributeError("Impossible to produce a list of values for continuous variable " + self.name)
+        raise AttributeError("Impossible to produce a list of values for"
+                             " continuous variable " + self.name)
 
 
 class DiscreteVariable(Variable):
@@ -116,8 +120,8 @@ class DiscreteVariable(Variable):
 
     * :attr:`default_rand_gen` = random choice over domain.
     """
-    default_domain   = np.array([])
-    default_rand_gen = lambda domain: np.random.choice(domain)
+    default_domain = np.array([])
+    default_rand_gen = np.random.choice
 
     def __init__(self, name, domain=None, rand_gen=None):
         if domain is None:
@@ -151,8 +155,9 @@ class PopulationSizeVariable(ContinuousVariable):
 
     :note: Values are assumed to be in genetic units.
     """
-    default_domain   = np.array([1e-2, 100])
-    default_rand_gen = lambda domain: trunc_lognormal_3_sigma_rule(1, domain[0], domain[1])
+    default_domain = np.array([1e-2, 100])
+    default_rand_gen = extract_args(partial(trunc_lognormal_3_sigma_rule,
+                                            1))
 
 
 class MigrationVariable(ContinuousVariable):
@@ -166,8 +171,9 @@ class MigrationVariable(ContinuousVariable):
 
     :note: Values are assumed to be in genetic units.
     """
-    default_domain   = np.array([0, 10])
-    default_rand_gen = lambda domain: trunc_normal_3_sigma_rule(1, domain[0], domain[1])
+    default_domain = np.array([0, 10])
+    default_rand_gen = extract_args(partial(trunc_normal_3_sigma_rule,
+                                            1))
 
 
 class TimeVariable(ContinuousVariable):
@@ -181,8 +187,9 @@ class TimeVariable(ContinuousVariable):
 
     :note: Values are assumed to be in genetic units.
     """
-    default_domain   = np.array([0, 5])
-    default_rand_gen = lambda domain: trunc_normal_3_sigma_rule(1, domain[0], domain[1])
+    default_domain = np.array([0, 5])
+    default_rand_gen = extract_args(partial(trunc_normal_3_sigma_rule,
+                                            1))
 
 
 class SelectionVariable(ContinuousVariable):
@@ -196,8 +203,9 @@ class SelectionVariable(ContinuousVariable):
 
     :note: Values are assumed to be in genetic units.
     """
-    default_domain   = np.array([0, 10])
-    default_rand_gen = lambda domain: trunc_normal_3_sigma_rule(1, domain[0], domain[1])
+    default_domain = np.array([0, 10])
+    default_rand_gen = extract_args(partial(trunc_normal_3_sigma_rule,
+                                            1))
 
 
 class PercentVariable(ContinuousVariable):
@@ -208,8 +216,8 @@ class PercentVariable(ContinuousVariable):
 
     * :attr:`default_rand_gen` = random uniform distribution over domain.
     """
-    default_domain   = np.array([0, 1])
-    default_rand_gen = lambda domain: np.random.uniform(domain[0], domain[1])
+    default_domain = np.array([0, 1])
+    default_rand_gen = extract_args(np.random.uniform)
 
 
 class Dynamic(object):
@@ -333,7 +341,10 @@ class DynamicVariable(DiscreteVariable):
         if domain is None:
             domain = self.__class__.default_domain
         if not all(dom in self.__class__.default_domain for dom in domain):
-            raise Exception("Domain of DynamicVariable must be a subset of the following general domain: %s" % ", ".join([x.__name__ for x in self.default_domain]))
+            raise Exception("Domain of DynamicVariable must be a subset "
+                            "of the following general domain: %s"
+                            % ", ".join([x.__name__
+                                         for x in self.default_domain]))
         super(DynamicVariable, self).__init__(name, domain, rand_gen)
 
     @staticmethod

@@ -1,6 +1,7 @@
 from .variables import Variable
 import copy
 
+
 class VariablePool(list):
     def __init__(self, lst=None):
         self.names = set()
@@ -18,7 +19,8 @@ class VariablePool(list):
             self.names.add(item.name)
             super(VariablePool, self).append(item)
         else:
-            raise NameError(f"VariablePool has already a Variable with the same name ({item.name}).")
+            raise NameError(f"VariablePool has already a Variable with "
+                            "the same name ({item.name}).")
 
     def extend(self, items):
         for item in items:
@@ -32,20 +34,22 @@ class VariablePool(list):
             for value in item:
                 self.check_type(value)
                 if value.name in self.names and value.name not in remove_names:
-                    raise NameError(f"VariablePool has already a Variable with the same name ({key}).")
+                    raise NameError(f"VariablePool has already a Variable"
+                                    " with the same name ({key}).")
             for name in remove_names:
                 self.names.remove(name)
             for value in item:
                 self.names.add(value.name)
             return super(VariablePool, self).__setitem__(key, item)
-            
+
         self.check_type(item)
         if item.name not in self.names or item.name == self[key].name:
             self.names.remove(self[key].name)
             self.names.add(item.name)
             return super(VariablePool, self).__setitem__(key, item)
         else:
-            raise NameError(f"VariablePool has already a Variable with the same name ({key}).")
+            raise NameError(f"VariablePool has already a Variable with "
+                            "the same name ({key}).")
 
     def __delitem__(self, key):
         if isinstance(key, slice):
