@@ -1,8 +1,8 @@
 .. _sec_api_engine:
 
-=================================
-Engines for demographic inference
-=================================
+=======
+Engines
+=======
 
 GADMA supports several engines of demographic inference.
 Additional engine could be implemented by creating new subclass of class
@@ -16,7 +16,7 @@ Additional engine could be implemented by creating new subclass of class
 
 
 *********************
-Abstract class Engine
+Base class Engine
 *********************
 
 .. autoclass:: gadma.Engine

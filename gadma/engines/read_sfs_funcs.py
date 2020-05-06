@@ -75,11 +75,11 @@ def _get_default_from_snp_format(filename):
         info = line.split()
         if (len(info) - 6) % 2 != 0:
             raise ValueError("Cannot calculate number of populations in dadi's SNP input file. Maybe it's wrong?")
-        n_pop = (len(info) - 6) / 2
+        n_pop = int((len(info) - 6) / 2)
         pop_ids = info[3 : 3 + n_pop]
         # Find approximate size and check existence of the outgroup
         has_outgroup = True
-        appr_size = np.zeros(n_pop)
+        appr_size = np.zeros(n_pop, dtype=int)
         for line in f:
             info = line.split()
             if info[1][1].lower() not in ['a', 't', 'c', 'g']:
@@ -128,7 +128,7 @@ def _read_data_snp_type(module, data_holder):
     : type  data_holder: gadma.data.DataHolder
     """
     try:
-        dd = module.Misc.make_data_dict(filename)
+        dd = module.Misc.make_data_dict(data_holder.filename)
     except Exception as e:
         raise SyntaxError("Construction of data_dict failed: " + str(e))
     pop_labels, has_outgroup, size = _get_default_from_snp_format(data_holder.filename)
@@ -154,15 +154,15 @@ def read_dadi_data(module, data_holder):
     """
     _, ext = os.path.splitext(data_holder.filename)
     if ext == '.fs' or ext == '.sfs':
-        return 'sfs', _read_data_sfs_type(module, data_holder)
+        return _read_data_sfs_type(module, data_holder)
     elif ext == '.txt':
-        return 'snp', _read_data_snp_type(module, data_holder)
+        return _read_data_snp_type(module, data_holder)
     else:
         # Try to guess
         try:
-            return 'sfs', _read_data_sfs_type(module, data_holder)
+            return _read_data_sfs_type(module, data_holder)
         except:
             try:
-                return 'snp', _read_data_snp_type(module, data_holder)
+                return _read_data_snp_type(module, data_holder)
             except:
                 raise SyntaxError("Data filename extension is neither .fs (.sfs) or .txt. Attempts to guess the file type failed.\nTo get the error message, please, change the extension.")

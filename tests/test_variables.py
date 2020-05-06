@@ -12,12 +12,9 @@ class TestVariables(unittest.TestCase):
             pass
 
     def test_vars_equal_operator(self):
-        var1 = Variable('abc', 'continous', [0,1])
-        var2 = Variable('cba', 'continous', [0,1])
+        var1 = Variable('abc', 'continous', [0,1], None)
+        var2 = Variable('cba', 'continous', [0,1], None)
         self.assertNotEqual(var1, var2)
-        with self.assertRaises(AttributeError):
-            Variable('abc', 'continous', [0,1])
-            PopulationSizeVariable(name='abc', domain=[0,1])
 
     def _test_variable(self, variable):
         self.assertIsInstance(variable, Variable)

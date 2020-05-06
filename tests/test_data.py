@@ -3,7 +3,27 @@ import itertools
 import os
 import numpy as np
 from gadma import *
+import warnings # we ignore warning of unclosed files in dadi
 
+try:
+    import dadi
+    DADI_NOT_AVAILABLE = False
+except ImportError:
+    DADI_NOT_AVAILABLE = True
+
+try:
+    import moments
+    MOMENTS_NOT_AVAILABLE = False
+except ImportError:
+    MOMENTS_NOT_AVAILABLE = True
+
+try:
+    import momi
+    MOMI_NOT_AVAILABLE = False
+except ImportError:
+    MOMI_NOT_AVAILABLE = True
+
+# Test data
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
 YRI_CEU_DATA = os.path.join(DATA_PATH, "YRI_CEU.fs")
 YRI_CEU_F_DATA = os.path.join(DATA_PATH, "YRI_CEU_folded.fs")
@@ -14,14 +34,18 @@ STRANGE_DATA = os.path.join(DATA_PATH, "some_strange_data")
 
 class TestDataHolder(unittest.TestCase):
 
-    def _check_data_holder(self, data_holder, pop_labels, seq_len, outgroup, sample_sizes):
-        self.assertTrue(all(data_holder.sample_sizes == sample_sizes))
-        self.assertEqual(data_holder.pop_labels, pop_labels)
-        self.assertEqual(data_holder.seq_len, seq_len)
-        self.assertEqual(data_holder.outgroup, outgroup)
+    def _check_data(self, data, pop_labels, outgroup, sample_sizes):
+        self.assertTrue(all(data.sample_sizes == sample_sizes))
+        self.assertEqual(data.pop_ids, pop_labels)
+        self.assertEqual(not data.folded, outgroup)
 
-    def _load_yri_ceu_dadi(self, size, labels, outgroup):
-        import dadi
+    def _load_with_dadi(self, data, size, labels, outgroup):
+        warnings.filterwarnings(action="ignore", message="unclosed", 
+                         category=ResourceWarning)
+        if data.split('.')[-1] == 'txt':
+            d = dadi.Misc.make_data_dict(data)
+            data = dadi.Spectrum.from_data_dict(d, labels, size, outgroup)
+            return data
         data = dadi.Spectrum.from_file(YRI_CEU_DATA)
         if labels == ["CEU", "YRI"]:
             data = np.transpose(data, [1,0])
@@ -30,35 +54,41 @@ class TestDataHolder(unittest.TestCase):
             data = data.fold()
         data = data.project(size)
         return data
-        
+ 
     def _test_sfs_reading(self, id):
         sizes = [None, (20,20), (10, 10), (10, 5)]
         outgroup = [None, True, False]
         labels = [None, ["YRI", "CEU"], ["CEU", "YRI"]]
         seq_lens = [None, 1e6]
-        for siz, lab, seq, out in itertools.product(sizes, labels, seq_lens, outgroup):
-            sfs_holder = SFSDataHolder(YRI_CEU_DATA, out, lab, seq, siz)
-            sfs_holder.prepare_for_engine(get_engine(id))
-            siz = siz or (20,20)
+        data = [YRI_CEU_DATA, SNP_DATA]
+        for dat, siz, lab, seq, out in itertools.product(data, sizes, labels, seq_lens, outgroup):
+            sfs_holder = SFSDataHolder(dat, out, lab, seq, siz)
+            data = get_engine(id).read_data(sfs_holder)
+            siz = siz or ((20,20) if (dat == YRI_CEU_DATA) else (24, 44))
             lab = lab or ["YRI", "CEU"]
             out = out or True
-            self._check_data_holder(sfs_holder, lab, seq, out, siz)
-            self.assertTrue(np.allclose(sfs_holder.data,self._load_yri_ceu_dadi(siz, lab, out)))
+            self._check_data(data, lab, out, siz)
+            sfs = self._load_with_dadi(dat, siz, lab, out)
+            self.assertTrue(np.allclose(data, sfs))
 
     def _test_read_fails(self, id):
+        warnings.filterwarnings(action="ignore", message="unclosed", 
+                         category=ResourceWarning)
         data_holder = SFSDataHolder(YRI_CEU_DATA, pop_labels=[1, 2])
-        self.assertRaises(ValueError, data_holder.prepare_for_engine, get_engine(id))
+        self.assertRaises(ValueError, get_engine(id).read_data, data_holder)
         data_holder = SFSDataHolder(YRI_CEU_DATA, sample_sizes=[40, 50])
-        self.assertRaises(ValueError, data_holder.prepare_for_engine, get_engine(id))
+        self.assertRaises(ValueError, get_engine(id).read_data, data_holder)
         data_holder = SFSDataHolder(YRI_CEU_F_DATA, outgroup=True)
-        self.assertRaises(ValueError, data_holder.prepare_for_engine, get_engine(id))
+        self.assertRaises(ValueError, get_engine(id).read_data, data_holder)
         data_holder = SFSDataHolder(STRANGE_DATA)
-        self.assertRaises(SyntaxError, data_holder.prepare_for_engine, get_engine(id))
+        self.assertRaises(SyntaxError, get_engine(id).read_data, data_holder)
         data_holder = SFSDataHolder(DAMAGED_SNP_DATA)
-        self.assertRaises(SyntaxError, data_holder.prepare_for_engine, get_engine(id))
+        self.assertRaises(SyntaxError, get_engine(id).read_data, data_holder)
 
+    @unittest.skipIf(DADI_NOT_AVAILABLE, "Dadi module is not installed")
     def test_dadi_reading(self):
         self._test_sfs_reading('dadi')
 
+    @unittest.skipIf(DADI_NOT_AVAILABLE, "Dadi module is not installed")
     def test_dadi_reading_fails(self):
         self._test_read_fails('dadi')

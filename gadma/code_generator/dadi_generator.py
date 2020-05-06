@@ -1,5 +1,5 @@
-from ..dem_model import *
-from ..engine import *
+from ..models import *
+from ..engines import *
 
 def _print_dadi_func(demographic_model, values):
     var2value = demographic_model.var2value(values)

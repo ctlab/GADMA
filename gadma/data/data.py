@@ -22,21 +22,6 @@ class DataHolder(object):
         self.seq_len = seq_len
         self.outgroup = outgroup
         self.pop_labels = pop_labels
-        self.ready_for_engine = None
-
-    def prepare_for_engine(self, engine):
-        """
-        Reads data from file in format of the corresponding engine.
-
-        :param engine: class or instance of engine.
-        :type engine: :class:`gadma.Engine`
-        """
-        self.data = engine.read_data(self)
-        self.ready_for_engine = engine.id
-        self.pop_labels = engine.get_pop_labels(self.data)
-        self.outgroup = engine.get_outgroup(self.data)
-        self.seq_len = self.seq_len or engine.get_seq_len(self.data)
-
 
 class SFSDataHolder(DataHolder):
     """

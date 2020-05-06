@@ -1,8 +1,8 @@
 .. _sec_api_data:
 
-==============================
-Data for demographic inference
-==============================
+====
+Data
+====
 
 GADMA supports several data types for demographic inference.
 
@@ -13,7 +13,7 @@ method.
 
 
 *************************
-Abstract class DataHolder
+Base class DataHolder
 *************************
 
 .. autoclass:: gadma.DataHolder
