@@ -209,7 +209,7 @@ def read_dadi_file(filename, proj, pop_labels):
             error(
                 "Cannot calculate number of populations in dadi's input file. Maybe it's wrong?"
             )
-        number_of_pops = (len(splited_line) - 6) / 2
+        number_of_pops = int((len(splited_line) - 6) / 2)
         if pop_labels is None:
             if not splited_line[3].isdigit():
                 pop_ids = splited_line[3:3 + number_of_pops]

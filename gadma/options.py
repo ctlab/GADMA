@@ -600,7 +600,7 @@ class Options_storage:
         if (self.frac_of_old_models +
                 self.frac_of_crossed_models +
                 self.frac_of_mutated_models) == 1:
-            support.warning("Faction of random models is 0")
+            support.warning("Fraction of random models is 0")
 
 
         # check lengths of bounds and p_ids
@@ -737,6 +737,8 @@ class Options_storage:
                     "To use Powell optimization one need moments installed. BFGS (optimize_log) will be used instead.")
                 self.optimize_name = 'optimize_log'
 
+        if self.vmin <= 0:
+            support.error("Vmin for plots should be positive.")
 
         if self.distribution != 'normal' and self.distribution != 'uniform':
             support.error(
