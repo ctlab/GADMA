@@ -528,9 +528,9 @@ class Options_storage:
         self.ns = np.array(self.ns)
         self.number_of_populations = len(self.ns)
 
-        # Set vmin to 0 if all entries of fs are < 1.0
+        # Set vmin to 1e-15 if all entries of fs are < 1.0
         if (self.input_data <= 1.0).all():
-            self.vmin = 0.0
+            self.vmin = 1e-15
 
         # Linked or unlinked data
         if not self.linked_snp and self.boot_dir is not None:
@@ -738,7 +738,7 @@ class Options_storage:
                 self.optimize_name = 'optimize_log'
 
         if self.vmin <= 0:
-            support.error("Vmin for plots should be positive.")
+            support.error("Vmin (" + str(self.vmin) +") for plots should be positive.")
 
         if self.distribution != 'normal' and self.distribution != 'uniform':
             support.error(
