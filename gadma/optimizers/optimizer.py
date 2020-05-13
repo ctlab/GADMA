@@ -1,8 +1,7 @@
-from ..utils import Variable, ContinuousVariable
+from ..utils import Variable, ContinuousVariable, eval_wrapper
 import copy
 import numpy as np
 from functools import lru_cache
-
 
 class Optimizer(object):
     """
@@ -27,6 +26,9 @@ class Optimizer(object):
         if self.maximize:
             y = -y
         return y
+
+    def prepare_f_for_opt(self, f, args=(), eval_file=None):
+        return eval_wrapper(f, args, eval_file)
 
     def check_variables(self, variables):
         for var in variables:

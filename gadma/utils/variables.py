@@ -63,7 +63,7 @@ class Variable(object):
 
     def get_possible_values(self):
         """
-        Retrurns list of all possible values of the variable.
+        Returns list of all possible values of the variable.
         """
         raise NotImplementedError
 
