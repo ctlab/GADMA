@@ -8,6 +8,8 @@ class Event(Model):
     def __init__(self):
         super(Event, self).__init__(raise_excep=False)
 
+    def set_value(self, variable, value):
+        raise NotImplementedError()
 
 class Epoch(Event):
     def __init__(self, time_arg, init_size_args, size_args,
@@ -40,6 +42,25 @@ class Epoch(Event):
         self.add_variables(sel_args)
         self.add_variables(dyn_args)
         self.add_variables(mig_args)
+
+    def set_value(self, variable, value):
+        # check dynamics first as they are more probable in our situation
+        for i, dyn_arg in enumerate(self.dyn_args):
+            if variable is dyn_arg:
+                self.dyn_args[i] = value
+                return
+        if variable is self.time_arg:
+            self.time_arg = value
+        for i, migs in enumerate(self.mig_args):
+            for j, mig_arg in enumerate(migs):
+                if variable is mig_arg:
+                    self.mig_args[i][j] = value
+                return
+        for i, sel_arg in enumerate(self.sel_args):
+            if variable is sel_arg:
+                self.sel_args[i] = value
+                return
+
 
 
 class Split(Event):

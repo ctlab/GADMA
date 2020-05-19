@@ -11,8 +11,20 @@ class Model(object):
     :type raise_excep: bool
     """
     def __init__(self, raise_excep=True):
-        self.variables = VariablePool()
+        self.is_fixed = []
+        self.fixed_values = {}
+        self._variables = VariablePool()
         self.raise_excep = raise_excep
+
+    @property
+    def variables(self):
+        return [var for var, fixed in zip(self._variables, self.is_fixed)
+                if not fixed]
+
+    @variables.setter
+    def variables(self, new_variables):
+        self._variables = new_variables
+        self.is_fixed = [False for var in new_variables]
 
     def add_variable(self, variable):
         """
@@ -26,8 +38,9 @@ class Model(object):
                 raise ValueError("Only instances of class Variable could be"
                                  " added to the model as variables.")
         else:
-            if variable not in self.variables:
-                self.variables.append(variable)
+            if variable not in self._variables:
+                self._variables.append(variable)
+                self.is_fixed.append(False)
 
     def add_variables(self, variables):
         """
@@ -52,13 +65,38 @@ class Model(object):
             if var.name == name:
                 return var
 
+    def fix_variable(self, variable, value):
+        if variable not in self.variables:
+            raise ValueError(f"There is no such unfixed variable {variable} "
+                             "in the model.")
+        self.is_fixed[self._variables.index(variable)] = True
+        self.fixed_values[variable] = value
+
+    def unfix(self, variable):
+        if variable not in self.fixed_values:
+            raise ValueError(f"There is no such fixed variable {variable} "
+                             "in the model.")
+        ind = self._variables.index(variable)
+        self.is_fixed[ind] = False
+        del self.fixed_values[variable]
+
+    def unfix_if_fixed(self, variable):
+        try:
+            self.unfix(variable)
+        except ValueError:
+            pass
+
     def var2value(self, values):
         if isinstance(values, list):
-            return {var: value for var, value in zip(self.variables,
+            ret_dict = {var: value for var, value in zip(self.variables,
                                                                values)}
         elif isinstance(values, dict):
             for key in values:
                 if isinstance(key, str):
-                    return {var: values[var.name] for var in self.variables}
+                    ret_dict = {var: values[var.name] for var in self.variables}
                 elif isinstance(key, Variable):
-                    return {var: values[var] for var in self.variables}
+                    ret_dict = {var: values[var] for var in self.variables}
+        else:
+            raise TypeError("Values are either not list nor dict.")
+
+        return {**ret_dict, **self.fixed_values}
