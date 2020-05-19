@@ -62,7 +62,7 @@ class TestDataHolder(unittest.TestCase):
         seq_lens = [None, 1e6]
         data = [YRI_CEU_DATA, SNP_DATA]
         for dat, siz, lab, seq, out in itertools.product(data, sizes, labels, seq_lens, outgroup):
-            sfs_holder = SFSDataHolder(dat, out, lab, seq, siz)
+            sfs_holder = SFSDataHolder(dat, siz, out, lab, seq)
             data = get_engine(id).read_data(sfs_holder)
             siz = siz or ((20,20) if (dat == YRI_CEU_DATA) else (24, 44))
             lab = lab or ["YRI", "CEU"]

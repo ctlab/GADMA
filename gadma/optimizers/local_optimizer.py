@@ -43,10 +43,14 @@ def all_local_optimizers():
 
 
 class ScipyUnconstrOptimizer(LocalOptimizer, UnconstrainedOptimizer):
+    scipy_methods = ['Nelder-Mead', 'Powell', 'CG', 'BFGS', 'Newton-CG',
+                     'COBYLA', 'trust-constr', 'dogleg', 'trust-ncg',
+                     'trust-exact', 'trust-krylov']
     def __init__(self, method, log_transform=False, maximize=False):
-        if method not in ['BFGS', 'Powell']:
+        if method not in self.scipy_methods:
             raise ValueError(f"There is no such unconstrained method {method}"
-                             " in scipy.minimize.")
+                             " in scipy.minimize. Available methods are: "
+                             "{self.scipy_methods}")
         self.method = method
         super(ScipyUnconstrOptimizer, self).__init__(log_transform, maximize)
 
@@ -67,10 +71,13 @@ class ScipyUnconstrOptimizer(LocalOptimizer, UnconstrainedOptimizer):
 
 
 class ScipyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
+    scipy_methods = ['L-BFGS-B', 'TNC', 'SLSQP']
+
     def __init__(self, method, log_transform=False, maximize=False):
-        if method not in ['L-BFGS-B']:
+        if method not in self.scipy_methods:
             raise ValueError(f"There is no such constrained method {method}"
-                             " in scipy.minimize.")
+                             " in scipy.minimize. Available methods are: "
+                             "{self.scipy_methods}")
         self.method = method
         super(ScipyConstrOptimizer, self).__init__(log_transform, maximize)
 
@@ -144,4 +151,11 @@ register_local_optimizer('Powell',
 register_local_optimizer('Powell_log',
                          ManuallyConstrOptimizer(
                             ScipyUnconstrOptimizer('Powell'),
+                            log_transform=True))
+register_local_optimizer('Nelder-Mead',
+                         ManuallyConstrOptimizer(
+                            ScipyUnconstrOptimizer('Nelder-Mead')))
+register_local_optimizer('Nelder-Mead_log',
+                         ManuallyConstrOptimizer(
+                            ScipyUnconstrOptimizer('Nelder-Mead'),
                             log_transform=True))

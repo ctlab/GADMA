@@ -20,7 +20,7 @@ class VariablePool(list):
             super(VariablePool, self).append(item)
         else:
             raise NameError(f"VariablePool has already a Variable with "
-                            "the same name ({item.name}).")
+                            f"the same name ({item.name}).")
 
     def extend(self, items):
         for item in items:
@@ -35,7 +35,7 @@ class VariablePool(list):
                 self.check_type(value)
                 if value.name in self.names and value.name not in remove_names:
                     raise NameError(f"VariablePool has already a Variable"
-                                    " with the same name ({key}).")
+                                    f" with the same name ({key}).")
             for name in remove_names:
                 self.names.remove(name)
             for value in item:
@@ -49,7 +49,7 @@ class VariablePool(list):
             return super(VariablePool, self).__setitem__(key, item)
         else:
             raise NameError(f"VariablePool has already a Variable with "
-                            "the same name ({key}).")
+                            f"the same name ({key}).")
 
     def __delitem__(self, key):
         if isinstance(key, slice):

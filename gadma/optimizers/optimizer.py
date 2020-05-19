@@ -13,8 +13,8 @@ class Optimizer(object):
     def __init__(self, log_transform=False, maximize=False):
         self.log_transform = log_transform
         if self.log_transform:
-            self.transform = np.log
-            self.inv_transform = np.exp
+            self.transform = lambda x: np.log(x) if isinstance(x, float) else x 
+            self.inv_transform = lambda x: np.exp(x) if isinstance(x, float) else x 
         else:
             self.transform = lambda x: x
             self.inv_transform = self.transform

@@ -1,7 +1,7 @@
 from ..utils import Variable
 from . import Model, Epoch, Split
 from collections import OrderedDict
-
+import copy
 
 class DemographicModel(Model):
     """
@@ -23,7 +23,7 @@ class DemographicModel(Model):
         """
         if len(self.events) == 0:
             return [self.Nref]
-        return self.events[-1].size_args
+        return copy.copy(self.events[-1].size_args)
 
     def add_epoch(self, time_arg, size_args, mig_args=None,
                   dyn_args=None, sel_args=None):

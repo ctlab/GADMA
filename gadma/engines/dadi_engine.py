@@ -15,11 +15,6 @@ class DadiEngine(Engine):
     Inferring the Joint Demographic History of Multiple Populations
     from Multidimensional SNP Frequency Data. PLoS Genet 5(10): e1000695.
     https://doi.org/10.1371/journal.pgen.1000695
-
-    :param pts: list of grid points numbers for simulation in :py:mod:`dadi`.
-    :type pts: list of three ints
-    :param data: observed SFS data.
-    :param model: demographic model.
     """
 
     id = 'dadi'  #:
@@ -63,20 +58,20 @@ class DadiEngine(Engine):
             the dynamics values should be fixed.
         """
         ret_dict = {'T': event.time_arg}
-        if event.n_pop == 1:
-            ret_dict['nu'] = event.size_args[0]
-            if event.sel_args is not None:
-                ret_dict['gamma'] = event.sel_args[0]
-            return ret_dict
         for i in range(event.n_pop):
+            if event.n_pop == 1:
+                arg_name = 'nu'
+            else:
+                arg_name = 'nu%d' % (i+1)
+
             if event.dyn_args is not None:
                 dyn_arg = event.dyn_args[i]
                 if var2value.get(dyn_arg, dyn_arg) == 'Sud':
-                    ret_dict['nu%d' % (i+1)] = event.size_args[i]
+                    ret_dict[arg_name] = event.size_args[i]
                 else:
-                    ret_dict['nu%d' % (i+1)] = 'nu%d_func' % (i+1)
+                    ret_dict[arg_name] = 'nu%d_func' % (i+1)
             else:
-                ret_dict['nu%d' % (i+1)] = event.size_args[i]
+                ret_dict[arg_name] = event.size_args[i]
 
         if event.mig_args is not None:
             for i in range(event.n_pop):
@@ -85,8 +80,12 @@ class DadiEngine(Engine):
                         continue
                     ret_dict['m%d%d' % (i+1, j+1)] = event.mig_args[i][j]
         if event.sel_args is not None:
+            if event.n_pop == 1:
+                arg_name = 'gamma'
+            else:
+                arg_name = 'gamma%d' % (i+1)
             for i in range(event.n_pop):
-                ret_dict['gamma%d' % (i+1)] = event.sel_args[i]
+                ret_dict[arg_name] = event.sel_args[i]
         return ret_dict
 
     def _dadi_inner_func(self, values, ns, pts):
@@ -97,7 +96,7 @@ class DadiEngine(Engine):
         :param ns: sample sizes of simulated SFS
         :param pts: grid points for numerical solution
         """
-        self.model.set_values(values)
+        var2value = self.model.var2value(values)
         dadi = self.base_module
 
         xx = dadi.Numerics.default_grid(pts)
@@ -109,19 +108,20 @@ class DadiEngine(Engine):
                 if event.dyn_args is not None:
                     for i in range(event.n_pop):
                         dyn_arg = event.dyn_args[i]
-                        value = self.model.get_value(dyn_arg)
+                        value = var2value.get(dyn_arg, dyn_arg)
                         if value != 'Sud':
                             func = DynamicVariable.get_func_from_value(value)
-                            y1 = self.model.get_value(event.init_size_args[i])
-                            y2 = self.model.get_value(event.size_args[i])
-                            x_diff = self.model.get_value(event.time_arg)
+                            y1 = var2value.get(event.init_size_args[i],
+                                               event.init_size_args[i])
+                            y2 = var2value.get(event.size_args[i],
+                                               event.size_args[i])
+                            x_diff = var2value.get(event.time_arg, event.time_arg)
                             addit_values['nu%d_func' % (i+1)] = func(
                                 y1=y1,
                                 y2=y2,
                                 x_diff=x_diff)
-                kwargs_with_vars = self._get_kwargs(event,
-                                                    self.model.var2value)
-                kwargs = {x: self.model.get_value(y)
+                kwargs_with_vars = self._get_kwargs(event, var2value)
+                kwargs = {x: var2value.get(y, y)
                           for x, y in kwargs_with_vars.items()}
                 kwargs = {x: addit_values.get(y, y) for x, y in kwargs.items()}
                 if event.n_pop == 1:
@@ -134,8 +134,8 @@ class DadiEngine(Engine):
                 if event.n_pop == 1:
                     phi = dadi.PhiManip.phi_1D_to_2D(xx, phi)
                 else:
-                    func_name = "phi_%dD_to_%dD_%d".format(
-                        event.n_pop-1, event.n_pop, event.pop_to_div + 1)
+                    func_name = "phi_%dD_to_%dD_split_%d" % (
+                        event.n_pop, event.n_pop + 1, event.pop_to_div + 1)
                     phi = getattr(dadi.PhiManip, func_name)(xx, phi)
         sfs = dadi.Spectrum.from_phi(phi, ns, [xx]*len(ns))
         return sfs
@@ -168,4 +168,4 @@ class DadiEngine(Engine):
         return ll_model
 
 
-register_engine(DadiEngine())
+register_engine(DadiEngine)

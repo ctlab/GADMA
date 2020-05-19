@@ -4,6 +4,7 @@ from gadma import *
 
 import numpy as np
 
+
 class TestVariablePool(unittest.TestCase):
     def test_init(self):
         pool = VariablePool()
@@ -40,7 +41,7 @@ class TestVariablePool(unittest.TestCase):
         self.assertEqual(pool.names, set(['var1', 'nu']))
         self.assertRaises(NameError, pool.__setitem__, 1, v)
         self.assertEqual(pool.names, set(['var1', 'nu']))
-        pool.extend([m, t]) # v,x, m, t
+        pool.extend([m, t])  # v,x, m, t
         self.assertEqual(pool.names, set(['var1', 'nu', 'm', 't']))
         pool[2:4] = [t, m]
 
@@ -76,9 +77,9 @@ class TestVariablePool(unittest.TestCase):
         self.assertTrue(pool2[2] is t)
         pool2 = copy.deepcopy(pool1)
         self.assertTrue(pool1 is not pool2)
-        self.assertTrue(pool2[0].name == v.name)
-        self.assertTrue(pool2[1].name == n.name)
-        self.assertTrue(pool2[2].name == t.name)
+        self.assertEqual(pool2[0].name, v.name)
+        self.assertEqual(pool2[1].name, n.name)
+        self.assertEqual(pool2[2].name, t.name)
         self.assertTrue(pool2[0] is not v)
         self.assertTrue(pool2[1] is not n)
         self.assertTrue(pool2[2] is not t)

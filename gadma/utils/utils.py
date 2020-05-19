@@ -50,7 +50,7 @@ def cache_func(f):
     """
     @lru_cache(maxsize=None)
     def tuple_wrapper(x_tuple):
-        return f(np.array(x_tuple))
+        return f(np.array(x_tuple, dtype=object))
     def wrapper(x):
         return tuple_wrapper(tuple(x))
     wrapper.cache_info = tuple_wrapper.cache_info
@@ -89,3 +89,22 @@ def eval_wrapper(f, args=(), eval_file=None, cache=True):
     if cache:
         wrapper.cache_info = func.cache_info
     return wrapper
+
+class WeightedMetaArray(np.ndarray):
+    """Array with metadata."""
+    def __new__(cls, array, dtype=None, order=None):
+        obj = np.asarray(np.array(array, dtype=object), dtype=dtype, order=order).view(cls)                                 
+        obj.metadata = ''
+        obj.weights = np.ones(obj.shape)
+        return obj
+
+    def __array_finalize__(self, obj):
+        if obj is None: return
+        self.metadata = getattr(obj, 'metadata', [{}]*(obj.ndim+1))
+        self.weights = getattr(obj, 'weights', [{}]*(obj.ndim+1))
+
+    def __str__(self):
+        return super(WeightedMetaArray, self).__str__() + '\t' + self.metadata
+
+    def __repr__(self):
+        return super(WeightedMetaArray, self).__str__() + '\t' + self.metadata

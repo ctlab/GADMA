@@ -12,6 +12,19 @@ class Event(Model):
 class Epoch(Event):
     def __init__(self, time_arg, init_size_args, size_args,
                  mig_args=None, dyn_args=None, sel_args=None):
+        # Simple checks
+        assert(len(init_size_args) == len(size_args))
+        if mig_args is not None:
+            mig_args = np.array(mig_args)
+            assert(mig_args.ndim == 2)
+            assert(len(mig_args) == len(size_args))
+            for x in mig_args:
+                assert(len(x) == len(size_args))
+        if dyn_args is not None:
+            assert (len(dyn_args) == len(size_args))
+        if sel_args is not None:
+            assert (len(sel_args) == len(size_args))
+
         self.n_pop = len(init_size_args)
         self.time_arg = time_arg
         self.init_size_args = init_size_args
@@ -31,6 +44,10 @@ class Epoch(Event):
 
 class Split(Event):
     def __init__(self, pop_to_div, size_args=None):
+        # Simple checks
+        if size_args is not None:
+            assert pop_to_div < len(size_args)
+
         self.n_pop = len(size_args) - 1
         self.pop_to_div = pop_to_div
         self.size_args = size_args

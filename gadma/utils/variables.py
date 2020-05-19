@@ -67,6 +67,12 @@ class Variable(object):
         """
         raise NotImplementedError
 
+    def correct_value(self, value):
+        """
+        Check that value is correct for this variable.
+        """
+        raise NotImplementedError
+
 
 class ContinuousVariable(Variable):
     """
@@ -106,6 +112,12 @@ class ContinuousVariable(Variable):
         raise AttributeError("Impossible to produce a list of values for"
                              " continuous variable " + self.name)
 
+    def correct_value(self, value):
+        """
+        Check that value is correct for this variable.
+        """
+        return value >= self.domain[0] and value <= self.domain[1]
+
 
 class DiscreteVariable(Variable):
     """
@@ -142,6 +154,13 @@ class DiscreteVariable(Variable):
         Returns domain of the variable.
         """
         return self.domain
+
+    def correct_value(self, value):
+        """
+        Check that value is correct for this variable.
+        """
+        return value in self.domain
+
 
 
 class PopulationSizeVariable(ContinuousVariable):
@@ -335,7 +354,7 @@ class DynamicVariable(DiscreteVariable):
     """
 
     _help_dict = {'Sud': Sud, 'Lin': Lin, 'Exp': Exp}
-    default_domain = np.array([Sud, Lin, Exp])
+    default_domain = np.array(['Sud', 'Lin', 'Exp'])
 
     def __init__(self, name, domain=None, rand_gen=None):
         if domain is None:
@@ -357,7 +376,8 @@ class DynamicVariable(DiscreteVariable):
         :type value: :class:`gadma.utils.variables.Dynamic`
         """
         if value not in DynamicVariable._help_dict:
-            raise Exception("Value %s not in domain" % (str(value)))
+            raise Exception(f"Value {value} not in domain:"
+                            f"{DynamicVariable._help_dict.keys()}.")
         return DynamicVariable._help_dict[value]._inner_func
 
     def get_bounds(self):

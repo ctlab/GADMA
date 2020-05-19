@@ -12,7 +12,7 @@ def register_engine(engine):
     """
     if engine.id in _registered_engines:
         raise ValueError(f"Engine of the demographic inference '{engine.id}'"
-                         " already registered.")
+                         f" already registered.")
     _registered_engines[engine.id] = engine
 
 
@@ -24,8 +24,8 @@ def get_engine(id):
     """
     if id not in _registered_engines:
         raise ValueError(f"Engine of the demographic inference '{id}'"
-                         " not registered")
-    return _registered_engines[id]
+                         f" not registered")
+    return _registered_engines[id]()
 
 
 def all_engines():
@@ -34,7 +34,7 @@ def all_engines():
     inference.
     """
     for engine in _registered_engines.values():
-        yield engine
+        yield engine()
 
 
 class Engine(object):
@@ -53,6 +53,7 @@ class Engine(object):
     :cvar supported_data: list of supported :class:`DataHolder` classes.
     :cvar inner_data_type: class of inner data that is used by engine.
     """
+    id = ''
     supported_models = []
     supported_data = []
     inner_data_type = None
@@ -88,8 +89,8 @@ class Engine(object):
             return
         if model.__class__ not in self.supported_models:
             raise ValueError(f"Model {model.__class__} is not supported "
-                             "by {self.id} engine.\nThe supported models"
-                             " are: {self.supported_models}.")
+                             f"by {self.id} engine.\nThe supported models"
+                             f" are: {self.supported_models}.")
         self._model = model
 
     @property
@@ -115,12 +116,12 @@ class Engine(object):
             return
         cls = data.__class__
         if cls not in self.supported_data and \
-                not isinstance(cls, self.inner_data_type):
-            raise ValueError(f"Data class {data.__class__.__name__} is "
-                             "not supported by {self.id} engine.\n"
-                             "The supported classes are: "
-                             "{self.supported_data} and "
-                             "{self.inner_data_type}")
+                not isinstance(data, self.inner_data_type):
+            raise ValueError(f"Data class {cls} is "
+                             f"not supported by {self.id} engine.\n"
+                             f"The supported classes are: "
+                             f"{self.supported_data} and "
+                             f"{self.inner_data_type}")
         if isinstance(data, DataHolder):
             self.inner_data = self.read_data(data)
             self.data_holder = data

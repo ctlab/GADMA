@@ -13,7 +13,6 @@ class Model(object):
     def __init__(self, raise_excep=True):
         self.variables = VariablePool()
         self.raise_excep = raise_excep
-        self.var2value = None
 
     def add_variable(self, variable):
         """
@@ -53,47 +52,13 @@ class Model(object):
             if var.name == name:
                 return var
 
-    def randomize(self):
-        """
-        Sets values of the model variables to random values.
-        For every variable :meth:`.Variable.resample` is calling.
-        """
-        self.var2value = {var: var.resample() for var in self.variables}
-
-    def set_values(self, values):
-        """
-        Sets variable values to `values`. `values` could be the list of values
-        or a dictionary of values with names of the variables as the keys.
-
-        :param values: values of variables of the model.
-        :type values: list or dict
-        """
+    def var2value(self, values):
         if isinstance(values, list):
-            self.var2value = {var: value for var, value in zip(self.variables,
+            return {var: value for var, value in zip(self.variables,
                                                                values)}
         elif isinstance(values, dict):
-            self.var2value = {var: value[var.name] for var in self.variables}
-        else:
-            raise ValueError("Values are not either list nor dict instance.")
-
-    def get_value(self, variable):
-        """
-        Returns value of the variable.
-
-        :param variable: variable to get its value in the model.
-        :type variable:  :class:`.Variable`
-
-        :raises AttributeError: if there is no such variable or if no values\
-            were set for the model.
-        """
-        if self.var2value is None:
-            raise AttributeError("Model has no setted values of the"
-                                 " variables. Please call set_values or"
-                                 " randomize function first.")
-        return self.var2value[variable]
-
-    def get_values(self):
-        """
-        Returns list of variables values.
-        """
-        return list([self.var2value[var] for var in self.variables])
+            for key in values:
+                if isinstance(key, str):
+                    return {var: values[var.name] for var in self.variables}
+                elif isinstance(key, Variable):
+                    return {var: values[var] for var in self.variables}

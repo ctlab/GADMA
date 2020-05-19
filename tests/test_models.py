@@ -12,6 +12,7 @@ except ImportError:
 
 import numpy as np
 
+
 class TestModels(unittest.TestCase):
     def dadi_wrapper(self, func):
         def wrapper(param, ns, pts):
@@ -28,8 +29,8 @@ class TestModels(unittest.TestCase):
         def inner(param, xx, phi):
             return phi
 
-        ns=(20,)
-        pts = [40,50,60]
+        ns = (20,)
+        pts = [40, 50, 60]
         func_ex = dadi.Numerics.make_extrap_log_func(inner)
         real = func_ex([], ns, pts)
 
@@ -48,8 +49,8 @@ class TestModels(unittest.TestCase):
             phi = dadi.Integration.one_pop(phi, xx, T=T, nu=nu)
             return phi
 
-        ns=(20,)
-        pts = [40,50,60]
+        ns = (20,)
+        pts = [40, 50, 60]
         param = [1., 0.5]
         func_ex = dadi.Numerics.make_extrap_log_func(inner)
         real = func_ex(param, ns, pts)
@@ -66,7 +67,7 @@ class TestModels(unittest.TestCase):
     @unittest.skipIf(DADI_NOT_AVAILABLE, "Dadi module is not installed")
     def test_dadi_gut_2pop(self):
         """
-        Check loglikelihood of the demographic model from the YRI_CEU 
+        Check loglikelihood of the demographic model from the YRI_CEU
         example of dadi.
         """
         nu1F = PopulationSizeVariable('nu1F')
@@ -80,13 +81,13 @@ class TestModels(unittest.TestCase):
         dm = DemographicModel()
         dm.add_epoch(Tp, [nu1F])
         dm.add_split(0, [nu1F, nu2B])
-        dm.add_epoch(T, [nu1F, nu2F], [[None, m],[m, None]], ['Sud', 'Exp'])
- 
+        dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', 'Exp'])
+
         dic = {'nu1F': 1.880, 'nu2B': 0.0724, 'nu2F': 1.764, 'm': 0.930,
                'Tp':  0.363, 'T': 0.112, 'Dyn': 'Exp'}
 
         data = SFSDataHolder(YRI_CEU_DATA)
         d = DadiEngine(model=dm, data=data)
         values = [dic[var.name] for var in dm.variables]
-        ll = d.evaluate(values, pts=[40,50,60])
+        ll = d.evaluate(values, pts=[40, 50, 60])
         self.assertEqual(int(ll), -1066)
