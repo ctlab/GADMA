@@ -91,3 +91,30 @@ class TestModels(unittest.TestCase):
         values = [dic[var.name] for var in dm.variables]
         ll = d.evaluate(values, pts=[40, 50, 60])
         self.assertEqual(int(ll), -1066)
+
+    def test_fix_vars(self):
+        nu1F = PopulationSizeVariable('nu1F')
+        nu2B = PopulationSizeVariable('nu2B')
+        nu2F = PopulationSizeVariable('nu2F')
+        m = MigrationVariable('m')
+        Tp = TimeVariable('Tp')
+        T = TimeVariable('T')
+        Dyn = DynamicVariable('Dyn')
+
+        dm = DemographicModel()
+        dm.add_epoch(Tp, [nu1F])
+        dm.add_split(0, [nu1F, nu2B])
+        dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', Dyn])
+
+        dic = {'nu1F': 1.880, 'nu2B': 0.0724, 'nu2F': 1.764, 'm': 0.930,
+               'Tp':  0.363, 'T': 0.112, 'Dyn': 'Exp'}
+
+        data = SFSDataHolder(YRI_CEU_DATA)
+        d = DadiEngine(model=dm, data=data)
+        values = [dic[var.name] for var in dm.variables]
+        ll1 = d.evaluate(values, pts=[40, 50, 60])
+        dm.fix_variable(Dyn, 'Exp')
+        values = [dic[var.name] for var in dm.variables]
+        d.model = dm
+        ll2 = d.evaluate(dic, pts=[40, 50, 60])
+        self.assertTrue(ll1, ll2)
