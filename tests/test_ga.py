@@ -107,7 +107,7 @@ class TestGeneticAlg(unittest.TestCase):
         for opt in all_global_optimizers():
             res = opt.optimize(f, variables, 
                                args=args, num_init=20, maxiter=35)
-            self.assertEqual(res[1], f(res[0], *args))
+            self.assertEqual(res.y, f(res.x, *args))
 
     def test_1pop_example_1(self):
         for engine in all_engines():

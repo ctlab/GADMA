@@ -201,10 +201,10 @@ class TestLocalOpt(TestBaseOptClass):
         for opt in all_local_optimizers():
             res = opt.optimize(f, dm.variables, x0=values,
                                args=args, maxiter=2)
-            self.assertEqual(res[1], f(res[0], *args))
-            self.assertEqual(res[1], -self.get_yri_ceu_ll(
-                {var.name: val for var, val in zip(dm.variables, res[0])}))
-            self.assertTrue(res[1] < f(values, *args))
+            self.assertEqual(res.y, f(res.x, *args))
+            self.assertEqual(res.y, -self.get_yri_ceu_ll(
+                {var.name: val for var, val in zip(dm.variables, res.x)}))
+            self.assertTrue(res.y <= f(values, *args))
 
     def run_example(self, engine_id, example_func):
         args = ()
@@ -217,8 +217,8 @@ class TestLocalOpt(TestBaseOptClass):
             msg = f"(optimization {opt.id}, engine {engine_id})"
             res = opt.optimize(f, variables, x0=x0,
                                args=args, maxiter=2)
-            self.assertEqual(res[1], f(res[0], *args), msg=msg)
-            self.assertTrue(res[1] <= f(x0, *args), msg=msg + f"{res[1]} > f(x0, *args)")
+            self.assertEqual(res.y, f(res.x, *args), msg=msg)
+            self.assertTrue(res.y <= f(x0, *args), msg=msg + f"{res.y} > f(x0, *args)")
 
     def test_1pop_example_1(self):
         for engine in all_engines():

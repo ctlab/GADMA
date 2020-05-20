@@ -1,4 +1,5 @@
 from .optimizer import Optimizer, ConstrainedOptimizer, UnconstrainedOptimizer
+from .optimizer_result import OptimizerResult
 
 import copy
 import numpy as np
@@ -64,10 +65,23 @@ class ScipyUnconstrOptimizer(LocalOptimizer, UnconstrainedOptimizer):
         # TODO: not intuitive slution, think more about it.
         cached_f = self.prepare_f_for_opt(f, args, eval_file)
         f_in_opt = partial(self.evaluate, cached_f)
+
+        # Run optimization of SciPy
         res_obj = scipy.optimize.minimize(f_in_opt, x0_in_opt, args=(),
                                           method=self.method, options=options)
-        ret_x = self.inv_transform(res_obj.x)
-        return ret_x, f_in_opt(res_obj.x)
+
+        # Construct OptimizerResult object to return
+        result = OptimizerResult.from_SciPy_OptimizeResult(res_obj)
+        result.x = self.inv_transform(result.x)
+        
+        result.X = [np.array(_x) for _x, _y in cached_f.cache_info.all_calls]
+        result.Y = [_y for _x, _y in cached_f.cache_info.all_calls]
+        result.n_eval = cached_f.cache_info.misses
+
+        assert res_obj.nfev == cached_f.cache_info.misses + cached_f.cache_info.hits
+        assert result.y == f_in_opt(res_obj.x)
+        
+        return result
 
 
 class ScipyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
@@ -95,8 +109,19 @@ class ScipyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
         res_obj = scipy.optimize.minimize(f_in_opt, x0_in_opt, bounds=bounds,
                                           args=(), method=self.method,
                                           options=options)
-        ret_x = self.inv_transform(res_obj.x)
-        return ret_x, f_in_opt(res_obj.x)
+
+        # Construct OptimizerResult object to return
+        result = OptimizerResult.from_SciPy_OptimizeResult(res_obj)
+        result.x = self.inv_transform(result.x)
+        
+        result.X = [np.array(_x) for _x, _y in cached_f.cache_info.all_calls]
+        result.Y = [_y for _x, _y in cached_f.cache_info.all_calls]
+        result.n_eval = cached_f.cache_info.misses
+
+        assert res_obj.nfev == cached_f.cache_info.misses + cached_f.cache_info.hits
+        assert result.y == f_in_opt(res_obj.x)
+
+        return result
 
 
 register_local_optimizer('L-BFGS-B', ScipyConstrOptimizer('L-BFGS-B'))
@@ -132,11 +157,10 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
         cached_f = self.prepare_f_for_opt(f, args, eval_file)
         f_in_opt = partial(self.evaluate_inner, cached_f)
 
-        res = self.optimizer.optimize(f_in_opt, vars_in_opt, x0_in_opt,
+        result = self.optimizer.optimize(f_in_opt, vars_in_opt, x0_in_opt,
                                       args=(bounds,), options=options,
                                       maxiter=maxiter)
-        return self.inv_transform(res[0]), res[1]
-
+        return result
 
 register_local_optimizer('BFGS',
                          ManuallyConstrOptimizer(
