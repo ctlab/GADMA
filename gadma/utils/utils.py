@@ -38,6 +38,7 @@ def fix_args(f, args):
     :param args: tuple of function arguments.
     :returns: function that will take only x as argument.
     """
+    @wraps(f)
     def wrapper(x):
         return f(x, *args)
     return wrapper
@@ -49,7 +50,14 @@ class CacheInfo(object):
         self.cache = {}
 
 def lru_cache(func):
+    """
+    Our lru cache. We want to get cache itself while functools.lru_cache
+    could not do it.
+    Please, be carefull as it could be some attributes named the same way
+    and it will be ruined. We use it for our decorator :func:`cache_func`.
+    """
     func.cache_info = CacheInfo()
+
     @wraps(func)
     def wrapper(*args):
         try:
@@ -70,10 +78,14 @@ def cache_func(f):
     :returns: function that is cashed.
     """
     @lru_cache
+    @wraps(f)
     def tuple_wrapper(x_tuple):
         return f(np.array(x_tuple, dtype=object))
+
+    @wraps(tuple_wrapper)
     def wrapper(x):
         return tuple_wrapper(tuple(x))
+
     wrapper.cache_info = tuple_wrapper.cache_info
     return wrapper
 
@@ -98,6 +110,8 @@ def eval_wrapper(f, args=(), eval_file=None, cache=True):
         func = f
     if cache:
         func = cache_func(func)
+
+    @wraps(func)
     def wrapper(x):
         time_start = time.time()
         y = func(x)
@@ -107,6 +121,7 @@ def eval_wrapper(f, args=(), eval_file=None, cache=True):
                 print(time_start - time_init, y, x, time_end - time_start,
                       file=fl, sep='\t')
         return y
+
     if cache:
         wrapper.cache_info = func.cache_info
     return wrapper
