@@ -43,32 +43,50 @@ def all_local_optimizers():
         yield optim
 
 
-class ScipyUnconstrOptimizer(LocalOptimizer, UnconstrainedOptimizer):
-    scipy_methods = ['Nelder-Mead', 'Powell', 'CG', 'BFGS', 'Newton-CG',
-                     'COBYLA', 'trust-constr', 'dogleg', 'trust-ncg',
-                     'trust-exact', 'trust-krylov']
+class ScipyOptimizer(LocalOptimizer):
+    scipy_methods = []
+    opt_type = ''
     def __init__(self, method, log_transform=False, maximize=False):
         if method not in self.scipy_methods:
-            raise ValueError(f"There is no such unconstrained method {method}"
-                             " in scipy.minimize. Available methods are: "
-                             "{self.scipy_methods}")
+            raise ValueError(f"There is no such {self.opt_type} method "
+                             f"{method} in scipy.minimize. Available methods"
+                             f" are: {self.scipy_methods}")
         self.method = method
-        super(ScipyUnconstrOptimizer, self).__init__(log_transform, maximize)
+        super(ScipyOptimizer, self).__init__(log_transform, maximize)
+
+    def prepare_callback(self, f, callback):
+        @wraps(callback)
+        def wrapper(xk, result_obj=None):
+            return callback(xk, f(xk))
+        return wrapper
+
+    def get_addit_scipy_kwargs(self, variables):
+        raise NotImplementedError
 
     def optimize(self, f, variables, x0, args=(), options={}, maxiter=None,
-                 eval_file=None):
+                 callback=None, eval_file=None):
         x0_in_opt = self.transform(x0)
         self.check_variables(variables)
         if maxiter is not None:
             options['maxiter'] = int(maxiter)
         # Fix args in function f and cache it.
-        # TODO: not intuitive slution, think more about it.
+        # TODO: not intuitive solution, think more about it.
         cached_f = self.prepare_f_for_opt(f, args, eval_file)
         f_in_opt = partial(self.evaluate, cached_f)
+
+        # Create callback for scipy
+        if callback is not None:
+            if 'callback' in options:
+                raise ValueError("You have set two callbacks - first in "
+                                 "options and second via callback. Please "
+                                 "specify one callback.")
+            options['callback'] = self.prepare_callback(f_in_opt, callback)
 
         # Run optimization of SciPy
+        addit_kw = self.get_addit_scipy_kwargs(variables)
         res_obj = scipy.optimize.minimize(f_in_opt, x0_in_opt, args=(),
-                                          method=self.method, options=options)
+                                          method=self.method, options=options,
+                                          **addit_kw)
 
         # Construct OptimizerResult object to return
         result = OptimizerResult.from_SciPy_OptimizeResult(res_obj)
@@ -83,45 +101,21 @@ class ScipyUnconstrOptimizer(LocalOptimizer, UnconstrainedOptimizer):
         
         return result
 
+class ScipyUnconstrOptimizer(ScipyOptimizer, UnconstrainedOptimizer):
+    scipy_methods = ['Nelder-Mead', 'Powell', 'CG', 'BFGS', 'Newton-CG',
+                     'COBYLA', 'trust-constr', 'dogleg', 'trust-ncg',
+                     'trust-exact', 'trust-krylov']
+    opt_type = 'unconstrained'
 
-class ScipyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
+    def get_addit_scipy_kwargs(self, variables):
+        return {}
+
+class ScipyConstrOptimizer(ScipyOptimizer, ConstrainedOptimizer):
     scipy_methods = ['L-BFGS-B', 'TNC', 'SLSQP']
+    opt_type = 'constrained'
 
-    def __init__(self, method, log_transform=False, maximize=False):
-        if method not in self.scipy_methods:
-            raise ValueError(f"There is no such constrained method {method}"
-                             " in scipy.minimize. Available methods are: "
-                             "{self.scipy_methods}")
-        self.method = method
-        super(ScipyConstrOptimizer, self).__init__(log_transform, maximize)
-
-    def optimize(self, f, variables, x0, args=(), options={}, maxiter=None,
-                 eval_file=None):
-        x0_in_opt = self.transform(x0)
-        self.check_variables(variables)
-        bounds = [self.transform(var.domain) for var in variables]
-        if maxiter is not None:
-            options['maxfun'] = int(maxiter / 2)
-        # Fix args in function f and cache it.
-        # TODO: not intuitive slution, think more about it.
-        cached_f = self.prepare_f_for_opt(f, args, eval_file)
-        f_in_opt = partial(self.evaluate, cached_f)
-        res_obj = scipy.optimize.minimize(f_in_opt, x0_in_opt, bounds=bounds,
-                                          args=(), method=self.method,
-                                          options=options)
-
-        # Construct OptimizerResult object to return
-        result = OptimizerResult.from_SciPy_OptimizeResult(res_obj)
-        result.x = self.inv_transform(result.x)
-        
-        result.X = [np.array(_x) for _x, _y in cached_f.cache_info.all_calls]
-        result.Y = [_y for _x, _y in cached_f.cache_info.all_calls]
-        result.n_eval = cached_f.cache_info.misses
-
-        assert res_obj.nfev == cached_f.cache_info.misses + cached_f.cache_info.hits
-        assert result.y == f_in_opt(res_obj.x)
-
-        return result
+    def get_addit_scipy_kwargs(self, variables):
+        return {'bounds': [self.transform(var.domain) for var in variables]}
 
 
 register_local_optimizer('L-BFGS-B', ScipyConstrOptimizer('L-BFGS-B'))
@@ -144,7 +138,7 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
         return f(self.inv_transform(x), *args)
 
     def optimize(self, f, variables, x0, args=(), options={}, maxiter=None,
-                 eval_file=None):
+                 callback=None, eval_file=None):
         x0_in_opt = self.optimizer.transform(self.transform(x0))
         bounds = self.transform([var.domain for var in variables])
         vars_in_opt = copy.deepcopy(variables)
@@ -153,7 +147,7 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
                 var.domain = np.array([-np.inf, np.inf])
         args_in_opt = (bounds, args)
         # Fix args in function f and cache it.
-        # TODO: not intuitive slution, think more about it.
+        # TODO: not intuitive solution, think more about it.
         cached_f = self.prepare_f_for_opt(f, args, eval_file)
         f_in_opt = partial(self.evaluate_inner, cached_f)
 
