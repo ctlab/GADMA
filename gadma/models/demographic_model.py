@@ -42,7 +42,7 @@ class DemographicModel(Model):
                             if sym_mig and j < i:
                                 continue
                             var = MigrationVariable('m%d_%d%d' % 
-                                                    i_int, i, j))
+                                                    (i_int, i, j))
                             mig_vars[i][j] = var
                             if sym_migs:
                                 mig_vars[j][i] = var

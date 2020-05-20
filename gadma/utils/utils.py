@@ -1,6 +1,7 @@
-from functools import lru_cache
+from functools import wraps
 import time
 import numpy as np
+from collections import namedtuple
 
 def extract_args(func):
     def wrapper(args):
@@ -41,6 +42,26 @@ def fix_args(f, args):
         return f(x, *args)
     return wrapper
 
+class CacheInfo(object):
+    def __init__(self):
+        self.hits = 0
+        self.misses = 0
+        self.cache = {}
+
+def lru_cache(func):
+    func.cache_info = CacheInfo()
+    @wraps(func)
+    def wrapper(*args):
+        try:
+            ret = func.cache_info.cache[args]
+            func.cache_info.hits += 1
+            return ret
+        except KeyError:
+            ret = func(*args)
+            func.cache_info.cache[args] = ret
+            func.cache_info.misses += 1
+            return ret
+    return wrapper
 
 def cache_func(f):
     """
@@ -48,7 +69,7 @@ def cache_func(f):
     :param f: function such that f(x).
     :returns: function that is cashed.
     """
-    @lru_cache(maxsize=None)
+    @lru_cache
     def tuple_wrapper(x_tuple):
         return f(np.array(x_tuple, dtype=object))
     def wrapper(x):
