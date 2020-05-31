@@ -32,6 +32,5 @@ def trunc_lognormal_3_sigma_rule(mean, lower, upper):
     Truncated log-normal distribution with sigma according by
     three sigma rule.
     """
-
     return np.exp(trunc_normal_3_sigma_rule(np.log(mean), np.log(lower),
                                             np.log(upper)))

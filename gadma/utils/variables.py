@@ -73,7 +73,8 @@ class Variable(object):
         """
         raise NotImplementedError
 
-
+def uniform(domain):
+    return np.random.uniform(domain[0], domain[1])
 class ContinuousVariable(Variable):
     """
     Class of the continuous variable.
@@ -88,7 +89,7 @@ class ContinuousVariable(Variable):
     * :attr:`default_rand_gen` = uniform distribution over domain.
     """
     default_domain = np.array([-np.inf, np.inf])
-    default_rand_gen = extract_args(np.random.uniform)
+    default_rand_gen = uniform#extract_args(np.random.uniform)
 
     def __init__(self, name, domain=None, rand_gen=None):
         if domain is None:
@@ -162,6 +163,10 @@ class DiscreteVariable(Variable):
         return value in self.domain
 
 
+def help_func1(domain):
+    return trunc_lognormal_3_sigma_rule(1, domain[0], domain[1])
+def help_func(domain):
+    return trunc_normal_3_sigma_rule(1, domain[0], domain[1])
 
 class PopulationSizeVariable(ContinuousVariable):
     """
@@ -175,8 +180,8 @@ class PopulationSizeVariable(ContinuousVariable):
     :note: Values are assumed to be in genetic units.
     """
     default_domain = np.array([1e-2, 100])
-    default_rand_gen = extract_args(partial(trunc_lognormal_3_sigma_rule,
-                                            1))
+    default_rand_gen = help_func1#extract_args(partial(trunc_lognormal_3_sigma_rule,
+#                                            1))
 
 
 class MigrationVariable(ContinuousVariable):
@@ -191,8 +196,8 @@ class MigrationVariable(ContinuousVariable):
     :note: Values are assumed to be in genetic units.
     """
     default_domain = np.array([0, 10])
-    default_rand_gen = extract_args(partial(trunc_normal_3_sigma_rule,
-                                            1))
+    default_rand_gen = help_func#extract_args(partial(trunc_normal_3_sigma_rule,
+#                                            1))
 
 
 class TimeVariable(ContinuousVariable):
@@ -207,8 +212,8 @@ class TimeVariable(ContinuousVariable):
     :note: Values are assumed to be in genetic units.
     """
     default_domain = np.array([0, 5])
-    default_rand_gen = extract_args(partial(trunc_normal_3_sigma_rule,
-                                            1))
+    default_rand_gen = help_func#extract_args(partial(trunc_normal_3_sigma_rule,
+#                                            1))
 
 
 class SelectionVariable(ContinuousVariable):
@@ -223,8 +228,8 @@ class SelectionVariable(ContinuousVariable):
     :note: Values are assumed to be in genetic units.
     """
     default_domain = np.array([0, 10])
-    default_rand_gen = extract_args(partial(trunc_normal_3_sigma_rule,
-                                            1))
+    default_rand_gen = help_func#extract_args(partial(trunc_normal_3_sigma_rule,
+#                                            1))
 
 
 class PercentVariable(ContinuousVariable):
@@ -236,7 +241,7 @@ class PercentVariable(ContinuousVariable):
     * :attr:`default_rand_gen` = random uniform distribution over domain.
     """
     default_domain = np.array([0, 1])
-    default_rand_gen = extract_args(np.random.uniform)
+    default_rand_gen = uniform#extract_args(np.random.uniform)
 
 
 class Dynamic(object):

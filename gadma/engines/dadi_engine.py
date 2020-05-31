@@ -151,7 +151,7 @@ class DadiEngine(Engine):
         """
         dadi = self.base_module
         func_ex = dadi.Numerics.make_extrap_log_func(self._dadi_inner_func)
-        model = func_ex(values, ns, pts)
+        model = self.model.Nref * func_ex(values, ns, pts)
         return model
 
     def evaluate(self, values, pts):

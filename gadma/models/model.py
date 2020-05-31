@@ -87,7 +87,7 @@ class Model(object):
             pass
 
     def var2value(self, values):
-        if isinstance(values, list):
+        if isinstance(values, list) or isinstance(values, np.ndarray):
             ret_dict = {var: value for var, value in zip(self.variables,
                                                                values)}
         elif isinstance(values, dict):
@@ -100,3 +100,10 @@ class Model(object):
             raise TypeError("Values are either not list nor dict.")
 
         return {**ret_dict, **self.fixed_values}
+
+    def string_repr(self, values):
+        strings = []
+        var2value = self.var2value(values)
+        for var in self.variables:
+            strings.append(f"{var.name}={var2value[var]}")
+        return ", ".join(strings)

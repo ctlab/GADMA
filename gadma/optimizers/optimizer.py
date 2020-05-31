@@ -1,7 +1,11 @@
-from ..utils import Variable, ContinuousVariable, eval_wrapper
+from ..utils import Variable, ContinuousVariable
+from ..utils import fix_args, cache_func, nan_fval_to_inf
+from ..utils import check_file_existence
+from ..utils import log_transform, exp_transform, ident_transform
 import copy
 import numpy as np
-from functools import lru_cache
+from functools import wraps
+import sys
 
 class Optimizer(object):
     """
@@ -13,22 +17,62 @@ class Optimizer(object):
     def __init__(self, log_transform=False, maximize=False):
         self.log_transform = log_transform
         if self.log_transform:
-            self.transform = lambda x: np.log(x) if isinstance(x, float) else x 
-            self.inv_transform = lambda x: np.exp(x) if isinstance(x, float) else x 
+            self.transform = log_transform
+            self.inv_transform = exp_transform
         else:
-            self.transform = lambda x: x
-            self.inv_transform = self.transform
+            self.transform = ident_transform
+            self.inv_transform = ident_transform
 
         self.maximize = maximize
 
+    @property
+    def sign(self):
+        return -1 if self.maximize else 1
+
+    def write_report(self, n_iter, variables, x, y, report_file):
+        if report_file:
+            print(report_file)
+            stream = report_file.open('a')
+        else:
+            stream = sys.stdout
+        val_repr = [f"{val:5f}" if isinstance(val, float) else val for val in x]
+        var_val = zip(variables, val_repr)
+        x_repr = ",\t".join([f"{var.name}={val}" for var, val in var_val])
+        x_repr = f"({x_repr})"
+        metainfo = ''
+        if hasattr(x, 'metadata'):
+            metainfo = x.metadata
+        print(n_iter, y, x_repr, metainfo, sep='\t', file=stream)
+        if report_file:
+            stream.close()
+
+    def wrap_for_report(self, f, variables, verbose, report_file):
+        @wraps(f)
+        def wrapper(x):
+            wrapper._counter += 1
+            y = f(x)
+            if (verbose > 0) and (wrapper._counter % verbose == 0):
+                self.write_report(wrapper._counter, variables, x, y, report_file)
+            return y
+        if report_file:
+            ensure_file_existence(report_file)
+        wrapper._counter = 0
+        if verbose == 0:
+            return f
+        return wrapper
+
     def evaluate(self, f, x, args=()):
         y = f(self.inv_transform(x), *args)
-        if self.maximize:
-            y = -y
-        return y
+        return self.sign * y
 
-    def prepare_f_for_opt(self, f, args=(), eval_file=None):
-        return eval_wrapper(f, args, eval_file)
+    def prepare_f_for_opt(self, f, args=(), cache=True):
+        assert isinstance(cache, bool)
+        # Fix args
+        f_wrapped = fix_args(f, args)
+        f_wrapped = nan_fval_to_inf(f_wrapped)
+        if cache:
+            f_wrapped = cache_func(f_wrapped)
+        return f_wrapped
 
     def check_variables(self, variables):
         for var in variables:

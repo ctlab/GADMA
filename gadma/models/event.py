@@ -11,6 +11,9 @@ class Event(Model):
     def set_value(self, variable, value):
         raise NotImplementedError()
 
+    def as_custom_string(self, values):
+        raise NotImplementedError()
+
 class Epoch(Event):
     def __init__(self, time_arg, init_size_args, size_args,
                  mig_args=None, dyn_args=None, sel_args=None):
@@ -61,6 +64,34 @@ class Epoch(Event):
                 self.sel_args[i] = value
                 return
 
+    def as_custom_string(self, values):
+        var2value = self.var2value(values)
+        val_str = lambda val: f"{val:5.3f}" if isinstance(val, float)\
+                              else f"{val}"
+        repr_f = lambda var: f"{val_str(var2value[var])} ({var.name})"\
+                             if isinstance(var, Variable)\
+                             else f"{val_str(var)}"
+        all_repr = []
+        sizes_repr = [repr_f(arg) for arg in self.size_args]
+        sizes_repr = f"[ {', '.join(sizes_repr)} ]"
+        all_repr.append(sizes_repr)
+        migs_repr = "[ no migrations ]" 
+        if self.mig_args:
+            migs_repr = [[repr_f(mig )for mig in migs] for migs in self.mig_args]
+            migs_repr = str(migs_repr)
+        all_repr.append(migs_repr)
+        sels_repr = ""
+        if self.sel_args:
+            sels_repr = [repr_f(arg) for arg in self.sel_args]
+            sels_repr = f"[ {', '.join(sels_repr)} ]"
+            all_repr.append(sels_repr)
+        if self.dyn_args:
+            dyns_repr = [repr_f(arg) for arg in self.sel_args]
+            dyns_repr = f"[ {', '.join(dyns_repr)} ]"
+        else:
+            dyns_repr = "[ {', '.join(['Sud' for _ in self.size_args])} ]"
+        all_repr.append(dyns_repr)
+        return ", ".join(all_repr)
 
 
 class Split(Event):

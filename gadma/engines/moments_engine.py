@@ -39,13 +39,13 @@ class MomentsEngine(Engine):
         :param data_holder: holder of the data.
         :type data_holder: :class:`SFSDataHolder` or :class:`VCFDataHolder` 
         """
-        if data_holder.__class__ not in DadiEngine.supported_data:
+        if data_holder.__class__ not in MomentsEngine.supported_data:
             raise ValueError(f"Data class {data_holder.__class__.__name__}"
                              " is not supported by {self.id} engine.\nThe "
                              "supported classes are: {self.supported_data}"
                              " and {self.inner_data_type}")
         if isinstance(data_holder, SFSDataHolder):
-            data = read_dadi_data(DadiEngine.base_module, data_holder)
+            data = read_dadi_data(MomentsEngine.base_module, data_holder)
         else:
             # TODO check vcf file reading
             dd = self.base_module.Misc.make_data_dict_vcf(
@@ -84,7 +84,7 @@ class MomentsEngine(Engine):
             for i in range(event.n_pop):
                 for j in range(event.n_pop):
                     if i == j:
-                        ret_dict['m'][i, j] = None
+                        continue
                     ret_dict['m'][i, j] = event.mig_args[i][j]
         if event.sel_args is not None:
             ret_dict['h'] = event.sel_args

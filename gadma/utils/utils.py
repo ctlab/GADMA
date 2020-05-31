@@ -2,8 +2,28 @@ from functools import wraps
 import time
 import numpy as np
 from collections import namedtuple
+import sys
+import os
+
+
+def log_transform(x):
+    if isinstance(x, (float, np.float)):
+        return x
+    return np.log(x)
+
+
+def exp_transform(x):
+    if isinstance(x, (float, np.float)):
+        return x
+    return np.exp(x)
+
+
+def ident_transform(x):
+    return x
+
 
 def extract_args(func):
+    @wraps(func)
     def wrapper(args):
         return func(*args)
     return wrapper
@@ -43,11 +63,14 @@ def fix_args(f, args):
         return f(x, *args)
     return wrapper
 
+
 class CacheInfo(object):
     def __init__(self):
         self.hits = 0
         self.misses = 0
         self.cache = {}
+        self.all_calls = []
+
 
 def lru_cache(func):
     """
@@ -63,13 +86,14 @@ def lru_cache(func):
         try:
             ret = func.cache_info.cache[args]
             func.cache_info.hits += 1
-            return ret
         except KeyError:
             ret = func(*args)
             func.cache_info.cache[args] = ret
             func.cache_info.misses += 1
-            return ret
+        func.cache_info.all_calls.append([args, ret])
+        return ret
     return wrapper
+
 
 def cache_func(f):
     """
@@ -90,7 +114,20 @@ def cache_func(f):
     return wrapper
 
 
-def eval_wrapper(f, args=(), eval_file=None, cache=True):
+def nan_fval_to_inf(f):
+    """
+    Wrappes function to return infinity instead nan.
+    """
+    @wraps(f)
+    def wrapper(x):
+        y = f(x)
+        if y is None or np.isnan(y):
+            return np.inf
+        return y
+    return wrapper
+
+
+def eval_wrapper(f, eval_file=None):
     """
     Returns good function for optimization. Each evaluation of function will
     be written in file. If needed function will be cached.
@@ -100,31 +137,30 @@ def eval_wrapper(f, args=(), eval_file=None, cache=True):
     :param cache: if True then function will be cached.
     """
     time_init = time.time()
-    if eval_file is not None:
+    if eval_file:
         with open(eval_file, 'w') as fl:
             print('Time of evaluation start', 'Function value',
                   'Parameters values', 'Evaluation time', file=fl, sep='\t')
-    if len(args) > 0:
-        func = fix_args(f, args)
-    else:
-        func = f
-    if cache:
-        func = cache_func(func)
-
-    @wraps(func)
+    @wraps(f)
     def wrapper(x):
         time_start = time.time()
-        y = func(x)
+        y = f(x)
         time_end = time.time()
         if eval_file is not None:
             with open(eval_file, 'a') as fl:
                 print(time_start - time_init, y, x, time_end - time_start,
                       file=fl, sep='\t')
         return y
-
-    if cache:
-        wrapper.cache_info = func.cache_info
     return wrapper
+
+
+def parallel_wrap(f, x):
+    """
+    Partial for first argument and result function could be used
+    in multiprocessing.
+    """
+    return f(*x)
+
 
 class WeightedMetaArray(np.ndarray):
     """Array with metadata."""
@@ -144,3 +180,40 @@ class WeightedMetaArray(np.ndarray):
 
     def __repr__(self):
         return super(WeightedMetaArray, self).__str__() + '\t' + self.metadata
+
+
+def update_by_one_fifth_rule(value, const, was_improved):
+    if was_improved:
+        return value * const
+    return value / (const) ** (0.25)
+
+
+def check_file_existence(path_to_file):
+    return os.path.exsists(path_to_file) and os.path.isfile(path_to_file)
+
+
+def ensure_file_existence(path_to_file):
+    if check_file_existence(path_to_file):
+        return True
+    path_to_file.open('w').close()
+    return True
+
+class StdAndFileLogger(object):
+    def __init__(self, log_filename, silent=False):
+        self.terminal = sys.stdout
+        self.log_filename = log_filename
+        self.silent = silent
+        if not os.path.exists(self.log_filename):
+            open(self.log_filename, 'w'). close()
+
+    def write(self, message):
+        if not self.silent:
+            self.terminal.write(message)
+        with open(self.log_filename, 'a') as fl:
+            fl.write(message)  
+
+    def flush(self):
+        #this flush method is needed for python 3 compatibility.
+        #this handles the flush command by doing nothing.
+        #you might want to specify some extra behavior here.
+        pass    

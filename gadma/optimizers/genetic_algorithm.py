@@ -1,11 +1,14 @@
 from .optimizer import ConstrainedOptimizer
 from .global_optimizer import GlobalOptimizer, register_global_optimizer
-from ..utils import sort_by_other_list, choose_by_weight
+from .optimizer_result import OptimizerResult
+from ..utils import sort_by_other_list, choose_by_weight, eval_wrapper
 from ..utils import trunc_normal_3_sigma_rule, DiscreteVariable, WeightedMetaArray
+from ..utils import update_by_one_fifth_rule
 from functools import partial
 import numpy as np
 import copy
 import pickle
+import sys
 
 
 class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
@@ -372,9 +375,13 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
 
     def initial_design(self, f, variables, num_init,
                        X_init=None, Y_init=None):
+        if Y_init:
+            _Y_init = [self.sign * y for y in Y_init]
+        else:
+            _Y_init = None
         X, Y = super(GeneticAlgorithm, self).initial_design(f, variables,
-                                                            num_init,X_init,
-                                                            Y_init,
+                                                            num_init, X_init,
+                                                            _Y_init,
                                                             self.random_type)
         X, Y = sort_by_other_list(X, Y)
         return X[:self.gen_size], Y[:self.gen_size]
@@ -395,17 +402,19 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         for val, var in zip(x, variables):
             if raises:
                 if not var.correct_value(val):
-                    raise ValueError("Values in values vector are not in bounds.")
+                    raise ValueError("Values in values vector are"
+                                     " not in bounds.")
         for i in range(len(x)):
             if not isinstance(variables[i], DiscreteVariable):
                 x[i] = min(x[i], variables[i].domain[1])
                 x[i] = max(x[i], variables[i].domain[0])
             else:
-                if not var.correct_value(x[i]):
+                if not variables[i].correct_value(x[i]):
                     raise ValueError("Value of Discrete variable is bad.")
         return x
 
-    def is_stopped(self, n_gen, n_eval, impr_gen=None, maxeval=None):
+    def is_stopped(self, n_gen, n_eval, impr_gen=None, maxiter=None,
+                   maxeval=None, ret_status=False):
         """
         Returns if genetic algorithm must stop.
 
@@ -413,8 +422,12 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         :param n_eval: current number of function evaluations.
         :param impr_gen: number of last generation that improved value of
                          fitness function.
-        :maxeval: maximum number of evaluation.
+        :param maxiter: maximum number of generations.
+        :param maxeval: maximum number of evaluation.
+        :param ret_status: If True then return status and message.
         """
+        status = 1
+        message = "OPTIMIZATION IS NOT STOPPED"
         if impr_gen is None:
             impr_gen = n_gen
         is_stuck = (n_gen - impr_gen) >= self.n_stuck_gen
@@ -422,40 +435,72 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             expect_feval = int(self.gen_size * self.p_mutation * self.mut_attempts)\
                          + int(self.gen_size *self.p_crossover)\
                          + int(self.gen_size * self.p_random)
-            return (n_eval + expect_feval > maxeval) or is_stuck
-        return is_stuck
+            stop_by_n_eval = (n_eval + expect_feval > maxeval)
+        else:
+            stop_by_n_eval = False
+
+        stop_by_n_gen = False
+        if maxiter:
+            stop_by_n_gen = n_gen > maxiter
+
+        if stop_by_n_eval:
+            status = 1
+            message = "MAXIMUM NUMBER OF FUNCTION EVALUATIONS ACHIEVED"
+        if is_stuck:
+            status = 0
+            message = f"CONVERGENCE: NO IMPROVEMENT DURING {self.n_stuck_gen}"\
+                      " ITERATIONS"
+        if ret_status:
+            return is_stuck or stop_by_n_eval or stop_by_n_gen, status, message
+        return is_stuck or stop_by_n_eval or stop_by_n_gen
 
     def initialize_report_file(self, report_file):
         """
         Write first line in report file.
         """
-        if report_file is None:
-            return
-        with open(report_file, 'w') as fl:
-            print("--Start genetic algorithm pipeline--", file=fl)
+        if report_file:
+            ensure_file_existence(report_file)
+            stream = open(report_file, 'a')
+        else:
+            stream = sys.stdout
+        print("--Start genetic algorithm pipeline--", file=stream)
+        if report_file:
+            stream.close()
 
-    def write_report(self, n_gen, X_gen, Y_gen, x_best, y_best, report_file):
+    def write_report(self, n_gen, variables, X_gen, Y_gen, x_best, y_best,
+                     report_file):
         """
         Write report about one generation in report file.
         """
-        if report_file is None:
-            return
-        with open(report_file, 'a') as fl:
-            print(f"\nGeneration #{n_gen}.", file=fl)
-            print("Current generation of solutions:", file=fl)
-            print("N", "Value of fitness function", "Solution",
-                  file=fl, sep='\t')
-            for i, (x, y) in enumerate(zip(X_gen, Y_gen)):
-                print(i, y, x, file=fl, sep='\t')
-            if self.one_fifth_rule:
-                print("Current mean mutation rate:", self.cur_mut_rate,
-                      file=fl)
-            print("Current mean number of params to change during mutation:",
-                  int(self.cur_mut_strength * self.gen_size), file=fl)
+        if report_file:
+            stream = open(report_file, 'a')
+        else:
+            stream = sys.stdout
+        print(f"Generation #{n_gen}.", file=stream)
+        print("Current generation of solutions:", file=stream)
+        print("N", "Value of fitness function", "Solution",
+              file=stream, sep='\t')
+        for i, (x, y) in enumerate(zip(X_gen, Y_gen)):
+            # Use parent's report write function
+            super(GeneticAlgorithm, self).write_report(i, variables, x,
+                                                       f'{self.sign * y: 5f}',
+                                                       report_file)
+        if self.one_fifth_rule:
+            print(f"Current mean mutation rate:\t{self.cur_mut_rate: 3f}",
+                  file=stream)
+        print(f"Current mean number of params to change during mutation:\t"
+              f"{min(int(self.cur_mut_strength * self.gen_size), 1): 3f}",
+              file=stream)
 
-            print("--Best solution by value of fitness function--", file=fl)
-            print("Value of fitness:", y_best, file=fl)
-            print("Solution:", x_best, file=fl)
+        print("\n--Best solution by value of fitness function--", file=stream)
+        print("Value of fitness:", self.sign * y_best, file=stream)
+        print("Solution:", file=stream, end='')
+        super(GeneticAlgorithm, self).write_report('', variables, x_best,
+                                                   '', report_file)
+        print("\n", file=stream)
+
+        if report_file:
+            stream.close()
 
     def save(self, n_gen, X_gen, Y_gen, X_total, Y_total, save_file):
         """
@@ -476,8 +521,10 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         return n_gen, X_gen, Y_gen, X_total, Y_total
 
     def optimize(self, f, variables, args=(), num_init=50,
-                 X_init=None, Y_init=None, n_gen_init=0, maxiter=None,
-                 report_file=None, eval_file=None, save_file=None):
+                 X_init=None, Y_init=None, n_gen_init=0,
+                 maxiter=None, maxeval=None,
+                 verbose=0, callback=None, report_file=None, eval_file=None,
+                 save_file=None):
         """
         Return best values of :param:`variables` that minimizes/maximizes
         the function :param:`f`.
@@ -489,18 +536,34 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         :param X_init: list of initial values.
         :param Y_init: value of function `f` on initial values from `X_init`.
         :param args: arguments of function `f`.
-        :param maxiter: maximum number of function evaluations.
+        :param maxiter: maximum number of genetic algorithm's generations.
+        :param maxeval: maximum number of function evaluations.
+        :param callback: callback to call after each generation.
+                         It will be called as callback(x, y), where x, y -
+                         best_solution of generation and its fitness.
         """
         # First we initialize initial values of some options
         self.cur_mut_rate = self.mut_rate
         self.cur_mut_strength = self.mut_strength
 
-        # Prepare function to use it. All evaluations will be written to
-        # eval_file.
-        f_in_opt = self.prepare_f_for_opt(f, args, eval_file)
+        # Create logging files
+        if eval_file:
+            ensure_file_existence(eval_file)
+        if report_file:
+            ensure_file_existence(report_file)
+        if save_file:
+            ensure_file_existence(report_file)
+
+        # Prepare function to use it. 
+        # Fix args and cache
+        prepared_f = self.prepare_f_for_opt(f, args)
+        # Wrap for automatic evaluation logging
+        finally_wrapped_f = eval_wrapper(prepared_f, eval_file)
+        f_in_opt = partial(self.evaluate, finally_wrapped_f)
 
         # Write first line of report
-        self.initialize_report_file(report_file)
+        if verbose > 0:
+            self.initialize_report_file(report_file)
 
         # Perform 0 generation of GA - initial design.
         X_gen, Y_gen = self.initial_design(f_in_opt, variables, num_init,
@@ -510,17 +573,18 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         # Initialize number of generations, evaluations, best values and so on
         n_gen = 0
         n_impr_gen = n_gen
-        n_eval = f_in_opt.cache_info().misses
+        n_eval = prepared_f.cache_info.misses
         x_best = X_gen[0]
         y_best = Y_gen[0]
         assert n_eval > 0
 
         # Write report about 0 generation
-        self.write_report(n_gen, X_gen, Y_gen, x_best, y_best, report_file)
+        if verbose > 0:
+            self.write_report(n_gen, variables, X_gen, Y_gen, x_best, y_best, report_file)
         self.save(n_gen, X_gen, Y_gen, X_total, Y_total, save_file)
 
         # Begin to create generations
-        while not self.is_stopped(n_gen, n_eval, n_impr_gen, maxiter):
+        while not self.is_stopped(n_gen, n_eval, n_impr_gen, maxiter, maxeval):
             # Form new generation
             X_gen, Y_gen = self.selection(f_in_opt, variables, X_gen, Y_gen,
                                           self.selection_type,
@@ -530,19 +594,49 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             Y_total.extend(copy.deepcopy(Y_gen))
 
             # Check if we improve the result
-            if y_best > Y_gen[0]:
+            if (y_best - Y_gen[0]) >= self.eps:
                 n_impr_gen = n_gen
                 x_best = X_gen[0]
                 y_best = Y_gen[0]
 
+            # Update mutation rates and strength
+            is_impr = (n_impr_gen == n_gen)
+            if self.one_fifth_rule:
+                self.cur_mut_rate = update_by_one_fifth_rule(
+                    self.cur_mut_rate, self.const_mut_rate, is_impr)
+            is_mut_best = False
+            if hasattr(x_best, 'weights'):
+                is_mut_best = x_best.metadata[-1] == 'm'
+            self.cur_mut_strength = update_by_one_fifth_rule(
+                self.cur_mut_strength, self.const_mut_strength,
+                is_impr and is_mut_best)
+
             # Update numbers
             n_gen += 1
-            n_eval = f_in_opt.cache_info().misses
+            n_eval = prepared_f.cache_info.misses
+
+            # Callback
+            if callback is not None:
+                callback(x_best, y_best)
 
             # Write report about current generation
-            self.write_report(n_gen, X_gen, Y_gen, x_best, y_best, report_file)
+            if verbose > 0 and n_gen % verbose == 0:
+                self.write_report(n_gen, variables, X_gen, Y_gen,
+                                  x_best, y_best, report_file)
+            # Save generation
             self.save(n_gen, X_gen, Y_gen, X_total, Y_total, save_file)
 
-        return x_best, y_best
+        # Construct OptimizerResult object to return
+        _, status, message = self.is_stopped(n_gen, n_eval, n_impr_gen,
+                                             maxiter, maxeval, ret_status=True)
+        sign = -1 if self.maximize else 1
+        Y = [self.sign * y for y in Y_total]
+        Y_out = [self.sign * y for y in Y_gen]
+        result = OptimizerResult(x=x_best, y=self.sign*y_best, success=True,
+                                 status=status, message=message, X=X_total,
+                                 Y=Y, n_eval=n_eval, n_iter=n_gen,
+                                 X_out=X_gen, Y_out=Y_out)
+
+        return result
             
 register_global_optimizer('Genetic_algorithm', GeneticAlgorithm)

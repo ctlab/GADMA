@@ -1,7 +1,10 @@
-from ..utils import Variable
+from ..utils import Variable, PopulationSizeVariable, TimeVariable
+from ..utils import MigrationVariable, DynamicVariable, SelectionVariable
 from . import Model, Epoch, Split
 from collections import OrderedDict
 import copy
+import numpy as np
+
 
 class DemographicModel(Model):
     """
@@ -12,18 +15,21 @@ class DemographicModel(Model):
                  size).
     :type Nref: float
     """
-    def __init__(self, Nref=1.0):
+    def __init__(self, gen_time=None, Nref=1.0):
         self.events = list()
+        self.gen_time = None
         self.Nref = Nref
         self.fixed_vars = {}
         super(DemographicModel, self).__init__(raise_excep=False)
 
     @staticmethod
-    def from_structure(self, structure, create_migs=True, create_sels=False,
-                       create_dyns=True, sym_migs=False, Nref=1.0):
-        dm = DemographicModel(Nref)
+    def from_structure(structure, create_migs=True, create_sels=False,
+                       create_dyns=True, sym_migs=False, gen_time=None, Nref=1.0):
+        dm = DemographicModel(gen_time, Nref)
+        if structure == [1]:
+            return dm
         for n_pop in range(1, len(structure) + 1):
-            n_int = structure[n_pop]
+            n_int = structure[n_pop - 1]
             if n_pop == 1:
                 n_int -= 1
             for i_int in range(1, n_int + 1):
@@ -34,7 +40,7 @@ class DemographicModel(Model):
                     size_vars.append(var)
                 mig_vars = None
                 if create_migs:
-                    mig_vars = np.array(shape=(n_pop, n_pop), dtype=object)
+                    mig_vars = np.zeros(shape=(n_pop, n_pop), dtype=object)
                     for i in range(n_pop):
                         for j in range(n_pop):
                             if i == j:
@@ -59,10 +65,26 @@ class DemographicModel(Model):
                         var = DynamicVariable('dyn%d%d' % (i_int, i))
                         dyn_vars.append(var)
                 dm.add_epoch(time_var, size_vars, mig_vars, dyn_vars, sel_vars)
-            var_1 = PopulationSizeVariable(size_vars[-1].name + '_1')
-            var_2 = PopulationSizeVariable(size_vars[-1].name + '_2')
-            dm.add_split(n_pop - 1, [var_1, var_2])
+            if n_pop < len(structure):
+                var_1 = PopulationSizeVariable(size_vars[-1].name + '_1')
+                var_2 = PopulationSizeVariable(size_vars[-1].name + '_2')
+                dm.add_split(n_pop - 1, [var_1, var_2])
+        return dm
 
+    def get_structure(self):
+        structure = [1]
+        for event in self.events:
+            if isinstance(event, Split):
+                structure.append(0)
+            elif isinstance(event, Epoch):
+                structure[-1] += 1
+            else:
+                raise ValueError("Event is not Split or Epoch.")
+        return structure
+
+    def transform_x(self, event_index_to_divide, x):
+        event_to_div = event_index_to_divide
+        
     def _get_current_pop_sizes(self):
         """
         Returns the populations sizes after the last epoch.
@@ -118,21 +140,60 @@ class DemographicModel(Model):
             return super(DemographicModel, self).get_value(item)
         return item
 
-    def fix_dynamics(self, var2value):
+    def fix_variable(self, variable, value):
+        for event in self.events:
+            if variable in event.variables:
+                event.fix_variable(variable, value)
+                super(DemographicModel, self).unfix_variable(variable)
+                return
+        raise ValueError(f"There is no such unfixed variable {variable} in"
+                         " demographic model.")
+
+    def unfix_variable(self, variable):
+        for event in self.events:
+            if variable in event._variables:
+                event.unfix_variable(variable)
+                super(DemographicModel, self).unfix_variable(variable)
+                return
+        raise ValueError(f"There is no such fixed variable {variable} in"
+                         " demographic model.")
+
+    def fix_dynamics(self, values):
+        """
+        Makes all dynamics in events fixed.
+
+        :param values: Values of parameters to take for fixation.
+        :type values: list or dict
+        """
+        var2value = self.var2value(values)
         assert isinstance(var2value, dict)
         for event in self.events:
             if isinstance(event, Epoch) and event.dyn_args is not None:
                 for dyn_arg in event.dyn_args:
                     if isinstance(dyn_arg, Variable):
                         value = var2value[dyn_arg]
-                        self.fix_variable(dyn_arg, value)
-                        self.event.fix_variable(dyn_arg, value)
+                        super(DemographicModel, self).fix_variable(dyn_arg,
+                                                                   value)
+                        event.fix_variable(dyn_arg, value)
 
     def unfix_dynamics(self):
+        """
+        Makes all dynamics in events unfixed.
+        """
         for event in self.events:
             if isinstance(event, Epoch) and event.dyn_args is not None:
                 for dyn_arg in event.dyn_args:
                     if isinstance(dyn_arg, Variable):
-                        self.unfix_variable(dyn_arg)
-                        self.event.unfix_variable(dyn_arg)
+                        super(DemographicModel, self).unfix_variable(dyn_arg)
+                        event.unfix_variable(dyn_arg)
 
+    def as_custom_string(self, values):
+        """
+        Returns string representation of the demographic model with parameters.
+
+        :param values: Values of the demographic model.
+        """
+        strings = []
+        for event in self.events:
+            strings.append(event.as_custom_string(values))
+        return ",\t".join(strings)
