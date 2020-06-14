@@ -1,8 +1,13 @@
 
-from ..models import DemographicModel
+from ..models import DemographicModel, Split
 from ..cli import arg_parser
-from ..utils import parallel_wrap, StdAndFileLogger
+from ..utils import parallel_wrap, StdAndFileLogger, get_aic_score
+from ..utils import sort_by_other_list, ensure_dir_existence,\
+ensure_file_existence
+from ..utils import TimeVariable, PopulationSizeVariable, SelectionVariable,\
+DynamicVariable
 from ..engines import get_engine
+from ..optimizers import GlobalOptimizerAndLocalOptimizer
 
 from functools import partial
 import numpy as np
@@ -12,174 +17,142 @@ import copy
 
 from datetime import datetime
 import operator
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 import multiprocessing
 import signal
 from multiprocessing import Manager, Pool
 import math
 
 
-def increase_structure(model, X, final_structure,
-                       model_generator=DemographicModel.from_structure):
-    cur_structure = model.get_structure()
-    if (cur_structure == final_structure):
-        return
-    diff = np.array(final_structure) - np.array(cur_structure)
-    struct_index = np.random.choice(np.arange(len(cur_structure))[diff != 0])
-    event_index = np.random.choice(np.arange(cur_structure[struct_index]))
-    event_index += sum(cur_structure)[:struct_index] - 1 + struct_index
+class CoreRun(object):
+    def __init__(self, index, shared_dict, settings):
+        self.index = index
+        self.shared_dict = shared_dict
+        self.settings = settings
 
+        # Take something from settings
+        self.engine = get_engine(self.settings.engine)
+        self.data = self.settings.inner_data
+        self.model = self.settings.get_model()
+        # We save data_holder in engine for good code generation
+        self.engine.data_holder = self.settings.data_holder
 
-    new_structure = copy.copy(cur_structure)
-    new_structure[structure_index] += 1
-    new_model = model_generator(new_structure)
+        self.global_optimizer = self.settings.get_global_optimizer()
+        self.local_optimizer = self.settings.get_local_optimizer()
+        self.optimize_kwargs = self.settings.get_optimizers_kwargs()
+        self.optimize_kwargs['callback'] = self.callback
 
-    oldvar2newvar = {}
-    for i, (old_event, new_event) in enumerate(zip(model.events, new_model.events)):
-        if i >= struct_index:
-            break
-        for old_var, new_var in zip(old_event.variables, new_event.variables):
-            oldvar2newvar[old_var] = new_var
-    for old_event, new_event in zip(model.events, new_model.events)[event_index + 1:]:
-        for old_var, new_var in zip(old_event.variables, new_event.variables):
-            oldvar2newvar[old_var] = new_var
-    new_X = []
-    for x in X:
-        var2value = model.var2value(x)
-        new_var2value = {}
-        for var in var2value:
-            new_var2value[oldvar2newvar[var]] = var2value[var]
-        event1 = new_model.events[event_index]
-        event2 = new_model.events[event_index + 1]  # base event
-        # Time / 2
-        new_var2value[event2.time_arg] / 2
-        new_var2value[event1.time_arg] = new_var2value[event2.time_arg]
-        # Sizes
-        for i, (size1, size2) in enumerate(zip(event1.size_args, event2.size_args)):
-            if event2.dyn_args:
-                dyn_value = new_var2value[event2.dyn_args[i]]
+        self.aic_score = not self.settings.linked_snp_s
+        self.claic_score = False#not self.aic_score and self.settings.bootstrap_directory
+
+        # Create all neccessary output dirs and files
+        if settings.output_directory is not None:
+            self.output_dir = os.path.join(settings.output_directory,
+                                           str(self.index))
+            self.output_dir = ensure_dir_existence(self.output_dir)
+            self.eval_file = os.path.join(self.output_dir, 'eval_file')
+            self.eval_file = ensure_file_existence(self.eval_file)
+            self.report_file = os.path.join(self.output_dir, 'GADMA_GA.log')
+            self.report_file = ensure_file_existence(self.report_file)
+            self.optimize_kwargs['eval_file'] = self.eval_file
+            self.optimize_kwargs['report_file'] = self.report_file
+
+    @property
+    def model(self):
+        return self._model
+
+    @model.setter
+    def model(self, model):
+        self._model = model
+        self.engine.set_model(model)
+
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, data):
+        self._data = data
+        self.engine.set_data(data)
+
+    def callback(self, x, y):
+        best_by = 'log-likelihood'
+        if self.index in self.shared_dict:
+            engine, x_best, y_dict = self.shared_dict[self.index][best_by]
+            y_best = y_dict[best_by]
+        if (self.index not in self.shared_dict or
+                np.allclose(y, y_best) or y > y_best):
+            if self.index not in self.shared_dict:   
+                new_dict = OrderedDict()
             else:
-                dyn_value = 'Sud'
+                new_dict = OrderedDict(self.shared_dict[self.index])
+            new_dict[best_by] = (copy.deepcopy(self.engine), x,
+                                 OrderedDict({best_by: y}))
+            if self.aic_score:
+                n_params = self.engine.model.get_number_of_parameters(x)
+                new_dict[best_by][2]['AIC score'] = get_aic_score(n_params, y)
+            self.shared_dict[self.index] = new_dict
 
-            if dyn_value == 'Sud':
-                new_var2value[size1] = new_var2value[size2]
-            else:
-                func = DynamicVariable.get_func_from_value(dyn_value)
-                y1 = new_var2value[size1]
-                y2 = new_var2value[size2]
-                x_diff = 2 * new_var2value[event2.time_arg]  # We have already divided it.
-                size_func = func(y1, y2, x_diff)
-                new_var2value[size1] = size_func[x_diff / 2]
-        # Copy other variables
-        for var1, var2 in zip(event1.variables, event2.variables):
-            if var1 not in new_var2value:
-                new_var2value[var1] = new_var2value[var2]
-        new_X.append([new_var2value[var] for var in new_model.variables])
-    return new_model, new_X
+    def final_callback(self, x, y):
+        if False:#self.aic_score:
+            best_by = "AIC score"
+            n_params = self.engine.model.get_number_of_parameters(x)
+            value = get_aic_score(n_params, y)
+        elif self.claic_score:
+            pass
+            # TODO
+        else:
+            return
+        if self.index not in self.shared_dict:
+            self.shared_dict[self.index] = OrderedDict()
+        new_dict = OrderedDict(self.shared_dict[self.index])
+        if best_by not in self.shared_dict[self.index]:
+            new_dict[best_by] = OrderedDict()
+        else:
+            engine, x_best, y_dict = new_dict[best_by]
+            if y_dict[best_by] < value:
+                return
+        y_dict = OrderedDict()
+        y_dict['log-likelihood'] = y
+        y_dict[best_by] = value
+        new_dict[best_by] = (copy.deepcopy(self.engine), x, y_dict)
+        self.shared_dict[self.index] = new_dict
+
+    def run_without_increase(self):
+        np.random.seed()
+        self.optimize_kwargs['callback'] = self.callback
+        f = self.engine.evaluate
+        variables = self.model.variables
+
+        optimizer = GlobalOptimizerAndLocalOptimizer(self.global_optimizer,
+                                                     self.local_optimizer)
+
+        result = optimizer.optimize(f, variables, **self.optimize_kwargs)
+        self.final_callback(result.x, result.y)
+        return result
+
+    def run_with_increase(self):
+        np.random.seed()
+        # Simple checks
+        assert self.settings.initial_structure is not None
+        assert self.settings.final_structure is not None
+
+        print(f'Run launch number {self.index}\n', end='')
+        result = self.run_without_increase()
+        while (self.model.get_structure() != self.settings.final_structure):
+            self.model, X_init = self.model.increase_structure(result.X_out)
+            Y_init = copy.copy(result.Y_out)
+            self.optimize_kwargs['X_init'] = X_init
+            self.optimize_kwargs['Y_init'] = Y_init
+            result = self.run_without_increase()
+        print(f'Finish genetic algorithm number {self.index}\n', end='')
+        return result
 
 
-def callback(index, shared_dict, model, x, y):
-    if index == 1:
-        print(x, y)
-    if index in shared_dict:
-        model, x_best, y_dict = shared_dict[index]
-        y_best = y_dict['log-likelihood']
-    if index not in shared_dict or y < y_best:
-        shared_dict[index] = (model, x, {'log-likelihood': y})
 
-def run_go_and_lo(model, data, engine_id,
-                 global_optimizer, local_optimizer=None,
-                 global_kwargs={}, local_kwargs=(),
-                 get_aic=False, get_claic=False):
-
-    if engine_id == 'dadi':
-        assert 'pts' in kwargs
-    engine = get_engine(engine_id)
-    engine.set_data(data)
-    engine.set_model(model)
-
-    # Run global search
-    f = engine.evaluate
-    variables = engine.model.variables
-    if len(variables) == 0:
-        return None
-    global_result = global_optimizer.optimize(f, variables, **global_kwargs)
-
-    print(global_result)
-    # If there is no ocal optimizer then we stop here
-    if not local_optimizer:
-        return global_result
-
-    # Run local search 
-    x_best = copy.copy(global_result.x)
-    fixed_model = copy.copy(model)
-    fixed_model.fix_dynamics(x_best)
-    is_fixed = np.array(fixed_model.is_fixed)
-    engine.set_model(fixed_model)
-    variables = engine.model.variables
-    local_kwargs['x0'] = x_best[is_fixed == False]
-    local_result = local_optimizer.optimize(f, variables, **local_kwargs)
-
-    # Save result
-    result = copy.deepcopy(global_result)
-    result.y = local_result.y
-    result.x[if_fixed == False] = local_result.x
-    result.X_out, result.Y_out = sort_by_other_list(result.X_out,
-                                                    result.Y_out)
-    if np.all(result.X_out[0] == x_best):
-        result.X_out[0] = result.x
-    else:
-        result.X_out.insert(0, result.x)
-    return result
-
-def run_pipeline_with_increase(index, shared_dict, model, data, engine_id,
-                               final_structure,
-                               global_optimizer, local_optimizer,
-                               init_kwargs={}, common_kwargs={},
-                               boots_for_claic=None):
-    np.random.seed()
-    print(f'Run launch number {index}')
-
-    # First run
-    common_kwargs['callback'] = partial(callback, index, shared_dict, model)
-    if model.get_structure() == [1]:
-        model, _ = increase_structure(model, final_structure, [])
-    result = run_go_and_lo(model, data, engine_id,
-                           global_optimizer, local_optimizer,
-                           {**init_kwargs, **common_kwargs}, common_kwargs)
-
-    while final_structure and (model.get_structure() != final_structure):
-        model, X_init = increase_structure(model, final_structure, result.X_out)
-        Y_init = copy.copy(result.Y_out)
-        init_kwargs = {'X_init': X_init, 'Y_init': Y_init}
-        common_args['callback'] = partial(callback, index, shared_dict, model)
-        result = run_go_and_lo(model, data, engine_id, go, lo,
-                               {**init_kwargs, **common_kwargs}, common_kwargs)
-
-        # TODO: CLAIC AIC
-
-    print(f'Finish genetic algorithm number {index}')
-    return result
-    
-def write_several_runs_log(time, dem_model, X_dict, to_stdout=True, out_file=None):
-    """
-    Function for printing log of several runs.
-    :param time: time of writing since launch.
-    :param dem_model: demographic model of run.
-    :param shared_dict: dict with all information.
-    :param out_file: output file othervise output will be std sysout.
-    """
-    s = (time).total_seconds()
-    time_str = f"\n[{s // 3600: 3d}:{s % 3600 // 60:2d}:{s % 60:2d}]" 
-    write_to_stdout_and_file(time_str, to_stdout, out_file)
-
-    results = [[ind, *shared_dict[ind]] for ind in shared_dict]
-    print(results)
-    # TODO: print
-    sorted_results = sorted(results)
-#    support.print_set_of_models(log_file, all_models, 
-#                params, first_col='GA number', heading='All best logLL models:', silence=params.silence)
-
+def job(index, shared_dict, settings):
+    obj = CoreRun(index, shared_dict, settings)
+    obj.run_with_increase()
 
 def worker_init():
     """Graceful way to interrupt all processes by Ctrl+C."""
@@ -190,16 +163,58 @@ def worker_init():
     signal.signal(signal.SIGINT, sig_int)
 
 
-#def print_best_solution_now(start_time, shared_dict, params,
-#                            log_file, precision, draw_model):
-#    """Prints best demographic model by logLL among all processes.
-#
-#    start_time :    time when equation was started.
-#    shared_dict :   dictionary to share information between processes.
-#    log_file :      file to write logs.
-#    draw_model :    plot model best by logll and best by AIC (if needed).
-#    """
-#
+def print_best_solution_now(start_time, shared_dict, settings,
+                            log_file, precision, draw_model):
+    """Prints best demographic model by logLL among all processes.
+
+    start_time :    time when equation was started.
+    shared_dict :   dictionary to share information between processes.
+    log_file :      file to write logs.
+    draw_model :    plot model best by logll and best by AIC (if needed).
+    """
+    s = (datetime.now() - start_time).total_seconds()
+    time_str = f"\n[{int(s//3600):03}:{int(s%3600//60):02}:{int(s%60):02}]" 
+    print(time_str)
+    metric_names = list()  # ordered set
+    for index in shared_dict:
+        for name in shared_dict[index]:
+            if name not in metric_names:
+                metric_names.append(name)
+    for best_by in metric_names:
+        models = [(index, shared_dict[index][best_by])
+                  for index in shared_dict]
+        sorted_models = sorted(models, key=lambda x: x[1][2][best_by])
+        if best_by == 'log-likelihood':
+            sorted_models = list(reversed(sorted_models))
+        metrics = list()  # ordered set
+        for model in sorted_models:
+            for key in model[1][2]:
+                if key not in metrics:
+                    metrics.append(key)
+        print(f"All best by {best_by} models")
+        print("Number", *metrics, "Model", sep='\t')
+        for model in sorted_models:
+            index, info = model
+            engine, x, y_vals = info
+            # Get theta and N ancestral
+            theta = engine.get_theta(x, *settings.get_engine_kwargs()['args'])
+            Nanc = engine.get_N_ancestral(theta)
+            addit_str = f"(theta = {theta: .2f})"
+            if Nanc is not None:
+                addit_str += f" (Nanc = {Nanc: .0f})"
+            # Begin to print
+            metric_vals = []
+            for metr in metrics:
+                if metr not in y_vals:
+                    metric_vals.append("None")
+                else:
+                    metric_vals.append(f"{y_vals[metr]: .5f}")
+            print(f"Run {index}", *metric_vals,
+                  engine.model.as_custom_string(x),
+                  addit_str, sep='\t')
+            #print(engine.generate_code(x, None, *settings.get_engine_kwargs()['args']))
+        
+        
 #    def write_func(string): return support.write_log(log_file, string,
 #                                                     write_to_stdout=not params.silence)
 #
@@ -289,10 +304,11 @@ def main():
                               'extra_params_file')
 
     # Change output stream both to stdout and log file
+    saved_stdout = sys.stdout
     sys.stdout = StdAndFileLogger(log_file)
-    sys.stderr = StdAndFileLogger(log_file)
+#    sys.stderr = StdAndFileLogger(log_file)
 
-    print("--Successful arguments' parsing. Start launch--")
+    print("--Successful arguments parsing--")
 
     # Data reading
     print("Data reading")
@@ -304,23 +320,13 @@ def main():
     if not args.test:
         print(f"Parameters of launch are saved in output directory: "
               f"{params_file}")
-        print(f"All aoutput is saved in output directory: {log_file}")
+        print(f"All output is saved in output directory: {log_file}")
 
-    print("--Run pipeline--")
+    print("--Start pipeline--")
 
     # Change output stream both to stdout and log file
+    sys.stdout = saved_stdout
     sys.stdout = StdAndFileLogger(log_file, settings_storage.silence)
-
-    # Model
-    model = settings_storage.get_model()
-    # Optimizations
-    global_optimizer = settings_storage.get_global_optimizer()
-    local_optimizer = settings_storage.get_local_optimizer()
-    # Kwargs
-    common_kwargs = settings_storage.get_optimizers_kwargs()
-
-    # For debug
-#    run_genetic_algorithm((1, params, log_file, None))
 
     # Create shared dictionary
     m = Manager()
@@ -329,14 +335,17 @@ def main():
     # Start pool of processes
     start_time = datetime.now()
 
+    # For debug
+#    run_pipeline_with_increase(0, None, model, data, settings_storage.engine,
+#              settings_storage.final_structure, global_optimizer,
+#              local_optimizer, {}, common_kwargs, None, os.path.join(settings_storage.output_directory, '0'))
+#
     pool = Pool(processes=settings_storage.number_of_processes,
                 initializer=worker_init)
     try:
         pool_map = pool.map_async(
-            partial(parallel_wrap, run_pipeline_with_increase),
-            [(i + 1, shared_dict, model, data, settings_storage.engine,
-              settings_storage.final_structure, global_optimizer,
-              local_optimizer, {}, common_kwargs)
+            partial(parallel_wrap, job),
+            [(i + 1, shared_dict, settings_storage)
              for i in range(settings_storage.number_of_repeats)])
         pool.close()
 
@@ -352,29 +361,29 @@ def main():
             # catch TimeoutError and get again
             except multiprocessing.TimeoutError as ex:
                 print_best_solution_now(
-                    start_time, shared_dict, params, log_file, 
-                    precision, draw_model=params.matplotlib_available)
+                    start_time, shared_dict, settings_storage, None, 
+                    precision, None)
             except Exception as e:
                 pool.terminate()
                 raise RuntimeError(str(e))
-#        print_best_solution_now(start_time, shared_dict, params,log_file, 
-#                precision, draw_model=params.matplotlib_available)
+        print_best_solution_now(start_time, shared_dict, settings_storage, None, 
+                precision, None)
 
         sys.stdout = StdAndFileLogger(log_file)
 
         print('\n--Finish pipeline--\n')
-        if params.test:
+        if args.test:
             print('--Test passed correctly--')
-        if params.theta is None:
+        if settings_storage.theta0 is None:
             print("\nYou didn't specify theta at the beginning. If you want change it and rescale parameters, please see tutorial.\n")
 #        if params.resume_dir is not None and (params.initial_structure != params.final_structure).any():
 #            print('\nYou have resumed from another launch. Please, check best AIC model, as information about it was lost.\n')
 
         print('Thank you for using GADMA!')
 
-    except KeyboardInterrupt:
+    except KeyboardInterrupt as e:
         pool.terminate()
-        support.error('KeyboardInterrupt')
+        raise KeyboardInterrupt(e)
 
 if __name__ == '__main__':
     main()

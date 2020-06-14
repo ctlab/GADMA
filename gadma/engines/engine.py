@@ -80,18 +80,21 @@ class Engine(object):
         Sets new model for the engine.
 
         :param model: new model.
-        :type odel: :class:`Model`
+        :type model: :class:`Model`
 
         :raises ValueError: when model is not supported by engine.
         """
         if model is None:
             self._model = None
+            # in moments and dadi it is used to save thetas
+            self.saved_add_info = {}  
             return
         if model.__class__ not in self.supported_models:
             raise ValueError(f"Model {model.__class__} is not supported "
                              f"by {self.id} engine.\nThe supported models"
                              f" are: {self.supported_models}.")
         self._model = model
+        self.saved_add_info = {}
 
     @property
     def model(self):
@@ -113,6 +116,7 @@ class Engine(object):
         if data is None:
             self.data_holder = None
             self.inner_data = None
+            self.saved_add_info = {}
             return
         cls = data.__class__
         if cls not in self.supported_data and \
@@ -128,6 +132,7 @@ class Engine(object):
         elif isinstance(data, self.inner_data_type):
             self.inner_data = data
             self.data_holder = None
+        self.saved_add_info = {}
 
     @property
     def data(self):
@@ -173,13 +178,18 @@ class Engine(object):
 
         return self.evaluate(values, **options)
 
-    def print_to_file(self, values, filename):
+    def generate_code(self, values, filename=None, *args):
         """
-        Prints nice formated code in the format of engine to file.
+        Prints nice formated code in the format of engine to file or returns
+        it as string if no file is set.
+
+        :param values: values for the engine's model.
+        :param filename: file to print code. If None then the string will
+                         be returned.
         """
         if self.data_holder is None:
             raise AttributeError("Engine was initialized with inner "
                                  "data. Need gadma.DataHolder for "
                                  "generation of code.")
-        id2printfunc[self.id](self, self.data_holder, self.model,
-                              values, filename)
+        return id2printfunc[self.id](self, values,
+                                     *args, filename=filename)

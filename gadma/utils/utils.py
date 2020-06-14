@@ -4,17 +4,26 @@ import numpy as np
 from collections import namedtuple
 import sys
 import os
+import copy
 
 
-def log_transform(x):
-    if isinstance(x, (float, np.float)):
+def logarithm_transform(x):
+    if isinstance(x, (int, float, np.integer, np.float)):
+        x = [x]
+    if not isinstance(x, (list, np.ndarray)):
         return x
+    if isinstance(x, np.ndarray):
+        x = x.astype(float)
     return np.log(x)
 
 
-def exp_transform(x):
-    if isinstance(x, (float, np.float)):
+def exponent_transform(x):
+    if isinstance(x, (int, float, np.integer, np.float)):
+        x = [x]
+    if not isinstance(x, (list, np.ndarray)):
         return x
+    if isinstance(x, np.ndarray):
+        x = x.astype(float)
     return np.exp(x)
 
 
@@ -23,10 +32,10 @@ def ident_transform(x):
 
 
 def extract_args(func):
-    @wraps(func)
-    def wrapper(args):
+#    @wraps(func)
+    def extract_args_wrapper(args):
         return func(*args)
-    return wrapper
+    return extract_args_wrapper
 
 
 def choose_by_weight(X, weights, nsample):
@@ -51,7 +60,7 @@ def sort_by_other_list(x, y, reverse=False):
     return [p[0] for p in sort_zip], [p[1] for p in sort_zip]
 
 
-def fix_args(f, args):
+def fix_args(f, *args):
     """
     Fixes argumets of function.
     :param f: function such that f(x, *args)
@@ -59,9 +68,9 @@ def fix_args(f, args):
     :returns: function that will take only x as argument.
     """
     @wraps(f)
-    def wrapper(x):
+    def fix_args_wrapper(x):
         return f(x, *args)
-    return wrapper
+    return fix_args_wrapper
 
 
 class CacheInfo(object):
@@ -82,7 +91,7 @@ def lru_cache(func):
     func.cache_info = CacheInfo()
 
     @wraps(func)
-    def wrapper(*args):
+    def lru_cache_wrapper(*args):
         try:
             ret = func.cache_info.cache[args]
             func.cache_info.hits += 1
@@ -92,7 +101,7 @@ def lru_cache(func):
             func.cache_info.misses += 1
         func.cache_info.all_calls.append([args, ret])
         return ret
-    return wrapper
+    return lru_cache_wrapper
 
 
 def cache_func(f):
@@ -107,11 +116,11 @@ def cache_func(f):
         return f(np.array(x_tuple, dtype=object))
 
     @wraps(tuple_wrapper)
-    def wrapper(x):
+    def cache_wrapper(x):
         return tuple_wrapper(tuple(x))
 
-    wrapper.cache_info = tuple_wrapper.cache_info
-    return wrapper
+    cache_wrapper.cache_info = tuple_wrapper.cache_info
+    return cache_wrapper
 
 
 def nan_fval_to_inf(f):
@@ -119,12 +128,12 @@ def nan_fval_to_inf(f):
     Wrappes function to return infinity instead nan.
     """
     @wraps(f)
-    def wrapper(x):
+    def nan_fval_to_inf_wrapper(x):
         y = f(x)
         if y is None or np.isnan(y):
             return np.inf
         return y
-    return wrapper
+    return nan_fval_to_inf_wrapper
 
 
 def eval_wrapper(f, eval_file=None):
@@ -142,7 +151,7 @@ def eval_wrapper(f, eval_file=None):
             print('Time of evaluation start', 'Function value',
                   'Parameters values', 'Evaluation time', file=fl, sep='\t')
     @wraps(f)
-    def wrapper(x):
+    def eval_wrapper_f(x):
         time_start = time.time()
         y = f(x)
         time_end = time.time()
@@ -151,7 +160,7 @@ def eval_wrapper(f, eval_file=None):
                 print(time_start - time_init, y, x, time_end - time_start,
                       file=fl, sep='\t')
         return y
-    return wrapper
+    return eval_wrapper_f
 
 
 def parallel_wrap(f, x):
@@ -189,14 +198,28 @@ def update_by_one_fifth_rule(value, const, was_improved):
 
 
 def check_file_existence(path_to_file):
-    return os.path.exsists(path_to_file) and os.path.isfile(path_to_file)
+    return os.path.exists(path_to_file) and os.path.isfile(path_to_file)
+
+
+def check_dir_existence(path_to_dir):
+    return os.path.exists(path_to_dir) and os.path.isdir(path_to_file)
 
 
 def ensure_file_existence(path_to_file):
-    if check_file_existence(path_to_file):
-        return True
-    path_to_file.open('w').close()
-    return True
+    filename = os.path.abspath(os.path.expanduser(path_to_file))
+    if not check_file_existence(filename):
+        open(filename, 'w').close()
+    return filename
+
+
+def ensure_dir_existence(path_to_dir, check_emptiness=False):
+    dirname = os.path.abspath(os.path.expanduser(path_to_dir))
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+    if os.listdir(dirname) != [] and check_emptiness:
+        raise RuntimeError(f"Directory {path_to_dir} is not empty\nYou can "
+                           f"write:  rm -rf {dirname}\t to remove directory.")
+    return dirname
 
 class StdAndFileLogger(object):
     def __init__(self, log_filename, silent=False):
@@ -209,6 +232,7 @@ class StdAndFileLogger(object):
     def write(self, message):
         if not self.silent:
             self.terminal.write(message)
+            self.terminal.flush()
         with open(self.log_filename, 'a') as fl:
             fl.write(message)  
 
@@ -216,4 +240,7 @@ class StdAndFileLogger(object):
         #this flush method is needed for python 3 compatibility.
         #this handles the flush command by doing nothing.
         #you might want to specify some extra behavior here.
-        pass    
+        pass
+
+def get_aic_score(n_params, log_likelihood):
+    return 2 * n_params - 2 * log_likelihood

@@ -50,6 +50,10 @@ def test_args():
     '''
     # Create storage from test settings
     settings_storage = SettingsStorage.from_file(TEST_SETTINGS)
+    # Input test file
+    curent_dir = os.path.dirname(os.path.abspath(__file__))
+    settings_storage.input_file = os.path.join(curent_dir,
+                                               "../../fs_examples/test.fs")
     # There is no output_directory, we put it to temporary directory
     settings_storage.output_directory = tempfile.mkdtemp("gadma_test_dir")
     # And put path to input file

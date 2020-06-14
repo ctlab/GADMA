@@ -10,29 +10,14 @@ class DataHolder(object):
     : params pop_labels: labels of populations in data
     : param seq_len: length of sequence that was used to build data
     """
-    def __init__(self, filename, sample_sizes,
-                 outgroup, pop_labels, seq_len):
+    def __init__(self, filename, projections,
+                 outgroup, population_labels, sequence_length):
         self.data = None
         self.filename = filename
-        self.sample_sizes = sample_sizes
+        self.projections = projections
         self.outgroup = outgroup
-        self.pop_labels = pop_labels
-        self.seq_len = seq_len
-        self.ready_for_engine = []
-
-    def prepare_for_engine(self, engine):
-        """
-        Reads data from file in format of corresponding engine.
-
-        : param engine: class or instance of engine
-        : type engine: gadma.Engine
-        """
-        self.data = engine.read_data(self)
-        self.ready_for_engine.append(engine.base_module.__name__)
-        self.pop_labels = engine.get_pop_labels(self.data)
-        self.outgroup = engine.get_outgroup(self.data)
-        self.seq_len = engine.get_seq_len(self.data)
-        self.sample_sizes = engine.get_sample_sizes(self.data)
+        self.population_labels = population_labels
+        self.sequence_length = sequence_length
 
 
 class SFSDataHolder(DataHolder):
@@ -40,10 +25,11 @@ class SFSDataHolder(DataHolder):
     Class for SFS data holding.
     if any parameter is None then it will be taken from the file
     """
-    def __init__(self, sfs_file, sample_sizes=None, outgroup=None,
-                 pop_labels=None, seq_len=None):
-        super(SFSDataHolder, self).__init__(sfs_file, sample_sizes,
-                                            outgroup, pop_labels, seq_len)
+    def __init__(self, sfs_file, projections=None, outgroup=None,
+                 population_labels=None, sequence_length=None):
+        super(SFSDataHolder, self).__init__(sfs_file, projections,
+                                            outgroup, population_labels,
+                                            sequence_length)
 
 
 class VCFDataHolder(DataHolder):

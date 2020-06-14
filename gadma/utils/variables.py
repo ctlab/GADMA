@@ -227,7 +227,7 @@ class SelectionVariable(ContinuousVariable):
 
     :note: Values are assumed to be in genetic units.
     """
-    default_domain = np.array([0, 10])
+    default_domain = np.array([1e-15, 10])
     default_rand_gen = help_func#extract_args(partial(trunc_normal_3_sigma_rule,
 #                                            1))
 
@@ -279,6 +279,14 @@ class Dynamic(object):
         """
         return self.format_str % (str(y1), str(y2), str(x_diff))
 
+def linear(y1, y2, x_diff, x):
+    y = y1 + (y2 - y1) * (x / x_diff)
+#    print("linear", y1, y2, x_diff, x, y)
+    return y
+def exponent(y1, y2, x_diff, x):
+    y = y1 * (y2 / y1) ** (x / x_diff)
+#    print("exponent", y1, y2, x_diff, x, y)
+    return y
 
 class Exp(Dynamic):
     """
@@ -293,7 +301,7 @@ class Exp(Dynamic):
         """
         Returns lambda function of x: y1 * (y2 / y1) ** (x / x_diff).
         """
-        return lambda x: y1 * (y2 / y1) ** (x / x_diff)
+        return partial(exponent, y1, y2, x_diff)
 
     def __str__(self):
         """
@@ -315,7 +323,7 @@ class Lin(Dynamic):
         """
         Returns lambda function of x: y1 + (y2 - y1) * (x / x_diff).
         """
-        return lambda x: y1 + (y2 - y1) * (x / x_diff)
+        return partial(linear, y1, y2, x_diff)
 
     def __str__(self):
         """

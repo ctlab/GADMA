@@ -8,7 +8,6 @@ import dadi
 def get_func(engine, variables):
     def func(x, *args):
         y = - engine.evaluate(list(x), *args)
-        #print(x, y)
         return y
     return func
 
@@ -93,10 +92,11 @@ class TestBaseOptClass(unittest.TestCase):
         x = 0.5
         y = f(x)
 
-        self.assertEqual(opt1.evaluate(f, x), y)
-        self.assertEqual(opt2.evaluate(f, np.log(x)), y)
-        self.assertEqual(opt3.evaluate(f, x), -y)
-        self.assertEqual(opt4.evaluate(f, np.log(x)), -y)
+        msg = f" ({cls.__name__})"
+        self.assertEqual(opt1.evaluate(f, x), y, msg=msg)
+        self.assertEqual(opt2.evaluate(f, np.log(x)), y, msg=msg)
+        self.assertEqual(opt3.evaluate(f, x), -y, msg=msg)
+        self.assertEqual(opt4.evaluate(f, np.log(x)), -y, msg=msg)
 
     def test_initialization(self):
         """
@@ -132,7 +132,7 @@ class TestLocalOpt(TestBaseOptClass):
         var3 = ContinuousVariable('var3', domain=[0, 20])
         x0 = [0.5, 1.5, 10]
         for opt in all_local_optimizers():
-            opt.optimize(self.f, [var1, var2, var3], x0, args=(5,), maxiter=1)
+            opt.optimize(self.f, [var1, var2, var3], x0, args=(5,), verbose=0, maxiter=1)
 
     def get_yri_ceu_ll(self, x_dict):
         def func(x_dict, ns, pts):
@@ -192,12 +192,12 @@ class TestLocalOpt(TestBaseOptClass):
         args = ([40, 50, 60],)
         def f(x, *args):
                 y = - d.evaluate(list(x), *args)
-                print(x, y)
+                #print(x, y)
                 return y
 
-#        for opt in all_global_optimizers():
-#            res = opt.optimize(f, dm.variables, num_init=10,
-#                               args=args, maxiter=25)
+        for opt in all_global_optimizers():
+            res = opt.optimize(f, dm.variables, num_init=10,
+                               args=args, maxeval=25)
         for opt in all_local_optimizers():
             res = opt.optimize(f, dm.variables, x0=values,
                                args=args, maxiter=2)
@@ -214,11 +214,12 @@ class TestLocalOpt(TestBaseOptClass):
         x0 = [var.resample() for var in variables]
 
         for opt in all_local_optimizers():
+            print(opt.maximize)
             msg = f"(optimization {opt.id}, engine {engine_id})"
             res = opt.optimize(f, variables, x0=x0,
                                args=args, maxiter=2)
             self.assertEqual(res.y, f(res.x, *args), msg=msg)
-            self.assertTrue(res.y <= f(x0, *args), msg=msg + f"{res.y} > f(x0, *args)")
+            self.assertTrue(res.y <= f(x0, *args), msg=msg + f" {res.y} > {f(x0, *args)}")
 
     def test_1pop_example_1(self):
         for engine in all_engines():

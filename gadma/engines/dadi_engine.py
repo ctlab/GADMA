@@ -1,11 +1,11 @@
 from . import Engine, register_engine
-from .read_sfs_funcs import read_dadi_data
+from .dadi_moments_common import DadiOrMomentsEngine
 from ..models import DemographicModel, Epoch, Split
 from ..utils import DynamicVariable
 from .. import SFSDataHolder
 
 
-class DadiEngine(Engine):
+class DadiEngine(DadiOrMomentsEngine):
     """
     Engine for using :py:mod:`dadi` for demographic inference.
 
@@ -19,32 +19,8 @@ class DadiEngine(Engine):
 
     id = 'dadi'  #:
     import dadi as base_module
-    supported_models = [DemographicModel]  #:
     supported_data = [SFSDataHolder]  #:
     inner_data_type = base_module.Spectrum  #:
-
-    @staticmethod
-    def read_data(data_holder):
-        """
-        Reads SFS data from `data_holder`.
-
-        Could read two types of data:
-
-            * :py:mod:`dadi` SFS data type
-            * :py:mod:`dadi` SNP data type
-
-        Check :py:mod:`dadi` manual for additional information.
-
-        :param data_holder: holder of the data.
-        :type data_holder: :class:`SFSDataHolder`
-        """
-        if data_holder.__class__ not in DadiEngine.supported_data:
-            raise ValueError(f"Data class {data_holder.__class__.__name__}"
-                             " is not supported by {self.id} engine.\nThe "
-                             "supported classes are: {self.supported_data}"
-                             " and {self.inner_data_type}")
-        data = read_dadi_data(DadiEngine.base_module, data_holder)
-        return data
 
     @staticmethod
     def _get_kwargs(event, var2value):
@@ -115,7 +91,8 @@ class DadiEngine(Engine):
                                                event.init_size_args[i])
                             y2 = var2value.get(event.size_args[i],
                                                event.size_args[i])
-                            x_diff = var2value.get(event.time_arg, event.time_arg)
+                            x_diff = var2value.get(event.time_arg,
+                                                   event.time_arg)
                             addit_values['nu%d_func' % (i+1)] = func(
                                 y1=y1,
                                 y2=y2,
@@ -123,7 +100,8 @@ class DadiEngine(Engine):
                 kwargs_with_vars = self._get_kwargs(event, var2value)
                 kwargs = {x: var2value.get(y, y)
                           for x, y in kwargs_with_vars.items()}
-                kwargs = {x: addit_values.get(y, y) for x, y in kwargs.items()}
+                kwargs = {x: addit_values.get(y, y)
+                          for x, y in kwargs.items()}
                 if event.n_pop == 1:
                     phi = dadi.Integration.one_pop(phi, xx, **kwargs)
                 if event.n_pop == 2:
@@ -151,21 +129,17 @@ class DadiEngine(Engine):
         """
         dadi = self.base_module
         func_ex = dadi.Numerics.make_extrap_log_func(self._dadi_inner_func)
-        model = self.model.Nref * func_ex(values, ns, pts)
+        model = func_ex(values, ns, pts)
+        # TODO: Nref
         return model
 
-    def evaluate(self, values, pts):
-        """
-        Simulates SFS from values and evaluate log likelihood between
-        simulated SFS and observed SFS.
-        """
-        if self.data is None or self.model is None:
-            raise ValueError("Please set data and model for the engine or"
-                             " use set_and_evaluate function instead.")
-        dadi = self.base_module
-        model = self.simulate(values, self.data.sample_sizes, pts)
-        ll_model = dadi.Inference.ll_multinom(model, self.data)
-        return ll_model
+    def get_theta(self, values, pts):
+        return super(DadiEngine, self).get_theta(values, pts)
 
+    def evaluate(self, values, pts):
+        return super(DadiEngine, self).evaluate(values, pts)
+
+    def generate_code(self, values, filename, pts):
+        return super(DadiEngine, self).generate_code(values, filename, pts)
 
 register_engine(DadiEngine)

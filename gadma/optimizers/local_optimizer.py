@@ -5,7 +5,7 @@ from ..utils import eval_wrapper
 import copy
 import numpy as np
 import scipy
-from functools import partial
+from functools import partial, wraps
 
 _registered_local_optimizers = {}
 
@@ -56,10 +56,11 @@ class ScipyOptimizer(LocalOptimizer):
         self.method = method
         super(ScipyOptimizer, self).__init__(log_transform, maximize)            
 
-    def prepare_callback(self, f, verbose, callback):
-        @wraps(callback)
+    def prepare_callback(self, f, callback):
+        new_callback = super(ScipyOptimizer, self).prepare_callback(callback)
+        @wraps(new_callback)
         def wrapper(xk, result_obj=None):
-            return callback(xk, f(xk))
+            return new_callback(xk, f(xk))
         return wrapper
 
     def get_addit_scipy_kwargs(self, variables):
@@ -68,7 +69,8 @@ class ScipyOptimizer(LocalOptimizer):
     def optimize(self, f, variables, x0, args=(), options={},
                  maxiter=None, maxeval=None,
                  verbose=0, callback=None, eval_file=None, report_file=None):
-        x0_in_opt = np.array(self.transform(x0), dtype=np.float64)
+        x0 = np.array(x0, dtype=np.float)
+        x0_in_opt = self.transform(x0)
         self.check_variables(variables)
         if maxiter:
             options['maxiter'] = int(maxiter)
@@ -107,13 +109,24 @@ class ScipyOptimizer(LocalOptimizer):
                 raise ValueError("You have set two callbacks - first in "
                                  "options and second via callback. Please "
                                  "specify one callback.")
-            options['callback'] = self.prepare_callback(f_in_opt, callback)
+            callback = self.prepare_callback(f_in_opt, callback)
+
+        # IMPORTANT we cannot run scipy optimization for search of 0 params
+        if len(variables) == 0:
+            x = []
+            y = self.sign * f_in_opt(x)
+            callback(x, y)
+            success = True
+            status = 0
+            message = "Zero parameters to optimize."
+            result = OptimizerResult(x, y, success, status, message, [x], [y], 1, 1)
+            return result
 
         # Run optimization of SciPy
         addit_kw = self.get_addit_scipy_kwargs(variables)
         res_obj = scipy.optimize.minimize(f_in_opt, x0_in_opt, args=(),
                                           method=self.method, options=options,
-                                          **addit_kw)
+                                          callback=callback, **addit_kw)
         # Construct OptimizerResult object to return
         result = OptimizerResult.from_SciPy_OptimizeResult(res_obj)
         result.x = self.inv_transform(result.x)
@@ -172,11 +185,19 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
         for val, domain in zip(x, bounds):
             if val < domain[0] or val > domain[1]:
                 return self.sign * self.out_of_bounds
-        return f(self.inv_transform(x), *args)
+        y = f(self.inv_transform(x), *args)
+        return y
+
+    def prepare_callback(self, callback):
+        @wraps(callback)
+        def wrapper(x, y):
+            return callback(self.inv_transform(x), y)
+        return wrapper
 
     def optimize(self, f, variables, x0, args=(), options={},
                  maxiter=None, maxeval=None,
                  verbose=0, callback=None, eval_file=None, report_file=None):
+        x0 = np.array(x0, dtype=np.float)
         x0_in_opt = self.optimizer.transform(self.transform(x0))
         bounds = self.transform([var.domain for var in variables])
         vars_in_opt = copy.deepcopy(variables)
@@ -196,11 +217,15 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
                                                  verbose, report_file)
         f_in_opt = partial(self.evaluate_inner, finally_wrapped_f)
 
+        if callback is not None:
+            callback = self.prepare_callback(callback)
         result = self.optimizer.optimize(f_in_opt, vars_in_opt, x0_in_opt,
                                       args=(bounds,), options=options,
                                       verbose=0, maxiter=maxiter,
-                                      maxeval=maxeval)
+                                      maxeval=maxeval, callback=callback)
         # TODO: need to check result.X as they should be transformed somehow.
+        result.x = self.inv_transform(result.x)
+        result.X = [self.inv_transform(x) for x in result.X]
         return result
 
 register_local_optimizer('BFGS',

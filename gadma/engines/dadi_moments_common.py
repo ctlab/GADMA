@@ -1,29 +1,115 @@
+from . import Engine
+from ..models import DemographicModel, StructureDemographicModel, Epoch, Split
+from ..utils import DynamicVariable
+from .. import SFSDataHolder
 import os
 import numpy as np
 
+class DadiOrMomentsEngine(Engine):
+    """
+    Engine for using :py:mod:`dadi` for demographic inference.
+
+    Citation of :py:mod:`dadi`:
+
+    Gutenkunst RN, Hernandez RD, Williamson SH, Bustamante CD (2009)
+    Inferring the Joint Demographic History of Multiple Populations
+    from Multidimensional SNP Frequency Data. PLoS Genet 5(10): e1000695.
+    https://doi.org/10.1371/journal.pgen.1000695
+    """
+
+    id = 'dadi_or_moments'  #:
+    base_module = None  #:
+    supported_models = [DemographicModel, StructureDemographicModel]  #:
+    supported_data = [SFSDataHolder]  #:
+    inner_data_type = None  # base_module.Spectrum  #:
+
+    @classmethod
+    def read_data(cls, data_holder):
+        """
+        Reads SFS data from `data_holder`.
+
+        Could read two types of data:
+
+            * :py:mod:`dadi` SFS data type
+            * :py:mod:`dadi` SNP data type
+
+        Check :py:mod:`dadi` manual for additional information.
+
+        :param data_holder: holder of the data.
+        :type data_holder: :class:`SFSDataHolder`
+        """
+        if data_holder.__class__ not in cls.supported_data:
+            raise ValueError(f"Data class {data_holder.__class__.__name__}"
+                             f" is not supported by {cls.id} engine.\nThe "
+                             f"supported classes are: {cls.supported_data}"
+                             f" and {cls.inner_data_type}")
+        data = read_dadi_data(cls.base_module, data_holder)
+        return data
+
+    def _get_key(self, x, grid_sizes):
+        var2value = self.model.var2value(x)
+        key = tuple(var2value[var] for var in self.model.variables)
+        if isinstance(grid_sizes, float):
+            return (key, grid_sizes)
+        return (key, tuple(grid_sizes))
+
+    def get_theta(self, values, grid_sizes):
+        key = self._get_key(values, grid_sizes)
+        if key not in self.saved_add_info:
+            Warning("Additional evaluation for theta. Nothing to worry if seldom.")
+            self.evaluate(values, grid_sizes)
+        return self.saved_add_info[key]
+
+    def get_N_ancestral(self, theta):
+        if self.model.theta0 is not None:
+            theta0 = self.model.theta0
+        elif (self.model.mu is not None and self.data_holder is not None and
+                self.data_holder.sequence_length is not None):
+            theta0 = 4 * self.model.mu * self.data_holder.sequence_length
+        else:
+            return None
+        return theta / theta0
+
+    def evaluate(self, values, grid_sizes):
+        """
+        Simulates SFS from values and evaluate log likelihood between
+        simulated SFS and observed SFS.
+        """
+        if self.data is None or self.model is None:
+            raise ValueError("Please set data and model for the engine or"
+                             " use set_and_evaluate function instead.")
+        model = self.simulate(values, self.data.sample_sizes, grid_sizes)
+        ll_model = self.base_module.Inference.ll_multinom(model, self.data)
+        # Save theta
+        theta = self.base_module.Inference.optimal_sfs_scaling(model, self.data)
+#        print(values, ll_model, theta)
+        key = self._get_key(values, grid_sizes)
+        self.saved_add_info[key] = theta
+        return ll_model
+
 
 # Those functions are common for dadi and moments engines.
-def _check_missing_pop_labels(sfs, default_pop_labels=None):
+def _check_missing_population_labels(sfs, default_pop_labels=None):
     """
     Check that SFS has population labels. If not then make them default.
 
     : param sfs: site frequency spectrum to check
     : type sfs: dadi.Spectrum (or analogue)
-    : param default_pop_labels: if pop. labels are missing use this values.
+    : param default_population_labels: if pop. labels are missing use this values.
     """
     if sfs.pop_ids is None:
         if default_pop_labels is not None:
             Warning("Spectrum file %s is in an old format - without"
                     " population labels, so they will be taken from"
                     " corresponding parameter: %s."
-                    % (filename, ', '.join(pop_labels)))
-            sfs.pop_ids = pop_labels
+                    % (filename, ', '.join(population_labels)))
+            sfs.pop_ids = population_labels
         else:
             sfs.pop_ids = ['Pop %d' % (i+1) for i in range(sfs.ndim)]
     return sfs
 
 
-def _new_pop_labels(sfs, new_labels):
+def _new_population_labels(sfs, new_labels):
     """
     Assign new order of population labels of SFS.
 
@@ -121,9 +207,9 @@ def _read_data_sfs_type(module, data_holder):
     sfs = module.Spectrum.from_file(data_holder.filename)
     ns = np.array(sfs.shape) - 1
 
-    sfs = _check_missing_pop_labels(sfs, data_holder.pop_labels)
-    sfs = _new_pop_labels(sfs, data_holder.pop_labels)
-    sfs = _project(sfs, data_holder.sample_sizes)
+    sfs = _check_missing_population_labels(sfs, data_holder.population_labels)
+    sfs = _new_population_labels(sfs, data_holder.population_labels)
+    sfs = _project(sfs, data_holder.projections)
     sfs = _change_outgroup(sfs, data_holder.outgroup)
     return sfs
 
@@ -141,13 +227,13 @@ def _read_data_snp_type(module, data_holder):
         dd = module.Misc.make_data_dict(data_holder.filename)
     except Exception as e:
         raise SyntaxError("Construction of data_dict failed: " + str(e))
-    pop_labels, has_outgroup, size = _get_default_from_snp_format(
+    population_labels, has_outgroup, size = _get_default_from_snp_format(
         data_holder.filename)
-    if data_holder.sample_sizes is not None:
-        size = data_holder.sample_sizes
-    if data_holder.pop_labels is not None:
-        pop_labels = data_holder.pop_labels
-    sfs = module.Spectrum.from_data_dict(dd, pop_labels, size, has_outgroup)
+    if data_holder.projections is not None:
+        size = data_holder.projections
+    if data_holder.population_labels is not None:
+        population_labels = data_holder.pop_labels
+    sfs = module.Spectrum.from_data_dict(dd, population_labels, size, has_outgroup)
     sfs = _change_outgroup(sfs, data_holder.outgroup)
     return sfs
 

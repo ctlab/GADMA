@@ -1,7 +1,7 @@
 from ..utils import Variable, ContinuousVariable
 from ..utils import fix_args, cache_func, nan_fval_to_inf
-from ..utils import check_file_existence
-from ..utils import log_transform, exp_transform, ident_transform
+from ..utils import ensure_file_existence
+from ..utils import logarithm_transform, exponent_transform, ident_transform
 import copy
 import numpy as np
 from functools import wraps
@@ -17,8 +17,8 @@ class Optimizer(object):
     def __init__(self, log_transform=False, maximize=False):
         self.log_transform = log_transform
         if self.log_transform:
-            self.transform = log_transform
-            self.inv_transform = exp_transform
+            self.transform = logarithm_transform
+            self.inv_transform = exponent_transform
         else:
             self.transform = ident_transform
             self.inv_transform = ident_transform
@@ -29,10 +29,15 @@ class Optimizer(object):
     def sign(self):
         return -1 if self.maximize else 1
 
+    def prepare_callback(self, callback):
+        @wraps(callback)
+        def wrapper(x, y):
+            return callback(self.inv_transform(x), self.sign * y)
+        return wrapper
+
     def write_report(self, n_iter, variables, x, y, report_file):
         if report_file:
-            print(report_file)
-            stream = report_file.open('a')
+            stream = open(report_file, 'a')
         else:
             stream = sys.stdout
         val_repr = [f"{val:5f}" if isinstance(val, float) else val for val in x]
@@ -68,7 +73,7 @@ class Optimizer(object):
     def prepare_f_for_opt(self, f, args=(), cache=True):
         assert isinstance(cache, bool)
         # Fix args
-        f_wrapped = fix_args(f, args)
+        f_wrapped = fix_args(f, *args)
         f_wrapped = nan_fval_to_inf(f_wrapped)
         if cache:
             f_wrapped = cache_func(f_wrapped)

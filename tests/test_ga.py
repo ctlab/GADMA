@@ -3,6 +3,7 @@ from gadma import *
 import numpy as np
 from .test_optimizers import get_func, get_1pop_sim_example_1
 from .test_optimizers import get_1pop_sim_example_2, get_2pop_sim_example_1
+from .test_data import YRI_CEU_DATA
 
 class TestGeneticAlg(unittest.TestCase):
     def check_diff(self, diff, ind, msg):
@@ -106,7 +107,7 @@ class TestGeneticAlg(unittest.TestCase):
 
         for opt in all_global_optimizers():
             res = opt.optimize(f, variables, 
-                               args=args, num_init=20, maxiter=35)
+                               args=args, num_init=20, maxeval=35)
             self.assertEqual(res.y, f(res.x, *args))
 
     def test_1pop_example_1(self):
@@ -120,3 +121,36 @@ class TestGeneticAlg(unittest.TestCase):
     def test_2pop_example_1(self):
         for engine in all_engines():
             self.run_example(engine.id, get_2pop_sim_example_1)
+
+    def test_yri_ceu(self):
+        nu1F = PopulationSizeVariable('nu1F')
+        nu2B = PopulationSizeVariable('nu2B')
+        nu2F = PopulationSizeVariable('nu2F')
+        m = MigrationVariable('m')
+        Tp = TimeVariable('Tp')
+        T = TimeVariable('T')
+        Dyn = DynamicVariable('Dyn')
+
+        dm = DemographicModel()
+        dm.add_epoch(Tp, [nu1F])
+        dm.add_split(0, [nu1F, nu2B])
+        dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', Dyn])
+
+        data = SFSDataHolder(YRI_CEU_DATA)
+        engine = get_engine('moments')
+        engine.set_model(dm)
+        engine.set_data(data)
+
+        ga = get_global_optimizer("Genetic_algorithm")
+        ga.maximize = True
+        def f(x):
+            y = engine.evaluate(x)
+            return y
+        res = ga.optimize(f, dm.variables, verbose=0, maxeval=30)
+        #print(res)
+
+        engine.model.fix_dynamics(res.x)
+        x0 = res.x[np.array(engine.model.is_fixed) == False]
+        ls = get_local_optimizer("BFGS")
+        ls.maximize = True
+        #print(ls.optimize(f, engine.model.variables, x0, verbose=0, maxiter=1))

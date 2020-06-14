@@ -10,7 +10,7 @@ class Model(object):
                         :class:`Variable` is added as variable.
     :type raise_excep: bool
     """
-    def __init__(self, raise_excep=True):
+    def __init__(self, raise_excep=False):
         self.is_fixed = []
         self.fixed_values = {}
         self._variables = VariablePool()
@@ -72,7 +72,7 @@ class Model(object):
         self.is_fixed[self._variables.index(variable)] = True
         self.fixed_values[variable] = value
 
-    def unfix(self, variable):
+    def unfix_variable(self, variable):
         if variable not in self.fixed_values:
             raise ValueError(f"There is no such fixed variable {variable} "
                              "in the model.")

@@ -3,7 +3,7 @@ from .global_optimizer import GlobalOptimizer, register_global_optimizer
 from .optimizer_result import OptimizerResult
 from ..utils import sort_by_other_list, choose_by_weight, eval_wrapper
 from ..utils import trunc_normal_3_sigma_rule, DiscreteVariable, WeightedMetaArray
-from ..utils import update_by_one_fifth_rule
+from ..utils import update_by_one_fifth_rule, ensure_file_existence
 from functools import partial
 import numpy as np
 import copy
@@ -299,7 +299,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         if Y_gen is None:
             Y_gen = [f(x) for x in X_gen]
         # Sort by value of fitness
-        X_gen, Y_gen = sort_by_other_list(X_gen, Y_gen)
+        X_gen, Y_gen = sort_by_other_list(X_gen, Y_gen, reverse=self.maximize)
 
         # Simple checks
         assert len(X_gen[0]) == len(variables)
@@ -368,7 +368,8 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             new_Y_gen.append(f(x))
 
         # Sort by fitness and return new generation
-        new_X_gen, new_Y_gen = sort_by_other_list(new_X_gen, new_Y_gen)
+        new_X_gen, new_Y_gen = sort_by_other_list(new_X_gen, new_Y_gen,
+                                                  reverse=self.maximize)
         new_X_gen = new_X_gen[:self.gen_size]
         new_Y_gen = new_Y_gen[:self.gen_size]
         return new_X_gen, new_Y_gen
@@ -383,7 +384,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                                                             num_init, X_init,
                                                             _Y_init,
                                                             self.random_type)
-        X, Y = sort_by_other_list(X, Y)
+        X, Y = sort_by_other_list(X, Y, reverse=self.maximize)
         return X[:self.gen_size], Y[:self.gen_size]
 
     def _sample_mut_rate(self, mode='normal'):
@@ -521,7 +522,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         return n_gen, X_gen, Y_gen, X_total, Y_total
 
     def optimize(self, f, variables, args=(), num_init=50,
-                 X_init=None, Y_init=None, n_gen_init=0,
+                 X_init=None, Y_init=None,
                  maxiter=None, maxeval=None,
                  verbose=0, callback=None, report_file=None, eval_file=None,
                  save_file=None):
@@ -561,6 +562,9 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         finally_wrapped_f = eval_wrapper(prepared_f, eval_file)
         f_in_opt = partial(self.evaluate, finally_wrapped_f)
 
+        if callback is not None:
+            callback = self.prepare_callback(callback)
+
         # Write first line of report
         if verbose > 0:
             self.initialize_report_file(report_file)
@@ -584,7 +588,8 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         self.save(n_gen, X_gen, Y_gen, X_total, Y_total, save_file)
 
         # Begin to create generations
-        while not self.is_stopped(n_gen, n_eval, n_impr_gen, maxiter, maxeval):
+        while (len(variables) > 0 and
+                not self.is_stopped(n_gen, n_eval, n_impr_gen, maxiter, maxeval)):
             # Form new generation
             X_gen, Y_gen = self.selection(f_in_opt, variables, X_gen, Y_gen,
                                           self.selection_type,

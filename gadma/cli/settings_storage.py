@@ -5,8 +5,9 @@ import numpy as np
 from . import settings
 from ..data import SFSDataHolder
 from ..engines import get_engine
-from ..models import DemographicModel
+from ..models import StructureDemographicModel
 from ..optimizers import get_local_optimizer, get_global_optimizer
+from ..utils import ensure_dir_existence, ensure_file_existence
 
 HOME_DIR = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 PARAM_TEMPLATE = os.path.join(HOME_DIR, "params_template")
@@ -40,7 +41,7 @@ class SettingsStorage(object):
         data_holder_attrs = ['projections', 'outgroup',
                              'population_labels', 'sequence_length']
         bounds_attrs = ['min_n', 'max_n', 'min_t', 'max_t', 'min_m', 'max_m']
-        missed_attrs = ['engine', 'local_optimizer']
+        missed_attrs = ['engine', 'local_optimizer', '_inner_data']
         
         if (name not in int_attrs and name not in float_attrs and
                 name not in probs_attrs and name not in bool_attrs and
@@ -65,8 +66,16 @@ class SettingsStorage(object):
         # 0. If attribute is equal to the same from setting storage
         # then we let it go any way. It is because of None's in settings
         we_check = True
-        if hasattr(settings, name) and getattr(settings, name) == value:
-            we_check = False
+        print(name, value)
+        if hasattr(settings, name):
+            default_value = getattr(settings, name) 
+            if (isinstance(value, np.ndarray) or
+                    isinstance(default_value, np.ndarray)):
+                if (default_value == value).all():
+                    we_check = False
+            else:
+                if default_value == value:
+                    we_check = False
 
         # 1. Base checks
         # 1.1 Check is int (positive)
@@ -91,7 +100,13 @@ class SettingsStorage(object):
         if name in int_list_attrs and we_check:
             error = ValueError(f"Setting {name} ({value}) must be list of "
                                "integers.")
-            if not isinstance(value, (list, np.ndarray)):
+            if isinstance(value, str):
+                try:
+                    value = [int(x) for x in value.split(',')]
+                    super(SettingsStorage, self).__setattr__(name, value)
+                except:
+                    raise error
+            if not isinstance(value, (list, tuple, np.ndarray)):
                 raise error
             for val in value:
                 if not isinstance(val, (int, np.integer)):
@@ -103,7 +118,13 @@ class SettingsStorage(object):
         if name in probs_list_attrs and we_check:
             error = ValueError(f"Setting {name} ({value}) must be list of "
                                "probabilities.")
-            if not isinstance(value, (list, np.ndarray)):
+            if isinstance(value, str):
+                try:
+                    value = [float(x) for x in value.split(',')]
+                    super(SettingsStorage, self).__setattr__(name, value)
+                except:
+                    raise error
+            if not isinstance(value, (list, tuple, np.ndarray)):
                 raise error
             for val in value:
                 if (not isinstance(val, (float, np.float)) or 
@@ -124,6 +145,20 @@ class SettingsStorage(object):
                     len(getattr(self, name)) != self.number_of_populations):
                 raise ValueError(f"Length of {name} should be equal to "
                                  f"{self.number_of_populations}.")
+
+        # 1.7 Population labels could be taken as one string
+        if name == 'population_labels':
+            if isinstance(value, str):
+                value = value.split(',')
+                super(SettingsStorage, self).__setattr__(name, value)
+
+        # 1.8 Check for empty dirs
+        if name in empty_dir_attrs:
+            ensure_dir_existence(value, check_emptiness=True)
+        # 1.9 Check file exist
+        if name in exist_file_attrs:
+            ensure_file_existence(value)
+
         # 2. Dependencies checks
         # 2.1 Const of metation strength and rate
         if name in ['const_for_mutation_strength', 'const_for_mutation_rate']:
@@ -263,7 +298,14 @@ class SettingsStorage(object):
             max_n = max(self.projections)
             x = (int((max_n - 1) / 10) + 1) * 10
             self.pts = [x, x + 10, x + 20]
+        self._inner_data = data
         return data
+
+    @property
+    def inner_data(self):
+        if not hasattr(self, '_inner_data'):
+            self._inner_data = self.read_data()
+        return self._inner_data
 
     @staticmethod
     def from_file(param_file, extra_param_file=None):
@@ -284,9 +326,10 @@ class SettingsStorage(object):
         # Create object
         settings_storage = SettingsStorage()
         for key in loaded_dict:
-            attr_name = key.lower()
+            attr_name = key.lower().strip()
             attr_name = attr_name.replace(" ", "_")
             attr_name = attr_name.replace("'", "_")
+            print(attr_name)
             if not hasattr(settings_storage, attr_name):
                 raise AttributeError(f"Unknown identifier: {key}.")
             settings_storage.__setattr__(attr_name, loaded_dict[key])
@@ -340,9 +383,17 @@ class SettingsStorage(object):
         return ls
 
     def get_optimizers_kwargs(self):
+        kwargs = self.get_engine_kwargs()
+        kwargs['verbose'] = 1
+        return kwargs
+
+    def get_engine_kwargs(self):    
+        kwargs = {}
         if self.engine == 'dadi':
-            return {'pts': self.pts, 'verbose': 1}
-        return {}
+            kwargs['args'] = (self.pts,)
+        else:
+            kwargs['args'] = ()
+        return kwargs
 
     def get_model(self):
         create_migs = not self.no_migrations
@@ -351,7 +402,8 @@ class SettingsStorage(object):
         sym_migs = False
         gen_time = self.time_for_generation
         Nref = self.theta0
-        return DemographicModel.from_structure(self.initial_structure,
-                                               create_migs, create_sels,
-                                               create_dyns, sym_migs,
-                                               gen_time, Nref)
+        return StructureDemographicModel(self.initial_structure,
+                                         self.final_structure,
+                                         create_migs, create_sels,
+                                         create_dyns, sym_migs,
+                                         gen_time, Nref)

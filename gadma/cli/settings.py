@@ -1,7 +1,7 @@
 from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable
 
 # Main options. Output and input.
-output_dir = None
+output_directory = None
 input_file = None
 #input_data = None
 #number_of_populations = None
