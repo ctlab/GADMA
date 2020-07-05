@@ -132,5 +132,6 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         print(f"--Finish local optimization {self.local_optimizer.id}--",
               file=stream)
         print("Result:\n", result, file=stream)
-
+        if report_file:
+            stream.close()
         return result
