@@ -131,6 +131,6 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             stream = sys.stdout
         print(f"--Finish local optimization {self.local_optimizer.id}--",
               file=stream)
-        print("Result:\n", result)
+        print("Result:\n", result, file=stream)
 
         return result
