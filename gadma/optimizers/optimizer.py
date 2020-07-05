@@ -1,6 +1,6 @@
 from ..utils import Variable, ContinuousVariable
 from ..utils import fix_args, cache_func, nan_fval_to_inf
-from ..utils import ensure_file_existence
+from ..utils import ensure_file_existence, variables_values_repr
 from ..utils import logarithm_transform, exponent_transform, ident_transform
 import copy
 import numpy as np
@@ -40,10 +40,7 @@ class Optimizer(object):
             stream = open(report_file, 'a')
         else:
             stream = sys.stdout
-        val_repr = [f"{val:5f}" if isinstance(val, float) else val for val in x]
-        var_val = zip(variables, val_repr)
-        x_repr = ",\t".join([f"{var.name}={val}" for var, val in var_val])
-        x_repr = f"({x_repr})"
+        x_repr = variables_values_repr(variables, x)
         metainfo = ''
         if hasattr(x, 'metadata'):
             metainfo = x.metadata
@@ -57,7 +54,8 @@ class Optimizer(object):
             wrapper._counter += 1
             y = f(x)
             if (verbose > 0) and (wrapper._counter % verbose == 0):
-                self.write_report(wrapper._counter, variables, x, y, report_file)
+                self.write_report(wrapper._counter, variables, x, y,
+                                  report_file)
             return y
         if report_file:
             ensure_file_existence(report_file)

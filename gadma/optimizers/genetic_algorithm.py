@@ -451,22 +451,10 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             status = 0
             message = f"CONVERGENCE: NO IMPROVEMENT DURING {self.n_stuck_gen}"\
                       " ITERATIONS"
+        ret_value = is_stuck or stop_by_n_eval or stop_by_n_gen
         if ret_status:
-            return is_stuck or stop_by_n_eval or stop_by_n_gen, status, message
-        return is_stuck or stop_by_n_eval or stop_by_n_gen
-
-    def initialize_report_file(self, report_file):
-        """
-        Write first line in report file.
-        """
-        if report_file:
-            ensure_file_existence(report_file)
-            stream = open(report_file, 'a')
-        else:
-            stream = sys.stdout
-        print("--Start genetic algorithm pipeline--", file=stream)
-        if report_file:
-            stream.close()
+            return ret_value, status, message
+        return ret_value
 
     def write_report(self, n_gen, variables, X_gen, Y_gen, x_best, y_best,
                      report_file):
@@ -481,23 +469,33 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         print("Current generation of solutions:", file=stream)
         print("N", "Value of fitness function", "Solution",
               file=stream, sep='\t')
+        if report_file:
+            stream.close()
         for i, (x, y) in enumerate(zip(X_gen, Y_gen)):
             # Use parent's report write function
             super(GeneticAlgorithm, self).write_report(i, variables, x,
                                                        f'{self.sign * y: 5f}',
                                                        report_file)
+        if report_file:
+            stream = open(report_file, 'a')
+
         if self.one_fifth_rule:
             print(f"Current mean mutation rate:\t{self.cur_mut_rate: 3f}",
                   file=stream)
         print(f"Current mean number of params to change during mutation:\t"
-              f"{min(int(self.cur_mut_strength * self.gen_size), 1): 3f}",
+              f"{min(int(self.cur_mut_strength * self.gen_size), 1): 3d}",
               file=stream)
 
         print("\n--Best solution by value of fitness function--", file=stream)
         print("Value of fitness:", self.sign * y_best, file=stream)
         print("Solution:", file=stream, end='')
+        if report_file:
+            stream.close()
         super(GeneticAlgorithm, self).write_report('', variables, x_best,
                                                    '', report_file)
+        if report_file:
+            stream = open(report_file, 'a')
+
         print("\n", file=stream)
 
         if report_file:
@@ -566,8 +564,8 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             callback = self.prepare_callback(callback)
 
         # Write first line of report
-        if verbose > 0:
-            self.initialize_report_file(report_file)
+        if verbose > 0 and report_file is not None:
+            report_file = ensure_file_existence(report_file)
 
         # Perform 0 generation of GA - initial design.
         X_gen, Y_gen = self.initial_design(f_in_opt, variables, num_init,
@@ -584,12 +582,14 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
 
         # Write report about 0 generation
         if verbose > 0:
-            self.write_report(n_gen, variables, X_gen, Y_gen, x_best, y_best, report_file)
+            self.write_report(n_gen, variables, X_gen, Y_gen, x_best, y_best,
+                              report_file)
         self.save(n_gen, X_gen, Y_gen, X_total, Y_total, save_file)
 
         # Begin to create generations
         while (len(variables) > 0 and
-                not self.is_stopped(n_gen, n_eval, n_impr_gen, maxiter, maxeval)):
+                not self.is_stopped(n_gen, n_eval, n_impr_gen,
+                                    maxiter, maxeval)):
             # Form new generation
             X_gen, Y_gen = self.selection(f_in_opt, variables, X_gen, Y_gen,
                                           self.selection_type,
@@ -633,7 +633,8 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
 
         # Construct OptimizerResult object to return
         _, status, message = self.is_stopped(n_gen, n_eval, n_impr_gen,
-                                             maxiter, maxeval, ret_status=True)
+                                             maxiter, maxeval,
+                                             ret_status=True)
         sign = -1 if self.maximize else 1
         Y = [self.sign * y for y in Y_total]
         Y_out = [self.sign * y for y in Y_gen]
@@ -641,7 +642,6 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                                  status=status, message=message, X=X_total,
                                  Y=Y, n_eval=n_eval, n_iter=n_gen,
                                  X_out=X_gen, Y_out=Y_out)
-
         return result
             
 register_global_optimizer('Genetic_algorithm', GeneticAlgorithm)

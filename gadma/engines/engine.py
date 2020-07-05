@@ -121,11 +121,15 @@ class Engine(object):
         cls = data.__class__
         if cls not in self.supported_data and \
                 not isinstance(data, self.inner_data_type):
-            raise ValueError(f"Data class {cls} is "
-                             f"not supported by {self.id} engine.\n"
-                             f"The supported classes are: "
-                             f"{self.supported_data} and "
-                             f"{self.inner_data_type}")
+            try:
+                transformed_data = self.inner_data_type(data)
+                self.set_data(transformed_data)
+            except:  # NOQA
+                raise ValueError(f"Data class {cls} is "
+                                 f"not supported by {self.id} engine.\n"
+                                 f"The supported classes are: "
+                                 f"{self.supported_data} and "
+                                 f"{self.inner_data_type}")
         if isinstance(data, DataHolder):
             self.inner_data = self.read_data(data)
             self.data_holder = data

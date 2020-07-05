@@ -1,7 +1,9 @@
-from ..models import Epoch, Split
+from ..models import CustomDemographicModel, Epoch, Split
 from ..utils import DiscreteVariable, DynamicVariable, Variable
 from .dadi_generator import FUNCTION_NAME, _print_p0, _print_main, _print_load_data
 import numpy as np
+import copy
+import sys
 
 def _print_moments_func(model, values, dt_fac):
     """
@@ -9,6 +11,17 @@ def _print_moments_func(model, values, dt_fac):
     """
     import moments
     from ..engines import MomentsEngine  # to avoid cross import
+
+    if isinstance(model, CustomDemographicModel):
+        ret_str = "import importlib.util\n\n"
+        ret_str += "spec = importlib.util.spec_from_file_location('module',"\
+                   f" '{sys.modules[model.function.__module__].__file__}')\n"
+        ret_str += "module = importlib.util.module_from_spec(spec)\n"
+        ret_str += "spec.loader.exec_module(module)\n"
+        ret_str += f"{FUNCTION_NAME} = module.model_func\n\n"
+        return ret_str
+
+
     var2value = model.var2value(values)  # OrderedDict
 
     f_vars = [x for x in var2value if not isinstance(x, DiscreteVariable)]
@@ -17,11 +30,11 @@ def _print_moments_func(model, values, dt_fac):
     ret_str += "\tsts = moments.LinearSystem_1D.steady_state_1D(np.sum(ns))\n"\
                "\tfs = moments.Spectrum(sts)\n"
 
-    ns_on_splits = [f'ns[{i}]' for i in range(model.number_of_populations())]
+    ns_on_splits = [[f'ns[{i}]' for i in range(model.number_of_populations())]]
     for ind, event in enumerate(reversed(model.events)):
         if isinstance(event, Split):
             p = event.pop_to_div
-            ns_on_splits.append(ns_on_splits[-1][:-1])
+            ns_on_splits.append(copy.copy(ns_on_splits[-1][:-1]))
             ns_on_splits[-1][p] += " + " + ns_on_splits[-2][-1]
     ns_on_splits = list(reversed(ns_on_splits))[1:]
     n_split = 0
@@ -37,9 +50,16 @@ def _print_moments_func(model, values, dt_fac):
                     if value != 'Sud':
                         all_sudden = False
                         func = DynamicVariable._help_dict[value]
-                        funcstr = func.func_str(event.init_size_args[i], 
-                                                 event.size_args[i], 
-                                                 event.time_arg)
+                        y1 = event.init_size_args[i]
+                        y2 = event.size_args[i]
+                        x_diff = event.time_arg
+                        if isinstance(y1, Variable):
+                            y1 = y1.name
+                        if isinstance(y2, Variable):
+                            y2 = y2.name
+                        if isinstance(x_diff, Variable):
+                            x_diff = x_diff.name
+                        funcstr = func.func_str(y1, y2, x_diff)
                         ret_str += "\tnu%d_func = %s\n" % (i+1, funcstr)
                         func_names.append("nu%d_func" % (i+1))
             kwargs_with_vars = MomentsEngine._get_kwargs(event, var2value)
@@ -53,18 +73,19 @@ def _print_moments_func(model, values, dt_fac):
                         for j in range(y.shape[1]):
                             if i == j:
                                 elems.append("0")
+                                continue
                             yel = y[i][j]
                             if isinstance(yel, Variable):
                                 elems.append(yel.name)
                             else:
-                                elems.append(yel)
+                                elems.append(str(yel))
                         rows.append(f"[{', '.join(elems)}]")
-                    ret_str += f"migs = np.array([{', '.join(rows)}]"
+                    ret_str += f"\tmigs = np.array([{', '.join(rows)}])\n"
                     kwargs[x] = 'migs'
                 elif isinstance(y, list):  # pop. sizes, selection, dynamics
                     varnames = [var.name if isinstance(var, Variable) else str(var)  for var in y
                                 ]
-                    if x == 'nu':  # pop size
+                    if x == 'Npop':  # pop size
                         if all_sudden:
                             kwargs[x] = f"[{', '.join(varnames)}]"
                         else:
@@ -90,9 +111,9 @@ def _print_moments_func(model, values, dt_fac):
             ns_split = (ns_on_splits[n_split][event.pop_to_div],
                             ns_on_splits[n_split][-1])
             if event.n_pop == 1:
-                ret_str += "moments.Manips.split_1D_to_2D"
+                ret_str += "\tfs = moments.Manips.split_1D_to_2D"
             else:
-                ret_str += "split_%dD_to_%dD_%d" % (
+                ret_str += "\tfs = moments.Manips.split_%dD_to_%dD_%d" % (
                            event.n_pop, event.n_pop + 1, event.pop_to_div + 1)
 
             ret_str += f"(fs, {', '.join(ns_split)})\n"

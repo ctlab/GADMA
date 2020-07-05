@@ -32,7 +32,7 @@ class OptimizerResult(object):
 
     """
     def __init__(self, x, y, success: bool, status: int, message: str,
-                 X, Y, n_eval: int, n_iter:int, X_out=None, Y_out=None):
+                 X, Y, n_eval: int, n_iter:int, X_out=[], Y_out=[]):
         self.x = np.array(x, dtype=object)
         self.y = y
         self.success = success

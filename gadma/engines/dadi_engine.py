@@ -1,6 +1,6 @@
-from . import Engine, register_engine
+from . import Engine, register_engine, get_engine
 from .dadi_moments_common import DadiOrMomentsEngine
-from ..models import DemographicModel, Epoch, Split
+from ..models import DemographicModel, CustomDemographicModel, Epoch, Split
 from ..utils import DynamicVariable
 from .. import SFSDataHolder
 
@@ -73,6 +73,10 @@ class DadiEngine(DadiOrMomentsEngine):
         :param pts: grid points for numerical solution
         """
         var2value = self.model.var2value(values)
+        if isinstance(self.model, CustomDemographicModel):
+            vals = [var2value[var] for var in self.model.variables]
+            return self.model.function(vals, ns, dt_fac)
+
         dadi = self.base_module
 
         xx = dadi.Numerics.default_grid(pts)
@@ -117,6 +121,43 @@ class DadiEngine(DadiOrMomentsEngine):
                     phi = getattr(dadi.PhiManip, func_name)(xx, phi)
         sfs = dadi.Spectrum.from_phi(phi, ns, [xx]*len(ns))
         return sfs
+
+    def draw_schematic_model_plot(self, values, save_file=None, 
+                                  fig_title="Demographic Model from GADMA",
+                                  nref=None, gen_time=1,
+                                  gen_time_units="Generations"):
+        """
+        Draws schematic plot of the model with values with
+        :class:`MomentsEngine` (!).
+        See moments manual for more information.
+
+        :param values: Values of the model parameters, it could be list of
+                       values or dictionary {variable name: value}.
+        :type values: list or dict
+        :param save_file: File to save picture. If None then picture will be
+                          displayed to the screen.
+        :type save_file: str
+        :param fig_title: Title of the figure.
+        :type fig_title: str
+        :param nref: An ancestral population size. If None then parameters
+                     will be drawn in genetic units.
+        :type nref: int
+        :param gen_type: Time of one generation.
+        :type gen_type: float
+        :param gen_time_units: Units of :param:`gen_type`. For example, it
+                               could be Years, Generations, Thousand Years and
+                               so on.
+        """
+        try:
+            moments_engine = get_engine('moments')
+        except AttributeError:
+            raise RuntimeError("Moments Engine is requiered to draw schematic"
+                               " model plot.")
+        moments_engine.set_data(self.data)
+        moments_engine.set_model(self.model)
+        moments_engine.draw_schematic_model_plot(values, save_file, fig_title,
+                                                 nref, gen_time,
+                                                 gen_time_units)
 
     def simulate(self, values, ns, pts):
         """

@@ -130,12 +130,24 @@ def get_settings():
     # Checks that we have got all required
     # TODO: case of resume!!
     if settings_storage.input_file is None:
-        AttributeError("Input file is requiered. It could be set by "
-                       "-i/--input option or via parameters file.")
+        raise AttributeError("Input file is requiered. It could be set by "
+                             "-i/--input option or via parameters file.")
     if settings_storage.output_directory is None:
-        AttributeError("Output directory is requiered. It could be set by "
-                       "-o/--output option or via parameters file.")
+        raise AttributeError("Output directory is requiered. It could be set "
+                             "by -o/--output option or via parameters file.")
 
+    if settings_storage.custom_filename is not None:
+        if (settings_storage.lower_bound is None or
+                settings_storage.upper_bound is None):
+            raise AttributeError("Please specify either `Lower bound` and "
+                                 "`Upper bound` or `Parameter identifiers` "
+                                 "for custom model")
+    else:
+        if (settings_storage.initial_structure is None and
+                settings_storage.final_structure is None):
+            raise AttributeError("Please specify either structure of "
+                                 "demographic history or filename with custom"
+                                 " model.")
 #    if args.resume is not None and os.path.abspath(
 #        os.path.expanduser(
 #            options_storage.resume_dir)) != os.path.abspath(

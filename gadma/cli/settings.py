@@ -1,4 +1,5 @@
-from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable
+from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable,\
+                    DynamicVariable
 
 # Main options. Output and input.
 output_directory = None
@@ -24,11 +25,11 @@ engine = 'moments'
 no_migrations = False
 
 #Custom model
-#model_func_file = None
+custom_filename = None
 #model_func = None
-#lower_bound = None
-#upper_bound = None
-#p_ids = None
+lower_bound = None
+upper_bound = None
+parameter_identifiers = None
 
 # Structure of models
 initial_structure_unit = 1
@@ -54,7 +55,7 @@ const_for_mutation_strength = 1.01
 mean_mutation_rate = 0.2
 const_for_mutation_rate = 1.02
 
-stuck_generation_number = 100
+stuck_generation_number = 10
 eps = 1e-2
 
 # just for logging evaluations
@@ -118,3 +119,15 @@ time_to_print_summary= 1  # min
 #moments_available = False
 
 
+mutation_rate = None
+
+# Additional constants
+P_IDS = {'n': PopulationSizeVariable, 't': TimeVariable,
+         'm': MigrationVariable, 'd': DynamicVariable}
+LONG_NAME_2_SHORT = {"log-likelihood": "logLL",
+                     "aic score": "aic",
+                     "claic score": "claic"}
+BASE_OUTPUT_DIR_PREFIX = "best_"
+BASE_OUTPUT_DIR_PREFIX_FINAL = "best_"
+LOCAL_OUTPUT_DIR_PREFIX = "current_best_"
+LOCAL_OUTPUT_DIR_PREFIX_FINAL = "final_best_"

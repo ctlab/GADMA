@@ -1,6 +1,6 @@
 from . import Engine, register_engine
 from .dadi_moments_common import DadiOrMomentsEngine
-from ..models import DemographicModel, Epoch, Split
+from ..models import DemographicModel, CustomDemographicModel, Epoch, Split
 from ..utils import DynamicVariable
 from .. import SFSDataHolder, VCFDataHolder
 import numpy as np
@@ -21,6 +21,7 @@ class MomentsEngine(DadiOrMomentsEngine):
     import moments as base_module
     supported_data = [SFSDataHolder, VCFDataHolder]  #:
     inner_data_type = base_module.Spectrum  #:
+    default_dt_fac = 0.01  #:
 
     @staticmethod
     def _get_kwargs(event, var2value):
@@ -56,7 +57,7 @@ class MomentsEngine(DadiOrMomentsEngine):
             ret_dict['h'] = event.sel_args
         return ret_dict
 
-    def _moments_inner_func(self, values, ns, dt_fac):
+    def _moments_inner_func(self, values, ns, dt_fac=0.01):
         """
         Simulates expected SFS for proposed values of variables.
 
@@ -65,6 +66,10 @@ class MomentsEngine(DadiOrMomentsEngine):
         :param dt_fac: step size for numerical solution
         """
         var2value = self.model.var2value(values)
+        if isinstance(self.model, CustomDemographicModel):
+            vals = [var2value[var] for var in self.model.variables]
+            return self.model.function(vals, ns)
+
         moments = self.base_module
 
         sts = moments.LinearSystem_1D.steady_state_1D(np.sum(ns))
@@ -132,29 +137,77 @@ class MomentsEngine(DadiOrMomentsEngine):
                 n_split += 1
         return fs
 
-    def simulate(self, values, ns, dt_fac=0.01):
+    def draw_schematic_model_plot(self, values, save_file=None, 
+                                  fig_title="Demographic Model from GADMA",
+                                  nref=None, gen_time=1,
+                                  gen_time_units="Generations"):
+        """
+        Draws schematic plot of the model with values.
+        See moments manual for more information.
+
+        :param values: Values of the model parameters, it could be list of
+                       values or dictionary {variable name: value}.
+        :type values: list or dict
+        :param save_file: File to save picture. If None then picture will be
+                          displayed to the screen.
+        :type save_file: str
+        :param fig_title: Title of the figure.
+        :type fig_title: str
+        :param nref: An ancestral population size. If None then parameters
+                     will be drawn in genetic units.
+        :type nref: int
+        :param gen_type: Time of one generation.
+        :type gen_type: float
+        :param gen_time_units: Units of :param:`gen_type`. For example, it
+                               could be Years, Generations, Thousand Years and
+                               so on.
+        """
+        moments = self.base_module
+        # From moments docs about ns:
+        # List of sample sizes to be passed as the ns argument to model_func.
+        # Actual values do not matter, as long as the dimensionality is correct.
+        # So we take small size for fast drawing.
+        ns = [4 for _ in range(len(self.data.sample_sizes))]
+        plot_mod = moments.ModelPlot.generate_model(self._moments_inner_func,
+                                                    values, ns)
+        draw_scale = nref is not None
+        show = save_file is None     
+        if nref is not None:
+            nref = int(nref)  
+        moments.ModelPlot.plot_model(plot_mod,
+                                     save_file = save_file,
+                                     show=show,
+                                     fig_title=fig_title,
+                                     draw_scale=draw_scale,
+                                     pop_labels=self.data.pop_ids,
+                                     nref=nref,
+                                     gen_time=gen_time,
+                                     gen_time_units=gen_time_units,
+                                     reverse_timeline=True)
+
+    def simulate(self, values, ns, dt_fac=default_dt_fac):
         """
         Returns simulated expected SFS for :attr:`demographic_model` with
         values as parameters. 
 
-        :param values: values of demographic model parameters.
+        :param values: Values of demographic model parameters.
         :param ns: sample sizes of the simulated SFS.
         """
         moments = self.base_module
         model = self._moments_inner_func(values, ns, dt_fac)
         return model
 
-    def get_theta(self, values, dt_fac=0.01):
+    def get_theta(self, values, dt_fac=default_dt_fac):
         return super(MomentsEngine, self).get_theta(values, dt_fac)
 
-    def evaluate(self, values, dt_fac=0.01):
+    def evaluate(self, values, dt_fac=default_dt_fac):
         """
         Simulates SFS from values and evaluate log likelihood between
         simulated SFS and observed SFS.
         """
         return super(MomentsEngine, self).evaluate(values, dt_fac)
 
-    def generate_code(self, values, filename=None, dt_fac=0.01):
+    def generate_code(self, values, filename=None, dt_fac=default_dt_fac):
         return super(MomentsEngine, self).generate_code(values, filename,
                                                         dt_fac)
 register_engine(MomentsEngine)

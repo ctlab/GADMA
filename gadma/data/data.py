@@ -1,3 +1,4 @@
+from ..utils import check_file_existence, ensure_file_existence
 import functools
 
 class DataHolder(object):
@@ -18,6 +19,9 @@ class DataHolder(object):
         self.outgroup = outgroup
         self.population_labels = population_labels
         self.sequence_length = sequence_length
+
+        if check_file_existence(self.filename):
+            self.filename = ensure_file_existence(self.filename)
 
 
 class SFSDataHolder(DataHolder):

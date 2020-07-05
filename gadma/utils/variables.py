@@ -272,12 +272,13 @@ class Dynamic(object):
         """
         raise NotImplementedError
 
-    def func_str(self, y1, y2, x_diff):
+    @classmethod
+    def func_str(cls, y1, y2, x_diff):
         """
         Returns string representation of the dynamic via formating
         :attr:`format_str` with argumets.
         """
-        return self.format_str % (str(y1), str(y2), str(x_diff))
+        return cls.format_str.format(str(y1), str(y2), str(x_diff))
 
 def linear(y1, y2, x_diff, x):
     y = y1 + (y2 - y1) * (x / x_diff)

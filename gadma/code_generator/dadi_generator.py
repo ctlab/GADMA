@@ -1,5 +1,5 @@
-from ..models import Epoch, Split
-from ..utils import DiscreteVariable, DynamicVariable
+from ..models import CustomDemographicModel, Epoch, Split
+from ..utils import Variable, DiscreteVariable, DynamicVariable
 
 
 FUNCTION_NAME = 'model_func'
@@ -9,6 +9,15 @@ def _print_dadi_func(model, values):
     values are needed to fix dynamics of populations.
     """
     from ..engines import DadiEngine  # to avoid cross import
+    if isinstance(model, CustomDemographicModel):
+        ret_str = "import importlib.util\n\n"
+        ret_str += "spec = importlib.util.spec_from_file_location('module',"\
+                   f" '{model.function.__file__}')\n"
+        ret_str += "module = importlib.util.module_from_spec(spec)\n"
+        ret_str += "spec.loader.exec_module(module)\n"
+        ret_str += f"{FUNCTION_NAME} = module.model_func\n\n"
+        return ret_str
+
     var2value = model.var2value(values)  # OrderedDict
 
     f_vars = [x for x in var2value if not isinstance(x, DiscreteVariable)]
@@ -23,10 +32,17 @@ def _print_dadi_func(model, values):
                     dyn_arg = event.dyn_args[i]
                     value = var2value.get(dyn_arg, dyn_arg)
                     if value != 'Sud':
-                        func = DynamicVariable.get_func_from_value(value)
-                        funcstr = func.func_str(event.init_size_args[i], 
-                                                 event.size_args[i], 
-                                                 event.time_arg)
+                        func = DynamicVariable._help_dict[value]
+                        y1 = event.init_size_args[i]
+                        y2 = event.size_args[i]
+                        x_diff = event.time_arg
+                        if isinstance(y1, Variable):
+                            y1 = y1.name
+                        if isinstance(y2, Variable):
+                            y2 = y2.name
+                        if isinstance(x_diff, Variable):
+                            x_diff = x_diff.name
+                        funcstr = func.func_str(y1, y2, x_diff)
                         ret_str += "\tnu%d_func = %s\n" % (i+1, funcstr)
             kwargs_with_vars = DadiEngine._get_kwargs(event, var2value)
             str_kwargs = ["%s=%s" % (k, v.name if isinstance(v, Variable)
@@ -40,9 +56,9 @@ def _print_dadi_func(model, values):
             ret_str += "\tphi = %s(phi, xx, %s)\n" % (func, ', '.join(str_kwargs))
         elif isinstance(event, Split):
             if event.n_pop == 1:
-                ret_str += "phi = dadi.PhiManip.phi_1D_to_2D"
+                ret_str += "\tphi = dadi.PhiManip.phi_1D_to_2D"
             else:
-                ret_str += "phi = phi_%dD_to_%dD_%d" % (event.n_pop-1, event.n_pop, event.pop_to_div + 1)
+                ret_str += "\tphi = dadi.PhiManip.phi_%dD_to_%dD_%d" % (event.n_pop-1, event.n_pop, event.pop_to_div + 1)
             ret_str += "(xx, phi)\n" 
     ret_str += "\tsfs = dadi.Spectrum.from_phi(phi, ns, [xx]*len(ns))\n"
     ret_str += "\treturn sfs\n"
@@ -71,7 +87,7 @@ def _print_load_data(data_holder, is_fs, mode='dadi'):
     else:
         data = is_fs
         ret_str += f"data = {mode}.Spectrum.from_file('{fname}')\n"
-        if data.sample_sizes != data_holder.projections:
+        if list(data.sample_sizes) != list(data_holder.projections):
             size = data_holder.sample_sizes
             ret_str += "data = data.project(%s)\n" % (str(list(size)))
         if data.folded == data_holder.outgroup:
@@ -94,7 +110,7 @@ def _print_p0(values):
     return "p0 = [%s]\n" % ", ".join([str(x) for x in values])
 
 def _print_dadi_simulation():
-    ret_str = "func_ex = dadi.Numerics.make_extrap_log_func({FUNCTION_NAME})\n"
+    ret_str = f"func_ex = dadi.Numerics.make_extrap_log_func({FUNCTION_NAME})\n"
     ret_str += "model = func_ex(p0, ns, pts)\n"
     return ret_str
 

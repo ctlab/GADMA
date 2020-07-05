@@ -1,7 +1,7 @@
 import numpy as np
 
 from . import Model
-from ..utils import Variable
+from ..utils import Variable, float_repr
 
 
 class Event(Model):
@@ -66,8 +66,8 @@ class Epoch(Event):
 
     def as_custom_string(self, values):
         var2value = self.var2value(values)
-        val_str = lambda val: f"{val:5.3f}" if isinstance(val, float)\
-                              else f"{val}"
+        val_str = lambda val: float_repr(val, precision=3)\
+                              if isinstance(val, float) else str(val)
         repr_f = lambda var: f"{val_str(var2value[var])}({var.name})"\
                              if isinstance(var, Variable)\
                              else f"{val_str(var)}"
@@ -114,8 +114,7 @@ class Split(Event):
 
     def as_custom_string(self, values):
         var2value = self.var2value(values)
-        val_str = lambda val: f"{val:5.3f}" if isinstance(val, float)\
-                              else f"{val}"
+        val_str = lambda val: float_repr(val, precision=3)
         repr_f = lambda var: f"{val_str(var2value[var])}({var.name})"\
                              if isinstance(var, Variable)\
                              else f"{val_str(var)}"

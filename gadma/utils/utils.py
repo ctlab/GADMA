@@ -32,7 +32,7 @@ def ident_transform(x):
 
 
 def extract_args(func):
-#    @wraps(func)
+    @wraps(func)
     def extract_args_wrapper(args):
         return func(*args)
     return extract_args_wrapper
@@ -171,6 +171,14 @@ def parallel_wrap(f, x):
     return f(*x)
 
 
+def has_counter(f):
+    """
+    Creates attribute `counter` for function f.
+    """
+    f.counter = 0
+    return f
+
+
 class WeightedMetaArray(np.ndarray):
     """Array with metadata."""
     def __new__(cls, array, dtype=None, order=None):
@@ -244,3 +252,17 @@ class StdAndFileLogger(object):
 
 def get_aic_score(n_params, log_likelihood):
     return 2 * n_params - 2 * log_likelihood
+
+# Printing functions
+def float_repr(value, precision = 5):
+    if value < 10**(-precision):
+        return f"{value:.2e}"
+    return f"{round(value, precision)}"
+
+def variables_values_repr(variables, values):
+    val_repr = [float_repr(val) if isinstance(val, float) else val
+                for val in values]
+    var_val = zip(variables, val_repr)
+    x_repr = ",\t".join([f"{var.name}={val}" for var, val in var_val])
+    x_repr = f"({x_repr})"
+    return x_repr

@@ -51,6 +51,15 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                  global_maxeval=None, local_maxeval=None,
                  verbose=0, callback=None, eval_file=None,
                  report_file=None, save_file=None):
+        if report_file:
+            stream = open(report_file, 'a')
+        else:
+            stream = sys.stdout
+        print(f"--Start global optimization {self.global_optimizer.id}--",
+              file=stream)
+        if report_file:
+            stream.close()
+
         # Run global optimizer
         global_result = self.global_optimizer.optimize(f, variables,
                                                        args, global_num_init,
@@ -60,6 +69,14 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                                                        verbose, callback,
                                                        report_file, eval_file,
                                                        save_file)
+        if report_file:
+            stream = open(report_file, 'a')
+        else:
+            stream = sys.stdout
+        print(f"--Finish global optimization {self.global_optimizer.id}--",
+              file=stream)
+        print("Result:\n", global_result)
+
         # Transform best x to local optimizer as x0 and functions for local
         x_best = np.array(global_result.x)
         is_filtered = self._get_filter(variables)
@@ -69,6 +86,13 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         f_local = self._f_for_local_opt(f, variables, x_best)
         callback_local = self._callback_for_local_opt(callback, variables,
                                                       x_best)
+
+        print(f"--Start local optimization {self.local_optimizer.id}--",
+              file=stream)
+
+        if report_file:
+            stream.close()
+
         # Run local optimizer
         local_result = self.local_optimizer.optimize(f_local, variables_local,
                                                      x0, args, local_options,
@@ -100,4 +124,13 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         n_iter = global_result.n_iter + local_result.n_iter
         result = OptimizerResult(x_best, y_best, success, status, message,
                                  X_total, Y_total, n_eval, n_iter, X_out, Y_out)
+
+        if report_file:
+            stream = open(report_file, 'a')
+        else:
+            stream = sys.stdout
+        print(f"--Finish local optimization {self.local_optimizer.id}--",
+              file=stream)
+        print("Result:\n", result)
+
         return result

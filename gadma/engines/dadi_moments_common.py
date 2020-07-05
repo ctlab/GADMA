@@ -1,5 +1,6 @@
 from . import Engine
-from ..models import DemographicModel, StructureDemographicModel, Epoch, Split
+from ..models import DemographicModel, StructureDemographicModel,\
+                     CustomDemographicModel, Epoch, Split
 from ..utils import DynamicVariable
 from .. import SFSDataHolder
 import os
@@ -19,7 +20,8 @@ class DadiOrMomentsEngine(Engine):
 
     id = 'dadi_or_moments'  #:
     base_module = None  #:
-    supported_models = [DemographicModel, StructureDemographicModel]  #:
+    supported_models = [DemographicModel, StructureDemographicModel,
+                        CustomDemographicModel]  #:
     supported_data = [SFSDataHolder]  #:
     inner_data_type = None  # base_module.Spectrum  #:
 
@@ -58,9 +60,12 @@ class DadiOrMomentsEngine(Engine):
         if key not in self.saved_add_info:
             Warning("Additional evaluation for theta. Nothing to worry if seldom.")
             self.evaluate(values, grid_sizes)
-        return self.saved_add_info[key]
+        model = self.saved_add_info[key]
+        theta = self.base_module.Inference.optimal_sfs_scaling(model,
+                                                               self.data)
+        return theta
 
-    def get_N_ancestral(self, theta):
+    def get_N_ancestral_from_theta(self, theta):
         if self.model.theta0 is not None:
             theta0 = self.model.theta0
         elif (self.model.mu is not None and self.data_holder is not None and
@@ -69,6 +74,49 @@ class DadiOrMomentsEngine(Engine):
         else:
             return None
         return theta / theta0
+
+    def get_N_ancestral(self, values, grid_sizes):
+        theta = self.get_theta(values, grid_sizes)
+        return self.get_N_ancestral_from_theta(theta)
+
+    def draw_sfs_plots(self, values, grid_sizes, save_file=None, vmin=None):
+        """
+        Draws plots of SFS data for observed data and simulated by model data.
+
+        :param values: Values of the model parameters, it could be list of
+                       values or dictionary {variable name: value}.
+        :type values: list or dict
+        :param grid_sizes: special parameter for numerical solutions. It is
+                           :param:`pts` for :class:`DadiEngine` and
+                           :param:`dt_fac` for :class:`MomentsEngine`.
+        :param save_file: File to save picture. If None then picture will be
+                          displayed to the screen.
+        :type save_file: str
+        :param vmin: Values in sfs below vmin are masked in plot. Should be
+                     positive.
+        :type vmin: float
+        """
+        if vmin is not None:
+            assert vmin > 0
+        show = save_file is None
+        n_pop = len(self.data.sample_sizes)
+        # Get simulated data
+        key = self._get_key(values, grid_sizes)
+        if key not in self.saved_add_info:
+            self.evaluate(values, grid_sizes)
+        model = self.saved_add_info[key]
+        # Draw
+        if n_pop == 1:
+            self.base_module.Plotting.plot_1d_comp_Poisson(model, self.data,
+                                                           show=show)
+        else:
+            func_name = f"plot_{n_pop}d_comp_Poisson"
+            plotting_func = getattr(self.base_module.Plotting, func_name)
+            plotting_func(model, self.data, vmin=vmin, show=show)
+        if save_file is not None:
+            from matplotlib import pyplot as plt
+            plt.savefig(save_file)
+            plt.close('all')
 
     def evaluate(self, values, grid_sizes):
         """
@@ -80,11 +128,9 @@ class DadiOrMomentsEngine(Engine):
                              " use set_and_evaluate function instead.")
         model = self.simulate(values, self.data.sample_sizes, grid_sizes)
         ll_model = self.base_module.Inference.ll_multinom(model, self.data)
-        # Save theta
-        theta = self.base_module.Inference.optimal_sfs_scaling(model, self.data)
-#        print(values, ll_model, theta)
+        # Save simulated data
         key = self._get_key(values, grid_sizes)
-        self.saved_add_info[key] = theta
+        self.saved_add_info[key] = model
         return ll_model
 
 
