@@ -1827,13 +1827,9 @@ class Demographic_model:
                         self.params.model_func_file + '")\n')
                 output.write('generated_model = file_with_model_func.model_func\n')
             else:
-                output.write('def generated_model((')
-                chunk_size = 10
+                output.write('def generated_model(params, ns, pts):\n')
                 par_labels = self.get_params_labels_str()
-                output.write(', '.join(par_labels[:chunk_size]))
-                for ind in range(chunk_size, len(par_labels), chunk_size):
-                    output.write(',\n\t\t' + ', '.join(par_labels[ind:ind + chunk_size]))
-                output.write('), ns, pts):\n')
+                output.write('\tparams = ' + ', '.join(par_labels) + '\n')
                 
                 ns_index = 0
                 ts_index = 0
@@ -2086,13 +2082,9 @@ class Demographic_model:
                             pop_to_split_3 = period.population_to_split
                             break
 
-                output.write('def generated_model((')
-                chunk_size = 10
+                output.write('def generated_model(params, ns, pts):\n')
                 par_labels = self.get_params_labels_str()
-                output.write(', '.join(par_labels[:chunk_size]))
-                for ind in range(chunk_size, len(par_labels), chunk_size):
-                    output.write(',\n\t\t' + ', '.join(par_labels[ind:ind + chunk_size]))
-                output.write('), ns):\n')
+                output.write('\tparams = ' + ', '.join(par_labels) + '\n')
                 
                 ns_index = 0
                 ts_index = 0
