@@ -1,10 +1,11 @@
 from . import Engine
 from ..models import DemographicModel, StructureDemographicModel,\
                      CustomDemographicModel, Epoch, Split
-from ..utils import DynamicVariable
+from ..utils import DynamicVariable, DiscreteVariable, rpartial, cache_func
 from .. import SFSDataHolder
 import os
 import numpy as np
+from functools import wraps
 
 class DadiOrMomentsEngine(Engine):
     """
@@ -55,14 +56,72 @@ class DadiOrMomentsEngine(Engine):
             return (key, grid_sizes)
         return (key, tuple(grid_sizes))
 
+    def _get_theta_from_sfs(self, values, model_sfs):
+        optimal_theta = self.base_module.Inference.optimal_sfs_scaling(
+            model_sfs, self.data)
+        theta0 = 1 / self.get_N_ancestral_from_theta(1.0)
+        if self.model.linear_constrain is None:
+            return optimal_theta
+        # If we have constrains we deal with them:
+        upper_lb = None
+        lower_ub = None
+        Ax = self.model.linear_constrain._get_value(values)
+        theta_lb = theta0 * self.model.linear_constrain.lb / Ax
+        theta_ub = theta0 * self.model.linear_constrain.ub / Ax
+        if np.any(theta_lb > theta_ub):
+            inds = np.where(theta_lb > theta_ub)
+            raise ValueError(f"Lower bounds for {inds} constrains in model"
+                             f" are greater than upper bounds."
+                             f"Please check linear constrain:\n"
+                             f"{self.model.linear_constrain}\n"
+                             f"and values:\n{values}.")
+        theta_upper_lb = max(theta_lb)
+        theta_lower_ub = min(theta_ub)
+        if theta_upper_lb > theta_lower_ub:
+            raise ValueError(f"Upper lower bound ({upper_lb}) in greater than"
+                             f" lower upper bound ({lower_ub}). Please check "
+                             f" linear constrain:\n"
+                             f"{self.model.linear_constrain}\n"
+                             f"and values:\n{values}.")
+
+        optimal_theta = max(optimal_theta, theta_upper_lb)
+        optimal_theta = min(optimal_theta, theta_lower_ub)
+        return optimal_theta
+#        for i, (lb, ub, val) in enumerate(zip(self.model.linear_constrain.lb,
+#                                              self.model.linear_constrain.ub,
+#                                              Ax):
+#            if lb > ub:
+#                raise ValueError(f"Lower bound for {i} constrain in model for"
+#                                 f" values {values} is greater than upper "
+#                                 f"bound: {val}, [{low_bound}, {upp_bound}]."
+#                                 f"Please check linear constrain:\n"
+#                                 f"{self.model.linear_constrain}\n"
+#                                 f"and values:\n{values}.")
+#            if lb is not None:
+#                if upper_lb is None:
+#                    upper_lb = lb / val
+#                upper_lb = max(upper_lb, lb / val)
+#            if ub is not None:
+#                if lower_ub is None:
+#                    lower_ub = ub / val
+#                lower_ub = max(lower_ub, ub / val)
+#        if upper_lb > lower_ub:
+#            raise ValueError(f"Upper lower bound ({upper_lb}) in greater than"
+#                             f" lower upper bound ({lower_ub}). Please check "
+#                             f" linear constrain:\n"
+#                             f"{self.model.linear_constrain}\n"
+#                             f"and values:\n{values}.")
+#        optimal_theta = max(optimal_theta, lower_ub)
+            
+        
+
     def get_theta(self, values, grid_sizes):
         key = self._get_key(values, grid_sizes)
         if key not in self.saved_add_info:
             Warning("Additional evaluation for theta. Nothing to worry if seldom.")
             self.evaluate(values, grid_sizes)
-        model = self.saved_add_info[key]
-        theta = self.base_module.Inference.optimal_sfs_scaling(model,
-                                                               self.data)
+        model_sfs = self.saved_add_info[key]
+        theta = self._get_theta_from_sfs(values, model_sfs)
         return theta
 
     def get_N_ancestral_from_theta(self, theta):
@@ -126,16 +185,58 @@ class DadiOrMomentsEngine(Engine):
         if self.data is None or self.model is None:
             raise ValueError("Please set data and model for the engine or"
                              " use set_and_evaluate function instead.")
-        model = self.simulate(values, self.data.sample_sizes, grid_sizes)
-        ll_model = self.base_module.Inference.ll_multinom(model, self.data)
+        model_sfs = self.simulate(values, self.data.sample_sizes, grid_sizes)
+        # The next two lines usually works like ll_multinom, but when we have
+        # some constrains it could turn out to be ll with some other theta.
+        theta = self._get_theta_from_sfs(values, model_sfs)
+        ll_model = self.base_module.Inference.ll(theta * model_sfs, self.data)
         # Save simulated data
         key = self._get_key(values, grid_sizes)
-        self.saved_add_info[key] = model
+        self.saved_add_info[key] = model_sfs
         return ll_model
+
+    def get_claic_component(self, x0, all_boots, grid_sizes, eps):
+        # Cache evaluations of the frequency spectrum inside our hessian/J 
+        # evaluation function
+        var2val = self.model.var2value(x0)
+        is_not_discrete = np.array([not isinstance(var, DiscreteVariable)
+                                    for var in var2val])
+        x0 = np.array(list(var2val.values()), dtype=object)
+        p0 = x0[is_not_discrete]
+
+        @wraps(self.simulate)
+        def simul_func(x):
+            p = np.array(x0)
+            p[is_not_discrete] = x
+            return self.simulate(p, self.data.sample_sizes, grid_sizes)
+
+        cached_simul = cache_func(simul_func)
+        def func(x, data):
+            model = cached_simul(x)
+            return self.base_module.Inference.ll_multinom(model, self.data)
+
+        H = - self.base_module.Godambe.get_hess(func, p0, eps, args=[self.data])
+        H_inv = np.linalg.inv(H)
+
+        J = np.zeros((len(p0), len(p0)))
+        for ii, boot in enumerate(all_boots):
+            boot = self.base_module.Spectrum(boot)
+            grad_temp = self.base_module.Godambe.get_grad(func, p0,
+                                                          eps, args=[boot])
+            J_temp = np.outer(grad_temp, grad_temp)
+            J += J_temp
+            
+        J = J/len(all_boots)
+
+        # G = J*H^-1
+        G = np.dot(J, H_inv)
+
+        return np.trace(G)
 
 
 # Those functions are common for dadi and moments engines.
-def _check_missing_population_labels(sfs, default_pop_labels=None):
+def _check_missing_population_labels(sfs, default_pop_labels=None,
+                                     filename=None):
     """
     Check that SFS has population labels. If not then make them default.
 
@@ -148,8 +249,8 @@ def _check_missing_population_labels(sfs, default_pop_labels=None):
             Warning("Spectrum file %s is in an old format - without"
                     " population labels, so they will be taken from"
                     " corresponding parameter: %s."
-                    % (filename, ', '.join(population_labels)))
-            sfs.pop_ids = population_labels
+                    % (filename, ', '.join(default_pop_labels)))
+            sfs.pop_ids = default_pop_labels
         else:
             sfs.pop_ids = ['Pop %d' % (i+1) for i in range(sfs.ndim)]
     return sfs
@@ -253,7 +354,8 @@ def _read_data_sfs_type(module, data_holder):
     sfs = module.Spectrum.from_file(data_holder.filename)
     ns = np.array(sfs.shape) - 1
 
-    sfs = _check_missing_population_labels(sfs, data_holder.population_labels)
+    sfs = _check_missing_population_labels(sfs, data_holder.population_labels,
+                                           data_holder.filename)
     sfs = _new_population_labels(sfs, data_holder.population_labels)
     sfs = _project(sfs, data_holder.projections)
     sfs = _change_outgroup(sfs, data_holder.outgroup)

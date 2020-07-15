@@ -1,5 +1,9 @@
 from ..code_generator import id2printfunc
 from ..data import DataHolder
+from ..utils import Variable
+from ..models import BinaryOperation
+
+
 _registered_engines = {}
 
 
@@ -61,6 +65,14 @@ class Engine(object):
     def __init__(self, data=None, model=None):
         self.data = data
         self.model = model
+
+    @staticmethod
+    def get_value_from_var2value(var2value, entity):
+        if isinstance(entity, Variable):
+            return var2value[entity]
+        if isinstance(entity, BinaryOperation):
+            return entity.get_value(var2value)
+        return entity
 
     @staticmethod
     def read_data(data_holder):

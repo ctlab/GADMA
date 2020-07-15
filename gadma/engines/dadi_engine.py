@@ -42,7 +42,8 @@ class DadiEngine(DadiOrMomentsEngine):
 
             if event.dyn_args is not None:
                 dyn_arg = event.dyn_args[i]
-                if var2value.get(dyn_arg, dyn_arg) == 'Sud':
+                dyn = DadiEngine.get_value_from_var2value(var2value, dyn_arg)
+                if dyn == 'Sud':
                     ret_dict[arg_name] = event.size_args[i]
                 else:
                     ret_dict[arg_name] = 'nu%d_func' % (i+1)
@@ -64,7 +65,7 @@ class DadiEngine(DadiOrMomentsEngine):
                 ret_dict[arg_name] = event.sel_args[i]
         return ret_dict
 
-    def _dadi_inner_func(self, values, ns, pts):
+    def _inner_func(self, values, ns, pts):
         """
         Simulates expected SFS for proposed values of variables.
 
@@ -88,21 +89,22 @@ class DadiEngine(DadiOrMomentsEngine):
                 if event.dyn_args is not None:
                     for i in range(event.n_pop):
                         dyn_arg = event.dyn_args[i]
-                        value = var2value.get(dyn_arg, dyn_arg)
+                        value = self.get_value_from_var2value(var2value,
+                                                              dyn_arg)
                         if value != 'Sud':
                             func = DynamicVariable.get_func_from_value(value)
-                            y1 = var2value.get(event.init_size_args[i],
-                                               event.init_size_args[i])
-                            y2 = var2value.get(event.size_args[i],
-                                               event.size_args[i])
-                            x_diff = var2value.get(event.time_arg,
-                                                   event.time_arg)
+                            y1 = self.get_value_from_var2value(
+                                var2value, event.init_size_args[i])
+                            y2 = self.get_value_from_var2value(
+                                var2value, event.size_args[i])
+                            x_diff = self.get_value_from_var2value(
+                                var2value, event.time_arg)
                             addit_values['nu%d_func' % (i+1)] = func(
                                 y1=y1,
                                 y2=y2,
                                 x_diff=x_diff)
                 kwargs_with_vars = self._get_kwargs(event, var2value)
-                kwargs = {x: var2value.get(y, y)
+                kwargs = {x: self.get_value_from_var2value(var2value, y)
                           for x, y in kwargs_with_vars.items()}
                 kwargs = {x: addit_values.get(y, y)
                           for x, y in kwargs.items()}
@@ -169,7 +171,7 @@ class DadiEngine(DadiOrMomentsEngine):
         :param ns: sample sizes of the simulated SFS.
         """
         dadi = self.base_module
-        func_ex = dadi.Numerics.make_extrap_log_func(self._dadi_inner_func)
+        func_ex = dadi.Numerics.make_extrap_log_func(self._inner_func)
         model = func_ex(values, ns, pts)
         # TODO: Nref
         return model

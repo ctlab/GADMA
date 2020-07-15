@@ -1,3 +1,4 @@
+#Only sudden: True
 #   It is a parameter file for GADMA software.
 
 #   Lines started from # are ignored.
@@ -7,7 +8,7 @@
 #   remove # at the beginning of a line and change corresponding
 #   parameter.
 
-Directory with bootstrap: ../dadi/examples/YRI_CEU/bootstraps
+#Directory with bootstrap: dadi/examples/YRI_CEU/bootstraps_small
 
 #   Output directory to write all GADMA out.
 #   One needs to set it to not existing or empty directory.
@@ -27,7 +28,7 @@ Output directory : my_example_run
 #   flag. Then iterations of GA will start from 0 and values of
 #   mutation rate and strength will be initial.
 #   Default : None
-Only models : None
+#Only models : None
 
 
 #   Input file can be sfs file (should end with .fs) or 
@@ -48,7 +49,7 @@ Input file : fs_examples/YRI_CEU.fs
 #   then we can write YRI, CEU, CHB or YRI, CHB, CEU 
 #   (YRI must be at the first place)
 #   Default: from input file
-Population labels : CEU, YRI # we change populations order 
+#Population labels : CEU, YRI # we change populations order 
                              # (in input file YRI is first)
 
 
@@ -58,7 +59,7 @@ Population labels : CEU, YRI # we change populations order
 #   project it to 21x21x21 by set 'Projections' parameter 
 #   to 20, 20, 20.
 #   Default: from input file
-Projections : None # will be 20, 20
+#Projections : None # will be 20, 20
 
 #	Are SNP's linked or unlinked?
 #	If they are linked, then Composite Likelihood Akaike
@@ -66,7 +67,7 @@ Projections : None # will be 20, 20
 #	If they are unlinked, then usual Akaike Information Criterion 
 #	(AIC) will be used.
 #	Default: True
-Linked SNP's : True
+#Linked SNP's : True
 
 
 
@@ -88,14 +89,14 @@ Theta0 : 0.37976 # the same as in Gutenkunst et al 2009
 #   It is important for drawing models. If one doesn't want to draw, 
 #   one can pass it.
 #   Default: 1.0
-Time for generation : 25 # the same as in Gutenkunst et al 2009
+#Time for generation : 25 # the same as in Gutenkunst et al 2009
 
 
 #   Parameters for demographic models:
 #
 #   Use moments or dadi
 #   Default: moments
-Use moments or dadi : moments
+Engine: moments
 
 
 #   Use multinom scheme: N_A is not parameter for search, 
@@ -104,7 +105,7 @@ Use moments or dadi : moments
 #   is usually faster, however non multinom scheme usually 
 #   finds better solutions.
 #   Default: False
-Multinom : False
+#Multinom : False
 
 
 #   If you choose to use dadi, please set pts parameter - number
@@ -121,7 +122,7 @@ Multinom : False
 #   or
 #   def model_func(params, ns) in case of moments
 #   Default: None
-Custom filename : None
+#Custom filename : None
 
 #   Now one should specify either bounds or identifications 
 #   of custom model's parameters. All values are in Nref units.
@@ -133,8 +134,8 @@ Custom filename : None
 #   s: 0 - 1
 #   This bounds will be taken automatically if identifications are set.
 #   Default: None
-Lower bounds : None
-Upper bounds : None
+#Lower bounds : None
+#Upper bounds : None
 #   An identifier list:
 #   T - time
 #   N - size of population
@@ -142,7 +143,7 @@ Upper bounds : None
 #   s - split event,  proportion in which population size
 #    is divided to form two new populations.
 #   Default: None
-Parameter identifiers : None
+#Parameter identifiers : None
 
 
 #   Structure of model for one population - number of time periods 
@@ -155,12 +156,12 @@ Parameter identifiers : None
 #
 #   Structure of initial model:
 #   Default: all is ones - 1 or 1,1 or 1,1,1
-Initial structure : 1,1
+Initial structure : 2, 1
 
 
 #   Structure of final model:
 #   Default: equals to initial structure
-Final structure : 2,2
+Final structure : 2, 1
 
 
 #   It is possible to limit time of splits.
@@ -171,7 +172,7 @@ Final structure : 2,2
 #
 #   Upper bound for split 1 (in case of 2 or 3 populations).
 #   Default: None
-#Upper bound of first split : None
+Upper bound of first split : 3000
 
 
 #   Upper bound for split 2 (in case of 3 populations).
@@ -182,12 +183,12 @@ Final structure : 2,2
 #	Print parameters of model in units of N_ref = N_A.
 #   N_A will be placed in brackets at the end of string.
 #   Default: False
-Relative parameters : False
+#Relative parameters : False
 
 
 #   Disable migrations in demographic models.
 #   Default: False
-No migrations : false
+#No migrations : false
 
 
 
@@ -196,7 +197,7 @@ No migrations : false
 #
 #   Size of population of demographic models in GA:
 #   Default: 10
-Size of population in GA : 10
+#Size of population in GA : 10
 
 
 #   Fractions of current models, mutated models and crossed models 
@@ -238,7 +239,7 @@ Const for mutation rate : 1.01 #very small changes
 #   Genetic algorithm stops when it couldn't improve model by
 #   more that epsilon in logLL
 #   Default: 1e-2
-Epsilon : 1e-2
+#Epsilon : 1e-2
 #	
 #   and it happens during N iterations:
 #   Default: 100
@@ -273,7 +274,7 @@ Stop iteration : 50
 #   *   hill_climbing
 #	
 #   Default: optimize_powell
-Name of local optimization : optimize_log
+#Name of local optimization : optimize_log
 
 #   Parameters of pipeline
 #
@@ -298,17 +299,17 @@ Print models' code every N iteration : 100
 #   years (kya, KYA). If time for one generation isn't specified 
 #   then time is in genetic units.
 #   Default: years
-Units of time in drawing : thousand years
+#Units of time in drawing : thousand years
 
 
 #   No std output.
 #   Default: False
-Silence : False
+#Silence : False
 
 
 #   How many times launch GADMA with this parameters.
 #   Default: 1
-Number of repeats : 3
+Number of repeats : 1
 
 
 #   How many processes to use for this repeats.

@@ -2,11 +2,13 @@ from .. import matplotlib, moments, dadi, Image
 from .. import matplotlib_available, PIL_available, moments_available
 from ..models import DemographicModel, Split
 from ..engines import get_engine, all_engines
+from ..utils import bcolors
 import os
 import warnings
 import io
 from datetime import datetime
 import copy
+import numpy as np
 
 def draw_plots_to_file(x, engine, settings, filename, fig_title):
     """
@@ -132,9 +134,21 @@ def print_runs_summary(start_time, shared_dict, settings,
             if name not in metric_names:
                 metric_names.append(name)
     for best_by in metric_names:
-        models = [(index, shared_dict[index][best_by])
-                  for index in shared_dict]
-        sorted_models = sorted(models, key=lambda x: x[1][2][best_by])
+        models = list()
+        for index in shared_dict:
+            if best_by not in shared_dict[index]:
+                continue
+            elem = shared_dict[index][best_by]
+            if isinstance(elem, list):
+                models.extend((index, el) for el in elem)
+            else:
+                models.append((index, elem))
+        def key(x):
+            value = x[1][2][best_by]
+            if isinstance(value, tuple):
+                value = value[0]
+            return value or np.inf
+        sorted_models = sorted(models, key=key)
         if best_by == 'log-likelihood':
             sorted_models = list(reversed(sorted_models))
         metrics = list()  # ordered set
@@ -149,23 +163,42 @@ def print_runs_summary(start_time, shared_dict, settings,
             engine, x, y_vals = info
             # Get theta and N ancestral
             theta = engine.get_theta(x, *settings.get_engine_args())
-            Nanc = engine.get_N_ancestral_from_theta(theta)
+            Nanc = int(engine.get_N_ancestral_from_theta(theta))
             addit_str = f"(theta = {theta: .2f})"
             if Nanc is not None:
-                addit_str += f" (Nanc = {Nanc: .0f})"
+                if settings.relative_parameters:
+                    addit_str += f" (Nanc = {Nanc: d})"
+                    model_str = engine.model.as_custom_string(x)
+                else:
+                    model_str = f" [Nanc = {Nanc: d}] "
+                    Tg = settings.time_for_generation or 1.0
+                    x_translated = engine.model.translate_units(x, Nanc, Tg)
+                    model_str += engine.model.as_custom_string(x_translated)
             # Begin to print
             metric_vals = []
             for metr in metrics:
                 if metr not in y_vals:
                     metric_vals.append("None")
                 else:
-                    metric_vals.append(f"{y_vals[metr]: .5f}")
-            print(f"Run {index}", *metric_vals,
-                  engine.model.as_custom_string(x),
+                    if isinstance(y_vals[metr], tuple):
+                        if y_vals[metr][0] is None:
+                            val_str = "None"
+                        else:
+                            val_str = f"{y_vals[metr][0]:.2f} "\
+                                      f"(eps={y_vals[metr][1]:.1e})"
+                    else:
+                        val_str = f"{y_vals[metr]:.2f}"
+                    metric_vals.append(val_str)
+            print(f"Run {index}", *metric_vals, model_str,
                   addit_str, sep='\t')
             fig_title = f"Best by {best_by} model. "
-            for metr in y_vals:
-                fig_title += f"{metr}: {y_vals[metr]:.2f}"
+            ind = 0
+            for metr in metrics:
+                if metr not in y_vals:
+                    continue
+                val_str = metric_vals[ind]
+                ind += 1
+                fig_title += f"{metr}: {val_str}"
         # Draw and generate code for best model
         _, (engine, x, y_vals) = sorted_models[0]
         prefix = (settings.BASE_OUTPUT_DIR_PREFIX +
@@ -174,7 +207,28 @@ def print_runs_summary(start_time, shared_dict, settings,
         out_dir = settings.output_directory
         save_plot_file = os.path.join(out_dir, prefix + "_model.png")
         save_code_file = os.path.join(out_dir, prefix + "_model.py")
-        draw_plots_to_file(x, engine, settings, save_plot_file, fig_title)
-        generate_code_to_file(x, engine, settings, save_code_file)       
-        print("\nYou can find picture and python code of best model in the "
-              "output directory.")
+        drawn = True
+        gener = True
+        try:
+            draw_plots_to_file(x, engine, settings, save_plot_file, fig_title)
+        except Exception as e:
+            drawn = False
+            print(f"{bcolors.FAIL}Run {index}: failed to draw model due to "
+                  f"the following exception: {e}{bcolors.ENDC}")
+        try:
+            generate_code_to_file(x, engine, settings, save_code_file)
+        except Exception as e:
+            gener = False
+            print(f"{bcolors.FAIL}Run {index}: failed to generate code due to"
+                  f" the following exception: {e}{bcolors.ENDC}")
+        if drawn and gener:
+            print("\nYou can find picture and python code of best model in "
+                  "the output directory.\n")
+        elif drawn:
+            print("\nYou can find picture of best model in the output "
+                  "directory.\n")
+        elif gener:
+            print("\nYou can find python code of best model in the output "
+                  "directory.\n")
+
+

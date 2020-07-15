@@ -15,14 +15,18 @@ class GlobalOptimizer(Optimizer):
         self.X = list()
         self.Y = list()
 
-    def randomize(self, variables, random_type='resample'):
+    def randomize(self, variables, random_type='resample',
+                  custom_rand_gen=None):
         """
         Generate random solution. The type of generation could be set
         to one of three operators:
 
         * 'uniform' - uniform over domain.
 
-        * 'resample' - resample variables.
+        * 'resample' - call :method:`resample` method for all variables.
+
+        * 'custom' - sample values of parameters from
+                     :param:`custom_rand_gen`.
         """
         if random_type == 'uniform':
             return np.array([np.random.uniform(*var.domain)
@@ -30,12 +34,15 @@ class GlobalOptimizer(Optimizer):
         elif random_type == 'resample':
             arr = [var.resample() for var in variables]
             return np.array(arr, dtype=object)
+        elif random_type == 'custom':
+            return custom_rand_gen(variables)
         else:
             raise ValueError(f"Unknown type of generation of random "
                              f"solution: {random_type}.")
 
     def initial_design(self, f, variables, num_init,
-                       X_init=None, Y_init=None, random_type='resample'):
+                       X_init=None, Y_init=None,
+                       random_type='resample', custom_rand_gen=None):
         """
         Performs initial design for optimization.
 
@@ -63,13 +70,13 @@ class GlobalOptimizer(Optimizer):
                     X.append(x)
                     Y.append(f(x))
         for _ in range(num_init - len(X)):
-            x = self.randomize(variables, random_type)
+            x = self.randomize(variables, random_type, custom_rand_gen)
             X.append(x)
             Y.append(f(x))
         return X, Y
 
     def optimize(self, f, variables, num_init, X_init=None, Y_init=None,
-                 args=(), options={}, maxiter=None):
+                 args=(), options={}, linear_constrain=None, maxiter=None):
         raise NotImplementedError
 
 

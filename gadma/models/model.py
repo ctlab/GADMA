@@ -1,5 +1,5 @@
 import numpy as np
-from ..utils import Variable, VariablePool
+from ..utils import Variable, VariablePool, float_repr
 
 
 class Model(object):
@@ -33,11 +33,15 @@ class Model(object):
         :param variable: variable to add.
         :type variable: :class:`Variable`
         """
-        if not isinstance(variable, Variable):
+        if not isinstance(variable, (Variable, Model)):
             if self.raise_excep:
                 raise ValueError("Only instances of class Variable could be"
                                  " added to the model as variables.")
         else:
+            if isinstance(variable, Model):
+                for var in variable.variables:
+                    self.add_variable(var)
+                return
             if variable not in self._variables:
                 self._variables.append(variable)
                 self.is_fixed.append(False)
@@ -107,3 +111,24 @@ class Model(object):
         for var in self.variables:
             strings.append(f"{var.name}={var2value[var]}")
         return ", ".join(strings)
+
+    def _arg_val_repr(self, arg, values):
+        """
+        Returns list of arg and its value string representations
+        """
+        from .variables_combinations import BinaryOperation
+        if isinstance(arg, Variable):
+            val = self.var2value(values)[arg]
+            arg_repr = f"{arg.name}"
+        elif isinstance(arg, BinaryOperation):
+            var2value = self.var2value(values)
+            val = arg.get_value([var2value[var] for var in arg.variables])
+            arg_repr = f"{arg.name}"
+        else:
+            val = arg
+            arg_repr = ""
+        if isinstance(val, float):
+            val_repr = float_repr(val, precision=3)
+        else:
+            val_repr = str(val)
+        return arg_repr, val_repr

@@ -1,14 +1,16 @@
 from ..utils import Variable, PopulationSizeVariable, TimeVariable
 from ..utils import VariablePool
-from ..utils import MigrationVariable, DynamicVariable, SelectionVariable
+from ..utils import MigrationVariable, DynamicVariable, SelectionVariable,\
+                    FractionVariable
 from . import Model, Epoch, Split
-from .demographic_model import DemographicModel
+from .variables_combinations import Multiplication, Subtraction
+from .demographic_model import EpochDemographicModel
 from collections import OrderedDict
 import copy
 import numpy as np
 
 
-class StructureDemographicModel(DemographicModel):
+class StructureDemographicModel(EpochDemographicModel):
     """
     Special class for demographic model created by structure.
 
@@ -23,7 +25,7 @@ class StructureDemographicModel(DemographicModel):
     :param sym_migs: If True then migrations will be symetric.
     """
     def __init__(self, initial_structure, final_structure,
-                 have_migs, have_sels, have_dyns, sym_migs,
+                 have_migs, have_sels, have_dyns, sym_migs, frac_split,
                  gen_time=None, theta0=None, mu=None):
         super(StructureDemographicModel, self).__init__(gen_time, theta0, mu)
         self.initial_structure = np.array(initial_structure)
@@ -32,6 +34,7 @@ class StructureDemographicModel(DemographicModel):
         self.have_sels = have_sels
         self.have_dyns = have_dyns
         self.sym_migs = sym_migs
+        self.frac_split = frac_split
         self.from_structure(self.initial_structure)
 
     def from_structure(self, structure):
@@ -87,9 +90,17 @@ class StructureDemographicModel(DemographicModel):
                 self.add_epoch(time_var, size_vars,
                              mig_vars, dyn_vars, sel_vars)
             if n_pop < len(structure):
-                name = size_vars[-1].name 
-                size_vars = [PopulationSizeVariable(name + '_1'),
-                             PopulationSizeVariable(name + '_2')]
+                if self.frac_split:
+                    frac_var = FractionVariable(f"s{n_pop}")
+                    size_split = copy.copy(size_vars[-1])
+                    size_1 = Multiplication(frac_var, size_split)
+                    size_2 = Multiplication(Subtraction(1, frac_var),
+                                            size_split)
+                    size_vars = [size_1, size_2]
+                else:
+                    name = size_vars[-1].name
+                    size_vars = [PopulationSizeVariable(name + '_1'),
+                                 PopulationSizeVariable(name + '_2')]
                 self.add_split(n_pop - 1, size_vars)
         return self
 
@@ -235,4 +246,3 @@ class StructureDemographicModel(DemographicModel):
             new_X.append([new_var2value[var] for var in self.variables])
 
         return self, new_X
-

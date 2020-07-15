@@ -1,5 +1,5 @@
 from ..utils import Variable, PopulationSizeVariable, TimeVariable
-from ..utils import VariablePool
+from ..utils import VariablePool, variables_values_repr
 from ..utils import MigrationVariable, DynamicVariable, SelectionVariable
 from . import Model, Epoch, Split
 from collections import OrderedDict
@@ -9,6 +9,65 @@ import numpy as np
 
 class DemographicModel(Model):
     """
+    Class for demographic model.
+    This type is common for :py:mod:`dadi` and :py:mod:`moments`.
+
+    :param Nref: reference population size (usually ancestral population
+                 size).
+    :type Nref: float
+    """
+    def __init__(self, gen_time=None, theta0=None, mu=None,
+                 linear_constrain=None):
+        self.gen_time = None
+        self.Nref = 1.0
+        self.theta0 = theta0  # mutation flux = 4 * mu * length
+        self.mu = mu  # mutation rate per base per generation
+        self.fixed_vars = {}
+        self.linear_constrain = linear_constrain
+        super(DemographicModel, self).__init__(raise_excep=False)
+        
+    def get_value(self, item):
+        """
+        Returns value of the item if it is variable, otherwise returns item
+        as it is.
+
+        :param item: object to get its value.
+        """
+        if isinstance(item, Variable):
+            return super(DemographicModel, self).get_value(item)
+        return item
+
+    def get_number_of_parameters(self, values):
+        var2value = self.var2value(values)
+        return len(var2value.keys())
+
+    def as_custom_string(self, values):
+        """
+        Returns string representation of the demographic model with
+        parameters as a list with variables and their values.
+
+        :param values: Values of the demographic model.
+        """
+        if isinstance(values, dict):
+            values = [val for var, val in self.var2value(values).keys()]
+        return variables_values_repr(self.variables, values)
+
+    def translate_units(self, values, Nanc, Tg=1):
+        var2value = self.var2value(values)
+        translated_values = list()
+        for var, val in var2value.items():
+            if not hasattr(var, 'translate_units'):
+                raise ValueError("Values cannot be translated for demographic"
+                                 " model as there is at least one variable "
+                                 "that is not specified as demographic.")
+            translated_values.append(var.translate_units(val, Nanc))
+            if isinstance(var, TimeVariable):
+                translated_values[-1] *= Tg
+        return translated_values
+
+
+class EpochDemographicModel(DemographicModel):
+    """
     Class for demographic model of epoch type.
     This type is common for :py:mod:`dadi` and :py:mod:`moments`.
 
@@ -16,14 +75,11 @@ class DemographicModel(Model):
                  size).
     :type Nref: float
     """
-    def __init__(self, gen_time=None, theta0=None, mu=None):
+    def __init__(self, gen_time=None, theta0=None, mu=None,
+                 linear_constrain=None):
         self.events = list()
-        self.gen_time = None
-        self.Nref = 1.0
-        self.theta0 = theta0  # mutation flux = 4 * mu * length
-        self.mu = mu  # mutation rate per base per generation
-        self.fixed_vars = {}
-        super(DemographicModel, self).__init__(raise_excep=False)
+        super(EpochDemographicModel, self).__init__(gen_time, theta0, mu,
+                                                    linear_constrain)
         
     def _get_current_pop_sizes(self):
         """
@@ -71,17 +127,6 @@ class DemographicModel(Model):
         new_split = Split(pop_to_div, sizes)
         self.events.append(new_split)
         self.add_variables(new_split.variables)
-
-    def get_value(self, item):
-        """
-        Returns value of the item if it is variable, otherwise returns item
-        as it is.
-
-        :param item: object to get its value.
-        """
-        if isinstance(item, Variable):
-            return super(DemographicModel, self).get_value(item)
-        return item
 
     def fix_variable(self, variable, value):
         for event in self.events:
@@ -173,3 +218,26 @@ class DemographicModel(Model):
         for event in self.events:
             strings.append(event.as_custom_string(values))
         return "[ " + ",\t".join(strings) + " ]"
+
+    def get_involved_for_split_time_vars(self, n_split):
+        """
+        Returns list of ints and bias. If value > 0 then this variable is
+        involved in sum of times for split.
+
+        It will return A, b: Ax + b = time of `n_split` split.
+        """
+        var2value = self.var2value(np.zeros(len(self.variables)))
+        n_sp = 0
+        b = 0
+        for event in reversed(self.events):
+            if isinstance(event, Split):
+                n_sp += 1
+                if n_sp == n_split:
+                    return list(var2value.values()), b
+            else:
+                time_arg = event.time_arg
+                if isinstance(time_arg, Variable):
+                    var2value[time_arg] += 1
+                else:
+                    b += time_arg
+        return [], 0

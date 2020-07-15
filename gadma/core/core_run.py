@@ -4,8 +4,8 @@ ensure_file_existence
 from ..utils import TimeVariable, PopulationSizeVariable, SelectionVariable,\
 DynamicVariable
 from ..optimizers import GlobalOptimizerAndLocalOptimizer
-from ..utils import get_aic_score
-from ..models import DemographicModel
+from ..utils import get_aic_score, get_claic_score
+from ..models import EpochDemographicModel
 from .draw_and_generate_code import draw_plots_to_file, generate_code_to_file
 import os
 import numpy as np
@@ -44,12 +44,15 @@ class CoreRun(object):
         self.global_optimizer = self.settings.get_global_optimizer()
         self.local_optimizer = self.settings.get_local_optimizer()
         self.optimize_kwargs = self.settings.get_optimizers_kwargs()
+#        self.optimize_kwargs['linear_constrain'] = self.settings.get_linear_constrain(self.engine)
         self.optimize_kwargs['callback'] = self.callback
 
         # 2.3 Check if we need to calculate and keep additional functions
         # values in callbacks during optimization.
         self.aic_score = not self.settings.linked_snp_s
-        self.claic_score = False#not self.aic_score and self.settings.bootstrap_directory
+        self.claic_score = (not self.aic_score and
+            (self.settings.directory_with_bootstrap is not None))
+        self.boots = self.settings.bootstrap_data
 
         # 2.4 Create all necessary output dirs and files
         if settings.output_directory is not None:
@@ -73,7 +76,7 @@ class CoreRun(object):
                 ensure_dir_existence(self.code_dir)
                 # If our model is built via gadma then we can write code for
                 # all engines.
-                if isinstance(self.model, DemographicModel):
+                if isinstance(self.model, EpochDemographicModel):
                     for engine in all_engines():
                         engine_dir = os.path.join(self.code_dir, engine.id)
                         ensure_dir_existence(engine_dir)
@@ -130,8 +133,14 @@ class CoreRun(object):
                       self.settings.LONG_NAME_2_SHORT.get(best_by, best_by))
             save_plot_file = os.path.join(self.output_dir, prefix + "_model.png")
             save_code_file = os.path.join(self.output_dir, prefix + "_model.py")
-            draw_plots_to_file(x, self.engine, self.settings, save_plot_file, fig_title)
-            generate_code_to_file(x, self.engine, self.settings, save_code_file)    
+            try:
+               draw_plots_to_file(x, self.engine, self.settings, save_plot_file, fig_title)
+            except Exception as e:
+                pass
+            try:
+                generate_code_to_file(x, self.engine, self.settings, save_code_file)
+            except Exception as e:
+                pass
 
     def draw_iter_callback(self, x, y):
         """
@@ -159,7 +168,7 @@ class CoreRun(object):
         verbose = self.settings.print_models_code_every_n_iteration
         filename = f"iteration_{n_iter}.py"
         if verbose != 0 and n_iter % verbose == 0:
-            if isinstance(self.model, DemographicModel):
+            if isinstance(self.model, EpochDemographicModel):
                 for engine in all_engines():
                     save_file = os.path.join(self.code_dir, engine.id,
                                              filename)
@@ -179,8 +188,14 @@ class CoreRun(object):
         Main callback for optimizers to get.
         """
         self.base_callback(x, y)
-        self.draw_iter_callback(x, y)
-        self.code_iter_callback(x, y)
+        try:
+            self.draw_iter_callback(x, y)
+        except Exception as e:
+            pass
+        try:
+            self.code_iter_callback(x, y)
+        except Exception as e:
+            pass
 
     def intermediate_callback(self, x, y):
         """
@@ -189,13 +204,15 @@ class CoreRun(object):
 
         Saves AIC and CLAIC values in the :attr:`shared_dict` if needed.
         """
-        if False:#self.aic_score:
+        if self.aic_score:
             best_by = "AIC score"
             n_params = self.engine.model.get_number_of_parameters(x)
             value = get_aic_score(n_params, y)
         elif self.claic_score:
-            pass
-            # TODO
+            best_by = "CLAIC score"
+            args = self.settings.get_engine_args()
+            value = get_claic_score(self.engine, x, self.boots,
+                                    args, y, return_eps=True)
         else:
             return
         if self.index not in self.shared_dict:
@@ -204,27 +221,54 @@ class CoreRun(object):
         if best_by not in self.shared_dict[self.index]:
             new_dict[best_by] = OrderedDict()
         else:
-            engine, x_best, y_dict = new_dict[best_by]
-            if y_dict[best_by] < value:
-                return
+            if not self.claic_score:                
+                engine, x_best, y_dict = new_dict[best_by]
+                if y_dict[best_by] < value:
+                    return
         y_dict = OrderedDict()
         y_dict['log-likelihood'] = y
         y_dict[best_by] = value
-        new_dict[best_by] = (copy.deepcopy(self.engine), x, y_dict)
+        element = (copy.deepcopy(self.engine), x, y_dict) 
+        if not self.claic_score:
+            new_dict[best_by] = element
+        else:
+            if best_by not in self.shared_dict[self.index]:
+                new_list = list()
+            else:
+                new_list = copy.deepcopy(
+                    self.shared_dict[self.index][best_by])
+            new_list.append(element)
+            new_dict[best_by] = new_list
         self.shared_dict[self.index] = new_dict
 
         # Draw and generate code for best_by model
+        if self.aic_score:
+            value_str = f"{value: .2f}" if value is not None else "None"
+        if self.claic_score:
+            if value[0] is None:
+                value_str = "None"
+            else:
+                value_str = f"{value[0]:.2f} (eps={value[1]: .1e})"
         fig_title = f"Best by {best_by}. Log-likelihood: {y:.2f}, "\
-                    f"{best_by}: {value: .2f}."
+                    f"{best_by}: {value_str}."
         prefix = (self.settings.LOCAL_OUTPUT_DIR_PREFIX +
                   self.settings.LONG_NAME_2_SHORT.get(best_by.lower(),
                                                       best_by.lower()))
         save_plot_file = os.path.join(self.output_dir, prefix + "_model.png")
         save_code_file = os.path.join(self.output_dir, prefix + "_model.py")
-        draw_plots_to_file(x, self.engine, self.settings, save_plot_file, fig_title)
-        generate_code_to_file(x, self.engine, self.settings, save_code_file)
+        try:
+            draw_plots_to_file(x, self.engine, self.settings, save_plot_file, fig_title)
+        except Exception as e:
+            print(f"{bcolors.FAIL}Run {index}: failed to draw model due to "
+                  f"the following exception: {e}{bcolors.ENDC}")
+        try:
+            generate_code_to_file(x, self.engine, self.settings, save_code_file)
+        except Exception as e:
+            print(f"{bcolors.FAIL}Run {index}: failed to generate code due to"
+                  f" the following exception: {e}{bcolors.ENDC}")
 
-    def run_without_increase(self):
+
+    def run_without_increase(self, initial_kwargs={}):
         np.random.seed()
         self.optimize_kwargs['callback'] = self.callback
         f = self.engine.evaluate
@@ -235,17 +279,16 @@ class CoreRun(object):
 
         result = optimizer.optimize(f, variables, **self.optimize_kwargs)
         self.intermediate_callback(result.x, result.y)
-        print(result)
         return result
 
-    def run_with_increase(self):
+    def run_with_increase(self, initial_kwargs={}):
         np.random.seed()
         # Simple checks
         assert self.settings.initial_structure is not None
         assert self.settings.final_structure is not None
 
         print(f'Run launch number {self.index}\n', end='')
-        result = self.run_without_increase()
+        result = self.run_without_increase(initial_kwargs)
         while (self.model.get_structure() != self.settings.final_structure):
             self.model, X_init = self.model.increase_structure(result.X_out)
             Y_init = copy.copy(result.Y_out)

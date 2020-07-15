@@ -38,7 +38,9 @@ class MomentsEngine(DadiOrMomentsEngine):
             ret_dict['Npop'] = list()
             for i in range(event.n_pop):
                 dyn_arg = event.dyn_args[i]
-                if var2value.get(dyn_arg, dyn_arg) == 'Sud':
+                dyn = MomentsEngine.get_value_from_var2value(var2value,
+                                                             dyn_arg)
+                if dyn == 'Sud':
                     ret_dict['Npop'].append(event.size_args[i])
                 else:
                     ret_dict['Npop'].append('nu%d_func' % (i+1))
@@ -57,7 +59,7 @@ class MomentsEngine(DadiOrMomentsEngine):
             ret_dict['h'] = event.sel_args
         return ret_dict
 
-    def _moments_inner_func(self, values, ns, dt_fac=0.01):
+    def _inner_func(self, values, ns, dt_fac=0.01):
         """
         Simulates expected SFS for proposed values of variables.
 
@@ -90,14 +92,16 @@ class MomentsEngine(DadiOrMomentsEngine):
                 if event.dyn_args is not None:
                     for i in range(event.n_pop):
                         dyn_arg = event.dyn_args[i]
-                        value = var2value.get(dyn_arg, dyn_arg)
+                        value = self.get_value_from_var2value(var2value,
+                                                              dyn_arg)
                         if value != 'Sud':
                             func = DynamicVariable.get_func_from_value(value)
-                            y1 = var2value.get(event.init_size_args[i],
-                                               event.init_size_args[i])
-                            y2 = var2value.get(event.size_args[i],
-                                               event.size_args[i])
-                            x_diff = var2value.get(event.time_arg, event.time_arg)
+                            y1 = self.get_value_from_var2value(
+                                var2value, event.init_size_args[i])
+                            y2 = self.get_value_from_var2value(
+                                var2value, event.size_args[i])
+                            x_diff = self.get_value_from_var2value(
+                                var2value, event.time_arg)
                             addit_values['nu%d_func' % (i+1)] = func(
                                 y1=y1,
                                 y2=y2,
@@ -110,19 +114,21 @@ class MomentsEngine(DadiOrMomentsEngine):
                         for i in range(y.shape[0]):
                             for j in range(y.shape[1]):
                                 yel = y[i][j]
-                                l_s[i][j] = var2value.get(yel, yel)
+                                l_s[i][j] = self.get_value_from_var2value(
+                                    var2value, yel)
                                 l_s[i][j] = addit_values.get(l_s[i][j],
                                                                 l_s[i][j])
                         kwargs[x] = l_s
                     elif isinstance(y, list):  # pop. sizes, selection, dynamics
                         l_args = list()
                         for y1 in y:
-                            l_args.append(var2value.get(y1, y1))
+                            l_args.append(self.get_value_from_var2value(
+                                var2value, y1))
                         kwargs[x] = lambda t: [addit_values[el](t)
                                      if el in addit_values else el
                                      for el in l_args]
                     else: # time
-                        kwargs[x] = var2value.get(y, y)
+                        kwargs[x] = self.get_value_from_var2value(var2value, y)
                         kwargs[x] = addit_values.get(kwargs[x], kwargs[x])
                 fs.integrate(dt_fac=dt_fac, **kwargs)
             elif isinstance(event, Split):
@@ -168,7 +174,7 @@ class MomentsEngine(DadiOrMomentsEngine):
         # Actual values do not matter, as long as the dimensionality is correct.
         # So we take small size for fast drawing.
         ns = [4 for _ in range(len(self.data.sample_sizes))]
-        plot_mod = moments.ModelPlot.generate_model(self._moments_inner_func,
+        plot_mod = moments.ModelPlot.generate_model(self._inner_func,
                                                     values, ns)
         draw_scale = nref is not None
         show = save_file is None     
@@ -194,7 +200,7 @@ class MomentsEngine(DadiOrMomentsEngine):
         :param ns: sample sizes of the simulated SFS.
         """
         moments = self.base_module
-        model = self._moments_inner_func(values, ns, dt_fac)
+        model = self._inner_func(values, ns, dt_fac)
         return model
 
     def get_theta(self, values, dt_fac=default_dt_fac):

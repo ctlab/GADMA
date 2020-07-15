@@ -3,7 +3,7 @@ from .global_optimizer import GlobalOptimizer, register_global_optimizer
 from .optimizer_result import OptimizerResult
 from ..utils import sort_by_other_list, choose_by_weight, eval_wrapper
 from ..utils import trunc_normal_3_sigma_rule, DiscreteVariable, WeightedMetaArray
-from ..utils import update_by_one_fifth_rule, ensure_file_existence
+from ..utils import update_by_one_fifth_rule, ensure_file_existence, fix_args
 from functools import partial
 import numpy as np
 import copy
@@ -15,19 +15,20 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
     """
     Class for Genetic Algorithm.
 
-    :param step_size: number of solutions that will be used on each
-                      iteration of genetic algorithm.
-    :type step_size: int
-    :param frac_best_models: fraction of best models from previous step
-                             that will be taken to new iteration.
-    :type frac_best_models: float
-    :param frac_mutate_models: fraction of mutated models that will be
-                               taken to new iteration.
-    :type frac_mutate_models: float
-    :param frac_cross_models: fraction of crossed models that will be
-                              taken to new iteration.
-    :type frac_cross_models: float
-    :param mut_rate: initial mutation rate.
+    :param gen_size: Size of generation of genetic algorithm. That is number
+                     of individuals/solutions on each step of GA.
+    :type gen_size: int
+    :param n_elitism: Number of best models from previous generation in GA
+                      that will be taken to new iteration.
+    :type n_elitism: int
+    :param p_mutation: probability of mutation in one generation of GA.
+    :type p_mutation: float
+    :param p_crossover: probability of crossover in one generation of GA.
+    :type p_crossover: float
+    :param p_random: Probability of random generated individual in one
+                     generation of GA.
+    :type p_random: float
+    :param mut_rate: Initial mean mutation rate.
     :type mut_rate: float
     :param mut_strength: initial mutation "strength" - mean fraction of
                          model parameters that will be mutated.
@@ -36,19 +37,51 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                            one-fifth algorithm. Check GADMA paper for more
                            information.
     :type const_mut_rate: float
-    :param const_mut_strength: constant to change mutation strength according
-                               to one-fifth algorithm. Check GADMA paper for
-                               more information.
-    :type const_mut_strength: float
     :param eps: const for model's log likelihood compare.
                 Model is better if its log likelihood is greater than 
                 log likelihood of another model by epsilon.
     :type eps: float
-    :param no_improv_iter: Number of iterations for GA stopping: GA stops when 
-                           it can't improve model during max_iter iterations.
-    :type no_improv_iter: int
-    :param local_opt_id: id of local optimizer to use.
-    :type local_opt_id: str
+    :param n_stuck_gen: Number of iterations for GA stopping: GA stops when 
+                        it can't improve model during n_stuck_gen generations.
+    :type n_stuck_gen: int
+    :param selection_type: Type of selection operator in GA. Could be:
+                           * 'roulette_wheel'
+                           * 'rank'
+                           See help(GeneticAlgorithm.selection) for more
+                           information.
+    :type selection_type: str
+    :param selection_random: If True then number of mutants and crossover's
+                             offsprings in new generation will be binomial
+                             random variable.
+    :type selection_type: bool
+    :param mutation_type: Type of mutation operator in GA. Could be:
+                          * 'uniform'
+                          * 'resample' 
+                          * 'gaussian'
+                          See help(GeneticAlgorithm.mutation) for more
+                          information.
+    :type mutation_type: str
+    :param one_fifth_rule: If True then one fifth rule is used in mutation.
+    :type one_fifth_rule: bool
+    :param crossover_type: Type of crossover operator in GA. Could be:
+                           * 'k-point'
+                           * 'uniform'
+                           See help(GeneticAlgorithm.crossover) for more
+                           information.
+    :type crossover_type: str
+    :param crossover_k: k for 'k-point' crossover type.
+    :type crossover_k: int
+    :param random_type: Type of random generation of new offsprings. Could be:
+                        * 'uniform'
+                        * 'resample'
+                        * 'custom'
+                        See help(GlobalOptimizer.randomize) for more
+                        information.
+    :type random_type: str
+    :param custom_rand_gen: Random generator for 'custom' random_type.
+                            Provide generator from variables:
+                            custom_rand_gen(variables) = values
+    :type custom_rand_gen: func
     :param log_transform: If True then logarithm will be used incide for
                           parameters.
     :type log_transform: bool
@@ -62,7 +95,8 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                  eps=1e-2, n_stuck_gen=100,
                  selection_type='roulette_wheel', selection_random=False,
                  mutation_type='gaussian', one_fifth_rule=True,
-                 crossover_type='uniform', random_type='resample',
+                 crossover_type='uniform', crossover_k=None,
+                 random_type='resample', custom_rand_gen=None,
                  log_transform=False, maximize=False):
         # Simple checks
         assert isinstance(gen_size, int)
@@ -95,8 +129,14 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         self.selection_type = selection_type
         self.selection_random = selection_random
         self.crossover_type = crossover_type
+        self.crossover_k = crossover_k
         self.mutation_type = mutation_type
         self.random_type = random_type
+        self.custom_rand_gen = custom_rand_gen
+        if self.random_type == 'custom' and self.custom_rand_gen is None:
+            raise ValueError("Please specify custom random generator "
+                             "(custom_rand_gen) for 'custom' type of random "
+                             "sampling.")
         self.one_fifth_rule = one_fifth_rule
         super(GeneticAlgorithm, self).__init__(log_transform, maximize)
 
@@ -307,7 +347,10 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
 
         # Start selection procedure
         if selection_type == 'roulette_wheel':
-            p = np.array(Y_gen) / np.sum(Y_gen)
+            Y_gen = np.array(Y_gen)
+            is_not_inf = np.logical_not(np.isinf(Y_gen))
+            p = Y_gen / np.sum(Y_gen[is_not_inf])
+            p[np.isinf(p)] = 1
             # We need to reverse probs as we have minimization problem
             p = 1 - p
             p /= np.sum(p)
@@ -356,13 +399,15 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             ind1, ind2 = np.random.choice(range(len(X_gen)), size=2, p=p) 
             parent1, parent2 = X_gen[ind1], X_gen[ind2]
             x = self.crossover(parent1, parent2, variables,
-                               self.crossover_type)
+                               self.crossover_type, self.crossover_k)
             new_X_gen.append(x)
             new_Y_gen.append(f(x))
 
         # 4. Random individuals
         for i in range(n_random_gen):
-            x = WeightedMetaArray(self.randomize(variables, self.random_type), dtype=object)
+            x = WeightedMetaArray(self.randomize(variables, self.random_type,
+                                                 self.custom_rand_gen),
+                                  dtype=object)
             x.metadata = 'r'
             new_X_gen.append(x)
             new_Y_gen.append(f(x))
@@ -380,10 +425,11 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             _Y_init = [self.sign * y for y in Y_init]
         else:
             _Y_init = None
-        X, Y = super(GeneticAlgorithm, self).initial_design(f, variables,
-                                                            num_init, X_init,
-                                                            _Y_init,
-                                                            self.random_type)
+        X, Y = super(GeneticAlgorithm,
+                     self).initial_design(f, variables, num_init,
+                                          X_init, _Y_init,
+                                          self.random_type,
+                                          self.custom_rand_gen)
         X, Y = sort_by_other_list(X, Y, reverse=self.maximize)
         return X[:self.gen_size], Y[:self.gen_size]
 
@@ -434,15 +480,15 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         is_stuck = (n_gen - impr_gen) >= self.n_stuck_gen
         if maxeval is not None:
             expect_feval = int(self.gen_size * self.p_mutation * self.mut_attempts)\
-                         + int(self.gen_size *self.p_crossover)\
+                         + int(self.gen_size * self.p_crossover)\
                          + int(self.gen_size * self.p_random)
-            stop_by_n_eval = (n_eval + expect_feval > maxeval)
+            stop_by_n_eval = (n_eval + expect_feval >= maxeval)
         else:
             stop_by_n_eval = False
 
         stop_by_n_gen = False
         if maxiter:
-            stop_by_n_gen = n_gen > maxiter
+            stop_by_n_gen = n_gen >= maxiter
 
         if stop_by_n_eval:
             status = 1
@@ -483,7 +529,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             print(f"Current mean mutation rate:\t{self.cur_mut_rate: 3f}",
                   file=stream)
         print(f"Current mean number of params to change during mutation:\t"
-              f"{min(int(self.cur_mut_strength * self.gen_size), 1): 3d}",
+              f"{max(int(self.cur_mut_strength * len(x_best)), 1): 3d}",
               file=stream)
 
         print("\n--Best solution by value of fitness function--", file=stream)
@@ -521,7 +567,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
 
     def optimize(self, f, variables, args=(), num_init=50,
                  X_init=None, Y_init=None,
-                 maxiter=None, maxeval=None,
+                 linear_constrain=None, maxiter=None, maxeval=None,
                  verbose=0, callback=None, report_file=None, eval_file=None,
                  save_file=None):
         """
@@ -559,6 +605,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         # Wrap for automatic evaluation logging
         finally_wrapped_f = eval_wrapper(prepared_f, eval_file)
         f_in_opt = partial(self.evaluate, finally_wrapped_f)
+        f_in_opt = fix_args(f_in_opt, (), linear_constrain)
 
         if callback is not None:
             callback = self.prepare_callback(callback)
@@ -615,6 +662,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             self.cur_mut_strength = update_by_one_fifth_rule(
                 self.cur_mut_strength, self.const_mut_strength,
                 is_impr and is_mut_best)
+            self.cur_mut_strength = min(self.cur_mut_strength, 1.0)
 
             # Update numbers
             n_gen += 1

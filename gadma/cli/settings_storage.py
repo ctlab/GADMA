@@ -7,10 +7,13 @@ from ..data import SFSDataHolder
 from ..engines import get_engine, MomentsEngine
 from ..models import StructureDemographicModel, CustomDemographicModel
 from ..optimizers import get_local_optimizer, get_global_optimizer
-from ..utils import ensure_dir_existence, ensure_file_existence
+from ..optimizers import LinearConstrainDemographics, LinearConstrain
+from ..utils import ensure_dir_existence, ensure_file_existence,\
+                    check_dir_existence, custom_generator
 
 import importlib.util
 import sys
+import copy
 
 HOME_DIR = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 PARAM_TEMPLATE = os.path.join(HOME_DIR, "params_template")
@@ -26,7 +29,7 @@ CHANGED_IDENTIFIERS = {"use_moments_or_dadi": "engine",
 DEPRECATED_IDENTIFIERS = ["multinom", "verbose", "flush_delay",
                           "epsilon_for_ls", "gtol", "maxiter",
                           "multinomial_mutation", "multinomial_crossing",
-                          "random_n_a", "distribution", "std",
+                          "distribution", "std",
                           "mean_mutation_rate_for_hc",
                           "const_for_mutation_rate_for_hc",
                           "stop_iteration_for_hc"]
@@ -34,17 +37,21 @@ DEPRECATED_IDENTIFIERS = ["multinom", "verbose", "flush_delay",
 class SettingsStorage(object):
 
     def __setattr__(self, name, value):
-        int_attrs = ['stuck_generation_number', 'sequence_length',
-                     'print_models_code_every_n_iteration',
+        int_attrs = ['stuck_generation_number', 'sequence_length', 'verbose',
+                     'print_models_code_every_n_iteration', 'n_elitism',
                      'draw_models_every_n_iteration', 'size_of_generation',
                      'number_of_repeats', 'number_of_processes',
                      'number_of_populations', 'time_to_print_summary']
         float_attrs = ['theta0', 'time_for_generation', 'eps',
                        'const_of_time_in_drawing', 'vmin', 'min_n', 'max_n',
-                       'min_t', 'max_t', 'min_m', 'max_m']
-        probs_attrs = ['mean_mutation_strength', 'mean_mutation_rate']
+                       'min_t', 'max_t', 'min_m', 'max_m',
+                       'upper_bound_of_first_split',
+                       'upper_bound_of_second_split']
+        probs_attrs = ['mean_mutation_strength', 'mean_mutation_rate',
+                       'p_mutation', 'p_crossover', 'p_random']
         bool_attrs = ['outgroup', 'linked_snp_s', 'only_sudden',
-                      'no_migrations', 'silence', 'test']
+                      'no_migrations', 'silence', 'test', 'random_n_a',
+                      'relative_parameters']
         int_list_attrs = ['pts', 'initial_structure', 'final_structure',
                           'projections']
         float_list_attrs = ['lower_bound', 'upper_bound']
@@ -54,25 +61,34 @@ class SettingsStorage(object):
         special_attrs = ['const_for_mutation_strength',
                          'const_for_mutation_rate', 'vmin',
                          'parameter_identifiers']
-        exist_file_attrs = ['input_file', 'custom_filename']  # TODO
-        empty_dir_attrs = ['output_directory']  # TODO
+        exist_file_attrs = ['input_file', 'custom_filename']
+        exist_dir_attrs = ['directory_with_bootstrap']
+        empty_dir_attrs = ['output_directory']
 
         data_holder_attrs = ['projections', 'outgroup',
                              'population_labels', 'sequence_length']
         bounds_attrs = ['min_n', 'max_n', 'min_t', 'max_t', 'min_m', 'max_m']
         bounds_lists = ['lower_bound', 'upper_bound', 'parameter_identifiers']
-        missed_attrs = ['engine', 'local_optimizer', '_inner_data']
+        missed_attrs = ['engine', 'local_optimizer', '_inner_data',
+                        '_bootstrap_data', 'X_init', 'Y_init', 'model_func',
+                        'get_engine_args']
 
+        super_hasattr = True
+        try:
+            super(SettingsStorage, self).__getattr__(name)
+        except AttributeError:
+            super_hasattr = False
         if (name not in int_attrs and name not in float_attrs and
                 name not in probs_attrs and name not in bool_attrs and
                 name not in attrs_with_equal_len and
                 name not in int_list_attrs and
                 name not in probs_list_attrs and name not in special_attrs and
                 name not in exist_file_attrs and
+                name not in exist_dir_attrs and
                 name not in empty_dir_attrs and
                 name not in data_holder_attrs and
                 name not in bounds_attrs and name not in missed_attrs and
-                name not in bounds_lists):
+                name not in bounds_lists and not super_hasattr):
             raise ValueError(f"Setting {name} should be checked.")
 
         super(SettingsStorage, self).__setattr__(name, value)
@@ -87,7 +103,6 @@ class SettingsStorage(object):
         # 0. If attribute is equal to the same from setting storage
         # then we let it go any way. It is because of None's in settings
         we_check = True
-        print(name, value)
         if hasattr(settings, name):
             default_value = getattr(settings, name)
             if (isinstance(value, np.ndarray) or
@@ -192,13 +207,16 @@ class SettingsStorage(object):
         if name in empty_dir_attrs:
             value = ensure_dir_existence(value, check_emptiness=True)
             super(SettingsStorage, self).__setattr__(name, value)
-        # 1.9 Check file exist
+        # 1.9 Check file and dir exist
         if name in exist_file_attrs:
             value = ensure_file_existence(value)
             super(SettingsStorage, self).__setattr__(name, value)
+        if name in exist_dir_attrs:
+            value = check_dir_existence(value)
 
         # 1.10 Check that identifiers are good:
         if name == "parameter_identifiers":
+            print(name, value)
             if isinstance(value, str):
                 value = [x for x in value.split(",")]
             value = [x.strip() for x in value]
@@ -366,13 +384,34 @@ class SettingsStorage(object):
             elif (name == "parameter_identifiers" and
                     self.custom_filename is not None):
                 with open(self.custom_filename) as f:
+                    big_comment = False
+                    big_comment_str = ""
+                    found_func = False
                     for line in f:
-                        if line.startswith("def model_func"):
+                        if line.startswith("#") or len(line.strip()) == 0:
+                            continue
+                        if found_func and line.strip().startswith("'''"):
+                            if big_comment and big_comment_str == "'''":
+                                break
+                            big_comment = True
+                            if big_comment_str == "":
+                                big_comment_str = "'''"
+                        if found_func and line.strip().startswith('"""'):
+                            if big_comment and big_comment_str == '"""':
+                                break
+                            big_comment = True
+                            if big_comment_str == "":
+                                big_comment_str = '"""'
+                        if found_func and not big_comment:
                             break
+                        if line.startswith("def model_func"):
+                            found_func = True
                     try:
                         line = next(f)
                         p_ids = line.strip().split("=")[0].split(",")
+                        p_ids = [x.strip() for x in p_ids]
                         self.__setattr__("parameter_identifiers", p_ids)
+                        print(f"Found parameter identifiers in file: {p_ids}")
                         return p_ids
                     except ValueError:  # wrong list
                         pass
@@ -406,11 +445,49 @@ class SettingsStorage(object):
         self.number_of_populations = len(self.projections)
         return data
 
+    def read_bootstrap_data(self, return_filenames=False):
+        if self.directory_with_bootstrap is None:
+            return
+        if (not hasattr(self, '_inner_data') and
+                self.data_holder.input_file is not None):
+            self.read_data()
+        dirname = self.directory_with_bootstrap
+        engine = get_engine(self.engine)
+
+        all_boot = []
+        set_of_seen_files = set()
+        filenames = []
+        for filename in os.listdir(dirname):
+            extention = '.' + filename.split('.')[-1]
+            filename_without_ext = '.'.join(filename.split('.')[:-1])
+            if filename_without_ext in set_of_seen_files:
+                continue
+            data_holder = copy.deepcopy(self.data_holder)
+            data_holder.filename = os.path.join(dirname, filename)
+            try:
+                data = engine.read_data(data_holder)
+                all_boot.append(data)
+                if return_filenames:
+                    filenames.append(filename)
+                set_of_seen_files.add(filename_without_ext)
+            except ValueError:
+                pass
+        self._bootstrap_data = all_boot
+        if return_filenames:
+            return all_boot, filenames
+        return all_boot
+
     @property
     def inner_data(self):
         if not hasattr(self, '_inner_data'):
             self._inner_data = self.read_data()
         return self._inner_data
+
+    @property
+    def bootstrap_data(self):
+        if not hasattr(self, '_bootstrap_data'):
+            self._bootstrap_data = self.read_bootstrap_data(self)
+        return self._bootstrap_data
 
     @staticmethod
     def from_file(param_file, extra_param_file=None):
@@ -490,9 +567,16 @@ class SettingsStorage(object):
         ga.p_mutation = self.p_mutation
         ga.p_crossover = self.p_crossover
         ga.p_random = self.p_random
+        ga.mut_rate = self.mean_mutation_rate
+        ga.mut_strength = self.mean_mutation_strength
+        ga.const_mut_rate = self.const_for_mutation_rate
+        ga.const_mut_strength = self.const_for_mutation_strength
         ga.eps = self.eps
         ga.n_stuck_gen = self.stuck_generation_number
         ga.maximize = True
+#        if self.random_n_a:
+#            ga.random_type = 'custom'
+#            ga.custom_rand_gen = custom_generator
         return ga
 
     def get_local_optimizer(self):
@@ -500,11 +584,36 @@ class SettingsStorage(object):
         ls.maximize = True
         return ls
 
+#    def get_linear_constrain(self, engine):
+#        if (self.upper_bound_of_first_split is None and
+#                self.upper_bound_of_second_split is None):
+#            return None
+#        inv_theta0 = engine.get_N_ancestral_from_theta(1.0)
+# 
+#        A = list()
+#        ub = list()
+#        if (self.upper_bound_of_first_split is not None):
+#            A1, b1 = engine.model.get_involved_for_split_time_vars(1)
+#            A.append(A1)
+#            ub.append(self.upper_bound_of_first_split / (2 * inv_theta0) - b1)
+#        if (self.upper_bound_of_second_split is not None):
+#            A2, b2 = engine.model.get_involved_for_split_time_vars(2)
+#            A.append(A2)
+#            ub.append(self.upper_bound_of_second_split / (2 * inv_theta0) - b2)
+#        lb = - np.inf * np.ones(len(ub))
+#        return LinearConstrainDemographics(np.array(A),
+#                                           np.array(lb), np.array(ub),
+#                                           engine, self.get_engine_args())
+
     def get_optimizers_kwargs(self):
         kwargs = {}
         kwargs['args'] = self.get_engine_args()
-        kwargs['verbose'] = 1
+        kwargs['verbose'] = self.verbose
+#        kwargs['linear_constrain'] = self.get_linear_constrain()
         return kwargs
+
+    def get_optimizers_init_kwargs(self):
+        return {'X_init': self.X_init, 'Y_init': self.Y_init}
 
     def get_engine_args(self, engine_id=None):
         if engine_id == None:
@@ -514,6 +623,23 @@ class SettingsStorage(object):
         else:
             args = (MomentsEngine.default_dt_fac,)
         return args
+
+    def get_linear_constrain_for_model(self, model):
+        if (self.upper_bound_of_first_split is None and
+                self.upper_bound_of_second_split is None):
+            return None
+        A = list()
+        ub = list()
+        if (self.upper_bound_of_first_split is not None):
+            A1, b1 = model.get_involved_for_split_time_vars(1)
+            A.append(A1)
+            ub.append(self.upper_bound_of_first_split / 2 - b1)
+        if (self.upper_bound_of_second_split is not None):
+            A2, b2 = model.get_involved_for_split_time_vars(2)
+            A.append(A2)
+            ub.append(self.upper_bound_of_second_split / 2 - b2)
+        lb = - np.inf * np.ones(len(ub))
+        return LinearConstrain(np.array(A), np.array(lb), np.array(ub))
 
     def get_model(self):
         gen_time = self.time_for_generation
@@ -525,12 +651,16 @@ class SettingsStorage(object):
             create_sels = False
             create_dyns = not self.only_sudden
             sym_migs = False
-            return StructureDemographicModel(self.initial_structure,
-                                             self.final_structure,
-                                             create_migs, create_sels,
-                                             create_dyns, sym_migs,
-                                             gen_time, theta0, mut_rate)
-        elif (self.custom_filename is not None and
+            model = StructureDemographicModel(self.initial_structure,
+                                              self.final_structure,
+                                              create_migs, create_sels,
+                                              create_dyns, sym_migs, True,
+                                              gen_time, theta0, mut_rate)
+            constrain = self.get_linear_constrain_for_model(model)
+            model.linear_constrain = constrain
+            return model
+        elif ((self.custom_filename is not None or
+                self.model_func is not None) and
                 self.lower_bound is not None and
                 self.upper_bound is not None):
             var_classes = list()

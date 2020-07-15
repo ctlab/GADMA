@@ -5,6 +5,7 @@ from ..utils import DiscreteVariable, sort_by_other_list
 
 from functools import wraps
 import numpy as np
+import sys
 
 
 class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
@@ -47,6 +48,7 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
     def optimize(self, f, variables, args=(), global_num_init=50,
                  X_init=None, Y_init=None, local_options={},
+                 linear_constrain=None,
                  global_maxiter=None, local_maxiter=None,
                  global_maxeval=None, local_maxeval=None,
                  verbose=0, callback=None, eval_file=None,
@@ -64,6 +66,7 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         global_result = self.global_optimizer.optimize(f, variables,
                                                        args, global_num_init,
                                                        X_init, Y_init,
+                                                       linear_constrain,
                                                        global_maxiter,
                                                        global_maxeval,
                                                        verbose, callback,
@@ -75,7 +78,7 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             stream = sys.stdout
         print(f"--Finish global optimization {self.global_optimizer.id}--",
               file=stream)
-        print("Result:\n", global_result)
+        print("Result:\n", global_result, file=stream)
 
         # Transform best x to local optimizer as x0 and functions for local
         x_best = np.array(global_result.x)
@@ -96,6 +99,7 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         # Run local optimizer
         local_result = self.local_optimizer.optimize(f_local, variables_local,
                                                      x0, args, local_options,
+                                                     linear_constrain,
                                                      local_maxiter,
                                                      local_maxeval,
                                                      verbose, callback_local,

@@ -35,3 +35,4 @@ from .utils import *
 from .optimizers import *
 from .cli import *
 from .core import *
+from .Inference import *

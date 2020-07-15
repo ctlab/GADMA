@@ -19,7 +19,7 @@ import os, sys
 
 NAME = 'gadma'
 VERSION = '1.0.1'
-SUPPORTED_PYTHON_VERSIONS = ['2.5', '2.6', '2.7', '3.6', '3.7']
+SUPPORTED_PYTHON_VERSIONS = ['3.6', '3.7']
 
 
 # Check python version
@@ -54,14 +54,22 @@ setup(
         'Natural Language :: English',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
         'Topic :: Software Development',
     ],
-    packages=['gadma'],
-    python_requires='>=2.5.*, <=2.7.*',
+    packages=['gadma',
+              'gadma.data',
+              'gadma.engines',
+              'gadma.models',
+              'gadma.utils',
+              'gadma.cli',
+              'gadma.core',
+              'gadma.optimizers',
+              'gadma.code_generator'],
+#    python_requires='>=2.5.*, <=2.7.*',
     include_package_data=True,
     package_data={
-        'gadma': ['*.py',  'params_template', 'extra_params_template']
+        'gadma.cli': ['*.py',  'params_template', 'extra_params_template', 'test_settings']
     },
     data_files=[('fs_examples', [os.path.join('fs_examples', 'test.fs')]), ("", ["LICENSE"])],
     install_requires=['numpy>=1.2.0', 'scipy>=0.6.0'],
@@ -70,5 +78,5 @@ setup(
             'gadma-run_ls_on_boot_data = gadma.run_ls_on_boot_data:main',
             'gadma-get_confidence_intervals = gadma.get_confidence_intervals:main']
     },
-    zip_safe=False
+#    zip_safe=False
 )

@@ -64,8 +64,19 @@ class Optimizer(object):
             return f
         return wrapper
 
-    def evaluate(self, f, x, args=()):
-        y = f(self.inv_transform(x), *args)
+    def evaluate(self, f, x, args=(), linear_constrain=None):
+        x_tr = self.inv_transform(x)
+        # the following code deal with linear constrain
+        if linear_constrain is not None:
+            print(x_tr, linear_constrain.original_ub)
+            if not linear_constrain.fits(x_tr):
+                print(x_tr, linear_constrain.constrain.ub, linear_constrain.original_ub)
+                x_tr, success = linear_constrain.try_to_transform(x_tr)
+                print(x_tr, linear_constrain.constrain.ub, linear_constrain.original_ub)
+                if not success:
+                    print(f"!!!!!!!!!!!!!!!!!AHTUNG HERE IS A LITTLE PROBLEM. PLEASE CHECK IT: {x}, {x_tr}")
+                    return self.sign * np.inf
+        y = f(x_tr, *args)
         return self.sign * y
 
     def prepare_f_for_opt(self, f, args=(), cache=True):
@@ -81,7 +92,8 @@ class Optimizer(object):
         for var in variables:
             assert isinstance(var, Variable)
 
-    def optimize(f, variables, args=(), options={}, maxiter=None):
+    def optimize(f, variables, args=(), options={}, linear_constrain=None,
+                 maxiter=None):
         raise NotImplementedError
 
 

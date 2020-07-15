@@ -81,6 +81,16 @@ class CacheInfo(object):
         self.all_calls = []
 
 
+def rpartial(func, *args):
+    """
+    Reversed partial. Fixation of last arguments.
+    """
+    @wraps(func)
+    def rpartial_wrapper(*part_args, **kwargs):
+        return func(*(part_args + args), **kwargs)
+    return rpartial_wrapper
+
+
 def lru_cache(func):
     """
     Our lru cache. We want to get cache itself while functools.lru_cache
@@ -123,6 +133,34 @@ def cache_func(f):
     return cache_wrapper
 
 
+def cache_func_2d(f):
+    """
+    Cashes function with two arguments.
+    :param f: function such that f(x, y).
+    :returns: function that is cashed.
+    """
+    @lru_cache
+    @wraps(f)
+    def tuple_wrapper(x_y_tuple):
+        x, y = x_y_tuple
+        if isinstance(y, tuple) and isinstance(y[0], tuple):
+            y = np.array(y)
+        return f(x, y)
+
+    @wraps(tuple_wrapper)
+    def cache_wrapper(x, y):
+        y_tuple = tuple(y)
+        if (isinstance(y, (list, np.ndarray)) and
+                isinstance(y[0], (list, np.ndarray))):
+            for i in range(len(y_tuple)):
+                y_tuple[i] = tuple(y_tuple[i])
+        return tuple_wrapper(tuple(x), y_tuple)
+
+    cache_wrapper.cache_info = tuple_wrapper.cache_info
+    return cache_wrapper
+
+
+
 def nan_fval_to_inf(f):
     """
     Wrappes function to return infinity instead nan.
@@ -146,18 +184,28 @@ def eval_wrapper(f, eval_file=None):
     :param cache: if True then function will be cached.
     """
     time_init = time.time()
-    if eval_file:
-        with open(eval_file, 'w') as fl:
-            print('Time of evaluation start', 'Function value',
-                  'Parameters values', 'Evaluation time', file=fl, sep='\t')
+    first_line = '\t'.join(['Time of evaluation start', 'Function value',
+                            'Parameters values', 'Evaluation time'])
+    if eval_file is not None:
+        if not check_file_existence(eval_file):
+            open(eval_file, 'w').close()
+        if not os.stat(eval_file).st_size == 0:
+            with open(eval_file, 'r') as fl:
+                line = next(fl)
+        if  os.stat(eval_file).st_size == 0 or line.strip() != first_line:
+            with open(eval_file, 'a') as fl:
+                print(first_line, file=fl, sep='\t')
     @wraps(f)
     def eval_wrapper_f(x):
+        if eval_file is not None:
+            with open(eval_file, 'a') as fl:
+                print(x, file=fl)
         time_start = time.time()
         y = f(x)
         time_end = time.time()
         if eval_file is not None:
             with open(eval_file, 'a') as fl:
-                print(time_start - time_init, y, x, time_end - time_start,
+                print(time_start - time_init, y, list(x), time_end - time_start,
                       file=fl, sep='\t')
         return y
     return eval_wrapper_f
@@ -210,7 +258,7 @@ def check_file_existence(path_to_file):
 
 
 def check_dir_existence(path_to_dir):
-    return os.path.exists(path_to_dir) and os.path.isdir(path_to_file)
+    return os.path.exists(path_to_dir) and os.path.isdir(path_to_dir)
 
 
 def ensure_file_existence(path_to_file):
@@ -228,6 +276,7 @@ def ensure_dir_existence(path_to_dir, check_emptiness=False):
         raise RuntimeError(f"Directory {path_to_dir} is not empty\nYou can "
                            f"write:  rm -rf {dirname}\t to remove directory.")
     return dirname
+
 
 class StdAndFileLogger(object):
     def __init__(self, log_filename, silent=False):
@@ -250,14 +299,43 @@ class StdAndFileLogger(object):
         #you might want to specify some extra behavior here.
         pass
 
+
 def get_aic_score(n_params, log_likelihood):
     return 2 * n_params - 2 * log_likelihood
+
+
+def get_claic_score(engine, x0, boots,
+                    args=(), log_likelihood=None, return_eps=False):
+    """Calculate CLAIC score for the model."""
+    if log_likelihood is None:
+        log_likelihood = engine.evaluate(x0, *args)
+    eps = 1e-5
+    claic_score = None
+    while eps <= 1e-2:
+        print(eps)
+        try:
+            claic_component = engine.get_claic_component(x0, boots,
+                                                         *args, eps)
+            claic_score = 2 * claic_component - 2 * log_likelihood
+            break
+        except np.linalg.linalg.LinAlgError as e:
+            if str(e) == 'Singular matrix':
+                eps *= 10
+            else:
+                print(e)
+                raise e
+    if return_eps:
+        return claic_score, eps
+    else:
+        return claic_score
+
 
 # Printing functions
 def float_repr(value, precision = 5):
     if value < 10**(-precision):
         return f"{value:.2e}"
     return f"{round(value, precision)}"
+
 
 def variables_values_repr(variables, values):
     val_repr = [float_repr(val) if isinstance(val, float) else val
@@ -266,3 +344,14 @@ def variables_values_repr(variables, values):
     x_repr = ",\t".join([f"{var.name}={val}" for var, val in var_val])
     x_repr = f"({x_repr})"
     return x_repr
+
+
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'

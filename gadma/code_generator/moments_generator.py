@@ -1,4 +1,4 @@
-from ..models import CustomDemographicModel, Epoch, Split
+from ..models import CustomDemographicModel, Epoch, Split, BinaryOperation
 from ..utils import DiscreteVariable, DynamicVariable, Variable
 from .dadi_generator import FUNCTION_NAME, _print_p0, _print_main, _print_load_data
 import numpy as np
@@ -55,10 +55,16 @@ def _print_moments_func(model, values, dt_fac):
                         x_diff = event.time_arg
                         if isinstance(y1, Variable):
                             y1 = y1.name
+                        elif isinstance(y1, BinaryOperation):
+                            y1 = f"({y1.name})"
                         if isinstance(y2, Variable):
                             y2 = y2.name
+                        elif isinstance(y2, BinaryOperation):
+                            y2 = f"({y2.name})"
                         if isinstance(x_diff, Variable):
                             x_diff = x_diff.name
+                        elif isinstance(x_diff, BinaryOperation):
+                            x_diff = f"({x_diff.name})"
                         funcstr = func.func_str(y1, y2, x_diff)
                         ret_str += "\tnu%d_func = %s\n" % (i+1, funcstr)
                         func_names.append("nu%d_func" % (i+1))

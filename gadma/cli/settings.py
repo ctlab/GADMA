@@ -1,5 +1,5 @@
 from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable,\
-                    DynamicVariable
+                    DynamicVariable, FractionVariable
 
 # Main options. Output and input.
 output_directory = None
@@ -21,12 +21,12 @@ time_for_generation = None
 only_sudden = False
 pts = None
 engine = 'moments'
-#relative_params = False
+relative_parameters = False
 no_migrations = False
 
 #Custom model
 custom_filename = None
-#model_func = None
+model_func = None
 lower_bound = None
 upper_bound = None
 parameter_identifiers = None
@@ -37,8 +37,8 @@ initial_structure = None
 final_structure = None
 
 # Time bounds
-#split_1_lim = None
-#split_2_lim = None
+upper_bound_of_first_split = None
+upper_bound_of_second_split = None
 
 # GA options
 size_of_generation = 10
@@ -102,12 +102,14 @@ max_m = MigrationVariable.default_domain[1]
 #hc_stop_iter = None
 
 # Options of mutation, crossing and random generating
-#random_N_A = True
+random_n_a = True
 #multinom_cross = False
 #multinom_mutate = False
 
 # Options of printing summary information about repeats
-time_to_print_summary= 1  # min
+time_to_print_summary = 1  # min
+
+verbose = 1
 
 # Options of distributions
 #distribution = 'normal'  # can be 'uniform'
@@ -118,12 +120,13 @@ time_to_print_summary= 1  # min
 #pil_available = False
 #moments_available = False
 
-
+X_init = None
+Y_init = None
 mutation_rate = None
 
 # Additional constants
 P_IDS = {'n': PopulationSizeVariable, 't': TimeVariable,
-         'm': MigrationVariable, 'd': DynamicVariable}
+         'm': MigrationVariable, 'd': DynamicVariable, 's':FractionVariable}
 LONG_NAME_2_SHORT = {"log-likelihood": "logLL",
                      "aic score": "aic",
                      "claic score": "claic"}

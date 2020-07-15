@@ -1,4 +1,4 @@
-from ..models import CustomDemographicModel, Epoch, Split
+from ..models import CustomDemographicModel, Epoch, Split, BinaryOperation
 from ..utils import Variable, DiscreteVariable, DynamicVariable
 
 
@@ -12,7 +12,7 @@ def _print_dadi_func(model, values):
     if isinstance(model, CustomDemographicModel):
         ret_str = "import importlib.util\n\n"
         ret_str += "spec = importlib.util.spec_from_file_location('module',"\
-                   f" '{model.function.__file__}')\n"
+                   f" '{sys.modules[model.function.__module__].__file__}')\n"
         ret_str += "module = importlib.util.module_from_spec(spec)\n"
         ret_str += "spec.loader.exec_module(module)\n"
         ret_str += f"{FUNCTION_NAME} = module.model_func\n\n"
@@ -38,10 +38,16 @@ def _print_dadi_func(model, values):
                         x_diff = event.time_arg
                         if isinstance(y1, Variable):
                             y1 = y1.name
+                        elif isinstance(y1, BinaryOperation):
+                            y1 = f"({y1.name})"
                         if isinstance(y2, Variable):
                             y2 = y2.name
+                        elif isinstance(y2, BinaryOperation):
+                            y2 = f"({y2.name})"
                         if isinstance(x_diff, Variable):
                             x_diff = x_diff.name
+                        elif isinstance(x_diff, BinaryOperation):
+                            x_diff = f"({x_diff.name})"
                         funcstr = func.func_str(y1, y2, x_diff)
                         ret_str += "\tnu%d_func = %s\n" % (i+1, funcstr)
             kwargs_with_vars = DadiEngine._get_kwargs(event, var2value)

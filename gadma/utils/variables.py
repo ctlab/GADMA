@@ -1,5 +1,6 @@
 import numpy as np
-from .distributions import *
+from .distributions import uniform_generator, trunc_normal_sigma_generator,\
+                           trunc_lognormal_sigma_generator
 from .utils import extract_args
 from functools import partial
 from keyword import iskeyword
@@ -73,8 +74,7 @@ class Variable(object):
         """
         raise NotImplementedError
 
-def uniform(domain):
-    return np.random.uniform(domain[0], domain[1])
+
 class ContinuousVariable(Variable):
     """
     Class of the continuous variable.
@@ -89,7 +89,7 @@ class ContinuousVariable(Variable):
     * :attr:`default_rand_gen` = uniform distribution over domain.
     """
     default_domain = np.array([-np.inf, np.inf])
-    default_rand_gen = uniform#extract_args(np.random.uniform)
+    default_rand_gen = uniform_generator
 
     def __init__(self, name, domain=None, rand_gen=None):
         if domain is None:
@@ -163,11 +163,6 @@ class DiscreteVariable(Variable):
         return value in self.domain
 
 
-def help_func1(domain):
-    return trunc_lognormal_3_sigma_rule(1, domain[0], domain[1])
-def help_func(domain):
-    return trunc_normal_3_sigma_rule(1, domain[0], domain[1])
-
 class PopulationSizeVariable(ContinuousVariable):
     """
     Variable for keepeing size of population in demographic model.
@@ -180,9 +175,11 @@ class PopulationSizeVariable(ContinuousVariable):
     :note: Values are assumed to be in genetic units.
     """
     default_domain = np.array([1e-2, 100])
-    default_rand_gen = help_func1#extract_args(partial(trunc_lognormal_3_sigma_rule,
-#                                            1))
+    default_rand_gen = trunc_lognormal_sigma_generator
 
+    @staticmethod
+    def translate_units(value, Nanc):
+        return type(Nanc)(value * Nanc)
 
 class MigrationVariable(ContinuousVariable):
     """
@@ -196,8 +193,11 @@ class MigrationVariable(ContinuousVariable):
     :note: Values are assumed to be in genetic units.
     """
     default_domain = np.array([0, 10])
-    default_rand_gen = help_func#extract_args(partial(trunc_normal_3_sigma_rule,
-#                                            1))
+    default_rand_gen = trunc_normal_sigma_generator
+
+    @staticmethod
+    def translate_units(value, Nanc):
+        return value / (2 * Nanc)
 
 
 class TimeVariable(ContinuousVariable):
@@ -211,9 +211,12 @@ class TimeVariable(ContinuousVariable):
 
     :note: Values are assumed to be in genetic units.
     """
-    default_domain = np.array([0, 5])
-    default_rand_gen = help_func#extract_args(partial(trunc_normal_3_sigma_rule,
-#                                            1))
+    default_domain = np.array([1e-15, 5])
+    default_rand_gen = trunc_normal_sigma_generator
+
+    @staticmethod
+    def translate_units(value, Nanc):
+        return type(Nanc)(value * (2 * Nanc))
 
 
 class SelectionVariable(ContinuousVariable):
@@ -228,27 +231,51 @@ class SelectionVariable(ContinuousVariable):
     :note: Values are assumed to be in genetic units.
     """
     default_domain = np.array([1e-15, 10])
-    default_rand_gen = help_func#extract_args(partial(trunc_normal_3_sigma_rule,
-#                                            1))
+    default_rand_gen = trunc_normal_sigma_generator
+
+    @staticmethod
+    def translate_units(value, Nanc):
+        return value / (2 * Nanc)
 
 
-class PercentVariable(ContinuousVariable):
+class FractionVariable(ContinuousVariable):
     """
-    Variable for keepeing percent parameter of the demographic model.
+    Variable for keepeing fraction parameter of the demographic model.
 
     * :attr:`default_domain` = array([0, 1])
 
     * :attr:`default_rand_gen` = random uniform distribution over domain.
     """
-    default_domain = np.array([0, 1])
-    default_rand_gen = uniform#extract_args(np.random.uniform)
+    default_domain = np.array([1e-3, 1-1e-3])
+    default_rand_gen = uniform_generator
+
+    @staticmethod
+    def translate_units(value, Nanc):
+        return value
+
+class PopulationSizeXFraction(object):
+    def __init__(self, pop_size, fraction, reverse=False):
+        self.pop_size = pop_size
+        self.fraction = fraction
+        self.reverse = reverse
+
+class MultipliedVariable(ContinuousVariable):
+    def __init__(self, var1, var2):
+        name = f"{var1}_x_{var2}"
+        domain = [var1.domain[0] * var2.domain[0],
+                  var1.domain[1] * var2.domain[1]]
+        rand_gen = multiply_generator(var1.rand_gen, var1.domain,
+                                      var2.rand_gen, var2.domain)
+        self.var1 = var1
+        self.var2 = var2
+        super(name, domain, rand_gen)
 
 
 class Dynamic(object):
     """
     Abstract class for Dynamic value.
     New class should be instance of this class, should have :attr:`format_str`
-    attribute and implement :func:`_inner_func` (static), :func:`__str__` and
+    attribute and implement :func:`_inner_func` (staticmethod), :func:`__str__` and
     :func:`func_str` methods.
 
     :cvar format_str: format string for string representation of the dynamic.
@@ -399,3 +426,7 @@ class DynamicVariable(DiscreteVariable):
         :raises AttributeError: Dynamic variable has incomparative values.
         """
         raise AttributeError("DynamicVariable domain has incomparative values")
+
+    @staticmethod
+    def translate_units(value, Nanc):
+        return value

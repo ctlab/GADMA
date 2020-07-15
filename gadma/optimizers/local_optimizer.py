@@ -1,6 +1,6 @@
 from .optimizer import Optimizer, ConstrainedOptimizer, UnconstrainedOptimizer
 from .optimizer_result import OptimizerResult
-from ..utils import eval_wrapper
+from ..utils import eval_wrapper, rpartial, fix_args
 
 import copy
 import numpy as np
@@ -67,7 +67,7 @@ class ScipyOptimizer(LocalOptimizer):
         raise NotImplementedError
 
     def optimize(self, f, variables, x0, args=(), options={},
-                 maxiter=None, maxeval=None,
+                 linear_constrain=None, maxiter=None, maxeval=None,
                  verbose=0, callback=None, eval_file=None, report_file=None):
         x0 = np.array(x0, dtype=np.float)
         x0_in_opt = self.transform(x0)
@@ -102,6 +102,7 @@ class ScipyOptimizer(LocalOptimizer):
                                                  verbose, report_file)
 
         f_in_opt = partial(self.evaluate, finally_wrapped_f)
+        f_in_opt = fix_args(f_in_opt, (), linear_constrain)
 
         # Create callback for scipy
         if callback is not None:
@@ -195,7 +196,7 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
         return wrapper
 
     def optimize(self, f, variables, x0, args=(), options={},
-                 maxiter=None, maxeval=None,
+                 linear_constrain=None, maxiter=None, maxeval=None,
                  verbose=0, callback=None, eval_file=None, report_file=None):
         x0 = np.array(x0, dtype=np.float)
         x0_in_opt = self.optimizer.transform(self.transform(x0))
@@ -216,12 +217,15 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
         finally_wrapped_f = self.wrap_for_report(wrapped_f, variables,
                                                  verbose, report_file)
         f_in_opt = partial(self.evaluate_inner, finally_wrapped_f)
+#        f_in_opt = fix_args(f_in_opt, (linear_constrain,))
 
         if callback is not None:
             callback = self.prepare_callback(callback)
         result = self.optimizer.optimize(f_in_opt, vars_in_opt, x0_in_opt,
                                       args=(bounds,), options=options,
-                                      verbose=0, maxiter=maxiter,
+                                      verbose=0,
+                                      linear_constrain=linear_constrain,
+                                      maxiter=maxiter,
                                       maxeval=maxeval, callback=callback)
         # TODO: need to check result.X as they should be transformed somehow.
         result.x = self.inv_transform(result.x)

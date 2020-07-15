@@ -1,7 +1,7 @@
 import numpy as np
 
 from . import Model
-from ..utils import Variable, float_repr
+from ..utils import Variable, FractionVariable, float_repr
 
 
 class Event(Model):
@@ -65,19 +65,16 @@ class Epoch(Event):
                 return
 
     def as_custom_string(self, values):
-        var2value = self.var2value(values)
-        val_str = lambda val: float_repr(val, precision=3)\
-                              if isinstance(val, float) else str(val)
-        repr_f = lambda var: f"{val_str(var2value[var])}({var.name})"\
-                             if isinstance(var, Variable)\
-                             else f"{val_str(var)}"
-        all_repr = [repr_f(self.time_arg)]
-        sizes_repr = [repr_f(arg) for arg in self.size_args]
+        _help_f = lambda x, y: f"{y}" if x == "" else  f"{y}({x})"
+        help_f = lambda x: _help_f(*self._arg_val_repr(x, values))
+
+        all_repr = [help_f(self.time_arg)]
+        sizes_repr = [help_f(arg) for arg in self.size_args]
         sizes_repr = f"[{', '.join(sizes_repr)}]"
         all_repr.append(sizes_repr)
         migs_repr = "[no migs]" 
         if self.mig_args is not None:
-            migs_repr = [[repr_f(mig )for mig in migs]
+            migs_repr = [[help_f(mig )for mig in migs]
                          for migs in self.mig_args]
             migs_str = []
             for migs in migs_repr:
@@ -87,11 +84,11 @@ class Epoch(Event):
             all_repr.append(migs_repr)
         sels_repr = ""
         if self.sel_args is not None:
-            sels_repr = [repr_f(arg) for arg in self.sel_args]
+            sels_repr = [help_f(arg) for arg in self.sel_args]
             sels_repr = f"[{', '.join(sels_repr)}]"
             all_repr.append(sels_repr)
         if self.dyn_args is not None:
-            dyns_repr = [repr_f(arg) for arg in self.dyn_args]
+            dyns_repr = [help_f(arg) for arg in self.dyn_args]
             dyns_repr = f"[{', '.join(dyns_repr)}]"
         else:
             dyns_repr = "[{', '.join(['Sud' for _ in self.size_args])}]"
@@ -113,11 +110,14 @@ class Split(Event):
         self.add_variables(size_args)
 
     def as_custom_string(self, values):
-        var2value = self.var2value(values)
-        val_str = lambda val: float_repr(val, precision=3)
-        repr_f = lambda var: f"{val_str(var2value[var])}({var.name})"\
-                             if isinstance(var, Variable)\
-                             else f"{val_str(var)}"
-        sizes_repr = [repr_f(arg) for arg in self.size_args]
-        return f"[ {self.pop_to_div + 1} pop split [{', '.join(sizes_repr)}] ]"
+        _help_f = lambda x, y: f"{y}" if x == "" else  f"{y}({x})"
+        help_f = lambda x: _help_f(*self._arg_val_repr(x, values))
+        frac_str = ""
+        for var in self.variables:
+            if isinstance(var, FractionVariable):
+                val = self.var2value(values)[var]
+                frac_str = f" {100 * val : .2f}% ({var.name})"
+        sizes_repr = [help_f(arg) for arg in self.size_args]
+        sizes_repr = f"[{', '.join(sizes_repr)}]"
 
+        return f"[ {self.pop_to_div + 1} pop split {frac_str} {sizes_repr} ]"
