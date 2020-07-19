@@ -449,40 +449,40 @@ class Options_storage:
                     for _ in range(self.number_of_populations)]
             if self.final_structure is None:
                 self.final_structure = np.array(self.initial_structure)
+        else:
+            if self.lower_bound is None:
+                self.lower_bound = []
+                for p_id in self.p_ids:
+                    if p_id == 'n':
+                        self.lower_bound.append(self.min_N)
+                    elif p_id == 't':
+                        self.lower_bound.append(self.min_T)
+                    elif p_id == 'm':
+                        self.lower_bound.append(self.min_M)
+                    elif p_id == 's':
+                        self.lower_bound.append(0.0 + self.min_N)
+            else:
+                self.lower_bound = [float(x) for x in support.check_comma_sep_list(self.lower_bound, is_int=False)]
+
+            if self.upper_bound is None:
+                self.upper_bound = []
+                for p_id in self.p_ids:
+                    if p_id == 'n':
+                        self.upper_bound.append(self.max_N)
+                    elif p_id == 't':
+                        self.upper_bound.append(self.max_T)
+                    elif p_id == 'm':
+                        self.upper_bound.append(self.max_M)
+                    elif p_id == 's':
+                        self.upper_bound.append(1.0 - self.min_N)
+            else:
+                self.upper_bound = [float(x) for x in support.check_comma_sep_list(self.upper_bound, is_int=False)]
         if self.initial_structure is not None:
             self.initial_structure = np.array(
                 self.initial_structure)
         if self.final_structure is not None:
             self.final_structure = np.array(
                 self.final_structure)
-        if self.lower_bound is None:
-            self.lower_bound = []
-            for p_id in self.p_ids:
-                if p_id == 'n':
-                    self.lower_bound.append(self.min_N)
-                elif p_id == 't':
-                    self.lower_bound.append(self.min_T)
-                elif p_id == 'm':
-                    self.lower_bound.append(self.min_M)
-                elif p_id == 's':
-                    self.lower_bound.append(0.0 + self.min_N)
-        else:
-            self.lower_bound = [float(x) for x in support.check_comma_sep_list(self.lower_bound, is_int=False)]
-
-        if self.upper_bound is None:
-            self.upper_bound = []
-            for p_id in self.p_ids:
-                if p_id == 'n':
-                    self.upper_bound.append(self.max_N)
-                elif p_id == 't':
-                    self.upper_bound.append(self.max_T)
-                elif p_id == 'm':
-                    self.upper_bound.append(self.max_M)
-                elif p_id == 's':
-                    self.upper_bound.append(1.0 - self.min_N)
-        else:
-            self.upper_bound = [float(x) for x in support.check_comma_sep_list(self.upper_bound, is_int=False)]
-
 
     def check(self):
         '''
