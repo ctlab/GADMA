@@ -1386,7 +1386,7 @@ class Demographic_model:
                         self.sfs = func(self.params.ns)
                         break
                     except RuntimeError as e:
-                        if e.msg == 'Factor is exactly singular':
+                        if str(e) == 'Factor is exactly singular':
                             if i == 9:
                                 raise RuntimeError(
                                     'Factor is exactly singular')
@@ -1462,7 +1462,7 @@ class Demographic_model:
                             self.as_short_vector(), self.params.input_data, 
                             pts=pts, eps=eps) + 2 * self.get_fitness_func_value()
                 except np.linalg.linalg.LinAlgError as e:
-                    if e.msg == 'Singular matrix':
+                    if str(e) == 'Singular matrix':
                         eps *= 10
             self.claic_eps = eps
         if get_eps:
@@ -2441,7 +2441,7 @@ class Demographic_model:
                         self.get_sfs(), self.params.input_data, vmin=self.params.vmin, show=False)
             plt.savefig(out)
         except Exception as e:
-            support.warning("Could not draw sfs plots for " + filename + ' : ' + e.msg)
+            support.warning("Could not draw sfs plots for " + filename + ' : ' + str(e))
             success = False
 
         if self.is_custom_model and not self.params.moments_scenario or not self.params.moments_available:
@@ -2464,7 +2464,7 @@ class Demographic_model:
                 self.normalize_by_Nref(size_of_first_pop, remove_fitness_func_value=False)
             return
         except RuntimeError as e:
-            if e.msg == 'Factor is exactly singular':
+            if str(e) == 'Factor is exactly singular':
                 support.warning("Can't draw model to " + filename +
                                 ' (Scipy version less than 0.19.0)')
                 if self.get_N_A() == 1.0:
