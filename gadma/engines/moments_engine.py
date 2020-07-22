@@ -211,7 +211,13 @@ class MomentsEngine(DadiOrMomentsEngine):
         Simulates SFS from values and evaluate log likelihood between
         simulated SFS and observed SFS.
         """
-        return super(MomentsEngine, self).evaluate(values, dt_fac)
+        try:
+            val = super(MomentsEngine, self).evaluate(values, dt_fac)
+            return val
+        except RuntimeError as e:
+            if str(e) == "Factor is exactly singular":
+                return None
+            raise e
 
     def generate_code(self, values, filename=None, dt_fac=default_dt_fac):
         return super(MomentsEngine, self).generate_code(values, filename,

@@ -101,7 +101,11 @@ class Engine(object):
             # in moments and dadi it is used to save thetas
             self.saved_add_info = {}  
             return
-        if model.__class__ not in self.supported_models:
+        is_supported = False
+        for cls in self.supported_models:
+            if issubclass(model.__class__, cls):
+                is_supported = True
+        if not is_supported:
             raise ValueError(f"Model {model.__class__} is not supported "
                              f"by {self.id} engine.\nThe supported models"
                              f" are: {self.supported_models}.")

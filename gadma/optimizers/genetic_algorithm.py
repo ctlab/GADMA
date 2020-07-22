@@ -9,6 +9,7 @@ import numpy as np
 import copy
 import pickle
 import sys
+import time
 
 
 class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
@@ -140,6 +141,14 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         self.one_fifth_rule = one_fifth_rule
         super(GeneticAlgorithm, self).__init__(log_transform, maximize)
 
+    def randomize(self, variables, random_type='resample',
+                  custom_rand_gen=None):
+        x = super(GeneticAlgorithm, self).randomize(variables, random_type,
+                                                    custom_rand_gen)
+        x = WeightedMetaArray(x)
+        x.metadata = 'r'
+        return x
+
     def mutation_by_ind(self, x, variables, index, mutation_type='gaussian',
                         one_fifth_rule=True):
         x_mut = WeightedMetaArray(x, dtype=object)
@@ -174,6 +183,11 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             # Case 2 Continous variable
             else:
                 x_mut[index] *= 1 + sign * rate
+
+            # Check if it was something that could be 0
+            if var.domain[0] == 0 and sign == -1:
+                if x_mut[index] < 1e-5 and np.random.choice([False, True]):
+                    x_mut[index] = 0
         else:
             raise ValueError(f"Unknown mutation type: {mutation_type}.")
 
@@ -503,7 +517,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         return ret_value
 
     def write_report(self, n_gen, variables, X_gen, Y_gen, x_best, y_best,
-                     report_file):
+                     mean_time, report_file):
         """
         Write report about one generation in report file.
         """
@@ -542,6 +556,8 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         if report_file:
             stream = open(report_file, 'a')
 
+        if mean_time is not None:
+            print(f"\nMean time:\t{mean_time:.3f} sec.\n", file=stream)
         print("\n", file=stream)
 
         if report_file:
@@ -630,13 +646,18 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         # Write report about 0 generation
         if verbose > 0:
             self.write_report(n_gen, variables, X_gen, Y_gen, x_best, y_best,
-                              report_file)
+                              None, report_file)
         self.save(n_gen, X_gen, Y_gen, X_total, Y_total, save_file)
+
+        # keep times of generation evaluations
+        times = list()
 
         # Begin to create generations
         while (len(variables) > 0 and
                 not self.is_stopped(n_gen, n_eval, n_impr_gen,
                                     maxiter, maxeval)):
+            # record time of generation start
+            start_time = time.time()
             # Form new generation
             X_gen, Y_gen = self.selection(f_in_opt, variables, X_gen, Y_gen,
                                           self.selection_type,
@@ -667,6 +688,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             # Update numbers
             n_gen += 1
             n_eval = prepared_f.cache_info.misses
+            times.append(time.time() - start_time)
 
             # Callback
             if callback is not None:
@@ -675,7 +697,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             # Write report about current generation
             if verbose > 0 and n_gen % verbose == 0:
                 self.write_report(n_gen, variables, X_gen, Y_gen,
-                                  x_best, y_best, report_file)
+                                  x_best, y_best, np.mean(times), report_file)
             # Save generation
             self.save(n_gen, X_gen, Y_gen, X_total, Y_total, save_file)
 

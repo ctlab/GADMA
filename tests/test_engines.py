@@ -56,7 +56,7 @@ class TestEngines(unittest.TestCase):
         data = func_ex([values[x] for x in list_in_dadi], ns, pts)
         ll = dadi.Inference.ll_multinom(data, data)
 
-        dm = DemographicModel()
+        dm = EpochDemographicModel()
         dm.add_epoch(t1, [nu1])
         dm.add_split(0, [nu1, nu1])
         dm.add_epoch(t2, [nu1, nu2], dyn_args=['Sud', dyn])
@@ -108,7 +108,7 @@ class TestEngines(unittest.TestCase):
         data = moments_func([values[x] for x in list_in_dadi], ns, dt_fac)
         ll = moments.Inference.ll_multinom(data, data)
 
-        dm = DemographicModel()
+        dm = EpochDemographicModel()
         dm.add_epoch(t, [nu1])
         dm.add_split(0, [nu1, nu1])
         dm.add_epoch(t, [nu1, nu2], dyn_args=['Sud', dyn])

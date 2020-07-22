@@ -2,7 +2,9 @@ from .. import matplotlib, moments, dadi, Image
 from .. import matplotlib_available, PIL_available, moments_available
 from ..models import DemographicModel, Split
 from ..engines import get_engine, all_engines
-from ..utils import bcolors
+from ..utils import bcolors, WeightedMetaArray
+
+import warnings
 import os
 import warnings
 import io
@@ -27,7 +29,7 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
     :note: print warnings if schematic model plot was not drawn.
     """
     if not matplotlib_available:
-        Warning("Matplotlib is required to draw models.")
+        warnings.warn("Matplotlib is required to draw models.")
         return
     warnings.filterwarnings(
             'ignore', category=matplotlib.cbook.MatplotlibDeprecationWarning)
@@ -53,7 +55,7 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
     # 2 Draw schematic model plot
     # 2.0 Check that moments is available, it not we return
     if not moments_available:
-        Warning("Moments is required to draw schematic model plots.")
+        warning.warn("Moments is required to draw schematic model plots.")
         return
     # 2.1 Set file or buffer to save plot
     if PIL_available:
@@ -75,8 +77,8 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
         engine.draw_schematic_model_plot(x, save_file_model, fig_title, nref,
                                          gen_time, gen_time_units)
     except RuntimeError as e:
-        Warning(f"Schematic model plotting to {filename} file failed: "
-                f"{e.message}")
+        warnings.warn(f"Schematic model plotting to {filename} file failed: "
+                      f"{e.message}")
     
     # 3. Concatenate plots if PIL is available
     if PIL_available:
@@ -128,34 +130,48 @@ def print_runs_summary(start_time, shared_dict, settings,
     s = (datetime.now() - start_time).total_seconds()
     time_str = f"\n[{int(s//3600):03}:{int(s%3600//60):02}:{int(s%60):02}]" 
     print(time_str)
-    metric_names = list()  # ordered set
-    for index in shared_dict:
-        for name in shared_dict[index]:
-            if name not in metric_names:
-                metric_names.append(name)
+    metric_names = shared_dict.get_available_groups()
+    if len(metric_names) == 0:
+        print("No models yet")
     for best_by in metric_names:
-        models = list()
-        for index in shared_dict:
-            if best_by not in shared_dict[index]:
-                continue
-            elem = shared_dict[index][best_by]
-            if isinstance(elem, list):
-                models.extend((index, el) for el in elem)
-            else:
-                models.append((index, elem))
-        def key(x):
-            value = x[1][2][best_by]
-            if isinstance(value, tuple):
-                value = value[0]
-            return value or np.inf
-        sorted_models = sorted(models, key=key)
+        models = shared_dict.get_models_for_group(best_by, align_y_dict=True)
         if best_by == 'log-likelihood':
-            sorted_models = list(reversed(sorted_models))
-        metrics = list()  # ordered set
-        for model in sorted_models:
-            for key in model[1][2]:
-                if key not in metrics:
-                    metrics.append(key)
+            models = list(reversed(models))
+        local_metrics = models[0][1][2].keys()
+        sorted_models = models        
+        metrics = local_metrics
+
+
+
+#    metric_names = list()  # ordered set
+#    for index in shared_dict:
+#        for name in shared_dict[index]:
+#            if name not in metric_names:
+#                metric_names.append(name)
+#    for best_by in metric_names:
+#        models = list()
+#        for index in shared_dict:
+#            if best_by not in shared_dict[index]:
+#                continue
+#            elem = shared_dict[index][best_by]
+#            print("elem", elem[1])
+#            if isinstance(elem, list):
+#                models.extend((index, el) for el in elem)
+#            else:
+#                models.append((index, elem))
+#        def key(x):
+#            value = x[1][2][best_by]
+#            if isinstance(value, tuple):
+#                value = value[0]
+#            return value or np.inf
+#        sorted_models = sorted(models, key=key)
+#        if best_by == 'log-likelihood':
+#            sorted_models = list(reversed(sorted_models))
+#        metrics = list()  # ordered set
+#        for model in sorted_models:
+#            for key in model[1][2]:
+#                if key not in metrics:
+#                    metrics.append(key)
         print(f"All best by {best_by} models")
         print("Number", *metrics, "Model", sep='\t')
         for model in sorted_models:
@@ -163,17 +179,22 @@ def print_runs_summary(start_time, shared_dict, settings,
             engine, x, y_vals = info
             # Get theta and N ancestral
             theta = engine.get_theta(x, *settings.get_engine_args())
-            Nanc = int(engine.get_N_ancestral_from_theta(theta))
+            Nanc = engine.get_N_ancestral_from_theta(theta)
             addit_str = f"(theta = {theta: .2f})"
             if Nanc is not None:
+                Nanc = int(Nanc)
                 if settings.relative_parameters:
                     addit_str += f" (Nanc = {Nanc: d})"
                     model_str = engine.model.as_custom_string(x)
                 else:
                     model_str = f" [Nanc = {Nanc: d}] "
-                    Tg = settings.time_for_generation or 1.0
-                    x_translated = engine.model.translate_units(x, Nanc, Tg)
+#                    Tg = settings.time_for_generation or 1.0
+                    x_translated = engine.model.translate_units(x, Nanc)
                     model_str += engine.model.as_custom_string(x_translated)
+            else:
+                model_str = engine.model.as_custom_string(x)
+            if hasattr(x, "metadata"):
+                model_str += f"\t{x.metadata}"
             # Begin to print
             metric_vals = []
             for metr in metrics:

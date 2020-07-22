@@ -2,6 +2,8 @@ import tempfile
 from ..version import __version__
 from .settings_storage import HOME_DIR
 from . import SettingsStorage
+
+import warnings
 import argparse
 import sys
 import os
@@ -111,20 +113,21 @@ def get_settings():
     if args.output is not None:
         if (settings_storage.output_dir is not None and
                 settings_storage.output_dir != args.output):
-            Warning("Output directory in parameters file doesn't match to one"
-                    " from -o/--output option. The last is taken.")
+            warnings.warn("Output directory in parameters file doesn't match "
+                          "to one from the -o/--output option. "
+                          "The last is taken.")
         settings_storage.output_dir = args.output
     if args.input is not None:
         if (settings_storage.input_file is not None and
                 settings_storage.input_file != args.input):
-            Warning("Input file in parameters file doesn't match to one"
-                    " from -i/--input option. The last is taken.")
+            warnings.warn("Input file in parameters file doesn't match to one"
+                          " from -i/--input option. The last is taken.")
         settings_storage.input_file = args.input
     if args.resume is not None:
-        Warning("Resume is not working")
+        warnings.warn("Resume is not working")
 #        settings_storage.resume_dir = args.resume
     if args.only_models:
-        Warning("Resume is not working")
+        warnings.warn("Resume is not working")
 #        settings_storage.only_models = True
 
     # Checks that we have got all required

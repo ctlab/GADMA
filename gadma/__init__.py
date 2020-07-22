@@ -36,3 +36,12 @@ from .optimizers import *
 from .cli import *
 from .core import *
 from .Inference import *
+
+import warnings
+if moments_available:
+    warnings.filterwarnings("default", 
+                            ".*", 
+                            UserWarning,
+                            'moments.ModelPlot',
+                            )
+warnings.formatwarning = utils.warning_format

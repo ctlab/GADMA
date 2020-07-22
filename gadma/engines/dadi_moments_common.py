@@ -3,6 +3,8 @@ from ..models import DemographicModel, StructureDemographicModel,\
                      CustomDemographicModel, Epoch, Split
 from ..utils import DynamicVariable, DiscreteVariable, rpartial, cache_func
 from .. import SFSDataHolder
+
+import warnings
 import os
 import numpy as np
 from functools import wraps
@@ -59,7 +61,8 @@ class DadiOrMomentsEngine(Engine):
     def _get_theta_from_sfs(self, values, model_sfs):
         optimal_theta = self.base_module.Inference.optimal_sfs_scaling(
             model_sfs, self.data)
-        theta0 = 1 / self.get_N_ancestral_from_theta(1.0)
+        Nanc = self.get_N_ancestral_from_theta(1.0) or 1.0
+        theta0 = 1 / Nanc
         if self.model.linear_constrain is None:
             return optimal_theta
         # If we have constrains we deal with them:
@@ -118,7 +121,8 @@ class DadiOrMomentsEngine(Engine):
     def get_theta(self, values, grid_sizes):
         key = self._get_key(values, grid_sizes)
         if key not in self.saved_add_info:
-            Warning("Additional evaluation for theta. Nothing to worry if seldom.")
+            warnings.warn("Additional evaluation for theta. Nothing to worry "
+                          "if this warning is seldom.")
             self.evaluate(values, grid_sizes)
         model_sfs = self.saved_add_info[key]
         theta = self._get_theta_from_sfs(values, model_sfs)
@@ -246,10 +250,10 @@ def _check_missing_population_labels(sfs, default_pop_labels=None,
     """
     if sfs.pop_ids is None:
         if default_pop_labels is not None:
-            Warning("Spectrum file %s is in an old format - without"
-                    " population labels, so they will be taken from"
-                    " corresponding parameter: %s."
-                    % (filename, ', '.join(default_pop_labels)))
+            warnings.warn("Spectrum file %s is in an old format - without"
+                          " population labels, so they will be taken from"
+                          " corresponding parameter: %s."
+                          % (filename, ', '.join(default_pop_labels)))
             sfs.pop_ids = default_pop_labels
         else:
             sfs.pop_ids = ['Pop %d' % (i+1) for i in range(sfs.ndim)]
@@ -380,7 +384,7 @@ def _read_data_snp_type(module, data_holder):
     if data_holder.projections is not None:
         size = data_holder.projections
     if data_holder.population_labels is not None:
-        population_labels = data_holder.pop_labels
+        population_labels = data_holder.population_labels
     sfs = module.Spectrum.from_data_dict(dd, population_labels, size, has_outgroup)
     sfs = _change_outgroup(sfs, data_holder.outgroup)
     return sfs

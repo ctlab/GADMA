@@ -110,7 +110,7 @@ class Split(Event):
         self.add_variables(size_args)
 
     def as_custom_string(self, values):
-        _help_f = lambda x, y: f"{y}" if x == "" else  f"{y}({x})"
+        _help_f = lambda x, y: f"{y}" if x == "" else  f"{y}({x.replace(' ', '')})"
         help_f = lambda x: _help_f(*self._arg_val_repr(x, values))
         frac_str = ""
         for var in self.variables:

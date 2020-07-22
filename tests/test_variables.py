@@ -41,6 +41,7 @@ class TestVariables(unittest.TestCase):
                         MigrationVariable,
                         SelectionVariable,
                         DynamicVariable,
-                        PercentVariable]
+                        FractionVariable]
         for i, cls in enumerate(test_classes):
-            self._test_variable(cls('var%d' % i))
+            with self.subTest(variable_cls=cls):
+                self._test_variable(cls('var%d' % i))

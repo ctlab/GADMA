@@ -61,22 +61,25 @@ class TestDataHolder(unittest.TestCase):
         labels = [None, ["YRI", "CEU"], ["CEU", "YRI"]]
         seq_lens = [None, 1e6]
         data = [YRI_CEU_DATA, SNP_DATA]
-        for dat, siz, lab, seq, out in itertools.product(data, sizes, labels, seq_lens, outgroup):
-            sfs_holder = SFSDataHolder(dat, siz, out, lab, seq)
-            data = get_engine(id).read_data(sfs_holder)
-            siz = siz or ((20,20) if (dat == YRI_CEU_DATA) else (24, 44))
-            lab = lab or ["YRI", "CEU"]
-            out = out or True
-            self._check_data(data, lab, out, siz)
-            sfs = self._load_with_dadi(dat, siz, lab, out)
-            self.assertTrue(np.allclose(data, sfs))
+        for dat, siz, lab, seq, out in itertools.product(data, sizes, labels,
+                                                         seq_lens, outgroup):
+            with self.subTest(data=dat, size=siz, labels=lab,
+                              seq_len=seq, outgroup=out):
+                sfs_holder = SFSDataHolder(dat, siz, out, lab, seq)
+                data = get_engine(id).read_data(sfs_holder)
+                siz = siz or ((20,20) if (dat == YRI_CEU_DATA) else (24, 44))
+                lab = lab or ["YRI", "CEU"]
+                out = out or True
+                self._check_data(data, lab, out, siz)
+                sfs = self._load_with_dadi(dat, siz, lab, out)
+                self.assertTrue(np.allclose(data, sfs))
 
     def _test_read_fails(self, id):
         warnings.filterwarnings(action="ignore", message="unclosed", 
                          category=ResourceWarning)
-        data_holder = SFSDataHolder(YRI_CEU_DATA, pop_labels=[1, 2])
+        data_holder = SFSDataHolder(YRI_CEU_DATA, population_labels=[1, 2])
         self.assertRaises(ValueError, get_engine(id).read_data, data_holder)
-        data_holder = SFSDataHolder(YRI_CEU_DATA, sample_sizes=[40, 50])
+        data_holder = SFSDataHolder(YRI_CEU_DATA, projections=[40, 50])
         self.assertRaises(ValueError, get_engine(id).read_data, data_holder)
         data_holder = SFSDataHolder(YRI_CEU_F_DATA, outgroup=True)
         self.assertRaises(ValueError, get_engine(id).read_data, data_holder)

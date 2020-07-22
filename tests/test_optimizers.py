@@ -19,7 +19,7 @@ def get_1pop_sim_example_1(engine_id, args=(), data_size=4):
     nu1 = PopulationSizeVariable('nu1')
     nu2 = PopulationSizeVariable('nu2')
 
-    dm = DemographicModel()
+    dm = EpochDemographicModel()
     dm.add_epoch(t, [nu1])
     dm.add_epoch(t, [nu2])
     values = {'nu1': 0.1, 'nu2': 2, 't': 1.5}
@@ -42,7 +42,7 @@ def get_1pop_sim_example_2(engine_id, args=(), data_size=4):
     nu1 = PopulationSizeVariable('nu1')
     Dyn = DynamicVariable('Dyn')
 
-    dm = DemographicModel()
+    dm = EpochDemographicModel()
     dm.add_epoch(t, [nu1], dyn_args=[Dyn])
     values = {'nu1': 5, 't': 1.5, 'Dyn': 'Exp'}
 
@@ -64,7 +64,7 @@ def get_2pop_sim_example_1(engine_id, args=(), data_size=4):
     nu1 = PopulationSizeVariable('nu1')
     nu2 = PopulationSizeVariable('nu2')
 
-    dm = DemographicModel()
+    dm = EpochDemographicModel()
     dm.add_split(0, [nu1, nu2])
     dm.add_epoch(t, [nu1, nu2])
     values = {'nu1': 1, 'nu2': 0.5, 't': 1.5}
@@ -174,7 +174,7 @@ class TestLocalOpt(TestBaseOptClass):
         T = TimeVariable('T')
         Dyn = DynamicVariable('Dyn')
 
-        dm = DemographicModel()
+        dm = EpochDemographicModel()
         dm.add_epoch(Tp, [nu1F])
         dm.add_split(0, [nu1F, nu2B])
         dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', 'Exp'])
@@ -196,15 +196,17 @@ class TestLocalOpt(TestBaseOptClass):
                 return y
 
         for opt in all_global_optimizers():
-            res = opt.optimize(f, dm.variables, num_init=10,
-                               args=args, maxeval=25)
+            with self.subTest(optimizer=opt.id):
+                res = opt.optimize(f, dm.variables, num_init=10,
+                                   args=args, maxeval=25)
         for opt in all_local_optimizers():
-            res = opt.optimize(f, dm.variables, x0=values,
-                               args=args, maxiter=2)
-            self.assertEqual(res.y, f(res.x, *args))
-            self.assertEqual(res.y, -self.get_yri_ceu_ll(
-                {var.name: val for var, val in zip(dm.variables, res.x)}))
-            self.assertTrue(res.y <= f(values, *args))
+            with self.subTest(local_optimizer=opt.id):
+                res = opt.optimize(f, dm.variables, x0=values,
+                                   args=args, maxiter=2)
+                self.assertEqual(res.y, f(res.x, *args))
+                self.assertEqual(res.y, -self.get_yri_ceu_ll(
+                    {var.name: val for var, val in zip(dm.variables, res.x)}))
+                self.assertTrue(res.y <= f(values, *args))
 
     def run_example(self, engine_id, example_func):
         args = ()
@@ -214,12 +216,13 @@ class TestLocalOpt(TestBaseOptClass):
         x0 = [var.resample() for var in variables]
 
         for opt in all_local_optimizers():
-            print(opt.maximize)
-            msg = f"(optimization {opt.id}, engine {engine_id})"
-            res = opt.optimize(f, variables, x0=x0,
-                               args=args, maxiter=2)
-            self.assertEqual(res.y, f(res.x, *args), msg=msg)
-            self.assertTrue(res.y <= f(x0, *args), msg=msg + f" {res.y} > {f(x0, *args)}")
+            with self.subTest(local_optimizer=opt.id):
+                #print(opt.maximize)
+                msg = f"(optimization {opt.id}, engine {engine_id})"
+                res = opt.optimize(f, variables, x0=x0,
+                                   args=args, maxiter=2)
+                self.assertEqual(res.y, f(res.x, *args), msg=msg)
+                self.assertTrue(res.y <= f(x0, *args), msg=msg + f" {res.y} > {f(x0, *args)}")
 
     def test_1pop_example_1(self):
         for engine in all_engines():

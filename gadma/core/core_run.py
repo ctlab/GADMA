@@ -7,6 +7,7 @@ from ..optimizers import GlobalOptimizerAndLocalOptimizer
 from ..utils import get_aic_score, get_claic_score
 from ..models import EpochDemographicModel
 from .draw_and_generate_code import draw_plots_to_file, generate_code_to_file
+from .shared_dict import SharedDictForCoreRun
 import os
 import numpy as np
 from collections import defaultdict, OrderedDict
@@ -112,22 +113,35 @@ class CoreRun(object):
         :attr:`output_dir`.
         """
         best_by = 'log-likelihood'
-        if self.index in self.shared_dict:
-            engine, x_best, y_dict = self.shared_dict[self.index][best_by]
-            y_best = y_dict[best_by]
-        if (self.index not in self.shared_dict or
-                np.allclose(y, y_best) or y > y_best):
-            if self.index not in self.shared_dict:   
-                new_dict = OrderedDict()
-            else:
-                new_dict = OrderedDict(self.shared_dict[self.index])
-            new_dict[best_by] = (copy.deepcopy(self.engine), x,
-                                 OrderedDict({best_by: y}))
-            if self.aic_score:
-                n_params = self.engine.model.get_number_of_parameters(x)
-                new_dict[best_by][2]['AIC score'] = get_aic_score(n_params, y)
-            self.shared_dict[self.index] = new_dict
+        if self.aic_score:
+            n_params = self.engine.model.get_number_of_parameters(x)
+            aic = get_aic_score(n_params, y)
+            y_dict = {best_by: y, 'AIC score': aic}
+        else:
+            y_dict = y
+        updated = self.shared_dict.update_best_model_for_process(self.index,
+                                                                 best_by,
+                                                                 self.engine,
+                                                                 x, y_dict)
+#        if self.index in self.shared_dict:
+#            engine, x_best, y_dict = self.shared_dict[self.index][best_by]
+#            y_best = y_dict[best_by]
+#        if (self.index not in self.shared_dict or
+#                np.allclose(y, y_best) or y > y_best):
+#            if self.index not in self.shared_dict:   
+#                new_dict = OrderedDict()
+#            else:
+#                new_dict = OrderedDict(self.shared_dict[self.index])
+#            new_dict[best_by] = (copy.deepcopy(self.engine), x,
+#                                 OrderedDict({best_by: y}))
+#            print("base", new_dict[best_by][1])
+#            if self.aic_score:
+#                n_params = self.engine.model.get_number_of_parameters(x)
+#                new_dict[best_by][2]['AIC score'] = get_aic_score(n_params, y)
+#            self.shared_dict[self.index] = new_dict
+#            print("base", self.shared_dict[self.index][best_by][1])
             # Draw and generate code for current best model
+        if updated:
             fig_title = f"Best by {best_by} model. {best_by}: {y: .2f}"
             prefix = (self.settings.LOCAL_OUTPUT_DIR_PREFIX +
                       self.settings.LONG_NAME_2_SHORT.get(best_by, best_by))
@@ -215,31 +229,44 @@ class CoreRun(object):
                                     args, y, return_eps=True)
         else:
             return
-        if self.index not in self.shared_dict:
-            self.shared_dict[self.index] = OrderedDict()
-        new_dict = OrderedDict(self.shared_dict[self.index])
-        if best_by not in self.shared_dict[self.index]:
-            new_dict[best_by] = OrderedDict()
-        else:
-            if not self.claic_score:                
-                engine, x_best, y_dict = new_dict[best_by]
-                if y_dict[best_by] < value:
-                    return
+
         y_dict = OrderedDict()
         y_dict['log-likelihood'] = y
         y_dict[best_by] = value
-        element = (copy.deepcopy(self.engine), x, y_dict) 
-        if not self.claic_score:
-            new_dict[best_by] = element
+
+        if self.claic_score:
+            self.shared_dict.add_model_for_process(self.index, best_by,
+                                                   self.engine, x, y_dict)
         else:
-            if best_by not in self.shared_dict[self.index]:
-                new_list = list()
-            else:
-                new_list = copy.deepcopy(
-                    self.shared_dict[self.index][best_by])
-            new_list.append(element)
-            new_dict[best_by] = new_list
-        self.shared_dict[self.index] = new_dict
+            self.shared_dict.update_best_model_for_process(self.index,
+                                                           best_by,
+                                                           self.engine,
+                                                           x, y_dict)
+#        if self.index not in self.shared_dict:
+#            self.shared_dict[self.index] = OrderedDict()
+#        new_dict = OrderedDict(self.shared_dict[self.index])
+#        if best_by not in self.shared_dict[self.index]:
+#            new_dict[best_by] = OrderedDict()
+#        else:
+#            if not self.claic_score:                
+#                engine, x_best, y_dict = new_dict[best_by]
+#                if y_dict[best_by] < value:
+#                    return
+#        y_dict = OrderedDict()
+#        y_dict['log-likelihood'] = y
+#        y_dict[best_by] = value
+#        element = (copy.deepcopy(self.engine), x, y_dict) 
+#        if not self.claic_score:
+#            new_dict[best_by] = element
+#        else:
+#            if best_by not in self.shared_dict[self.index]:
+#                new_list = list()
+#            else:
+#                new_list = copy.deepcopy(
+#                    self.shared_dict[self.index][best_by])
+#            new_list.append(element)
+#            new_dict[best_by] = new_list
+#        self.shared_dict[self.index] = new_dict
 
         # Draw and generate code for best_by model
         if self.aic_score:
@@ -287,7 +314,6 @@ class CoreRun(object):
         assert self.settings.initial_structure is not None
         assert self.settings.final_structure is not None
 
-        print(f'Run launch number {self.index}\n', end='')
         result = self.run_without_increase(initial_kwargs)
         while (self.model.get_structure() != self.settings.final_structure):
             self.model, X_init = self.model.increase_structure(result.X_out)
@@ -295,8 +321,15 @@ class CoreRun(object):
             self.optimize_kwargs['X_init'] = X_init
             self.optimize_kwargs['Y_init'] = Y_init
             result = self.run_without_increase()
-        print(f'Finish genetic algorithm number {self.index}\n', end='')
 #        self.final_callback()
         return result
 
+    def run(self, initial_kwargs={}):
+        print(f'Run launch number {self.index}\n', end='')
+        if self.settings.initial_structure is None:
+            result = self.run_without_increase(initial_kwargs)
+        else:
+            result = self.run_with_increase(initial_kwargs)
+        print(f'Finish genetic algorithm number {self.index}\n', end='')
+        return result
 

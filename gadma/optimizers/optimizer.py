@@ -1,5 +1,5 @@
 from ..utils import Variable, ContinuousVariable
-from ..utils import fix_args, cache_func, nan_fval_to_inf
+from ..utils import fix_args, cache_func, nan_fval_to_inf, WeightedMetaArray
 from ..utils import ensure_file_existence, variables_values_repr
 from ..utils import logarithm_transform, exponent_transform, ident_transform
 import copy
@@ -32,7 +32,11 @@ class Optimizer(object):
     def prepare_callback(self, callback):
         @wraps(callback)
         def wrapper(x, y):
-            return callback(self.inv_transform(x), self.sign * y)
+            x_tr = self.inv_transform(x)
+            if isinstance(x, WeightedMetaArray):
+                x_tr = WeightedMetaArray(x_tr)
+                x_tr.metadata = x.metadata
+            return callback(x_tr, self.sign * y)
         return wrapper
 
     def write_report(self, n_iter, variables, x, y, report_file):
@@ -68,13 +72,13 @@ class Optimizer(object):
         x_tr = self.inv_transform(x)
         # the following code deal with linear constrain
         if linear_constrain is not None:
-            print(x_tr, linear_constrain.original_ub)
+#            print(x_tr, linear_constrain.original_ub)
             if not linear_constrain.fits(x_tr):
-                print(x_tr, linear_constrain.constrain.ub, linear_constrain.original_ub)
+#                print(x_tr, linear_constrain.constrain.ub, linear_constrain.original_ub)
                 x_tr, success = linear_constrain.try_to_transform(x_tr)
-                print(x_tr, linear_constrain.constrain.ub, linear_constrain.original_ub)
+#                print(x_tr, linear_constrain.constrain.ub, linear_constrain.original_ub)
                 if not success:
-                    print(f"!!!!!!!!!!!!!!!!!AHTUNG HERE IS A LITTLE PROBLEM. PLEASE CHECK IT: {x}, {x_tr}")
+                    warnings.warn(f"!!!!!!!!!!!!!!!!!WARNING HERE IS A LITTLE PROBLEM. PLEASE CHECK IT: {x}, {x_tr}")
                     return self.sign * np.inf
         y = f(x_tr, *args)
         return self.sign * y

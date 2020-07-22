@@ -3,6 +3,7 @@ from ..utils import parallel_wrap, StdAndFileLogger, bcolors
 
 from .draw_and_generate_code import print_runs_summary
 from .core_run import CoreRun
+from .shared_dict import SharedDictForCoreRun
 
 from functools import partial
 import numpy as np
@@ -26,10 +27,7 @@ SUPPORT_STRING = "\nIn case of any questions or problems, "\
 def job(index, shared_dict, settings):
     try:
         obj = CoreRun(index, shared_dict, settings)
-        if settings.initial_structure is not None:
-            obj.run_with_increase(settings.get_optimizers_init_kwargs())
-        else:
-            obj.run_without_increase(settings.get_optimizers_init_kwargs())
+        obj.run(settings.get_optimizers_init_kwargs())
     except Exception as e:
         print(f"{bcolors.FAIL}Run {index} failed due to following exception:"
               f"{bcolors.ENDC}", file=sys.stderr)
@@ -96,6 +94,7 @@ def main():
     # Create shared dictionary
     m = Manager()
     shared_dict = m.dict()
+    shared_dict = SharedDictForCoreRun()
 
     # Start pool of processes
     start_time = datetime.now()

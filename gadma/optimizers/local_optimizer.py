@@ -2,6 +2,7 @@ from .optimizer import Optimizer, ConstrainedOptimizer, UnconstrainedOptimizer
 from .optimizer_result import OptimizerResult
 from ..utils import eval_wrapper, rpartial, fix_args
 
+import warnings
 import copy
 import numpy as np
 import scipy
@@ -76,9 +77,9 @@ class ScipyOptimizer(LocalOptimizer):
             options['maxiter'] = int(maxiter)
         if maxeval:
             if self.method not in self.maxeval_kwarg:
-                Warning(f"Local optimization {self.method} do not have an option "
-                        "of max number of evaluations. It will be used for"
-                        " maxiter.")
+                warnings.warn(f"Local optimization {self.method} do not have"
+                               "  an option of max number of evaluations. It "
+                               "will be used for maxiter.")
                 if maxiter:
                     options['maxiter'] = min(maxeval, maxiter)
                 else:
@@ -87,8 +88,9 @@ class ScipyOptimizer(LocalOptimizer):
                 kwarg = self.maxeval_kwarg[self.method]
                 options[kwarg] = maxeval
                 if kwarg == 'maxiter' and maxiter and maxiter != maxeval:
-                    Warning(f"Number of iterations is equal to the number of "
-                            f"function evaluations for {self.method} optimizer.")
+                    warnings.warn(f"Number of iterations is equal to the "
+                                  f"number of function evaluations for "
+                                  f"{self.method} optimizer.")
                     options[kwarg] = min(maxeval, maxiter)
 
         # Fix args in function f and cache it.

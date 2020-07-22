@@ -11,6 +11,7 @@ from ..optimizers import LinearConstrainDemographics, LinearConstrain
 from ..utils import ensure_dir_existence, ensure_file_existence,\
                     check_dir_existence, custom_generator
 
+import warnings
 import importlib.util
 import sys
 import copy
@@ -264,8 +265,9 @@ class SettingsStorage(object):
         # would be ignored
         elif name in ['engine', 'pts']:
             if self.engine != 'dadi' and self.pts != settings.pts:
-                Warning(f"Engine {value} does not need pts (for dadi only). "
-                        "It will be ignored.")
+                warnings.warn(f"Engine {self.engine} does not need pts (for dadi "
+                              "only). It will be used only for generated code"
+                              " for dadi if any.")
         # 3.6 If we set number of populations, we can now check if length of
         # setted attributes are correct. We have already checked that they are
         # equal between each other
@@ -300,8 +302,8 @@ class SettingsStorage(object):
                                      f" {d.keys()}")
                 if (value != 'generations' and
                         not hasattr(self, 'time_for_generation')):
-                    Warning(f"There is no time for one generation, time will "
-                            "be in generations")
+                    warnings.warn(f"There is no time for one generation, time"
+                            " will be in generations.")
             else:
                 for key, val in d.items():
                     if val == value:
@@ -325,14 +327,14 @@ class SettingsStorage(object):
             else:
                 raise AttributeError("Check for supported variables")
             if name.endswith('n'):
-                Warning(f"Domain of PopulationSizeVariable changed to "
-                        f"{PopulationSizeVariable.default_domain}")
+                warnings.warn(f"Domain of PopulationSizeVariable changed to "
+                              f"{PopulationSizeVariable.default_domain}")
             if name.endswith('t'):
-                Warning(f"Domain of TimeVariable changed to "
-                        f"{TimeVariable.default_domain}")
+                warnings.warn(f"Domain of TimeVariable changed to "
+                              f"{TimeVariable.default_domain}")
             if name.endswith('m'):
-                Warning(f"Domain of MigrationVariable changed to "
-                        f"{MigrationVariable.default_domain}")
+                warnings.warn(f"Domain of MigrationVariable changed to "
+                              f"{MigrationVariable.default_domain}")
 
         # 3.10 If we set custom filename with model we should check it is
         # valid python code
@@ -353,16 +355,16 @@ class SettingsStorage(object):
         if name in bounds_attrs and self.custom_filename is None:
             msg = f"Setting {name} is set before custom_filename is set."
             if self.initial_structure is not None:
-                Warning(msg + " It will be ignored as initial structure of "
-                        "model is set.")
+                warnings.warn(msg + " It will be ignored as initial structure"
+                              " of model is set.")
             else:
-                Warning(msg)
+                warnings.warn(msg)
         # 3.11 Check for structure or custom filename and ignore some options
         if (name in ['initial_structure', 'final_structure'] and
                 value is not None and self.custom_filename is not None):
             if self.lower_bound is not None and self.upper_bound is not None:
-                Warning(f"Setting {name} will be ignored as the custom model"
-                        " is already set.")                
+                warnings.warn(f"Setting {name} will be ignored as the custom "
+                              "model is already set.")                
 
     def __getattr__(self, name):
         try:
@@ -415,6 +417,8 @@ class SettingsStorage(object):
                         return p_ids
                     except ValueError:  # wrong list
                         pass
+                    except IndexError:
+                        pass
                     except StopIteration:  # no function
                         pass
             elif ((name == "lower_bound" or name == "upper_bound") and
@@ -440,7 +444,8 @@ class SettingsStorage(object):
         if self.pts is None:
             max_n = max(self.projections)
             x = (int((max_n - 1) / 10) + 1) * 10
-            self.pts = [x, x + 10, x + 20]
+            super(SettingsStorage, self).__setattr__("pts",
+                                                     [x, x + 10, x + 20])
         self._inner_data = data
         self.number_of_populations = len(self.projections)
         return data
@@ -516,14 +521,15 @@ class SettingsStorage(object):
             if attr_name in CHANGED_IDENTIFIERS:
                 attr_name = CHANGED_IDENTIFIERS[attr_name]
                 setting_name = attr_name.replace("_", " ").capitalize()
-                Warning(f"Setting `{key}` is renamed in 2 version of GADMA to"
-                        f" `{setting_name}`. It is successfully read.")
+                warnings.warn(f"Setting `{key}` is renamed in 2 version of "
+                              f"GADMA to `{setting_name}`. It is successfully"
+                              " read.")
                 
             if not hasattr(settings_storage, attr_name):
                 if attr_name in DEPRECATED_IDENTIFIERS:
-                    Warning(f"Setting `{key}` was deprecated in 2 version of "
-                            "GADMA. If you have not set it in purpose, "
-                            "ignore this warning.")
+                    warnings.warn(f"Setting `{key}` was deprecated in 2 "
+                                  "version of GADMA. If you have not set it "
+                                  "in purpose, ignore this warning.")
                 else:
                     raise AttributeError(f"Unknown identifier: `{key}`.")
             settings_storage.__setattr__(attr_name, loaded_dict[key])

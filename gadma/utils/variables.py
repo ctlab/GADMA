@@ -181,6 +181,13 @@ class PopulationSizeVariable(ContinuousVariable):
     def translate_units(value, Nanc):
         return type(Nanc)(value * Nanc)
 
+
+def migration_generator(domain):
+    if 0 == domain[0] and np.random.choice([False, True]):
+        return 0
+    return trunc_normal_sigma_generator(domain)
+
+
 class MigrationVariable(ContinuousVariable):
     """
     Variable for keepeing migration parameter of the demographic model.
@@ -193,7 +200,7 @@ class MigrationVariable(ContinuousVariable):
     :note: Values are assumed to be in genetic units.
     """
     default_domain = np.array([0, 10])
-    default_rand_gen = trunc_normal_sigma_generator
+    default_rand_gen = migration_generator
 
     @staticmethod
     def translate_units(value, Nanc):
@@ -252,23 +259,6 @@ class FractionVariable(ContinuousVariable):
     @staticmethod
     def translate_units(value, Nanc):
         return value
-
-class PopulationSizeXFraction(object):
-    def __init__(self, pop_size, fraction, reverse=False):
-        self.pop_size = pop_size
-        self.fraction = fraction
-        self.reverse = reverse
-
-class MultipliedVariable(ContinuousVariable):
-    def __init__(self, var1, var2):
-        name = f"{var1}_x_{var2}"
-        domain = [var1.domain[0] * var2.domain[0],
-                  var1.domain[1] * var2.domain[1]]
-        rand_gen = multiply_generator(var1.rand_gen, var1.domain,
-                                      var2.rand_gen, var2.domain)
-        self.var1 = var1
-        self.var2 = var2
-        super(name, domain, rand_gen)
 
 
 class Dynamic(object):
@@ -382,6 +372,9 @@ class Sud(Dynamic):
         return "Sud"
 
 
+def dynamic_generator(domain):
+    return np.random.choice(domain, p=[0.5, 0.2, 0.3])
+
 class DynamicVariable(DiscreteVariable):
     """
     Variable for keepeing selection parameter of the demographic model.
@@ -396,6 +389,7 @@ class DynamicVariable(DiscreteVariable):
 
     _help_dict = {'Sud': Sud, 'Lin': Lin, 'Exp': Exp}
     default_domain = np.array(['Sud', 'Lin', 'Exp'])
+    default_rand_gen = dynamic_generator
 
     def __init__(self, name, domain=None, rand_gen=None):
         if domain is None:

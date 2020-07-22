@@ -241,10 +241,16 @@ class WeightedMetaArray(np.ndarray):
         self.weights = getattr(obj, 'weights', [{}]*(obj.ndim+1))
 
     def __str__(self):
-        return super(WeightedMetaArray, self).__str__() + '\t' + self.metadata
+        super_str = super(WeightedMetaArray, self).__str__() 
+        if hasattr(self, 'metadata'):
+            return super_str + '\t' + self.metadata
+        return super_str
 
     def __repr__(self):
-        return super(WeightedMetaArray, self).__str__() + '\t' + self.metadata
+        super_str = super(WeightedMetaArray, self).__repr__() 
+        if hasattr(self, 'metadata'):
+            return super_str + '\t' + self.metadata
+        return super_str
 
 
 def update_by_one_fifth_rule(value, const, was_improved):
@@ -355,3 +361,7 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+def warning_format(message, category, filename, lineno, file=None, line=None):
+    return f"{bcolors.WARNING}{category.__name__}: {message}"\
+           f"{bcolors.ENDC} ({filename}:{lineno})\n"

@@ -34,7 +34,7 @@ class TestModels(unittest.TestCase):
         func_ex = dadi.Numerics.make_extrap_log_func(inner)
         real = func_ex([], ns, pts)
 
-        dm = DemographicModel()
+        dm = EpochDemographicModel()
         pts = [40, 50, 60]
         d = get_engine('dadi')
         d.set_model(dm)
@@ -57,7 +57,7 @@ class TestModels(unittest.TestCase):
 
         T = TimeVariable('T1')
         nu = PopulationSizeVariable('nu2')
-        dm = DemographicModel()
+        dm = EpochDemographicModel()
         dm.add_epoch(T, [nu])
         d = get_engine('dadi')
         d.set_model(dm)
@@ -78,7 +78,7 @@ class TestModels(unittest.TestCase):
         T = TimeVariable('T')
         Dyn = DynamicVariable('Dyn')
 
-        dm = DemographicModel()
+        dm = EpochDemographicModel()
         dm.add_epoch(Tp, [nu1F])
         dm.add_split(0, [nu1F, nu2B])
         dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', 'Exp'])
@@ -101,7 +101,7 @@ class TestModels(unittest.TestCase):
         T = TimeVariable('T')
         Dyn = DynamicVariable('Dyn')
 
-        dm = DemographicModel()
+        dm = EpochDemographicModel()
         dm.add_epoch(Tp, [nu1F])
         dm.add_split(0, [nu1F, nu2B])
         dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', Dyn])

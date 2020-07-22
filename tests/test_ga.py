@@ -30,25 +30,26 @@ class TestGeneticAlg(unittest.TestCase):
 
         for ind in range(n_var):
             for mut_type in mut_types:
-                msg = f"(mut. type is {mut_type}, index is {ind})"
-                x_mut = ga.mutation_by_ind(x_arr, variables, ind,
-                                           mutation_type=mut_type,
-                                           one_fifth_rule=True)
-                self.assertTrue(isinstance(x_mut, WeightedMetaArray),
-                                msg=f"Mutation returned not WeightedMetaArray "
-                                    f"object ({x_mut.__class__}). " + msg)
+                with self.subTest(mut_type=mut_type, index=ind):
+                    msg = f"(mut. type is {mut_type}, index is {ind})"
+                    x_mut = ga.mutation_by_ind(x_arr, variables, ind,
+                                               mutation_type=mut_type,
+                                               one_fifth_rule=True)
+                    self.assertTrue(isinstance(x_mut, WeightedMetaArray),
+                                    msg=f"Mutation returned not WeightedMetaArray "
+                                        f"object ({x_mut.__class__}). " + msg)
 
-                self.assertIsNot(x_arr, x_mut)
-                self.check_diff(x_arr == x_mut, ind, msg)
-                self.check_diff(x_arr.weights == x_mut.weights, ind, msg)
-                self.assertEqual((x_mut.weights - x_arr.weights)[ind], 1, msg=msg)
+                    self.assertIsNot(x_arr, x_mut)
+                    self.check_diff(x_arr == x_mut, ind, msg)
+                    self.check_diff(x_arr.weights == x_mut.weights, ind, msg)
+                    self.assertEqual((x_mut.weights - x_arr.weights)[ind], 1, msg=msg)
 
-                x_mut2 = ga.mutation_by_ind(x_list, variables, ind,
-                                           mutation_type=mut_type,
-                                           one_fifth_rule=False)
-                self.assertIsInstance(x_mut2, WeightedMetaArray, msg=msg)
-                self.assertTrue((x_mut2.weights == x_mut.weights).all(), msg=msg)
-                self.assertEqual(x_mut2.metadata[-1], 'm')
+                    x_mut2 = ga.mutation_by_ind(x_list, variables, ind,
+                                               mutation_type=mut_type,
+                                               one_fifth_rule=False)
+                    self.assertIsInstance(x_mut2, WeightedMetaArray, msg=msg)
+                    self.assertTrue((x_mut2.weights == x_mut.weights).all(), msg=msg)
+                    self.assertEqual(x_mut2.metadata[-1], 'm')
 
         for _ in range(3):
             x_arr = ga.mutation_by_ind(x_arr, variables, 3,
@@ -71,15 +72,16 @@ class TestGeneticAlg(unittest.TestCase):
 
         for cross_type in cross_types:
             for k in ks:
-                msg = f"(crossover type is {cross_type}, k is {k}.)"
-                ch = ga.crossover(par1, par2, variables,
-                                  crossover_type=cross_type, k=k)
-                self.assertIsNot(ch, par1, msg=msg)
-                self.assertIsNot(ch, par2, msg=msg)
-                self.assertTrue(np.any(ch != par1), msg=msg)
-                self.assertTrue(np.any(ch != par2), msg=msg)
+                with self.subTest(cross_type=cross_type, k=k):
+                    msg = f"(crossover type is {cross_type}, k is {k}.)"
+                    ch = ga.crossover(par1, par2, variables,
+                                      crossover_type=cross_type, k=k)
+                    self.assertIsNot(ch, par1, msg=msg)
+                    self.assertIsNot(ch, par2, msg=msg)
+                    self.assertTrue(np.any(ch != par1), msg=msg)
+                    self.assertTrue(np.any(ch != par2), msg=msg)
 
-                self.assertEqual(ch.metadata, 'c', msg=msg)
+                    self.assertEqual(ch.metadata, 'c', msg=msg)
 
     def test_selection(self):
         def f(x):
@@ -106,21 +108,25 @@ class TestGeneticAlg(unittest.TestCase):
         f, variables = example_func(engine_id, args)
 
         for opt in all_global_optimizers():
-            res = opt.optimize(f, variables, 
-                               args=args, num_init=20, maxeval=35)
-            self.assertEqual(res.y, f(res.x, *args))
+            with self.subTest(optimizer=opt.id):
+                res = opt.optimize(f, variables, 
+                                   args=args, num_init=20, maxeval=35)
+                self.assertEqual(res.y, f(res.x, *args))
 
     def test_1pop_example_1(self):
         for engine in all_engines():
-            self.run_example(engine.id, get_1pop_sim_example_1)
+            with self.subTest(engine=engine.id):
+                self.run_example(engine.id, get_1pop_sim_example_1)
 
     def test_1pop_example_2(self):
         for engine in all_engines():
-            self.run_example(engine.id, get_1pop_sim_example_2)
+            with self.subTest(engine=engine.id):
+                self.run_example(engine.id, get_1pop_sim_example_2)
 
     def test_2pop_example_1(self):
         for engine in all_engines():
-            self.run_example(engine.id, get_2pop_sim_example_1)
+            with self.subTest(engine=engine.id):
+                self.run_example(engine.id, get_2pop_sim_example_1)
 
     def test_yri_ceu(self):
         nu1F = PopulationSizeVariable('nu1F')
@@ -131,7 +137,7 @@ class TestGeneticAlg(unittest.TestCase):
         T = TimeVariable('T')
         Dyn = DynamicVariable('Dyn')
 
-        dm = DemographicModel()
+        dm = EpochDemographicModel()
         dm.add_epoch(Tp, [nu1F])
         dm.add_split(0, [nu1F, nu2B])
         dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', Dyn])

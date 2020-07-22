@@ -1,6 +1,6 @@
 from ..models import CustomDemographicModel, Epoch, Split, BinaryOperation
 from ..utils import Variable, DiscreteVariable, DynamicVariable
-
+import sys
 
 FUNCTION_NAME = 'model_func'
 

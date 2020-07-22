@@ -55,7 +55,7 @@ const_for_mutation_strength = 1.01
 mean_mutation_rate = 0.2
 const_for_mutation_rate = 1.02
 
-stuck_generation_number = 10
+stuck_generation_number = 100
 eps = 1e-2
 
 # just for logging evaluations
