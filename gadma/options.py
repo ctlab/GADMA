@@ -453,13 +453,13 @@ class Options_storage:
             if self.lower_bound is None:
                 self.lower_bound = []
                 for p_id in self.p_ids:
-                    if p_id == 'n':
+                    if p_id.lower().startswith('n'):
                         self.lower_bound.append(self.min_N)
-                    elif p_id == 't':
+                    elif p_id.lower().startswith('t'):
                         self.lower_bound.append(self.min_T)
-                    elif p_id == 'm':
+                    elif p_id.lower().startswith('m'):
                         self.lower_bound.append(self.min_M)
-                    elif p_id == 's':
+                    elif p_id.lower().startswith('s'):
                         self.lower_bound.append(0.0 + self.min_N)
             else:
                 self.lower_bound = [float(x) for x in support.check_comma_sep_list(self.lower_bound, is_int=False)]
@@ -467,13 +467,13 @@ class Options_storage:
             if self.upper_bound is None:
                 self.upper_bound = []
                 for p_id in self.p_ids:
-                    if p_id == 'n':
+                    if p_id.lower().startswith('n'):
                         self.upper_bound.append(self.max_N)
-                    elif p_id == 't':
+                    elif p_id.lower().startswith('t'):
                         self.upper_bound.append(self.max_T)
-                    elif p_id == 'm':
+                    elif p_id.lower().startswith('m'):
                         self.upper_bound.append(self.max_M)
-                    elif p_id == 's':
+                    elif p_id.lower().startswith('s'):
                         self.upper_bound.append(1.0 - self.min_N)
             else:
                 self.upper_bound = [float(x) for x in support.check_comma_sep_list(self.upper_bound, is_int=False)]

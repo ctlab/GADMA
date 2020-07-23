@@ -1829,7 +1829,7 @@ class Demographic_model:
             else:
                 output.write('def generated_model(params, ns, pts):\n')
                 par_labels = self.get_params_labels_str()
-                output.write('\tparams = ' + ', '.join(par_labels) + '\n')
+                output.write('\t' + ', '.join(par_labels) + '= params\n')
                 
                 ns_index = 0
                 ts_index = 0
@@ -2082,9 +2082,9 @@ class Demographic_model:
                             pop_to_split_3 = period.population_to_split
                             break
 
-                output.write('def generated_model(params, ns, pts):\n')
+                output.write('def generated_model(params, ns):\n')
                 par_labels = self.get_params_labels_str()
-                output.write('\tparams = ' + ', '.join(par_labels) + '\n')
+                output.write('\t' + ', '.join(par_labels) + ' = params\n')
                 
                 ns_index = 0
                 ts_index = 0
