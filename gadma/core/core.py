@@ -27,6 +27,8 @@ SUPPORT_STRING = "\nIn case of any questions or problems, "\
 def job(index, shared_dict, settings):
     try:
         obj = CoreRun(index, shared_dict, settings)
+#        profile_file = os.path.join(settings.output_directory, str(index), 'profile.prof')
+#        profile.runctx('obj.run(settings.get_optimizers_init_kwargs())', {'obj': obj, 'settings': settings}, {}, filename=profile_file)
         obj.run(settings.get_optimizers_init_kwargs())
     except Exception as e:
         print(f"{bcolors.FAIL}Run {index} failed due to following exception:"
@@ -100,10 +102,9 @@ def main():
     start_time = datetime.now()
 
     # For debug
-#    run_pipeline_with_increase(0, None, model, data, settings_storage.engine,
-#              settings_storage.final_structure, global_optimizer,
-#              local_optimizer, {}, common_kwargs, None, os.path.join(settings_storage.output_directory, '0'))
-#
+#    job(0, shared_dict, settings_storage)
+
+    os._exit(0)
     pool = Pool(processes=settings_storage.number_of_processes)
 
     results = []

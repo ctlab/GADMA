@@ -2,7 +2,8 @@ from .optimizer import ConstrainedOptimizer
 from .global_optimizer import GlobalOptimizer, register_global_optimizer
 from .optimizer_result import OptimizerResult
 from ..utils import sort_by_other_list, choose_by_weight, eval_wrapper
-from ..utils import trunc_normal_3_sigma_rule, DiscreteVariable, WeightedMetaArray
+from ..utils import trunc_normal_3_sigma_rule, DiscreteVariable,\
+                    WeightedMetaArray
 from ..utils import update_by_one_fifth_rule, ensure_file_existence, fix_args
 from functools import partial
 import numpy as np
@@ -251,17 +252,21 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             weights = x.weights
         else:
             weights = np.ones(num_inds)
-        inds = choose_by_weight(range(len(x)), weights, num_inds) 
+        inds = choose_by_weight(range(len(x)), weights, num_inds)
 
         # Copy the array to change
-        x_mut = [np.ones(len(x)) for _ in range(attemts)]
+        x_mut = [np.array(x) for _ in range(attemts)]
 
         # Start mutation procedure
         for attempt in range(attemts):
-            for ind in inds:
-                x_mut[attempt] = self.mutation_by_ind(x, variables, ind,
-                                                           mutation_type,
-                                                           one_fifth_rule)
+            i_att = 0
+            while np.all(x_mut[attempt] == x) and i_att < 5:
+                i_att += 1
+                for ind in inds:
+                    x_mut[attempt] = self.mutation_by_ind(x_mut[attempt],
+                                                          variables, ind,
+                                                          mutation_type,
+                                                          one_fifth_rule)
         return x_mut
 
     def crossover(self, parent1, parent2, variables, crossover_type='uniform',
@@ -292,30 +297,34 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         child1 = WeightedMetaArray(parent1, dtype=object)
         child2 = WeightedMetaArray(parent2, dtype=object)
 
-        if crossover_type == 'k_point':
-            assert k > 0
-            assert k < len(parent1)
-            # Create list of points
-            swp_inds = np.random.choice(range(len(parent1)), size=k)
-            # One index must be inside array to make child different to parents
-            swp_inds[0] = np.random.choice(range(1, len(parent1) - 1))
-            swp_inds = sorted(swp_inds)
-            swp_inds.insert(0, 0)
-            swp_inds.append(len(parent1))
-            # Swap parameters between points
-            for i in range(len(swp_inds) - 1):
-                if i % 2 == 1:
-                    p1, p2 = swp_inds[i], swp_inds[i+1]
-                    child1[p1:p2] = parent2[p1:p2]
-                    child2[p1:p2] = parent1[p1:p2]
-        elif crossover_type == 'uniform':
-            for i in range(len(parent1)):
-                change = np.random.choice([False, True])
-                if change:
-                    child1[i] = parent2[i]
-                    child2[i] = parent1[i]
-        else:
-            raise ValueError(f"Unknown crossover type: {crossover_type}.")
+        i_att = 0
+        while len(parent1) > 1 and np.all(child1 == parent1) and i_att < 5:
+            i_att += 1
+            if crossover_type == 'k_point':
+                assert k > 0
+                assert k < len(parent1)
+                # Create list of points
+                swp_inds = np.random.choice(range(len(parent1)), size=k)
+                # One index must be inside array to make child different to
+                # parents
+                swp_inds[-1] = np.random.choice(range(1, len(parent1) - 1))
+                swp_inds = sorted(swp_inds)
+                swp_inds.insert(0, 0)
+                swp_inds.append(len(parent1))
+                # Swap parameters between points
+                for i in range(len(swp_inds) - 1):
+                    if i % 2 == 1:
+                        p1, p2 = swp_inds[i], swp_inds[i+1]
+                        child1[p1:p2] = parent2[p1:p2]
+                        child2[p1:p2] = parent1[p1:p2]
+            elif crossover_type == 'uniform':
+                for i in range(len(parent1)):
+                    change = np.random.choice([False, True])
+                    if change:
+                        child1[i] = parent2[i]
+                        child2[i] = parent1[i]
+            else:
+                raise ValueError(f"Unknown crossover type: {crossover_type}.")
 
         child1 = self.check_x(variables, child1)
         child2 = self.check_x(variables, child2)
@@ -389,6 +398,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         new_X_gen = list(X_gen[:self.n_elitism])
         new_Y_gen = list(Y_gen[:self.n_elitism])
 
+        t1 = time.time()
         # 2. Mutation
         for i in range(n_mutants):
             x_ind = np.random.choice(range(len(X_gen)), p=p)
@@ -397,6 +407,8 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                                     self.one_fifth_rule, self.mut_attempts)
             fitness = [f(x_mut) for x_mut in mutants]
             
+            t3 = time.time()
+#            print("Time of main part of mutation: " + str(t3 - t1))
             # Take best mutant
             new_Y_gen.append(np.min(fitness))
             new_X_gen.append(mutants[fitness.index(new_Y_gen[-1])])
@@ -407,7 +419,10 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             if new_Y_gen[-1] < Y_gen[x_ind]:
                 if isinstance(x, WeightedMetaArray):
                     new_X_gen[-1].weights = x.weights
+        t2 = time.time()
+#        print("Time for mutation: " + str(t2 - t1))
 
+        t1 = time.time()
         # 3. Crossover
         for i in range(n_offsprings):
             ind1, ind2 = np.random.choice(range(len(X_gen)), size=2, p=p) 
@@ -416,7 +431,10 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                                self.crossover_type, self.crossover_k)
             new_X_gen.append(x)
             new_Y_gen.append(f(x))
+        t2 = time.time()
+#        print("Time for crossover: " + str(t2 - t1))
 
+        t1 = time.time()
         # 4. Random individuals
         for i in range(n_random_gen):
             x = WeightedMetaArray(self.randomize(variables, self.random_type,
@@ -425,6 +443,9 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             x.metadata = 'r'
             new_X_gen.append(x)
             new_Y_gen.append(f(x))
+        t2 = time.time()
+#        print("Time for random: " + str(t2 - t1))
+
 
         # Sort by fitness and return new generation
         new_X_gen, new_Y_gen = sort_by_other_list(new_X_gen, new_Y_gen,
@@ -608,12 +629,12 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         self.cur_mut_strength = self.mut_strength
 
         # Create logging files
-        if eval_file:
+        if eval_file is not None:
             ensure_file_existence(eval_file)
-        if report_file:
+        if report_file is not None:
             ensure_file_existence(report_file)
-        if save_file:
-            ensure_file_existence(report_file)
+        if save_file is not None:
+            ensure_file_existence(save_file)
 
         # Prepare function to use it. 
         # Fix args and cache
@@ -633,6 +654,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         # Perform 0 generation of GA - initial design.
         X_gen, Y_gen = self.initial_design(f_in_opt, variables, num_init,
                                     X_init, Y_init)
+
         X_total, Y_total = copy.deepcopy(X_gen), copy.deepcopy(Y_gen)
 
         # Initialize number of generations, evaluations, best values and so on
@@ -677,6 +699,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             if self.one_fifth_rule:
                 self.cur_mut_rate = update_by_one_fifth_rule(
                     self.cur_mut_rate, self.const_mut_rate, is_impr)
+                self.cur_mut_rate = min(self.cur_mut_rate, 1.0)
             is_mut_best = False
             if hasattr(x_best, 'weights'):
                 is_mut_best = x_best.metadata[-1] == 'm'

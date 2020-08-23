@@ -235,4 +235,4 @@ def optimize_ga(data, model_func, engine, args=(),
                           verbose=verbose, callback=callback,
                           eval_file=eval_file, report_file=report_file,
                           save_file=save_file)
-    return result.x
+    return result

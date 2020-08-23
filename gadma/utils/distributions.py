@@ -6,6 +6,8 @@ def trunc_normal(mean, sigma, lower, upper):
     Truncated normal distribution.
     """
     from scipy.stats import truncnorm
+    if sigma == 0:
+        sigma = 1e-15
     a, b = (lower - mean) / sigma, (upper - mean) / sigma
     return truncnorm.rvs(a, b, loc=mean, scale=sigma)
 
@@ -60,6 +62,7 @@ def custom_generator(variables):
             values[-1] = max(values[-1], var.domain[0])
             values[-1] = min(values[-1], var.domain[1])
     return np.array(values, dtype=object)
+
 
 def multiply_generator(gen1, domain1, gen2, domain2):
     def generator(domain):

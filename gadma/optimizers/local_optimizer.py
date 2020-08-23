@@ -45,6 +45,20 @@ def all_local_optimizers():
         yield copy.deepcopy(optim)
 
 
+class NoneOptimizer(LocalOptimizer):
+    def optimize(self, f, variables, x0, args=(), options={},
+                 linear_constrain=None, maxiter=None, maxeval=None,
+                 verbose=0, callback=None, eval_file=None, report_file=None,
+                 save_file=None):
+        y = f(x0, *args)
+        result = OptimizerResult(x0, y, True, 1, message="SUCCESS",
+                                 X=[x0], Y=[y], n_eval=1, n_iter=0)
+        return result
+
+
+register_local_optimizer("None", NoneOptimizer())
+register_local_optimizer(None, NoneOptimizer())
+
 class ScipyOptimizer(LocalOptimizer):
     scipy_methods = []
     maxeval_kwarg = {}
@@ -57,11 +71,29 @@ class ScipyOptimizer(LocalOptimizer):
         self.method = method
         super(ScipyOptimizer, self).__init__(log_transform, maximize)            
 
-    def prepare_callback(self, f, callback):
+    def save(self, x_best, y_best, is_finished, save_file):
+        if save_file is None:
+            return
+        with open(save_file, 'wb') as fl:
+            pickle.dump((x_best, y_best, is_finished), fl)
+
+    def load(self, save_file):
+        with open(save_file, 'rb') as fl:
+            x_best, y_best, is_finished = pickle.load(fl)
+        return x_best, y_best, is_finished
+
+    def prepare_callback(self, f, callback, save_file=None):
         new_callback = super(ScipyOptimizer, self).prepare_callback(callback)
         @wraps(new_callback)
         def wrapper(xk, result_obj=None):
-            return new_callback(xk, f(xk))
+            yk = f(xk)
+            r =  new_callback(xk, yk)
+            if wrapper.x_best is None or wrapper.y_best > yk:
+                wrapper.x_best = xk
+                wrapper.y_best = yk
+            self.save(xk, yk, False, save_file)
+            return r
+        wrapper.x_best = None
         return wrapper
 
     def get_addit_scipy_kwargs(self, variables):
@@ -69,7 +101,16 @@ class ScipyOptimizer(LocalOptimizer):
 
     def optimize(self, f, variables, x0, args=(), options={},
                  linear_constrain=None, maxiter=None, maxeval=None,
-                 verbose=0, callback=None, eval_file=None, report_file=None):
+                 verbose=0, callback=None, eval_file=None, report_file=None,
+                 save_file=None):
+        # Create logging files
+        if eval_file is not None:
+            ensure_file_existence(eval_file)
+        if report_file is not None:
+            ensure_file_existence(report_file)
+        if save_file is not None:
+            ensure_file_existence(save_file)
+
         x0 = np.array(x0, dtype=np.float)
         x0_in_opt = self.transform(x0)
         self.check_variables(variables)
@@ -139,6 +180,8 @@ class ScipyOptimizer(LocalOptimizer):
         result.Y = [self.sign * _y for _, _y in prepared_f.cache_info.all_calls]
 
         result.n_eval = prepared_f.cache_info.misses
+
+        self.save(result.x, result.y, True, save_file)
         
         return result
 

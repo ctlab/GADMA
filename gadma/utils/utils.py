@@ -197,9 +197,6 @@ def eval_wrapper(f, eval_file=None):
                 print(first_line, file=fl, sep='\t')
     @wraps(f)
     def eval_wrapper_f(x):
-        if eval_file is not None:
-            with open(eval_file, 'a') as fl:
-                print(x, file=fl)
         time_start = time.time()
         y = f(x)
         time_end = time.time()

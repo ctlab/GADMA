@@ -373,7 +373,18 @@ class Sud(Dynamic):
 
 
 def dynamic_generator(domain):
-    return np.random.choice(domain, p=[0.5, 0.2, 0.3])
+    p = []
+    for x in domain:
+        if x == 'Sud':
+            p.append(len(domain) + 1)
+        elif x == 'Lin':
+            p.append(len(domain) - 1)
+        elif x == 'Exp':
+            p.append(len(domain))
+        else:
+            p.append(len(domain))
+    p = np.array(p) / np.sum(p)
+    return np.random.choice(domain, p=p)
 
 class DynamicVariable(DiscreteVariable):
     """

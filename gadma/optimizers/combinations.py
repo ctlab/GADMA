@@ -57,8 +57,9 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             stream = open(report_file, 'a')
         else:
             stream = sys.stdout
-        print(f"--Start global optimization {self.global_optimizer.id}--",
-              file=stream)
+        if verbose != 0:
+            print(f"--Start global optimization {self.global_optimizer.id}--",
+                  file=stream)
         if report_file:
             stream.close()
 
@@ -76,9 +77,10 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             stream = open(report_file, 'a')
         else:
             stream = sys.stdout
-        print(f"--Finish global optimization {self.global_optimizer.id}--",
-              file=stream)
-        print("Result:\n", global_result, file=stream)
+        if verbose != 0:
+            print(f"--Finish global optimization {self.global_optimizer.id}--",
+                  file=stream)
+            print("Result:\n", global_result, file=stream)
 
         # Transform best x to local optimizer as x0 and functions for local
         x_best = np.array(global_result.x)
@@ -89,9 +91,9 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         f_local = self._f_for_local_opt(f, variables, x_best)
         callback_local = self._callback_for_local_opt(callback, variables,
                                                       x_best)
-
-        print(f"--Start local optimization {self.local_optimizer.id}--",
-              file=stream)
+        if verbose != 0:
+            print(f"--Start local optimization {self.local_optimizer.id}--",
+                  file=stream)
 
         if report_file:
             stream.close()
@@ -133,9 +135,10 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             stream = open(report_file, 'a')
         else:
             stream = sys.stdout
-        print(f"--Finish local optimization {self.local_optimizer.id}--",
-              file=stream)
-        print("Result:\n", result, file=stream)
+        if verbose != 0:
+            print(f"--Finish local optimization {self.local_optimizer.id}--",
+                  file=stream)
+            print("Result:\n", result, file=stream)
         if report_file:
             stream.close()
         return result
