@@ -1683,7 +1683,7 @@ class Demographic_model:
                 output.write("data = %s.Spectrum.from_file('" % (mode) + os.path.
                              abspath(self.params.input_file) + "')\n")
                 # we need check if we change spectrum from file:
-                real_spectrum = support.dadi_or_moments.Spectrum.from_file(
+                real_spectrum = support.get_dadi_or_moments().Spectrum.from_file(
                     os.path.abspath(self.params.input_file))
                 real_ns = real_spectrum.sample_sizes
                 real_labels  = real_spectrum.pop_ids
