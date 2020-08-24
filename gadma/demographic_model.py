@@ -1683,15 +1683,18 @@ class Demographic_model:
                 output.write("data = %s.Spectrum.from_file('" % (mode) + os.path.
                              abspath(self.params.input_file) + "')\n")
                 # we need check if we change spectrum from file:
-                real_spectrum, real_ns, real_labels  = support.read_fs_file(os.path.
-                             abspath(self.params.input_file), proj=None, pop_labels=None)
+                real_spectrum = support.dadi_or_moments.Spectrum.from_file(
+                    os.path.abspath(self.params.input_file))
+                real_ns = real_spectrum.sample_sizes
+                real_labels  = real_spectrum.pop_ids
                 if not (real_ns == self.params.ns).all():
                     output.write("data = data.project(" + str(list(self.params.ns)) + ")\n")
-                if not real_labels == self.params.pop_labels:
+                if real_labels is not None and not real_labels == self.params.pop_labels:
                     d = {x: i for i, x in enumerate(real_labels)}
                     d = [d[x] for x in self.params.pop_labels]
                     output.write("new_axis = " + str(d) + '\n')
                     output.write("data = np.transpose(data, new_axis)\n")
+                if real_labels is None or not real_labels == self.params.pop_labels:
                     output.write("data.pop_ids = " + str(self.params.pop_labels) + '\n')
             else:
                 output.write("dd = %s.Misc.make_data_dict('" % (mode) + os.path.
