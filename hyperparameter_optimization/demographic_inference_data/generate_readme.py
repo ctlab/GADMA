@@ -193,7 +193,6 @@ with open("README.md", "w") as f:
     f.write(INFO)
     f.write("# Simulated data\n\n")
     for data_dir in sim_dirs:
-        print(data_dir)
         info = generate_model_info(data_dir)
         f.write(info)
         with open(os.path.join(data_dir, "README.md"), "w") as loc_f:
