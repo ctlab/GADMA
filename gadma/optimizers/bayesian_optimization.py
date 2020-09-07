@@ -5,7 +5,6 @@ from ..utils import sort_by_other_list, choose_by_weight, eval_wrapper
 from ..utils import ensure_file_existence, fix_args
 
 from .. import GPyOpt
-from GPyOpt.methods import BayesianOptimization
 import GPy
 import operator as op
 from functools import partial, wraps
@@ -134,6 +133,7 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                          It will be called as callback(x, y), where x, y -
                          best_solution of generation and its fitness.
         """
+        from GPyOpt.methods import BayesianOptimization
         if maxiter is None:
             maxiter = 100
         print("here")
