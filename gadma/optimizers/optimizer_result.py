@@ -1,7 +1,7 @@
 import scipy
 import numpy as np
 import copy
-import GPyOpt
+from .. import GPyOpt
 
 class OptimizerResult(object):
     """
