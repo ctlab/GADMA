@@ -214,11 +214,11 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
 
         * 'uniform' - new values will be sampled uniformly between bounds.
 
-        * 'resample' - new values will be sampled from the random distribution
-        of the variables.
+        * 'resample' - new values will be sampled from the random\
+        distribution of the variables.
 
-        * 'gaussian' - will adds a unit Gaussian distributed random value.
-        The mean of the Gaussian distribution will be taken from the mutation
+        * 'gaussian' - will adds a unit Gaussian distributed random value.\
+        The mean of the Gaussian distribution will be taken from the mutation\
         rate.
 
         :param x: values to mutate.
@@ -227,7 +227,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                               'uniform' and 'resample'.
         :type mutation_type: str
         :param fval: max number of function evaluations.
-        :one_fifth_rule: If True then one fifth rule will be used. For
+        :param one_fifth_rule: If True then one fifth rule will be used. For
                          'gaussian' option only.
         :param weights: weights for parameters in x, the greater weight is
                         the greater probability to change it is.
@@ -274,17 +274,17 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         """
         Crossover operator in genetic algorithm. Could be of two types:
 
-        * 'k-point' - k points will be chosen among the vector and each part
-        between those points will be taken from parent1 or parent2 (swapping).
-        By default k=2.
+        * 'k-point' - k points will be chosen among the vector and each part\
+        between those points will be taken from parent1 or parent2 (swapping)\
+        . By default k=2.
 
-        * 'uniform' - each parameter will be taken from either parent with
+        * 'uniform' - each parameter will be taken from either parent with\
         equal probability.
 
         :param parent1: array of first parent.
         :param parent2: array of second parent.
-        :param crossover_type: type of crossover operator. Could be 'k-point' or
-                               'uniform'.
+        :param crossover_type: type of crossover operator. Could be 'k-point'
+                               or 'uniform'.
         :type crossover_type: str
         :param k: value of k for 'k_point' crossover.
         :type k: int
@@ -398,7 +398,6 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         new_X_gen = list(X_gen[:self.n_elitism])
         new_Y_gen = list(Y_gen[:self.n_elitism])
 
-        t1 = time.time()
         # 2. Mutation
         for i in range(n_mutants):
             x_ind = np.random.choice(range(len(X_gen)), p=p)
@@ -407,7 +406,6 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                                     self.one_fifth_rule, self.mut_attempts)
             fitness = [f(x_mut) for x_mut in mutants]
             
-            t3 = time.time()
 #            print("Time of main part of mutation: " + str(t3 - t1))
             # Take best mutant
             new_Y_gen.append(np.min(fitness))
@@ -419,10 +417,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             if new_Y_gen[-1] < Y_gen[x_ind]:
                 if isinstance(x, WeightedMetaArray):
                     new_X_gen[-1].weights = x.weights
-        t2 = time.time()
-#        print("Time for mutation: " + str(t2 - t1))
 
-        t1 = time.time()
         # 3. Crossover
         for i in range(n_offsprings):
             ind1, ind2 = np.random.choice(range(len(X_gen)), size=2, p=p) 
@@ -431,10 +426,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                                self.crossover_type, self.crossover_k)
             new_X_gen.append(x)
             new_Y_gen.append(f(x))
-        t2 = time.time()
-#        print("Time for crossover: " + str(t2 - t1))
 
-        t1 = time.time()
         # 4. Random individuals
         for i in range(n_random_gen):
             x = WeightedMetaArray(self.randomize(variables, self.random_type,
@@ -443,9 +435,6 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             x.metadata = 'r'
             new_X_gen.append(x)
             new_Y_gen.append(f(x))
-        t2 = time.time()
-#        print("Time for random: " + str(t2 - t1))
-
 
         # Sort by fitness and return new generation
         new_X_gen, new_Y_gen = sort_by_other_list(new_X_gen, new_Y_gen,
@@ -608,11 +597,11 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                  verbose=0, callback=None, report_file=None, eval_file=None,
                  save_file=None):
         """
-        Return best values of :param:`variables` that minimizes/maximizes
-        the function :param:`f`.
+        Return best values of `variables` that minimizes/maximizes
+        the function `f`.
 
         :param f: function to minimize/maximize. The usage must be the
-                  following: f(x, *args), where x is list of values.
+                  following: f(x, \*args), where x is list of values.
         :param variables: list of variables (instances of
                           :class:`gadma.Variable` class) of the function.
         :param X_init: list of initial values.

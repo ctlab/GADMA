@@ -7,7 +7,6 @@ from ..optimizers import GlobalOptimizerAndLocalOptimizer
 from ..utils import get_aic_score, get_claic_score
 from ..models import EpochDemographicModel
 from .draw_and_generate_code import draw_plots_to_file, generate_code_to_file
-from .shared_dict import SharedDictForCoreRun
 import os
 import numpy as np
 from collections import defaultdict, OrderedDict
@@ -107,7 +106,7 @@ class CoreRun(object):
         """
         Base callback:
 
-        1) Updates values of best soulution in :attr:`shared_dict`.
+        1) Updates values of best solution in :attr:`shared_dict`.
 
         2)If new values are received then draws and generates code to the
         :attr:`output_dir`.
@@ -142,15 +141,15 @@ class CoreRun(object):
 #            print("base", self.shared_dict[self.index][best_by][1])
             # Draw and generate code for current best model
         if updated:
-            fig_title = f"Best by {best_by} model. {best_by}: {y: .2f}"
+#            fig_title = f"Best by {best_by} model. {best_by}: {y: .2f}"
             prefix = (self.settings.LOCAL_OUTPUT_DIR_PREFIX +
                       self.settings.LONG_NAME_2_SHORT.get(best_by, best_by))
-            save_plot_file = os.path.join(self.output_dir, prefix + "_model.png")
+#            save_plot_file = os.path.join(self.output_dir, prefix + "_model.png")
             save_code_file = os.path.join(self.output_dir, prefix + "_model.py")
-            try:
-               draw_plots_to_file(x, self.engine, self.settings, save_plot_file, fig_title)
-            except Exception as e:
-                pass
+#            try:
+#               draw_plots_to_file(x, self.engine, self.settings, save_plot_file, fig_title)
+#            except Exception as e:
+#                pass
             try:
                 generate_code_to_file(x, self.engine, self.settings, save_code_file)
             except Exception as e:
@@ -294,6 +293,24 @@ class CoreRun(object):
             print(f"{bcolors.FAIL}Run {index}: failed to generate code due to"
                   f" the following exception: {e}{bcolors.ENDC}")
 
+    def draw_model_in_output_dir(self, x, y,
+                                 best_by='log-likelihood', final=True):
+        fig_title = f"Best by {best_by} model. {best_by}: {y: .2f}"
+        if final:
+            prefix = self.settings.LOCAL_OUTPUT_DIR_PREFIX_FINAL
+        else:
+            prefix = self.settings.LOCAL_OUTPUT_DIR_PREFIX
+        prefix += self.settings.LONG_NAME_2_SHORT.get(best_by, best_by)
+        save_plot_file = os.path.join(self.output_dir, prefix + "_model.png")
+        save_code_file = os.path.join(self.output_dir, prefix + "_model.py")
+        try:
+            generate_code_to_file(x, self.engine, self.settings, save_code_file)
+        except Exception as e:
+            pass
+        try:
+           draw_plots_to_file(x, self.engine, self.settings, save_plot_file, fig_title)
+        except Exception as e:
+            pass
 
     def run_without_increase(self, initial_kwargs={}):
         np.random.seed()
@@ -330,6 +347,8 @@ class CoreRun(object):
             result = self.run_without_increase(initial_kwargs)
         else:
             result = self.run_with_increase(initial_kwargs)
+        # draw final model in output dir
+        self.draw_model_in_output_dir(result.x, result.y)
         print(f'Finish genetic algorithm number {self.index}\n', end='')
         return result
 

@@ -567,6 +567,11 @@ class SettingsStorage(object):
                                  Dumper=ruamel.yaml.RoundTripDumper)
 
     def get_global_optimizer(self):
+#        bo = get_global_optimizer("Bayesian_optimization")
+#        bo.log_transform = True
+#        bo.maximize = True
+#        return bo
+
         ga = get_global_optimizer("Genetic_algorithm")
         ga.gen_size = self.size_of_generation
         ga.n_elitism = self.n_elitism

@@ -94,17 +94,16 @@ def main():
     sys.stdout = StdAndFileLogger(log_file, settings_storage.silence)
 
     # Create shared dictionary
-    m = Manager()
-    shared_dict = m.dict()
     shared_dict = SharedDictForCoreRun()
 
     # Start pool of processes
     start_time = datetime.now()
 
     # For debug
+#    shared_dict = SharedDictForCoreRun(multiprocessing=False)
 #    job(0, shared_dict, settings_storage)
+#    os._exit(0)
 
-    os._exit(0)
     pool = Pool(processes=settings_storage.number_of_processes)
 
     results = []
