@@ -66,10 +66,12 @@ class OptimizerResult(object):
                                Y_out=[scipy_result.fun])
 
     @staticmethod
-    def from_GPyOpt_OptimizerResult(
-            gpyopt_obj: GPyOpt.methods.BayesianOptimization):
+    def from_GPyOpt_OptimizerResult(gpyopt_obj):
         """
         Create OptimizerResult from instance of bayesian optimization.
+
+        :param gpyopt_obj: Object of GPyOpt optimizer
+        :type gpyopt_obj: GPyOpt.methods.BayesianOptimization
         """
         gpyopt_obj._compute_results()
         if (gpyopt_obj.num_acquisitions == gpyopt_obj.max_iter and
