@@ -16,13 +16,23 @@ class StructureDemographicModel(EpochDemographicModel):
 
     :param initial_structure: List of ints with number of intervals
                               in initial structure.
+    :type initial_structure: list of ints
     :param final_structure: List of ints with number of intervals
                             in final structure.
+    :type final_structure: list of ints
     :param have_migs: If True then model will have migrations.
+    :type have_migs: bool
     :param have_sels: If True then model will have selection coefficients.
+    :type have_sels: bool
     :param have_dyns: If True then model will create dynamics of size
                       change different to Sudden change.
+    :type have_dyns: bool
     :param sym_migs: If True then migrations will be symetric.
+    :type sym_migs: bool
+    :param frac_split: If True then populations split in some proportion. If
+                       False then newly formed population has size as
+                       an independent variable.
+    :type frac_split: bool
     """
     def __init__(self, initial_structure, final_structure,
                  have_migs, have_sels, have_dyns, sym_migs, frac_split,
@@ -41,6 +51,9 @@ class StructureDemographicModel(EpochDemographicModel):
         """
         Creates new model from given structure.
         It is base constructor of the model.
+
+        :param structure: Structure of the model.
+        :type structure: list of ints
         """
         super(StructureDemographicModel, self).__init__(self.gen_time,
                                                         self.theta0, self.mu)
@@ -105,6 +118,9 @@ class StructureDemographicModel(EpochDemographicModel):
         return self
 
     def get_structure(self):
+        """
+        Returns current structure of the model.
+        """
         structure = [1]
         for event in self.events:
             if isinstance(event, Split):
@@ -118,9 +134,9 @@ class StructureDemographicModel(EpochDemographicModel):
     def increase_structure(self, X=None):
         """
         Increase structure of the model. Raises ValueError if structure is
-        equal or greater than :param:`final_structure`.
+        equal or greater than `final_structure`.
 
-        :param X: list of values to transform as vaues of new model.
+        :param X: list of values to transform as values of new model.
         """
         cur_structure = self.get_structure()
         diff = np.array(self.final_structure) - np.array(cur_structure)

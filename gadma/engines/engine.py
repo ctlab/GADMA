@@ -181,8 +181,8 @@ class Engine(object):
         :param data: holder of the data or raw data for the engine.
         :type data: :class:`gadma.DataHolder` or :attr:``inner_data``
 
-        :raises ValueError: if :param:`model` is `None` and any was not\
-            setted before; or if :param:`data_holder` is `None` and any\
+        :raises ValueError: if `model` is `None` and any was not\
+            setted before; or if `data_holder` is `None` and any\
             was not setted before.
         """
         if model is not None:

@@ -11,14 +11,8 @@ from functools import wraps
 
 class DadiOrMomentsEngine(Engine):
     """
-    Engine for using :py:mod:`dadi` for demographic inference.
-
-    Citation of :py:mod:`dadi`:
-
-    Gutenkunst RN, Hernandez RD, Williamson SH, Bustamante CD (2009)
-    Inferring the Joint Demographic History of Multiple Populations
-    from Multidimensional SNP Frequency Data. PLoS Genet 5(10): e1000695.
-    https://doi.org/10.1371/journal.pgen.1000695
+    Base engine class for dadi and moments engines. It has all common methods
+    of both engines.
     """
 
     id = 'dadi_or_moments'  #:

@@ -10,11 +10,16 @@ import numpy as np
 class DemographicModel(Model):
     """
     Class for demographic model.
-    This type is common for :py:mod:`dadi` and :py:mod:`moments`.
 
-    :param Nref: reference population size (usually ancestral population
-                 size).
-    :type Nref: float
+
+    :param gen_time: Time of one generation.
+    :type gen_time: float
+    :param theta0: Mutation flux (4 * mu * L, where L - length of sequence).
+    :type theta0: float
+    :param mu: Mutation rate per base per generation.
+    :type mu: float
+    :param linear_constrain: linear constrain on parameters.
+    :type linear_constrain: :class:`gadma.optimizers.LinearConstrain`
     """
     def __init__(self, gen_time=None, theta0=None, mu=None,
                  linear_constrain=None):
@@ -38,6 +43,9 @@ class DemographicModel(Model):
         return item
 
     def get_number_of_parameters(self, values):
+        """
+        Returns number of parameters of the model.
+        """
         var2value = self.var2value(values)
         return len(var2value.keys())
 
@@ -53,6 +61,13 @@ class DemographicModel(Model):
         return variables_values_repr(self.variables, values)
 
     def translate_units(self, values, Nanc, Tg=1):
+        """
+        Translates values from genetic units to physical.
+
+        :param values: Values of parameters.
+        :param Nanc: Size of ancestral population.
+        :param Tg: Time per generation.
+        """
         var2value = self.var2value(values)
         translated_values = list()
         for var, val in var2value.items():
@@ -71,9 +86,7 @@ class EpochDemographicModel(DemographicModel):
     Class for demographic model of epoch type.
     This type is common for :py:mod:`dadi` and :py:mod:`moments`.
 
-    :param Nref: reference population size (usually ancestral population
-                 size).
-    :type Nref: float
+    See :class:`gadma.models.DemographicModel` for constructor docs.
     """
     def __init__(self, gen_time=None, theta0=None, mu=None,
                  linear_constrain=None):
@@ -90,6 +103,9 @@ class EpochDemographicModel(DemographicModel):
         return copy.copy(self.events[-1].size_args)
 
     def number_of_populations(self):
+        """
+        Returns number of populations in the model.
+        """
         return len(self._get_current_pop_sizes())
 
     def add_epoch(self, time_arg, size_args, mig_args=None,
@@ -105,7 +121,8 @@ class EpochDemographicModel(DemographicModel):
                          the epoch.
 
         :note: all arguments could contain variables of :class:`Variable`\
-               class as well as different constants/values.
+               class as well as different constants/values including\
+               :class:`gadma.models.BinaryOperation` instances.
         """
         sizes = self._get_current_pop_sizes()
         new_epoch = Epoch(time_arg, sizes, size_args,
@@ -129,6 +146,12 @@ class EpochDemographicModel(DemographicModel):
         self.add_variables(new_split.variables)
 
     def fix_variable(self, variable, value):
+        """
+        Fixes variable in the model to the value.
+
+        :param variable: Variable to fix.
+        :param value: Value of the variable to fix.
+        """
         for event in self.events:
             if variable in event.variables:
                 event.fix_variable(variable, value)
@@ -138,6 +161,9 @@ class EpochDemographicModel(DemographicModel):
                          " demographic model.")
 
     def unfix_variable(self, variable):
+        """
+        Unfixes the variable of the model.
+        """
         for event in self.events:
             if variable in event._variables:
                 event.unfix_variable(variable)
@@ -176,6 +202,16 @@ class EpochDemographicModel(DemographicModel):
                         event.unfix_variable(dyn_arg)
 
     def get_number_of_parameters(self, values):
+        """
+        Returns number of parameters of the model. Be careful as this number
+        could be different to the number of variables. According to the
+        population size dynamics in `values` some variables could have no
+        influence on the model and in this case they are not counted.
+
+        :param values: Values of the parameters. Dynamics makes the most
+                       sense.
+        :type values: list or dict
+        """
         var2value = self.var2value(values)
         all_variables = VariablePool()
         for event in self.events:

@@ -9,7 +9,10 @@ _registered_global_optimizers = {}
 
 
 class GlobalOptimizer(Optimizer):
-
+    """
+    Base class for global optimization.
+    See :class:`gadma.optimizers.Optimizer` for more information.
+    """
     def __init__(self, log_transform=False, maximize=False):
         super(GlobalOptimizer, self).__init__(log_transform, maximize)
         self.X = list()
@@ -23,10 +26,9 @@ class GlobalOptimizer(Optimizer):
 
         * 'uniform' - uniform over domain.
 
-        * 'resample' - call :method:`resample` method for all variables.
+        * 'resample' - call :meth:`resample` method for all variables.
 
-        * 'custom' - sample values of parameters from
-                     :param:`custom_rand_gen`.
+        * 'custom' - sample values of parameters from `custom_rand_gen`.
         """
         if random_type == 'uniform':
             return np.array([np.random.uniform(*var.domain)
@@ -47,7 +49,7 @@ class GlobalOptimizer(Optimizer):
         Performs initial design for optimization.
 
         :param f: function to use for evaluations. Note that it should be
-                  without arguments. Use :method:`self.fix_f_and_args` to
+                  without arguments. Use :meth:`self.fix_f_and_args` to
                   get such function from another one with arguments.
         :param variables: variables of function. They are used for random
                           generation of their values.
@@ -77,6 +79,29 @@ class GlobalOptimizer(Optimizer):
 
     def optimize(self, f, variables, num_init, X_init=None, Y_init=None,
                  args=(), options={}, linear_constrain=None, maxiter=None):
+        """
+        Runs optimization.
+
+        :param f: Target function to optimize.
+        :type f: func
+        :param variables: Variables of `f` which values should be optimized.
+        :type variables: :class:`gadma.utils.VariablePool`
+        :param num_init: Number of points in initial design.
+        :type num_init: int
+        :param X_init: List of initial points.
+        :type X_init: list
+        :param Y_init: Values of target function on initial points.
+        :type Y_init: list
+        :param args: Additional arguments of target function.
+        :type args: tuple
+        :param options: Additional options kwargs for optimization.
+        :type options: dict
+        :param linear_constrain: Linear constrain on optimized variables.
+        :type linear_constrain: :class:`gadma.optimizers.LinearConstrain`
+        :param maxiter: Maximum number of iterations to run.
+        :type maxiter: int
+
+        """
         raise NotImplementedError
 
 

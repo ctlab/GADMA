@@ -91,6 +91,11 @@ class Model(object):
             pass
 
     def var2value(self, values):
+        """
+        Returns dictionary {variable: value}.
+
+        :param values: List or dict {var_name: value} of values.
+        """
         if isinstance(values, list) or isinstance(values, np.ndarray):
             ret_dict = {var: value for var, value in zip(self.variables,
                                                                values)}
@@ -106,6 +111,11 @@ class Model(object):
         return {**ret_dict, **self.fixed_values}
 
     def string_repr(self, values):
+        """
+        Returns string representation of variables and values.
+
+        :param values: Values of the variables in model.
+        """
         strings = []
         var2value = self.var2value(values)
         for var in self.variables:

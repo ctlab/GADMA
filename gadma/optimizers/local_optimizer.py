@@ -1,4 +1,4 @@
-from .optimizer import Optimizer, ConstrainedOptimizer, UnconstrainedOptimizer
+from . import Optimizer, ConstrainedOptimizer, UnconstrainedOptimizer
 from .optimizer_result import OptimizerResult
 from ..utils import eval_wrapper, rpartial, fix_args
 
@@ -12,13 +12,37 @@ _registered_local_optimizers = {}
 
 
 class LocalOptimizer(Optimizer):
+    """
+    Base class for local optimization.
+    See :class:`gadma.optimizers.Optimizer` for more information.
+    """
     def optimize(self, f, variables, x0, args=(), options={}, maxiter=None):
+        """
+        Run optimization of local search algorithm.
+
+        :param f: Target function to optimize.
+        :type f: func
+        :param variables: Variables of `f` which values should be optimized.
+        :type variables: :class:`gadma.utils.VariablePool`
+        :param x0: Initial point to start optimization.
+        :type x0: list
+        :param args: Additional arguments of target function.
+        :type args: tuple
+        :param options: Additional options kwargs for optimization.
+        :type options: dict
+        :param maxiter: Maximum number of iterations to run.
+        :type maxiter: int
+        """
         raise NotImplementedError
 
 
 def register_local_optimizer(id, optimizer):
     """
     Registers the specified local optimizer.
+
+    :param id: ID of local optimizer to register.
+    :param optimizer: Optimizer to register.
+    :type optimizer: :class:`gadma.optimizers.LocalOptimizer`
     """
     if id in _registered_local_optimizers:
         raise ValueError(f"Optimizer '{id}' is already registered.")
@@ -31,6 +55,8 @@ def register_local_optimizer(id, optimizer):
 def get_local_optimizer(id):
     """
     Returns the local optimizer with the specified id.
+
+    :param id: ID of local optimizer.
     """
     if id not in _registered_local_optimizers:
         raise ValueError(f"Optimizer '{id}' is not registered")
@@ -46,6 +72,10 @@ def all_local_optimizers():
 
 
 class NoneOptimizer(LocalOptimizer):
+    """
+    Class that inherits :class:`gadma.optimizers.LocalOptimizer` but do not
+    run any optimization.
+    """
     def optimize(self, f, variables, x0, args=(), options={},
                  linear_constrain=None, maxiter=None, maxeval=None,
                  verbose=0, callback=None, eval_file=None, report_file=None,
@@ -60,6 +90,20 @@ register_local_optimizer("None", NoneOptimizer())
 register_local_optimizer(None, NoneOptimizer())
 
 class ScipyOptimizer(LocalOptimizer):
+    """
+    Class of Scipy local search algorithms.
+
+    :cvar scipy_methods: List of methods names that are available.
+    :cvar maxeval_kwarg: List of methods names that support `maxeval`
+                         argument.
+
+    :param method: name of method from :func:`scipy.optimize.minimize`.
+    :type method: str
+    :param log_transform: If True then values rae optimized in log scale.
+    :type log_transform: bool
+    :param maximize: If True then maximize target function.
+    :type maximize: bool
+    """
     scipy_methods = []
     maxeval_kwarg = {}
     opt_type = ''
@@ -72,12 +116,27 @@ class ScipyOptimizer(LocalOptimizer):
         super(ScipyOptimizer, self).__init__(log_transform, maximize)            
 
     def save(self, x_best, y_best, is_finished, save_file):
+        """
+        Save current achievement in optimization. Dumps `x_best`, `y_best` and
+        `is_finished` to `save_file` using :mod:`pickle`.
+
+        :param x_best: Values of best configuration.
+        :param y_best: Value of target function on `x_best`.
+        :param is_finished: If True then optimization was finished.
+        :param save_file: Filename to save data.
+        """
         if save_file is None:
             return
         with open(save_file, 'wb') as fl:
             pickle.dump((x_best, y_best, is_finished), fl)
 
     def load(self, save_file):
+        """
+        Loads `x_best`, `y_best` and `is_finished` to `save_file` using
+        :mod:`pickle`.
+
+        :param save_file: Filename with dumped data.
+        """
         with open(save_file, 'rb') as fl:
             x_best, y_best, is_finished = pickle.load(fl)
         return x_best, y_best, is_finished
@@ -103,6 +162,36 @@ class ScipyOptimizer(LocalOptimizer):
                  linear_constrain=None, maxiter=None, maxeval=None,
                  verbose=0, callback=None, eval_file=None, report_file=None,
                  save_file=None):
+        """
+        Run Scipy optimization.
+
+
+        :param f: Target function to optimize.
+        :type f: func
+        :param variables: Variables of `f` which values should be optimized.
+        :type variables: :class:`gadma.utils.VariablePool`
+        :param x0: Initial point to start optimization.
+        :type x0: list
+        :param args: Additional arguments of target function.
+        :type args: tuple
+        :param options: Additional options kwargs for scipy optimization.
+        :type options: dict
+        :param maxiter: Maximum number of iterations to run.
+        :type maxiter: int
+        :param maxeval: Maximum number of target function evaluations.
+        :type maxeval: int
+        :param verbose: Verbosity of reports.
+        :type verbose: int
+        :param callback: callback to call after each iteration.
+                        `callback(x_best, y_best)`.
+        :type callback: func
+        :param eval_file: File to save evaluations.
+        :type eval_file: str
+        :param report_file: File to save reports.
+        :type report_file: str
+        :param save_file: File to dump current state after each iteration.
+        :type save_file: str
+        """
         # Create logging files
         if eval_file is not None:
             ensure_file_existence(eval_file)
@@ -186,6 +275,9 @@ class ScipyOptimizer(LocalOptimizer):
         return result
 
 class ScipyUnconstrOptimizer(ScipyOptimizer, UnconstrainedOptimizer):
+    """
+    Base class for Scipy unconstrained optimizations.
+    """
     scipy_methods = ['Nelder-Mead', 'Powell', 'CG', 'BFGS', 'Newton-CG',
                      'COBYLA', 'trust-constr', 'dogleg', 'trust-ncg',
                      'trust-exact', 'trust-krylov']
@@ -213,6 +305,16 @@ register_local_optimizer('L-BFGS-B_log',
 
 
 class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
+    """
+    Class for Constrained optimization that uses unconstrained optimization.
+    The value of target function is considered to be inf outside bounds.
+
+    :param optimizer: Unconstrained optimizer to use.
+    :type optimizer: class:`gadma.optimizers.UnconstrainedOptimizer`
+    :param log_transform: If True then log scale is used for optimization.
+                          Be careful there could be `log_transform` already
+                          in `optimizer`.
+    """
     def __init__(self, optimizer, log_transform=False):
         self.optimizer = optimizer
         super(ManuallyConstrOptimizer, self).__init__(log_transform,

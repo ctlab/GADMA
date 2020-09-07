@@ -2,6 +2,9 @@ from ..utils import Variable
 from .model import Model
 
 class VariablesCombination(Model):
+    """
+    Base class for combination of variables.
+    """
     def __init__(self):
         super(VariablesCombination, self).__init__(raise_excep=False)
 
@@ -10,6 +13,16 @@ class VariablesCombination(Model):
 
 
 class BinaryOperation(VariablesCombination):
+    """
+    Combination of two variables.
+
+    :param arg1: First argument.
+    :type arg1: :class:`gadma.Variable` or value.
+    :param arg2: Second argument.
+    :type arg2: :class:`gadma.Variable` or value.
+
+    :raises AssertError: if both arguments are not variables.
+    """
     def __init__(self, arg1, arg2):
         super(BinaryOperation, self).__init__()
         self.arg1 = arg1
@@ -19,6 +32,10 @@ class BinaryOperation(VariablesCombination):
 
     @property
     def name(self):
+        """
+        Generates name from variables names like:
+        `self.arg1.name operation self.arg1.name`
+        """
         if isinstance(self.arg1, (Variable, BinaryOperation)):
             arg1_name = self.arg1.name
             if isinstance(self.arg1, BinaryOperation):
@@ -34,6 +51,12 @@ class BinaryOperation(VariablesCombination):
         return f"{arg1_name} {self.operation_str()} {arg2_name}"
 
     def get_value(self, values):
+        """
+        Returns value of the combination from variables values.
+
+        :param values: Values of the variables.
+        :type values: list of dict
+        """
         var2value = self.var2value(values)
         if isinstance(self.arg1, BinaryOperation):
             vals = [var2value[var] for var in self.arg1.variables]
@@ -48,34 +71,58 @@ class BinaryOperation(VariablesCombination):
         return self.operation(val1, val2)
 
     def string_repr(self, values):
+        """
+        Returns string representation of combination with defined values.
+
+        :param values: Values of the variables.
+        :type values: list of dict
+        """
         val = self.get_value(values)
         return f"{self.name}={val}"
 
     def operation(self, val1, val2):
+        """
+        Returns the result of binary operation from two values.
+        """
         raise NotImplementedError
 
     def operation_str(self):
+        """
+        Returns string representation of binary operation.
+        """
         raise NotImplementedError
 
 class Addition(BinaryOperation):
+    """
+    The sum of two variables.
+    """
     def operation(self, val1, val2):
         return val1 + val2
     def operation_str(self):
         return "+"
 
 class Subtraction(BinaryOperation):
+    """
+    The subtraction of two variables.
+    """
     def operation(self, val1, val2):
         return val1 - val2
     def operation_str(self):
         return "-"
 
 class Multiplication(BinaryOperation):
+    """
+    The multiplication of two variables.
+    """
     def operation(self, val1, val2):
         return val1 * val2
     def operation_str(self):
         return "*"
 
 class Division(BinaryOperation):
+    """
+    The division of one variable by another.
+    """
     def operation(self, val1, val2):
         return val1 / val2
     def operation_str(self):

@@ -5,16 +5,49 @@ from ..utils import Variable, FractionVariable, float_repr
 
 
 class Event(Model):
+    """
+    Base class for some event.
+    """
     def __init__(self):
         super(Event, self).__init__(raise_excep=False)
 
     def set_value(self, variable, value):
+        """
+        Fixes variable `variable` to the value of `value`. This variable is
+        no longer available after this operation.
+
+        :param variable: Variable of the event to fix.
+        :param value: New constant value of the variable.
+        """
         raise NotImplementedError()
 
     def as_custom_string(self, values):
+        """
+        Returns string representation of the event.
+        """
         raise NotImplementedError()
 
 class Epoch(Event):
+    """
+    Epoch for demographic model. All arguments could be both values and some
+    variables. Additionally values could be combinations of the variables
+    (see :class:`gadma.models.VariablesCombinations`).
+
+    :param time_arg: Time of the epoch.
+    :type time_arg: float or :class:`gadma.TimeVariable`
+    :param init_size_args: Sizes of populations at the beginning of the epoch.
+    :type init_size_args: list of values and/or
+                          :class:`gadma.PopulationSizeVariable`
+    :param size_args: Sizes of populations at the end of the epoch.
+    :type size_args: list of values and/or
+                     :class:`gadma.PopulationSizeVariable`
+    :param mig_args: Migration rates between populations.
+    :type mig_args: 2d list of values and/or :class:`gadma.MigrationVariable`
+    :param dyn_args: Dynamics of population size changes during the epoch.
+    :type dyn_args: list of values and/or  :class:`gadma.DynamicVariable`
+    :param sel_args: Selection rates for each population during the epoch.
+    :type sel_args: list of values and/or :class:`gadma.SelectionVariable`
+    """
     def __init__(self, time_arg, init_size_args, size_args,
                  mig_args=None, dyn_args=None, sel_args=None):
         # Simple checks
@@ -97,6 +130,12 @@ class Epoch(Event):
 
 
 class Split(Event):
+    """
+    Class for split demographic event.
+
+    :param pop_to_div: Population index that splits.
+    :param size_args: Sizes of populations after split.
+    """
     def __init__(self, pop_to_div, size_args=None):
         # Simple checks
         if size_args is not None:

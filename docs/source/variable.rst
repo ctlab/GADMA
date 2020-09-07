@@ -14,60 +14,60 @@ Base class Variable
 .. autoclass:: gadma.Variable
     :members:
 
-*******************
-Continuous Variable
-*******************
+************************
+Class ContinuousVariable
+************************
 
 .. autoclass:: gadma.ContinuousVariable
     :show-inheritance:
     :members: get_bounds, get_possible_values
 
-*****************
-Discrete Variable
-*****************
+**********************
+Class DiscreteVariable
+**********************
 
 .. autoclass:: gadma.DiscreteVariable
     :show-inheritance:
     :members: get_bounds, get_possible_values
 
-************************
-Population size Variable
-************************
+*****************************
+Class PopulationSizeVariable
+*****************************
 
 .. autoclass:: gadma.PopulationSizeVariable
     :show-inheritance:
 
-*************
-Time Variable
-*************
+******************
+Class TimeVariable
+******************
 
 .. autoclass:: gadma.TimeVariable
     :show-inheritance:
 
-******************
-Migration Variable
-******************
+***********************
+Class MigrationVariable
+***********************
 
 .. autoclass:: gadma.MigrationVariable
     :show-inheritance:
 
-******************
-Selection Variable
-******************
+***********************
+Class SelectionVariable
+***********************
 
 .. autoclass:: gadma.SelectionVariable
     :show-inheritance:
 
-****************
-Percent Variable
-****************
+**********************
+Class FractionVariable
+**********************
 
-.. autoclass:: gadma.PercentVariable
+.. autoclass:: gadma.FractionVariable
     :show-inheritance:
 
-********
+**************
 Dynamics
-********
+**************
 
 This section is about such values as dynamics of population change.
 
@@ -86,9 +86,9 @@ This section is about such values as dynamics of population change.
     :show-inheritance:
     :members: __str__, _inner_func
 
-****************
-Dynamic Variable
-****************
+*********************
+Class DynamicVariable
+*********************
 
 .. autoclass:: gadma.DynamicVariable
     :show-inheritance:

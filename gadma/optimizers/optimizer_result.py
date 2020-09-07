@@ -1,6 +1,7 @@
 import scipy
 import numpy as np
 import copy
+import GPyOpt
 
 class OptimizerResult(object):
     """
@@ -46,7 +47,8 @@ class OptimizerResult(object):
         self.Y_out = Y_out
 
     @staticmethod
-    def from_SciPy_OptimizeResult(scipy_result: scipy.optimize.OptimizeResult):
+    def from_SciPy_OptimizeResult(
+            scipy_result: scipy.optimize.OptimizeResult):
         """
         Create OptimizerResult from instance of SciPy.optimize.OptimizeResult.
         Please, note that some attributes will be empty.
@@ -62,6 +64,50 @@ class OptimizerResult(object):
                                n_iter=scipy_result.nit,
                                X_out=[scipy_result.x],
                                Y_out=[scipy_result.fun])
+
+    @staticmethod
+    def from_GPyOpt_OptimizerResult(
+            gpyopt_obj: GPyOpt.methods.BayesianOptimization):
+        """
+        Create OptimizerResult from instance of bayesian optimization.
+        """
+        gpyopt_obj._compute_results()
+        if (gpyopt_obj.num_acquisitions == gpyopt_obj.max_iter and
+                not gpyopt_obj.initial_iter):
+            message = '   ** Maximum number of iterations reached **'
+            success = True
+            status = 1
+        elif (gpyopt_obj._distance_last_evaluations() < gpyopt_obj.eps and
+                not gpyopt_obj.initial_iter):
+            message = '   ** Two equal location selected **'
+            success = True
+            status = 1
+        elif (gpyopt_obj.max_time < gpyopt_obj.cum_time and
+                not gpyopt_obj.initial_iter):
+            message = '   ** Evaluation time reached **'
+            success = True
+            status = 0
+        else:
+            message = '** GPyOpt Bayesian Optimization class initialized successfully **'
+            success = False
+            status = 2
+
+        if hasattr(gpyopt_obj.f, 'cache_info'):
+            n_eval = gpyopt_obj.f.cache_info.misses
+        else:
+            n_eval = len(gpyopt_obj.Y)
+
+        return OptimizerResult(x=gpyopt_obj.x_opt,
+                               y=gpyopt_obj.fx_opt,
+                               success=success,
+                               status=status,
+                               message=message,
+                               X=gpyopt_obj.X,
+                               Y=gpyopt_obj.Y,
+                               n_eval=n_eval,
+                               n_iter=gpyopt_obj.num_acquisitions,
+                               X_out=gpyopt_obj.X,
+                               Y_out=gpyopt_obj.Y)
 
     def __repr__(self):
         string = f"  status: {self.status}\n"\
