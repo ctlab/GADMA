@@ -25,43 +25,53 @@ class SharedDict(object):
         if key is None:
             key = self.default_key(group)
         new_value = self.get_value(model, key)
-        if process in self.dict and group in self.dict[process]:
+
+        copy_dict = dict(self.dict)
+        try:
+            process_dict = OrderedDict(copy_dict[process])
+        except KeyError:
+            process_dict = OrderedDict()
+
+        if group in process_dict:
             old_model = self.get_best_model_in_group(process, group)
             old_value = self.get_value(old_model, key)
-        if (process not in self.dict or group not in self.dict[process] or
+        if (group not in process_dict or
                 np.allclose(new_value, old_value) or new_value > old_value):
-            if process not in self.dict.keys():
-                new_dict = OrderedDict()
-            else:
-                new_dict = OrderedDict(self.dict[process])
-            new_dict[group] = copy.deepcopy(model)
-            self.dict[process] = new_dict
+            process_dict[group] = copy.deepcopy(model)
+            copy_dict[process] = process_dict
+            self.dict.update(copy_dict)
             return True
         return False
 
     def add_model_for_process(self, process, group, model, key=None):
         if key is None:
             key = self.default_key(group)
-        if process in self.dict and group in self.dict[process]:
+        copy_dict = dict(self.dict)
+        try:
+            process_dict = OrderedDict(copy_dict[process])
+        except KeyError:
+            process_dict = OrderedDict()
+        if group in process_dict:
             models = self.get_models_in_group(process, group)
         else:
             models = []
         models = models.extend(model)
-        if process not in self.dict.keys():
-            new_dict = OrderedDict()
-        else:
-            new_dict = OrderedDict(self.dict[process])
-        new_dict[group] = copy.deepcopy(models)
-        self.dict[process] = new_dict
+        process_dict[group] = copy.deepcopy(models)
+        copy_dict[process] = process_dict
+        self.dict.update(copy_dict)
 
     def get_models_for_process_in_group(self, process, group, key=None):
         if key is None:
             key = self.default_key(group)
-        if process not in self.dict or group not in self.dict[process]:
+        try:
+            process_dict = OrderedDict(self.dict[process])
+        except KeyError:
+            process_dict = OrderedDict()
+        if group not in process_dict:
             return []
-        if isinstance(self.dict[process][group], (list, np.ndarray)):
-            return sorted(self.dict[process][group], key=key)
-        return [self.dict[process][group]]
+        if isinstance(process_dict[group], (list, np.ndarray)):
+            return sorted(process_dict[group], key=key)
+        return [process_dict[group]]
 
     def get_models_in_group(self, group, key=None):
         if key is None:
@@ -129,8 +139,9 @@ class SharedDictForCoreRun(SharedDict):
 
     def get_available_groups(self):
         names = []
-        for process in self.dict.keys():
-            for group in self.dict[process]:
+        copy_dict = dict(self.dict)
+        for process in copy_dict.keys():
+            for group in copy_dict[process]:
                 if group not in names:
                     names.append(group)
         return names

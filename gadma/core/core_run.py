@@ -84,6 +84,9 @@ class CoreRun(object):
         self.draw_iter_callback_counter = 0
         self.code_iter_callback_counter = 0
 
+        self.x_best = None
+        self.y_best = None
+
     @property
     def model(self):
         return self._model
@@ -118,7 +121,12 @@ class CoreRun(object):
             y_dict = {best_by: y, 'AIC score': aic}
         else:
             y_dict = y
-        updated = self.shared_dict.update_best_model_for_process(self.index,
+
+        sign = self.global_optimizer.sign
+        if self.x_best is None or sign * self.y_best > sign * y:
+            self.x_best = x
+            self.y_best = y
+            updated = self.shared_dict.update_best_model_for_process(self.index,
                                                                  best_by,
                                                                  self.engine,
                                                                  x, y_dict)
@@ -140,7 +148,7 @@ class CoreRun(object):
 #            self.shared_dict[self.index] = new_dict
 #            print("base", self.shared_dict[self.index][best_by][1])
             # Draw and generate code for current best model
-        if updated:
+#        if updated:
 #            fig_title = f"Best by {best_by} model. {best_by}: {y: .2f}"
             prefix = (self.settings.LOCAL_OUTPUT_DIR_PREFIX +
                       self.settings.LONG_NAME_2_SHORT.get(best_by, best_by))
