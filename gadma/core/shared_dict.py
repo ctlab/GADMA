@@ -7,10 +7,10 @@ import numpy as np
 
 class SharedDict(object):
     def __init__(self, multiprocessing=True):
-        if multiprocessing:
-            self.dict = Manager().dict()
-        else:
-            self.dict = dict()
+#        if multiprocessing:
+        self.dict = Manager().dict()
+#        else:
+#            self.dict = dict()
 
     def default_key(self, group):
         return None
@@ -38,8 +38,8 @@ class SharedDict(object):
         if (group not in process_dict or
                 np.allclose(new_value, old_value) or new_value > old_value):
             process_dict[group] = copy.deepcopy(model)
-            copy_dict[process] = process_dict
-            self.dict.update(copy_dict)
+            self.dict[process] = process_dict
+#            print(self.dict)
             return True
         return False
 
@@ -57,8 +57,7 @@ class SharedDict(object):
             models = []
         models = models.extend(model)
         process_dict[group] = copy.deepcopy(models)
-        copy_dict[process] = process_dict
-        self.dict.update(copy_dict)
+        self.dict[process] = process_dict
 
     def get_models_for_process_in_group(self, process, group, key=None):
         if key is None:
