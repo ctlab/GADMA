@@ -5,3 +5,4 @@ Pillow>=4.2.1
 Cython
 mpmath
 nlopt
+ruamel.yaml
