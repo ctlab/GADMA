@@ -1,11 +1,8 @@
 language: python
 python:
  - "3.6"
+dist: bionic
 install:
- - pip install coloredlogs
- - pip3 install --upgrade pip
- - pip install --upgrade setuptools
- - chmod +x install
  - ./install
 script:
  - gadma --test
