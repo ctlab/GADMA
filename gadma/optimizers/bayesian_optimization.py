@@ -5,7 +5,7 @@ from ..utils import sort_by_other_list, choose_by_weight, eval_wrapper
 from ..utils import ensure_file_existence, fix_args
 
 from .. import GPyOpt
-import GPy
+from .. import GPy
 import operator as op
 from functools import partial, wraps
 import numpy as np
@@ -201,4 +201,4 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
         return OptimizerResult.from_GPyOpt_OptimizerResult(bo)
 
-register_global_optimizer('Bayesian_optimization', BayesianOptimizer)
+#register_global_optimizer('Bayesian_optimization', BayesianOptimizer)

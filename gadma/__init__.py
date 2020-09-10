@@ -23,6 +23,10 @@ try:
 except ImportError:
     dadi = None
 try:
+    import GPy
+except ImportError:
+    GPy = None
+try:
     import GPyOpt
 except ImportError:
     GPyOpt = None
@@ -31,6 +35,7 @@ PIL_available = PIL is not None
 matplotlib_available = matplotlib is not None
 moments_available = moments is not None
 dadi_available = dadi is not None
+GPy_available = GPy is not None
 GPyOpt_available = GPyOpt is not None
 
 from .data import *
