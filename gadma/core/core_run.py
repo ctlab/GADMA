@@ -130,13 +130,6 @@ class CoreRun(object):
                                                                  best_by,
                                                                  self.engine,
                                                                  x, y_dict)
-            l = self.shared_dict.get_models_for_group(best_by)
-            p = None
-            for x in l:
-                if x[0] == self.index:
-                    p = x[1][2][best_by]
-            print(self.index, self.y_best, p)
-            assert(self.y_best == p)
 #        if self.index in self.shared_dict:
 #            engine, x_best, y_dict = self.shared_dict[self.index][best_by]
 #            y_best = y_dict[best_by]
@@ -169,8 +162,6 @@ class CoreRun(object):
                 generate_code_to_file(x, self.engine, self.settings, save_code_file)
             except Exception as e:
                 pass
-        print(self.index, self.y_best, y, self.shared_dict)
-        assert(True)
 
     def draw_iter_callback(self, x, y):
         """

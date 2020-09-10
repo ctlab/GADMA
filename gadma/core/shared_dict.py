@@ -39,7 +39,6 @@ class SharedDict(object):
                 np.allclose(new_value, old_value) or new_value > old_value):
             process_dict[group] = copy.deepcopy(model)
             self.dict[process] = process_dict
-#            print(self.dict)
             return True
         return False
 
