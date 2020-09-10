@@ -2,6 +2,6 @@ language: python
 python:
  - "3.6"
 install:
- - ./install.sh
+ - ./install
 script:
  - python -m unittest discover -t .
