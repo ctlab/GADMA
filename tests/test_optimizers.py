@@ -124,6 +124,7 @@ class TestLocalOpt(TestBaseOptClass):
             self.assertEqual(optim.evaluate(f, optim.transform(x)), y)
 
     def f(self, x, y):
+        x = np.array(x)
         return np.sum(x ** 4 + 2 * x ** 3 - 12 * x ** 2 - 2 * x + 6)
 
     def test_optimization_run(self):
