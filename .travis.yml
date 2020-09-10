@@ -5,3 +5,4 @@ install:
  - ./install
 script:
  - python -m unittest discover -t .
+ - gadma --test
