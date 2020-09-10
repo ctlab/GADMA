@@ -255,7 +255,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         inds = choose_by_weight(range(len(x)), weights, num_inds)
 
         # Copy the array to change
-        x_mut = [np.array(x) for _ in range(attemts)]
+        x_mut = [np.array(x, dtype=object) for _ in range(attemts)]
 
         # Start mutation procedure
         for attempt in range(attemts):
