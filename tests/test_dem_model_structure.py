@@ -40,7 +40,7 @@ class TestModelStructure(unittest.TestCase):
                       f"sym_migs ({sym_migs}), fracs ({fracs}) {dm.variables}"
                 self.assertEqual(len(dm.variables), n_par, msg=msg)
 
-    def _test_likelihood_after_increase(self):
+    def test_likelihood_after_increase(self):
         for structure in TEST_STRUCTURES:
             for create_migs, create_sels, create_dyns, sym_migs, fracs in\
                     list(itertools.product([False, True],repeat=5)):
