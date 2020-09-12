@@ -197,6 +197,6 @@ class TestGeneticAlg(unittest.TestCase):
 
         def callback(x, y):
             pass
-        res = ga.optimize(f, dm.variables, verbose=0, maxeval=30,
+        res = ga.optimize(f, dm.variables, verbose=10, maxeval=30,
                           report_file='report_file', save_file='save_file',
                           eval_file='eval_file', callback=callback)
