@@ -218,7 +218,7 @@ class TestLocalOpt(TestBaseOptClass):
 
         for opt in all_local_optimizers():
             with self.subTest(local_optimizer=opt.id):
-                #print(opt.maximize)
+#                print(opt.id)
                 msg = f"(optimization {opt.id}, engine {engine_id})"
                 if will_collapse and opt.id != 'None' and opt.id != None:
                     self.assertRaises(AssertionError, opt.optimize, f,
@@ -227,7 +227,8 @@ class TestLocalOpt(TestBaseOptClass):
                     res = opt.optimize(f, variables, x0=x0,
                                        args=args, maxiter=2)
                     self.assertEqual(res.y, f(res.x, *args), msg=msg)
-                    self.assertTrue(res.y <= f(x0, *args), msg=msg + f" {res.y} > {f(x0, *args)}")
+                    self.assertTrue(res.y <= f(x0, *args),
+                                    msg=msg + f" {res.y} > {f(x0, *args)}")
 
     def test_1pop_example_1(self):
         for engine in all_engines():
@@ -238,7 +239,6 @@ class TestLocalOpt(TestBaseOptClass):
             self.run_example(engine.id, get_1pop_sim_example_2,
                              will_collapse=True)
 
-    def test_2pop_example_1(self):
-        for engine in all_engines():
-            self.run_example(engine.id, get_2pop_sim_example_1)
-
+#    def test_2pop_example_1(self):
+#        for engine in all_engines():
+#            self.run_example(engine.id, get_2pop_sim_example_1)
