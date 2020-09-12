@@ -44,10 +44,10 @@ class BinaryOperation(VariablesCombination):
             arg1_name = self.arg1
         if isinstance(self.arg2, (Variable, BinaryOperation)):
             arg2_name = self.arg2.name
+            if isinstance(self.arg2, BinaryOperation):
+                arg2_name = f"({arg2_name})"
         else:
             arg2_name = self.arg2
-            if isinstance(self.arg2, BinaryOperation):
-                arg2_name = "({arg2_name})"
         return f"{arg1_name} {self.operation_str()} {arg2_name}"
 
     def get_value(self, values):

@@ -89,7 +89,7 @@ def get_claic_score(func_ex, all_boot, p0, data, engine=None, args=(),
 
 def optimize_ga(data, model_func, engine, args=(),
                 lower_bound=None, upper_bound=None, p_ids=None,
-                X_init=None, Y_init=None,
+                X_init=None, Y_init=None, num_init=50,
                 gen_size=10, mut_strength=0.2, const_mut_strength=1.1,
                 mut_rate=0.2, const_mut_rate=1.2, eps=1e-2, n_stuck_gen=100,
                 n_elitism=2, p_mutation=0.3, p_crossover=0.3, p_random=0.2,
@@ -134,7 +134,8 @@ def optimize_ga(data, model_func, engine, args=(),
     :type X_init: list of lists
     :param Y_init: value of log-likelihood for values in X_init.
     :type Y_init: list
-
+    :param num_init: Number of initial points to start Genetic algorithm.
+    :type num_init: int
     :param gen_size: Size of generation of genetic algorithm. That is number
                      of individuals/solutions on each step of GA.
     :type gen_size: int
@@ -228,7 +229,7 @@ def optimize_ga(data, model_func, engine, args=(),
 
     opt = GlobalOptimizerAndLocalOptimizer(global_optimizer,
                                                  local_optimizer)
-    result = opt.optimize(f, variables, args=args, global_num_init=50,
+    result = opt.optimize(f, variables, args=args, global_num_init=num_init,
                           X_init=X_init, Y_init=Y_init, local_options={},
                           global_maxiter=ga_maxiter, local_maxiter=ls_maxiter,
                           global_maxeval=ga_maxeval, local_maxeval=ls_maxeval,

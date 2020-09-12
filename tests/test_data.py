@@ -31,6 +31,8 @@ SNP_DATA = os.path.join(DATA_PATH, "data.txt")
 DAMAGED_SNP_DATA = os.path.join(DATA_PATH, "damaged_data.txt")
 STRANGE_DATA = os.path.join(DATA_PATH, "some_strange_data")
 
+VCF_DATA = os.path.join(DATA_PATH, "data.vcf")
+POPMAP = os.path.join(DATA_PATH, "popmap")
 
 class TestDataHolder(unittest.TestCase):
 
@@ -54,6 +56,15 @@ class TestDataHolder(unittest.TestCase):
             data = data.fold()
         data = data.project(size)
         return data
+
+    def test_vcf_dataholder_init(self):
+        sample_sizes = [2,1]
+        outgroup = True
+        d = VCFDataHolder(vcf_file=VCF_DATA, popmap_file=POPMAP,
+                          sample_sizes=sample_sizes, outgroup=outgroup)
+        self.assertEqual(d.population_labels, set(['Pop1', 'Pop2']))
+        self.assertEqual(d.projections, sample_sizes)
+        self.assertEqual(d.outgroup, outgroup)
  
     def _test_sfs_reading(self, id):
         sizes = [None, (20,20), (10, 10), (10, 5)]
@@ -95,3 +106,11 @@ class TestDataHolder(unittest.TestCase):
     @unittest.skipIf(DADI_NOT_AVAILABLE, "Dadi module is not installed")
     def test_dadi_reading_fails(self):
         self._test_read_fails('dadi')
+
+    @unittest.skipIf(MOMENTS_NOT_AVAILABLE, "Moments module is not installed")
+    def test_dadi_reading(self):
+        self._test_sfs_reading('moments')
+
+    @unittest.skipIf(MOMENTS_NOT_AVAILABLE, "Moments module is not installed")
+    def test_dadi_reading_fails(self):
+        self._test_read_fails('moments')

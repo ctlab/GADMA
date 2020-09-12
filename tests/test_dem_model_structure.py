@@ -8,7 +8,6 @@ TEST_STRUCTURES = [(1,), (2,),
 
 BASE_TEST_STRUCTURES = [(2,), (2,1), (1, 1, 1)]
 
-
 class TestModelStructure(unittest.TestCase):
     def test_initialization(self):
         for structure in TEST_STRUCTURES:

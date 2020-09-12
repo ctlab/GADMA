@@ -113,6 +113,7 @@ class SettingsStorage(object):
             else:
                 if default_value == value:
                     we_check = False
+                    delattr(self, name)
 
         # 1. Base checks
         # 1.1 Check is int (positive)
@@ -422,7 +423,8 @@ class SettingsStorage(object):
                     except StopIteration:  # no function
                         pass
             elif ((name == "lower_bound" or name == "upper_bound") and
-                    self.custom_filename is not None):
+                    (self.custom_filename is not None or 
+                    self.model_func is not None)):
                 if self.parameter_identifiers is not None:
                     bound = list()
                     for p_id in self.parameter_identifiers:
@@ -694,3 +696,4 @@ class SettingsStorage(object):
                 variables.append(var_cls(name, domain=[low_bound, upp_bound]))
             return CustomDemographicModel(self.model_func, variables,
                                           gen_time, theta0, mut_rate)
+        print(self.custom_filename, self.model_func, self.lower_bound, self.upper_bound)

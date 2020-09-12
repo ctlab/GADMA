@@ -135,7 +135,7 @@ class TestLocalOpt(TestBaseOptClass):
         for opt in all_local_optimizers():
             opt.optimize(self.f, [var1, var2, var3], x0, args=(5,), verbose=0, maxiter=1)
 
-    def get_yri_ceu_ll(self, x_dict):
+    def get_yri_ceu_ll(self, x_dict, ns=[20,20]):
         def func(x_dict, ns, pts):
             # Define the grid we'll use
             xx = yy = dadi.Numerics.default_grid(pts)
@@ -160,6 +160,7 @@ class TestLocalOpt(TestBaseOptClass):
 
         pts = [40, 50, 60]
         data = dadi.Spectrum.from_file(YRI_CEU_DATA)
+        data = data.project(ns)
         func_ex = dadi.Numerics.make_extrap_log_func(func)
 
         model = func_ex(x_dict, data.sample_sizes, pts)
@@ -182,7 +183,8 @@ class TestLocalOpt(TestBaseOptClass):
         dic = {'nu1F': 2.0, 'nu2B': 0.1, 'nu2F': 2, 'm': 1,
                'Tp':  0.2, 'T': 0.2}
 
-        data = SFSDataHolder(YRI_CEU_DATA)
+        proj = (10, 10)
+        data = SFSDataHolder(YRI_CEU_DATA, projections=proj)
         d = DadiEngine(model=dm, data=data)
         values = [dic[var.name] for var in dm.variables]
 
@@ -206,7 +208,8 @@ class TestLocalOpt(TestBaseOptClass):
                                    args=args, maxiter=2)
                 self.assertEqual(res.y, f(res.x, *args))
                 self.assertEqual(res.y, -self.get_yri_ceu_ll(
-                    {var.name: val for var, val in zip(dm.variables, res.x)}))
+                    {var.name: val for var, val in zip(dm.variables, res.x)},
+                    proj))
                 self.assertTrue(res.y <= f(values, *args))
 
     def run_example(self, engine_id, example_func, will_collapse=False):

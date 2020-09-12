@@ -42,11 +42,11 @@ class VCFDataHolder(DataHolder):
     """
     def __init__(self, vcf_file, popmap_file, sample_sizes, outgroup,
                  population_labels=None, seq_len=None,  bed_file=None):
-        if pop_labels is None:
-            pop_labels = set()
+        if population_labels is None:
+            population_labels = set()
             with open(popmap_file) as f:
                 for line in f:
-                    pop_labels.add(line.split()[-1])
+                    population_labels.add(line.split()[-1])
         super(VCFDataHolder, self).__init__(vcf_file, sample_sizes, outgroup,
                                             population_labels, seq_len)
         self.popmap_file = popmap_file

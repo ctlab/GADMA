@@ -12,11 +12,21 @@ except ImportError:
 
 import numpy as np
 import os
+import operator as op
 
 EXAMPLE_FOLDER = os.path.join(os.path.dirname(__file__), "test_data")
 
 
 class TestModels(unittest.TestCase):
+    def test_init(self):
+        var = TimeVariable('t')
+        m = Model(raise_excep=False)
+        m.add_variable(var)
+        m.add_variable(1.0)
+        m = Model(raise_excep=True)
+        m.add_variable(var)
+        self.assertRaises(ValueError, m.add_variable, 1.0)
+        
     def dadi_wrapper(self, func):
         def wrapper(param, ns, pts):
             xx = dadi.Numerics.default_grid(pts)
@@ -49,6 +59,7 @@ class TestModels(unittest.TestCase):
                 func = getattr(module, 'model_func')
                 variables = self.get_variables_for_gut_2009()[:-1] 
                 dm = CustomDemographicModel(func, variables)
+                dm.as_custom_string([var.resample() for var in dm.variables])
 
     @unittest.skipIf(DADI_NOT_AVAILABLE, "Dadi module is not installed")
     def test_dadi_1pop_0(self):
@@ -151,6 +162,13 @@ class TestModels(unittest.TestCase):
         n_par_without_dyns = dm.get_number_of_parameters(dic)
         self.assertEqual(n_par_before, n_par_without_dyns + 2)
 
+        dm.unfix_if_fixed(Dyn)
+        n_par_without_one = dm.get_number_of_parameters(dic)
+        self.assertEqual(n_par_without_dyns + 1, n_par_without_one)
+        dm.unfix_if_fixed(Dyn)
+        n_par_same = dm.get_number_of_parameters(dic)
+        self.assertEqual(n_par_same, n_par_without_one)
+
         dm.unfix_dynamics()
         n_par_with_dyns = dm.get_number_of_parameters(dic)
         self.assertEqual(n_par_before, n_par_with_dyns)
@@ -167,3 +185,71 @@ class TestModels(unittest.TestCase):
 #        dm.events[2].set_value(nu2F, 1.0)
 #        n_par_after = dm.get_number_of_parameters(dic)
 #        self.assertEqual(n_par_sud_model, n_par_after + 1)
+
+    def test_printing_and_translation(self):
+        nu1F, nu2B, nu2F, m, Tp, T, Dyn = self.get_variables_for_gut_2009()
+        Dyn2 = DynamicVariable('SudDyn')
+
+        dm = EpochDemographicModel()
+        dm.add_epoch(Tp, [nu1F], dyn_args=[Dyn2])
+        dm.add_split(0, [nu1F, nu2B])
+        dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', Dyn])
+
+        dic = {'nu1F': 1.880, nu2B: 0.0724, 'nu2F': 1.764, 'm': 0.930,
+               'Tp':  0.363, 'T': 0.112, 'Dyn': 'Exp', 'SudDyn': 'Sud'}
+
+        data = SFSDataHolder(YRI_CEU_DATA)
+        for engine in all_engines():
+            with self.subTest(engine=engine.id):
+                if engine.id == 'dadi':
+                    args = ([5, 10, 15],)
+                else:
+                    args = ()
+                engine.set_model(dm)
+                engine.set_data(data)
+                Nanc = engine.get_theta(dic, *args)
+                tr = dm.translate_units(dic, Nanc)
+                dm.as_custom_string(dic)
+
+    def test_var_combinations(self):
+        var1 = PopulationSizeVariable('nu1')
+        var2 = FractionVariable('f')
+
+        values = [1.0, 2.0]
+        const = 5
+
+        comb = VariablesCombination()
+        comb.__str__()
+
+        binary_classes = [Addition, Subtraction, Multiplication, Division]
+        strings = ['+', '-', '*', '/'] 
+        for op_f, cls, op_str in zip([op.add, op.sub, op.mul, op.truediv],
+                                     binary_classes,
+                                     strings):
+            with self.subTest(operator=op_str):
+                obj = cls(var1, var2)
+                self.assertEqual(obj.get_value(values), op_f(*values))
+                self.assertEqual(obj.operation_str(), op_str)
+                obj.string_repr(values)
+                self.assertEqual(obj.name, f'nu1 {op_str} f')
+
+                obj = cls(var1, const)
+                self.assertEqual(obj.get_value(values[:1]),
+                                 op_f(values[0], const))
+                self.assertEqual(obj.operation_str(), op_str)
+                obj.string_repr(values[:1])
+                self.assertEqual(obj.name, f'nu1 {op_str} 5')
+
+                for cls2, op_str2 in zip(binary_classes, strings):
+                    with self.subTest(operator_2=op_str2):
+                        obj2 = cls2(var1, const)
+                        obj = cls(var2, obj2)
+                        op_f2 = obj2.operation
+                        self.assertEqual(obj.get_value(values),
+                                         op_f(values[1], op_f2(values[0],
+                                              const)))
+                        obj.string_repr(values)
+                        self.assertEqual(obj.name,
+                                         f'f {op_str} (nu1 {op_str2} 5)')
+
+                self.assertRaises(AssertionError, cls, const, const)

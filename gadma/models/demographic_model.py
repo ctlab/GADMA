@@ -198,8 +198,8 @@ class EpochDemographicModel(DemographicModel):
             if isinstance(event, Epoch) and event.dyn_args is not None:
                 for dyn_arg in event.dyn_args:
                     if isinstance(dyn_arg, Variable):
-                        super(DemographicModel, self).unfix_variable(dyn_arg)
-                        event.unfix_variable(dyn_arg)
+                        super(DemographicModel, self).unfix_if_fixed(dyn_arg)
+                        event.unfix_if_fixed(dyn_arg)
 
     def get_number_of_parameters(self, values):
         """

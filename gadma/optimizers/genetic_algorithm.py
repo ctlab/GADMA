@@ -484,6 +484,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             if not isinstance(variables[i], DiscreteVariable):
                 x[i] = min(x[i], variables[i].domain[1])
                 x[i] = max(x[i], variables[i].domain[0])
+                assert variables[i].correct_value(x[i])
             else:
                 if not variables[i].correct_value(x[i]):
                     raise ValueError(f"Value ({x[i]}) of Discrete variable "

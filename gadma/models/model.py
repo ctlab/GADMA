@@ -86,7 +86,7 @@ class Model(object):
 
     def unfix_if_fixed(self, variable):
         try:
-            self.unfix(variable)
+            self.unfix_variable(variable)
         except ValueError:
             pass
 

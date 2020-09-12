@@ -76,7 +76,7 @@ class DadiEngine(DadiOrMomentsEngine):
         var2value = self.model.var2value(values)
         if isinstance(self.model, CustomDemographicModel):
             vals = [var2value[var] for var in self.model.variables]
-            return self.model.function(vals, ns, dt_fac)
+            return self.model.function(vals, ns, pts)
 
         dadi = self.base_module
 

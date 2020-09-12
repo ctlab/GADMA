@@ -5,6 +5,9 @@ from .test_optimizers import get_func, get_1pop_sim_example_1
 from .test_optimizers import get_1pop_sim_example_2, get_2pop_sim_example_1
 from .test_data import YRI_CEU_DATA
 
+EXAMPLE_FOLDER = os.path.join(os.path.dirname(__file__), "test_data")
+EXAMPLE_DATA = os.path.join(EXAMPLE_FOLDER, "YRI_CEU.fs")
+
 class TestGeneticAlg(unittest.TestCase):
     def check_diff(self, diff, ind, msg):
         self.assertTrue(not diff[ind], msg=f"Arrays are equal "
@@ -176,7 +179,7 @@ class TestGeneticAlg(unittest.TestCase):
         dm.add_split(0, [nu1F, nu2B])
         dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', Dyn])
 
-        data = SFSDataHolder(YRI_CEU_DATA)
+        data = SFSDataHolder(YRI_CEU_DATA, projections=(6, 6))
         engine = get_engine('moments')
         engine.set_model(dm)
         engine.set_data(data)
@@ -203,3 +206,29 @@ class TestGeneticAlg(unittest.TestCase):
 
     def test_run_gadma_test(self):
         sys.argv = ['python3', '--test']
+
+    def test_inference(self):
+        for engine in all_engines():
+            with self.subTest(engine=engine.id):
+                if engine.id == "dadi":
+                    args = ([5, 10, 15],)
+                else:
+                    args = ()
+                filename = f"demographic_model_{engine.id}_YRI_CEU.py"
+                location = os.path.join(EXAMPLE_FOLDER, filename)
+                spec = importlib.util.spec_from_file_location("module",
+                                                              location)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                sys.modules['module'] = module
+                func = getattr(module, 'model_func')
+
+                data = engine.base_module.Spectrum.from_file(EXAMPLE_DATA)
+
+                p_ids = ['n', 'n', 'n', 'm', 't', 't']
+                optimize_ga(data, func, engine.id, args=args,
+                    p_ids = p_ids, num_init=2, gen_size=2,
+                    ga_maxiter=1, ls_maxiter=1,
+                    verbose=1, callback=None,
+                    save_file='save_file', eval_file='eval_file',
+                    report_file='report_file')
