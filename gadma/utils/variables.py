@@ -144,6 +144,14 @@ class DiscreteVariable(Variable):
         super(DiscreteVariable, self).__init__(
                     name, 'discrete', domain, rand_gen)
 
+    @property
+    def domain(self):
+        return self._domain
+
+    @domain.setter
+    def domain(self, domain):
+        self._domain = np.array(domain, dtype=object)
+
     def get_bounds(self):
         """
         Returns bounds - minimum and maximum over domain of the variable.

@@ -23,20 +23,21 @@ class TestGeneticAlg(unittest.TestCase):
 
         n_var = 5
         variables = []
-        for i in range(n_var):
+        for i in range(n_var - 1):
             variables.append(ContinuousVariable('var%d' % i, domain=[0,1]))
+        variables.append(DiscreteVariable('var_disc_%d' % i,
+                                          domain=[2, 3, 'Ex']))
         variables[0].domain = [90, 100]
         x_list = [var.resample() for var in variables]
         x_arr = WeightedMetaArray(x_list)
 
-
         for ind in range(n_var):
             for mut_type in mut_types:
-                with self.subTest(mut_type=mut_type, index=ind,
+                with self.subTest(mut_type=mut_type,
                                   mut='full_mutation'):
                     ga.mut_strength = 1.0
                     x_mut = ga.mutation(x_arr, variables, mut_type, True)
-                    self.assertTrue(np.all(x_mut != x_arr))
+                    self.assertTrue(np.all(x_mut != x_arr), msg=str((x_mut, x_arr)))
                 with self.subTest(mut_type=mut_type, index=ind,
                                   mut='mutation_by_ind'):
                     msg = f"(mut. type is {mut_type}, index is {ind})"
@@ -60,10 +61,18 @@ class TestGeneticAlg(unittest.TestCase):
                     self.assertEqual(x_mut2.metadata[-1], 'm')
 
         for _ in range(3):
-            x_arr = ga.mutation_by_ind(x_arr, variables, 3,
+            x_arr = ga.mutation_by_ind(x_arr, variables, 2,
                                        mutation_type=mut_type,
-                                       one_fifth_rule=True)
-        self.assertEqual(x_arr.weights[3], 4, msg=msg)
+                                       one_fifth_rule=False)
+        self.assertEqual(x_arr.weights[2], 4, msg=msg)
+
+        # fails
+        for ind in range(n_var):
+            self.assertRaises(ValueError, ga.mutation_by_ind, x_arr,
+                              variables, ind, mutation_type='bad_type')
+        self.assertRaises(ValueError, ga.mutation, x_arr,
+                          variables, mutation_type='bad_type')
+
 
     def test_crossover(self):
         cross_types = ['uniform', 'k_point']
@@ -72,8 +81,10 @@ class TestGeneticAlg(unittest.TestCase):
 
         n_var = 20
         variables = []
-        for i in range(n_var):
+        for i in range(n_var - 1):
             variables.append(ContinuousVariable('var%d' % i, domain=[0,1]))
+        variables.append(DiscreteVariable('var_disc_%d' % i,
+                                          domain=[2, 3, 'Ex']))
         variables[0].domain = [90, 100]
         par1 = [var.resample() for var in variables]
         par2 = [var.resample() for var in variables]
@@ -91,6 +102,15 @@ class TestGeneticAlg(unittest.TestCase):
 
                     self.assertEqual(ch.metadata, 'c', msg=msg)
 
+                    chs = ga.crossover(par1, par2, variables,
+                                       crossover_type=cross_type, k=k,
+                                       one_child=False)
+                    self.assertEqual(len(chs), 2)
+
+        # fails
+        self.assertRaises(ValueError, ga.crossover, par1, par2,
+                          variables, crossover_type='bad_type')
+
     def test_selection(self):
         def f(x):
             return np.sum(x)
@@ -107,6 +127,12 @@ class TestGeneticAlg(unittest.TestCase):
         for sel_type in sel_types:
             X_gen_new, Y_gen_new = ga.selection(f, variables, X_gen,
                                                 selection_type=sel_type)
+            X_gen_new, Y_gen_new = ga.selection(f, variables, X_gen,
+                                                selection_type=sel_type,
+                                                selection_random=True)
+        # fails
+        self.assertRaises(ValueError, ga.selection, f,
+                          variables, X_gen, selection_type='bad_type')
 
 
     def run_example(self, engine_id, example_func):
@@ -168,3 +194,9 @@ class TestGeneticAlg(unittest.TestCase):
         ls = get_local_optimizer("BFGS")
         ls.maximize = True
         #print(ls.optimize(f, engine.model.variables, x0, verbose=0, maxiter=1))
+
+        def callback(x, y):
+            pass
+        res = ga.optimize(f, dm.variables, verbose=0, maxeval=30,
+                          report_file='report_file', save_file='save_file',
+                          eval_file='eval_file', callback=callback)

@@ -159,13 +159,15 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         if mutation_type == 'uniform':
             # Case 1 Discrete variable
             if isinstance(var, DiscreteVariable):
-                x_mut[index] = np.random.choice(var.domain)
+                while x[index] == x_mut[index] and len(var.domain) > 1:
+                    x_mut[index] = np.random.choice(var.domain)
             # Case 2 Continous variable
             else:
                 x_mut[index] = np.random.uniform(var.domain[0], var.domain[1])
         # 2. Resample type
         elif mutation_type == 'resample':
-            x_mut[index] = var.resample()
+            while x[index] == x_mut[index] and len(var.domain) > 1:
+                x_mut[index] = var.resample()
         # 3. Gaussian type
         elif mutation_type == 'gaussian':
             # Choose sign for change
@@ -481,7 +483,8 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                 x[i] = max(x[i], variables[i].domain[0])
             else:
                 if not variables[i].correct_value(x[i]):
-                    raise ValueError("Value of Discrete variable is bad.")
+                    raise ValueError(f"Value ({x[i]}) of Discrete variable "
+                                     f"is bad. Domain: {variables[i].domain}")
         return x
 
     def is_stopped(self, n_gen, n_eval, impr_gen=None, maxiter=None,
