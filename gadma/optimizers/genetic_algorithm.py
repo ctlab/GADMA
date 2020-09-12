@@ -295,12 +295,16 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         """
         assert len(parent1) == len(parent2)
 
+        parent1 = np.array(parent1, dtype=object)
+        parent2 = np.array(parent2, dtype=object)
+
         # Create two children - copies of parents
         child1 = WeightedMetaArray(parent1, dtype=object)
         child2 = WeightedMetaArray(parent2, dtype=object)
 
         i_att = 0
         while len(parent1) > 1 and np.all(child1 == parent1) and i_att < 5:
+            print('in while')
             i_att += 1
             if crossover_type == 'k_point':
                 assert k > 0
