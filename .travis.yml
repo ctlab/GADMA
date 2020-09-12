@@ -7,8 +7,7 @@ install:
  - pip install codecov
  - ./install
 script:
- - nosetests -vs tests --with-coverage --cover-package gadma \
-    --cover-branches --cover-erase --cover-xml --cover-inclusive tests
+ - nosetests -vs tests --with-coverage --cover-package gadma     --cover-branches --cover-erase --cover-xml --cover-inclusive tests
  - python3 -m codecov
 after_success:
  - bash <(curl -s https://codecov.io/bash)
