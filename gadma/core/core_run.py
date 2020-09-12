@@ -341,7 +341,7 @@ class CoreRun(object):
 
         result = self.run_without_increase(initial_kwargs)
         while (self.model.get_structure() != self.settings.final_structure):
-            self.model, X_init = self.model.increase_structure(result.X_out)
+            self.model, X_init = self.model.increase_structure(X=result.X_out)
             Y_init = copy.copy(result.Y_out)
             self.optimize_kwargs['X_init'] = X_init
             self.optimize_kwargs['Y_init'] = Y_init
