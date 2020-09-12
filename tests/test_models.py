@@ -242,8 +242,8 @@ class TestModels(unittest.TestCase):
 
                 for cls2, op_str2 in zip(binary_classes, strings):
                     with self.subTest(operator_2=op_str2):
-                        obj2 = cls2(var1, const)
-                        obj = cls(var2, obj2)
+                        obj2 = cls2(var2, const)
+                        obj = cls(var1, obj2)
                         op_f2 = obj2.operation
                         self.assertEqual(obj.get_value(values),
                                          op_f(values[1], op_f2(values[0],
