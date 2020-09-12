@@ -200,3 +200,6 @@ class TestGeneticAlg(unittest.TestCase):
         res = ga.optimize(f, dm.variables, verbose=10, maxeval=30,
                           report_file='report_file', save_file='save_file',
                           eval_file='eval_file', callback=callback)
+
+    def test_run_gadma_test(self):
+        sys.argv = ['python3', '--test']

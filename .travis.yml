@@ -6,7 +6,6 @@ install:
  - pip install coverage
  - ./install
 script:
- - gadma --test
  - coverage run -m unittest discover -t .
 after_success:
  - bash <(curl -s https://codecov.io/bash)
