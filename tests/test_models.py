@@ -250,6 +250,6 @@ class TestModels(unittest.TestCase):
                                               const)))
                         obj.string_repr(values)
                         self.assertEqual(obj.name,
-                                         f'f {op_str} (nu1 {op_str2} 5)')
+                                         f'nu1 {op_str} (f {op_str2} 5)')
 
                 self.assertRaises(AssertionError, cls, const, const)
