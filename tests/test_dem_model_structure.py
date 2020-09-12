@@ -6,6 +6,8 @@ TEST_STRUCTURES = [(1,), (2,),
                    (1,1), (2,1), (1,2),
                    (1,1,1)]
 
+BASE_TEST_STRUCTURES = [(2,), (2,1), (1, 1, 1)]
+
 
 class TestModelStructure(unittest.TestCase):
     def test_initialization(self):
@@ -41,7 +43,7 @@ class TestModelStructure(unittest.TestCase):
                 self.assertEqual(len(dm.variables), n_par, msg=msg)
 
     def test_likelihood_after_increase(self):
-        for structure in TEST_STRUCTURES:
+        for structure in BASE_TEST_STRUCTURES:
             for create_migs, create_sels, create_dyns, sym_migs, fracs in\
                     list(itertools.product([False, True],repeat=5)):
                 create_sels = False
@@ -58,11 +60,11 @@ class TestModelStructure(unittest.TestCase):
                 variables = dm.variables
                 x = [var.resample() for var in variables]
 
-
+                check_ll = np.random.choice([True, False], p=[1/6, 5/6])
                 for engine in all_engines():
                     engine.set_model(dm)
                     if engine.id == 'dadi':
-                        sizes = [20 for _ in range(len(structure))]
+                        sizes = [10 for _ in range(len(structure))]
                         args = ([5, 10, 15],)  # pts
                     else:
                         sizes = [4 for _ in range(len(structure))]
@@ -73,9 +75,10 @@ class TestModelStructure(unittest.TestCase):
 #                    print(data)
 #                    print(type(data))
 
-                    # get ll of data
-                    ll_true = engine.evaluate(x, *args)
-
+                    if check_ll:
+                        # get ll of data
+                        ll_true = engine.evaluate(x, *args)
+                        random_int = np.random.choice(range(len(structure)))
                     # increase structure
                     for i in range(len(structure)):
                         new_structure = list(copy.copy(structure))
@@ -93,9 +96,10 @@ class TestModelStructure(unittest.TestCase):
                             new_structure, [x])
                         engine.set_model(new_dm)
 #                        print("!!!", dm.var2value(x), new_dm.var2value(new_X[0]))
-                        new_ll = engine.evaluate(new_X[0], *args)
-                        self.assertTrue(np.allclose(ll_true, new_ll),
-                                        msg=f"{ll_true} != {new_ll} : " + msg)
+                        if check_ll and random_int == i:
+                            new_ll = engine.evaluate(new_X[0], *args)
+                            self.assertTrue(np.allclose(ll_true, new_ll),
+                                            msg=f"{ll_true} != {new_ll} : " + msg)
 
     def test_fails(self):
         bad_struct = [[0], [0, 1], [1, 0]]

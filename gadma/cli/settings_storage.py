@@ -217,7 +217,7 @@ class SettingsStorage(object):
 
         # 1.10 Check that identifiers are good:
         if name == "parameter_identifiers":
-            print(name, value)
+#            print(name, value)
             if isinstance(value, str):
                 value = [x for x in value.split(",")]
             value = [x.strip() for x in value]
@@ -413,7 +413,7 @@ class SettingsStorage(object):
                         p_ids = line.strip().split("=")[0].split(",")
                         p_ids = [x.strip() for x in p_ids]
                         self.__setattr__("parameter_identifiers", p_ids)
-                        print(f"Found parameter identifiers in file: {p_ids}")
+#                        print(f"Found parameter identifiers in file: {p_ids}")
                         return p_ids
                     except ValueError:  # wrong list
                         pass
@@ -517,7 +517,7 @@ class SettingsStorage(object):
             attr_name = attr_name.replace(" ", "_")
             attr_name = attr_name.replace("'", "_")
             attr_name = attr_name.replace("__", "_")
-            print(attr_name)
+#            print(attr_name)
             if attr_name in CHANGED_IDENTIFIERS:
                 attr_name = CHANGED_IDENTIFIERS[attr_name]
                 setting_name = attr_name.replace("_", " ").capitalize()
