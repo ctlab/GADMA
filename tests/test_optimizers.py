@@ -166,7 +166,7 @@ class TestLocalOpt(TestBaseOptClass):
         ll_model = dadi.Inference.ll_multinom(model, data)
         return ll_model
 
-    def _test_yri_ceu_example(self):
+    def test_yri_ceu_example(self):
         nu1F = PopulationSizeVariable('nu1F')
         nu2B = PopulationSizeVariable('nu2B')
         nu2F = PopulationSizeVariable('nu2F')
@@ -209,7 +209,7 @@ class TestLocalOpt(TestBaseOptClass):
                     {var.name: val for var, val in zip(dm.variables, res.x)}))
                 self.assertTrue(res.y <= f(values, *args))
 
-    def run_example(self, engine_id, example_func):
+    def run_example(self, engine_id, example_func, will_collapse=False):
         args = ()
         if engine_id == 'dadi':
             args = ([40,50,60],)
@@ -220,21 +220,25 @@ class TestLocalOpt(TestBaseOptClass):
             with self.subTest(local_optimizer=opt.id):
                 #print(opt.maximize)
                 msg = f"(optimization {opt.id}, engine {engine_id})"
-                res = opt.optimize(f, variables, x0=x0,
-                                   args=args, maxiter=2)
-                self.assertEqual(res.y, f(res.x, *args), msg=msg)
-                self.assertTrue(res.y <= f(x0, *args), msg=msg + f" {res.y} > {f(x0, *args)}")
+                if will_collapse and opt.id != 'None' and opt.id != None:
+                    self.assertRaises(AssertionError, opt.optimize, f,
+                                      variables, x0=x0, args=args, maxiter=2)
+                else:
+                    res = opt.optimize(f, variables, x0=x0,
+                                       args=args, maxiter=2)
+                    self.assertEqual(res.y, f(res.x, *args), msg=msg)
+                    self.assertTrue(res.y <= f(x0, *args), msg=msg + f" {res.y} > {f(x0, *args)}")
 
     def test_1pop_example_1(self):
         for engine in all_engines():
             self.run_example(engine.id, get_1pop_sim_example_1)
 
-    def _test_1pop_example_2(self):
+    def test_1pop_example_2(self):
         for engine in all_engines():
-            with self.assertRaises(AssertionError):
-                self.run_example(engine.id, get_1pop_sim_example_2)
+            self.run_example(engine.id, get_1pop_sim_example_2,
+                             will_collapse=True)
 
-    def _test_2pop_example_1(self):
+    def test_2pop_example_1(self):
         for engine in all_engines():
             self.run_example(engine.id, get_2pop_sim_example_1)
 

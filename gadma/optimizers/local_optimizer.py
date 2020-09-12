@@ -192,6 +192,7 @@ class ScipyOptimizer(LocalOptimizer):
         :param save_file: File to dump current state after each iteration.
         :type save_file: str
         """
+        self.check_variables(variables)
         # Create logging files
         if eval_file is not None:
             ensure_file_existence(eval_file)
@@ -345,6 +346,7 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
     def optimize(self, f, variables, x0, args=(), options={},
                  linear_constrain=None, maxiter=None, maxeval=None,
                  verbose=0, callback=None, eval_file=None, report_file=None):
+        self.check_variables(variables)
         x0 = np.array(x0, dtype=np.float)
         x0_in_opt = self.optimizer.transform(self.transform(x0))
         bounds = self.transform([var.domain for var in variables])

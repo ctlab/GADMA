@@ -119,7 +119,7 @@ class TestEngines(unittest.TestCase):
         return data, dm, values, ll
 
 
-    def _test_dadi_engime(self):
+    def test_dadi_engime(self):
         engine = get_engine('dadi')
 
         ns = (4, 4, 4)
