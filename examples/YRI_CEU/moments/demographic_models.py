@@ -4,20 +4,7 @@ Custom demographic model for our example.
 import numpy
 import moments
 import time
-def prior_onegrow_mig(params, ns):
-    """
-    Model with growth, split, bottleneck in pop2, exp recovery, migration
-
-    nu1F: The ancestral population size after growth. (Its initial size is
-          defined to be 1.)
-    nu2B: The bottleneck size for pop2
-    nu2F: The final size for pop2
-    m: The scaled migration rate
-    Tp: The scaled time between ancestral population growth and the split.
-    T: The time between the split and present
-
-    ns = n1,n2: Size of fs to generate.
-    """
+def model_func(params, ns):
     nu1F, nu2B, nu2F, m, Tp, T = params
     # f for the equilibrium ancestral population
     sts = moments.LinearSystem_1D.steady_state_1D(ns[0]+ns[1])
