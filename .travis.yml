@@ -4,6 +4,7 @@ python:
 dist: bionic
 install:
  - pip install coverage
+ - pip install codecov
  - ./install
 script:
  - nosetests -vs tests --with-coverage --cover-package stdpopsim maintenance \
