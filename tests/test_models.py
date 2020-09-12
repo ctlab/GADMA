@@ -13,7 +13,8 @@ except ImportError:
 import numpy as np
 import os
 
-EXAMPLE_FOLDER = os.path.join('examples', 'YRI_CEU')
+EXAMPLE_FOLDER = os.path.join(os.path.dirname(__file__), "test_data")
+
 
 class TestModels(unittest.TestCase):
     def dadi_wrapper(self, func):
@@ -38,8 +39,8 @@ class TestModels(unittest.TestCase):
     def test_custom_dm_init(self):
         for engine in all_engines():
             with self.subTest(engine=engine.id):
-                location = os.path.join(EXAMPLE_FOLDER, engine.id,
-                                        'demographic_models.py')
+                filename = f"demographic_model_{engine.id}_YRI_CEU.py"
+                location = os.path.join(EXAMPLE_FOLDER, filename)
                 spec = importlib.util.spec_from_file_location("module",
                                                               location)
                 module = importlib.util.module_from_spec(spec)

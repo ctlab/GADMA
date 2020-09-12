@@ -304,7 +304,6 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
 
         i_att = 0
         while len(parent1) > 1 and np.all(child1 == parent1) and i_att < 5:
-            print('in while')
             i_att += 1
             if crossover_type == 'k_point':
                 assert k > 0
