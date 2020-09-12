@@ -100,11 +100,12 @@ class Model(object):
             ret_dict = {var: value for var, value in zip(self.variables,
                                                                values)}
         elif isinstance(values, dict):
+            ret_dict = {}
             for key in values:
                 if isinstance(key, str):
-                    ret_dict = {var: values[var.name] for var in self.variables}
+                    ret_dict[self.get_variable(key)] = values[key]
                 elif isinstance(key, Variable):
-                    ret_dict = {var: values[var] for var in self.variables}
+                    ret_dict[key] = values[key]
         else:
             raise TypeError("Values are either not list nor dict.")
 

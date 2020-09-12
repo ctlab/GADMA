@@ -2,6 +2,7 @@ import numpy as np
 
 from . import Model
 from ..utils import Variable, FractionVariable, float_repr
+import copy
 
 
 class Event(Model):
@@ -11,15 +12,15 @@ class Event(Model):
     def __init__(self):
         super(Event, self).__init__(raise_excep=False)
 
-    def set_value(self, variable, value):
-        """
-        Fixes variable `variable` to the value of `value`. This variable is
-        no longer available after this operation.
-
-        :param variable: Variable of the event to fix.
-        :param value: New constant value of the variable.
-        """
-        raise NotImplementedError()
+#    def set_value(self, variable, value):
+#        """
+#        Fixes variable `variable` to the value of `value`. This variable is
+#        no longer available after this operation.
+#
+#        :param variable: Variable of the event to fix.
+#        :param value: New constant value of the variable.
+#        """
+#        raise NotImplementedError()
 
     def as_custom_string(self, values):
         """
@@ -79,24 +80,26 @@ class Epoch(Event):
         self.add_variables(dyn_args)
         self.add_variables(mig_args)
 
-    def set_value(self, variable, value):
-        # check dynamics first as they are more probable in our situation
-        for i, dyn_arg in enumerate(self.dyn_args):
-            if variable is dyn_arg:
-                self.dyn_args[i] = value
-                return
-        if variable is self.time_arg:
-            self.time_arg = value
-        for i, migs in enumerate(self.mig_args):
-            for j, mig_arg in enumerate(migs):
-                if variable is mig_arg:
-                    self.mig_args[i][j] = value
-                return
-        for i, sel_arg in enumerate(self.sel_args):
-            if variable is sel_arg:
-                self.sel_args[i] = value
-                return
-
+#    def set_value(self, variable, value):
+#        # check dynamics first as they are more probable in our situation
+#        for i, dyn_arg in enumerate(self.dyn_args):
+#            if variable is dyn_arg:
+#                self.dyn_args[i] = value
+#                return
+#        if variable is self.time_arg:
+#            self.time_arg = value
+#        for i, migs in enumerate(self.mig_args):
+#            for j, mig_arg in enumerate(migs):
+#                if variable is mig_arg:
+#                    self.mig_args[i][j] = value
+#                return
+#        for i, sel_arg in enumerate(self.sel_args):
+#            if variable is sel_arg:
+#                self.sel_args[i] = value
+#                return
+#        raise ValueError(f"Event has such variable {variable}. "
+#                         f"Available variables: {self.variables}")
+#
     def as_custom_string(self, values):
         _help_f = lambda x, y: f"{y}" if x == "" else  f"{y}({x})"
         help_f = lambda x: _help_f(*self._arg_val_repr(x, values))
@@ -127,6 +130,21 @@ class Epoch(Event):
             dyns_repr = "[{', '.join(['Sud' for _ in self.size_args])}]"
         all_repr.append(dyns_repr)
         return f"[ {', '.join(all_repr)} ]"
+
+    def get_vars_not_in_init_args(self):
+        variables = copy.copy(self.variables)
+        for arg in self.init_size_args:
+            if isinstance(arg, Variable):
+                if arg in variables:
+                    variables.remove(arg)
+            elif isinstance(arg, Model):
+                rem_vars = []
+                for var in variables:
+                    if var in arg.variables:
+                        rem_vars.append(var)
+                for var in rem_vars:
+                    variables.remove(var)
+        return variables
 
 
 class Split(Event):

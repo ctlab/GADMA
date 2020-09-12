@@ -38,6 +38,11 @@ class StructureDemographicModel(EpochDemographicModel):
                  have_migs, have_sels, have_dyns, sym_migs, frac_split,
                  gen_time=None, theta0=None, mu=None):
         super(StructureDemographicModel, self).__init__(gen_time, theta0, mu)
+        if np.any(np.array(initial_structure) > np.array(final_structure)):
+            raise ValueError(f"Elements of the initial structure "
+                             f"({initial_structure}) "
+                             f"could not be greater than elements of the "
+                             f"final structure ({final_structure}).")
         self.initial_structure = np.array(initial_structure)
         self.final_structure = np.array(final_structure)
         self.have_migs = have_migs
@@ -57,12 +62,26 @@ class StructureDemographicModel(EpochDemographicModel):
         """
         super(StructureDemographicModel, self).__init__(self.gen_time,
                                                         self.theta0, self.mu)
-        assert np.all(np.array(structure) >= self.initial_structure)
-        assert np.all(np.array(structure) <= self.final_structure)
+        if not (np.all(np.array(structure) >= self.initial_structure)):
+            raise ValueError(f"Elements of model structure ({structure}) "
+                             f"could not be smaller than elements of the "
+                             f"initial structure ({self.initial_structure}).")
+
+        if not (np.all(np.array(structure) <= self.final_structure)):
+            raise ValueError(f"Elements of model structure ({structure}) "
+                             f"could not be greater than elements of the final "
+                             f"structure ({self.final_structure}).")
+        if np.any(np.array(structure) <= 0):
+            raise ValueError(f"Elements of model structure ({structure}) "
+                             "should be positive (> 0).")
+
         if list(structure) == [1]:
             return self
         i_int = 0
-        size_vars = [PopulationSizeVariable('nu')]
+        if self.frac_split:
+            size_vars = [1.0]
+        else:
+            size_vars = [PopulationSizeVariable('nu')]
         for n_pop in range(1, len(structure) + 1):
             n_int = structure[n_pop - 1]
             if n_pop == 1:
@@ -131,12 +150,21 @@ class StructureDemographicModel(EpochDemographicModel):
                 raise ValueError("Event is not Split or Epoch.")
         return structure
 
-    def increase_structure(self, X=None):
+    def increase_structure(self, new_structure=None, X=None):
         """
         Increase structure of the model. Raises ValueError if structure is
-        equal or greater than `final_structure`.
+        equal or greater than `final_structure`. 
 
+        :param new_structure: New structure for the model. Should be greater
+                              by 1 in one element. E.g. structure is (1,2),
+                              then new structure could be either (2,2) or
+                              (1,3). If None random available element is
+                              chosen to increase.
         :param X: list of values to transform as values of new model.
+
+        :note: Function is specific for\
+               :class:`gadma.models.StructureDemographicModel`.\
+               It probably will not work for any other class.
         """
         cur_structure = self.get_structure()
         diff = np.array(self.final_structure) - np.array(cur_structure)
@@ -144,20 +172,34 @@ class StructureDemographicModel(EpochDemographicModel):
             raise ValueError(f"Demographic model has its final structure "
                              f"({list(self.final_structure)}). It is not "
                              f"possible to increase it")
+        # TODO check that new structure is not greater than final structure
+        if new_structure is None:
+            struct_index = np.random.choice(
+                np.arange(len(cur_structure))[diff != 0])
 
-        struct_index = np.random.choice(
-            np.arange(len(cur_structure))[diff != 0])
+            new_structure = copy.copy(cur_structure)
+            new_structure[struct_index] += 1
+        else:
+            diff = np.array(new_structure) - np.array(cur_structure)
+            if np.max(diff) < 1:
+                raise ValueError(f"New structure ({new_structure}) should be "
+                                 f"greater than the current one "
+                                 f"({cur_structure})")
+            if np.min(diff) > 1 or np.sum(diff) > 1:
+                raise ValueError(f"New structure ({new_structure}) should "
+                                 f"differ in one value and maximum by 1. "
+                                 f"Received structure: {new_structure}")
+            struct_index = np.where(diff == 1)[0]
+            assert len(struct_index) == 1
+            struct_index = struct_index[0]
 
-        new_structure = copy.copy(cur_structure)
-        new_structure[struct_index] += 1
+        event_index = np.random.choice(np.arange(cur_structure[struct_index]))
+        event_index += sum(cur_structure[:struct_index]) - 1 + struct_index
 
         old_model = copy.deepcopy(self)
         self.from_structure(new_structure)
         if X is None:
             return self, None
-
-        event_index = np.random.choice(np.arange(cur_structure[struct_index]))
-        event_index += sum(cur_structure[:struct_index]) - 1 + struct_index
 
         # We consider that we have put new event (interval) before the chosen
         # event. Special case is when it is first interval - we put new event
@@ -206,11 +248,8 @@ class StructureDemographicModel(EpochDemographicModel):
                 old_vars = [var for var in old_event.variables]
                 new_vars = [var for var in new_event.variables]
             else:
-                old_vars = [var for var in old_event.variables
-                            if var not in old_event.init_size_args]
-                new_vars = [var for var in new_event.variables
-                            if var not in new_event.init_size_args]
-    #        print(old_vars, new_vars)
+                old_vars = old_event.get_vars_not_in_init_args()
+                new_vars = new_event.get_vars_not_in_init_args()
             assert len(old_vars) == len(new_vars)
             # Now we cretae correspondence between those variables        
             for old_var, new_var in zip(old_vars, new_vars):
@@ -235,26 +274,34 @@ class StructureDemographicModel(EpochDemographicModel):
             # Time / 2
             new_var2value[event2.time_arg] /= 2
             new_var2value[event1.time_arg] = new_var2value[event2.time_arg]
+            time_value = new_var2value[event1.time_arg]
+
             # Sizes
-            for i, (size1, size2) in enumerate(zip(event1.init_size_args,
+            for i, (size_in, size_out) in enumerate(zip(event1.init_size_args,
                                                    event1.size_args)):
                 if event2.dyn_args is not None:
                     dyn_value = new_var2value[event2.dyn_args[i]]
                 else:
                     dyn_value = 'Sud'
-                if dyn_value == 'Sud':
-                    new_var2value[size2] = new_var2value[size2]
-                else:
+                if dyn_value != 'Sud':
+#                    new_var2value[size_out] = new_var2value[size_out]
+#                else:
                     func = DynamicVariable.get_func_from_value(dyn_value)
                     if event_index == 0:
                         y1 = 1.0
                     else:
-                        y1 = new_var2value[size1]
-                    y2 = new_var2value[size2]
+                        # Init size could be with fraction.
+                        if not isinstance(size_in, Variable):
+                            vals = [new_var2value[var] 
+                                    for var in size_in.variables]
+                            y1 = size_in.get_value(vals)
+                        else:
+                            y1 = new_var2value[size_in]
+                    y2 = new_var2value[size_out]
                     # We have already divided it.
-                    x_diff = 2 * new_var2value[event2.time_arg]
+                    x_diff = 2 * time_value
                     size_func = func(y1, y2, x_diff)
-                    new_var2value[size2] = size_func(x_diff / 2)
+                    new_var2value[size_out] = size_func(x_diff / 2)
             # Copy other variables
             for var1, var2 in zip(event1.variables, event2.variables):
                 if var1 not in new_var2value:

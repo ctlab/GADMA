@@ -19,6 +19,7 @@ class TestGeneticAlg(unittest.TestCase):
     def test_mutation(self):
         mut_types = ['uniform', 'gaussian', 'resample']
         ga = get_global_optimizer('Genetic_algorithm')
+        ga.cur_mut_strength = 1.0
 
         n_var = 5
         variables = []
@@ -28,9 +29,16 @@ class TestGeneticAlg(unittest.TestCase):
         x_list = [var.resample() for var in variables]
         x_arr = WeightedMetaArray(x_list)
 
+
         for ind in range(n_var):
             for mut_type in mut_types:
-                with self.subTest(mut_type=mut_type, index=ind):
+                with self.subTest(mut_type=mut_type, index=ind,
+                                  mut='full_mutation'):
+                    ga.mut_strength = 1.0
+                    x_mut = ga.mutation(x_arr, variables, mut_type, True)
+                    self.assertTrue(np.all(x_mut != x_arr))
+                with self.subTest(mut_type=mut_type, index=ind,
+                                  mut='mutation_by_ind'):
                     msg = f"(mut. type is {mut_type}, index is {ind})"
                     x_mut = ga.mutation_by_ind(x_arr, variables, ind,
                                                mutation_type=mut_type,

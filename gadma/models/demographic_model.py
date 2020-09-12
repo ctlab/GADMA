@@ -236,10 +236,9 @@ class EpochDemographicModel(DemographicModel):
                                     init_size not in variables):
                                 variables.append(init_size)
             for var in variables:
-                if var not in all_variables:
+                if var not in all_variables and var not in self.fixed_values:
                     all_variables.append(var)
-            return len(all_variables)
-        return 0
+        return len(all_variables)
 
     def as_custom_string(self, values):
         """

@@ -2,19 +2,24 @@ import unittest
 from gadma import *
 import itertools
 
-TEST_STRUCTURES = [(1,), (2,), (3,),
-                   (1,1), (2,1), (1,2), (3, 2),
-                   (1,2,1), (1,1,1), (1, 3, 4)]
+TEST_STRUCTURES = [(1,), (2,),
+                   (1,1), (2,1), (1,2),
+                   (1,1,1)]
+
 
 class TestModelStructure(unittest.TestCase):
-    def _test_initialization(self):
+    def test_initialization(self):
         for structure in TEST_STRUCTURES:
-            for create_migs, create_sels, create_dyns, sym_migs in\
-                    list(itertools.product([False, True],repeat=4)):
-                dm = DemographicModel.from_structure(structure, create_migs,
-                                                     create_sels, create_dyns,
-                                                     sym_migs)
-                n_par = 2 * (len(structure) - 1)  # for splits variables 
+            for create_migs, create_sels, create_dyns, sym_migs, fracs in\
+                    list(itertools.product([False, True],repeat=5)):
+                dm = StructureDemographicModel(structure, structure,
+                                               have_migs=create_migs,
+                                               have_sels=create_sels,
+                                               have_dyns=create_dyns,
+                                               sym_migs=sym_migs,
+                                               frac_split=fracs)
+                # for splits variables
+                n_par = (1 + int(not fracs)) * (len(structure) - 1)
                 for i, str_val in enumerate(structure):
                     if i == 0:
                         # for each interval (except first) there is time,
@@ -32,23 +37,27 @@ class TestModelStructure(unittest.TestCase):
                 msg = f"Parameters are not equal for dem model with structure "\
                       f"{structure} and create_migs ({create_migs}), "\
                       f"create_sels ({create_sels}), create_dyns ({create_dyns}), "\
-                      f"sym_migs ({sym_migs})"
+                      f"sym_migs ({sym_migs}), fracs ({fracs}) {dm.variables}"
                 self.assertEqual(len(dm.variables), n_par, msg=msg)
 
-    def _test_likelihood(self):
+    def test_likelihood_after_increase(self):
         for structure in TEST_STRUCTURES:
-#            print(structure)
-            for create_migs, create_sels, create_dyns, sym_migs in\
-                    list(itertools.product([False, True],repeat=4)):
+            for create_migs, create_sels, create_dyns, sym_migs, fracs in\
+                    list(itertools.product([False, True],repeat=5)):
                 create_sels = False
-                model_generator = lambda structure: DemographicModel.from_structure(structure, create_migs,
-                                                     create_sels, create_dyns,
-                                                     sym_migs)
+                def model_generator(structure):
+                    return StructureDemographicModel(structure,
+                                                     np.array(structure) + 1,
+                                                     have_migs=create_migs,
+                                                     have_sels=create_sels,
+                                                     have_dyns=create_dyns,
+                                                     sym_migs=sym_migs,
+                                                     frac_split=fracs)
  
                 dm = model_generator(structure)
                 variables = dm.variables
                 x = [var.resample() for var in variables]
-#                print(dm.var2value(x))
+
 
                 for engine in all_engines():
                     engine.set_model(dm)
@@ -76,13 +85,58 @@ class TestModelStructure(unittest.TestCase):
                               f"create_migs: {create_migs}, "\
                               f"create_sels: {create_sels}, "\
                               f"create_dyns: {create_dyns}, "\
-                              f"sym_migs: {sym_migs}"
-                        print(msg)
-                        new_dm, new_X = increase_structure(dm, new_structure,
-                                                           [x], model_generator)
+                              f"sym_migs: {sym_migs}, "\
+                              f"fracs: {fracs}"
+#                        print(msg)
+                        new_dm = copy.deepcopy(dm)
+                        new_dm, new_X = new_dm.increase_structure(
+                            new_structure, [x])
                         engine.set_model(new_dm)
-                        #print("!!!", dm.var2value(x), new_dm.var2value(new_X[0]))
+#                        print("!!!", dm.var2value(x), new_dm.var2value(new_X[0]))
                         new_ll = engine.evaluate(new_X[0], *args)
                         self.assertTrue(np.allclose(ll_true, new_ll),
                                         msg=f"{ll_true} != {new_ll} : " + msg)
 
+    def test_fails(self):
+        bad_struct = [[0], [0, 1], [1, 0]]
+
+        bad_cur_init_final_structs = [([1, 1], [2, 1], [3, 1]),
+                                      ([2, 2], [1, 1], [1, 2]),
+                                      ([1, 2], [1, 1], [1, 1])]
+
+
+        for create_migs, create_sels, create_dyns, sym_migs, fracs in\
+                list(itertools.product([False, True],repeat=5)):
+            def build_model(init_struct, final_struct):
+                return StructureDemographicModel(init_struct, final_struct,
+                                                 have_migs=create_migs,
+                                                 have_sels=create_sels,
+                                                 have_dyns=create_dyns,
+                                                 sym_migs=sym_migs,
+                                                 frac_split=fracs)
+            # bad strcutures
+            for struct in bad_struct:
+                self.assertRaises(ValueError, build_model, struct, struct)
+
+            # bad final structure
+            for struct in TEST_STRUCTURES:
+                for i in range(len(struct)):
+                    final_struct = list(struct)
+                    final_struct[i] -= 1
+                    self.assertRaises(ValueError, build_model,
+                                      struct, final_struct)
+
+            # bigger or lesser structure in from_structure
+            for cur_str, init_str, final_str in bad_cur_init_final_structs:
+                model = build_model(init_str, final_str)
+                self.assertRaises(ValueError, model.from_structure, cur_str)
+
+            # not possible to increase structure
+            for _, init_str, final_str in bad_cur_init_final_structs:
+                model = build_model(init_str, final_str)
+                model.from_structure(final_str)
+                self.assertRaises(ValueError, model.increase_structure)
+            init_str, final_str = [2, 3], [3, 4]
+            model = build_model(init_str, final_str)
+            self.assertRaises(ValueError, model.increase_structure, [1, 3])
+            self.assertRaises(ValueError, model.increase_structure, [2, 2])
