@@ -246,7 +246,7 @@ class TestModels(unittest.TestCase):
                         obj = cls(var1, obj2)
                         op_f2 = obj2.operation
                         self.assertEqual(obj.get_value(values),
-                                         op_f(values[1], op_f2(values[0],
+                                         op_f(values[0], op_f2(values[1],
                                               const)))
                         obj.string_repr(values)
                         self.assertEqual(obj.name,
