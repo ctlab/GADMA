@@ -28,6 +28,7 @@ class Event(Model):
         """
         raise NotImplementedError()
 
+
 class Epoch(Event):
     """
     Epoch for demographic model. All arguments could be both values and some
@@ -101,16 +102,19 @@ class Epoch(Event):
 #                         f"Available variables: {self.variables}")
 #
     def as_custom_string(self, values):
-        _help_f = lambda x, y: f"{y}" if x == "" else  f"{y}({x})"
-        help_f = lambda x: _help_f(*self._arg_val_repr(x, values))
+        def _help_f(x, y):
+            return f"{y}" if x == "" else f"{y}({x})"
+
+        def help_f(x):
+            return _help_f(*self._arg_val_repr(x, values))
 
         all_repr = [help_f(self.time_arg)]
         sizes_repr = [help_f(arg) for arg in self.size_args]
         sizes_repr = f"[{', '.join(sizes_repr)}]"
         all_repr.append(sizes_repr)
-        migs_repr = "[no migs]" 
+        migs_repr = "[no migs]"
         if self.mig_args is not None:
-            migs_repr = [[help_f(mig )for mig in migs]
+            migs_repr = [[help_f(mig)for mig in migs]
                          for migs in self.mig_args]
             migs_str = []
             for migs in migs_repr:
@@ -167,8 +171,12 @@ class Split(Event):
         self.add_variables(size_args)
 
     def as_custom_string(self, values):
-        _help_f = lambda x, y: f"{y}" if x == "" else  f"{y}({x.replace(' ', '')})"
-        help_f = lambda x: _help_f(*self._arg_val_repr(x, values))
+        def _help_f(x, y):
+            return f"{y}" if x == "" else f"{y}({x.replace(' ', '')})"
+
+        def help_f(x):
+            return _help_f(*self._arg_val_repr(x, values))
+
         frac_str = ""
         for var in self.variables:
             if isinstance(var, FractionVariable):

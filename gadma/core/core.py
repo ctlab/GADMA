@@ -24,11 +24,10 @@ import traceback
 SUPPORT_STRING = "\nIn case of any questions or problems, "\
                  "please contact: ekaterina.e.noskova@gmail.com\n"
 
+
 def job(index, shared_dict, settings):
     try:
         obj = CoreRun(index, shared_dict, settings)
-#        profile_file = os.path.join(settings.output_directory, str(index), 'profile.prof')
-#        profile.runctx('obj.run(settings.get_optimizers_init_kwargs())', {'obj': obj, 'settings': settings}, {}, filename=profile_file)
         obj.run(settings.get_optimizers_init_kwargs())
     except Exception as e:
         print(f"{bcolors.FAIL}Run {index} failed due to following exception:"
@@ -52,9 +51,9 @@ def main():
     # Form output directory
     log_file = os.path.join(settings_storage.output_directory, 'GADMA.log')
     params_file = os.path.join(settings_storage.output_directory,
-                              'params_file')
+                               'params_file')
     extra_params_file = os.path.join(settings_storage.output_directory,
-                              'extra_params_file')
+                                     'extra_params_file')
 
     # Change output stream both to stdout and log file
     saved_stdout = sys.stdout
@@ -73,12 +72,13 @@ def main():
     print(f"Outgroup: {settings_storage.outgroup}")
     print(f"{bcolors.OKGREEN}--Successful data reading--{bcolors.ENDC}")
 
-
     if settings_storage.directory_with_bootstrap is not None:
         print("\nBootstrap data reading")
         boot_data = settings_storage.read_bootstrap_data()
-        print(f"Number of files found: {len(settings_storage.bootstrap_data)}")
-        print(f"{bcolors.OKGREEN}--Successful bootstrap data reading--{bcolors.ENDC}")
+        print(f"Number of files found: "
+              f"{len(settings_storage.bootstrap_data)}")
+        print(f"{bcolors.OKGREEN}--Successful bootstrap data reading--"
+              f"{bcolors.ENDC}")
 
     # Save parameters
     settings_storage.to_files(params_file, extra_params_file)
@@ -107,14 +107,14 @@ def main():
     pool = Pool(processes=settings_storage.number_of_processes)
 
     results = []
-    for proc_args in [(i + 1, shared_dict, settings_storage) 
-                 for i in range(settings_storage.number_of_repeats)]:
+    for proc_args in [(i + 1, shared_dict, settings_storage)
+                      for i in range(settings_storage.number_of_repeats)]:
         results.append(pool.apply_async(job, proc_args))
 
     pool.close()
 
     check_time = time.time()
-    time_diff = 60 * settings_storage.time_to_print_summary 
+    time_diff = 60 * settings_storage.time_to_print_summary
     time_bias = 0
     get_time = 10
     while True:
@@ -137,33 +137,32 @@ def main():
             break
         if (time.time() - check_time) >= time_diff:
             check_time = time.time()
-            print_runs_summary(
-                    start_time, shared_dict, settings_storage, None, 
-                    None, None)
+            print_runs_summary(start_time, shared_dict,
+                               settings_storage, None, None, None)
             time_bias = time.time() - check_time
             time_bias %= get_time
-            
+
     pool.join()
 #        # graceful way to interrupt all processes by Ctrl+C
 #        min_counter = 0
 #        while True:
 #            try:
 #                multiple_results = pool_map.get(60)
-##                    60 * settings_storage.time_to_print_summary)
+#                    # 60 * settings_storage.time_to_print_summary)
 #                break
 #            # catch TimeoutError and get again
 #            except multiprocessing.TimeoutError as ex:
-#                print_runs_summary(
-#                    start_time, shared_dict, settings_storage, None, 
-#                    precision, None)
+#                print_runs_summary(start_time, shared_dict,
+#                                   settings_storage, None,
+#                                   precision, None)
 #            except Exception as e:
 #                print("Catch exception in main")
 #                pool.terminate()
 #                pool.close()
 #                raise RuntimeError(str(e))
 #        pool.close()
-    print_runs_summary(start_time, shared_dict, settings_storage, None, 
-            None, None)
+    print_runs_summary(start_time, shared_dict, settings_storage, None,
+                       None, None)
 
     sys.stdout = StdAndFileLogger(log_file)
 
@@ -171,9 +170,12 @@ def main():
     if args.test:
         print('--Test passed correctly--')
     if settings_storage.theta0 is None:
-        print("\nYou didn't specify theta at the beginning. If you want change it and rescale parameters, please see tutorial.\n")
-#        if params.resume_dir is not None and (params.initial_structure != params.final_structure).any():
-#            print('\nYou have resumed from another launch. Please, check best AIC model, as information about it was lost.\n')
+        print("\nYou didn't specify theta at the beginning. If you want "
+              "change it and rescale parameters, please see tutorial.\n")
+#        if (params.resume_dir is not None and
+#                (params.initial_structure != params.final_structure).any()):
+#            print('\nYou have resumed from another launch. Please, check '
+#                  'best AIC model, as information about it was lost.\n')
 
     print('Thank you for using GADMA!')
     print(SUPPORT_STRING)

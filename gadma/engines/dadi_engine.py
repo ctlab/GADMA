@@ -124,7 +124,7 @@ class DadiEngine(DadiOrMomentsEngine):
         sfs = dadi.Spectrum.from_phi(phi, ns, [xx]*len(ns))
         return sfs
 
-    def draw_schematic_model_plot(self, values, save_file=None, 
+    def draw_schematic_model_plot(self, values, save_file=None,
                                   fig_title="Demographic Model from GADMA",
                                   nref=None, gen_time=1,
                                   gen_time_units="Generations"):
@@ -184,5 +184,6 @@ class DadiEngine(DadiOrMomentsEngine):
 
     def generate_code(self, values, filename, pts):
         return super(DadiEngine, self).generate_code(values, filename, pts)
+
 
 register_engine(DadiEngine)

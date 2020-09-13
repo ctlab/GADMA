@@ -273,8 +273,8 @@ class Dynamic(object):
     """
     Abstract class for Dynamic value.
     New class should be instance of this class, should have :attr:`format_str`
-    attribute and implement :func:`_inner_func` (staticmethod), :func:`__str__` and
-    :func:`func_str` methods.
+    attribute and implement :func:`_inner_func` (staticmethod),
+    :func:`__str__` and :func:`func_str` methods.
 
     :cvar format_str: format string for string representation of the dynamic.
     """
@@ -305,14 +305,18 @@ class Dynamic(object):
         """
         return cls.format_str.format(str(y1), str(y2), str(x_diff))
 
+
 def linear(y1, y2, x_diff, x):
     y = y1 + (y2 - y1) * (x / x_diff)
 #    print("linear", y1, y2, x_diff, x, y)
     return y
+
+
 def exponent(y1, y2, x_diff, x):
     y = y1 * (y2 / y1) ** (x / x_diff)
 #    print("exponent", y1, y2, x_diff, x, y)
     return y
+
 
 class Exp(Dynamic):
     """
@@ -393,6 +397,7 @@ def dynamic_generator(domain):
             p.append(len(domain))
     p = np.array(p) / np.sum(p)
     return np.random.choice(domain, p=p)
+
 
 class DynamicVariable(DiscreteVariable):
     """

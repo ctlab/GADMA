@@ -40,10 +40,10 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                            information.
     :type const_mut_rate: float
     :param eps: const for model's log likelihood compare.
-                Model is better if its log likelihood is greater than 
+                Model is better if its log likelihood is greater than
                 log likelihood of another model by epsilon.
     :type eps: float
-    :param n_stuck_gen: Number of iterations for GA stopping: GA stops when 
+    :param n_stuck_gen: Number of iterations for GA stopping: GA stops when
                         it can't improve model during n_stuck_gen generations.
     :type n_stuck_gen: int
     :param selection_type: Type of selection operator in GA. Could be:
@@ -58,7 +58,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
     :type selection_type: bool
     :param mutation_type: Type of mutation operator in GA. Could be:
                           * 'uniform'
-                          * 'resample' 
+                          * 'resample'
                           * 'gaussian'
                           See help(GeneticAlgorithm.mutation) for more
                           information.
@@ -90,7 +90,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
     :param maximize: If True then optimization will maximize function.
     :type maximize: bool
     """
-    def __init__(self, gen_size=10, n_elitism=2, 
+    def __init__(self, gen_size=10, n_elitism=2,
                  p_mutation=0.3, p_crossover=0.3, p_random=0.2,
                  mut_strength=0.2, const_mut_strength=1.1,
                  mut_rate=0.2, const_mut_rate=1.2, mut_attempts=2,
@@ -290,7 +290,8 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         :type crossover_type: str
         :param k: value of k for 'k_point' crossover.
         :type k: int
-        :param one_child: if True then one child will be generated and returned.
+        :param one_child: if True then one child will be generated and
+                          returned.
         :type one_child: bool
         """
         assert len(parent1) == len(parent2)
@@ -383,7 +384,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             p = 1 - p
             p /= np.sum(p)
         elif selection_type == 'rank':
-            n = len(X_gen) 
+            n = len(X_gen)
             p = np.arange(1, n+1) / (n * (n - 1))
             p /= np.sum(p)
         else:
@@ -410,7 +411,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             mutants = self.mutation(x, variables, self.mutation_type,
                                     self.one_fifth_rule, self.mut_attempts)
             fitness = [f(x_mut) for x_mut in mutants]
-            
+
 #            print("Time of main part of mutation: " + str(t3 - t1))
             # Take best mutant
             new_Y_gen.append(np.min(fitness))
@@ -425,7 +426,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
 
         # 3. Crossover
         for i in range(n_offsprings):
-            ind1, ind2 = np.random.choice(range(len(X_gen)), size=2, p=p) 
+            ind1, ind2 = np.random.choice(range(len(X_gen)), size=2, p=p)
             parent1, parent2 = X_gen[ind1], X_gen[ind2]
             x = self.crossover(parent1, parent2, variables,
                                self.crossover_type, self.crossover_k)
@@ -470,9 +471,8 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             return np.random.uniform(0.0, 1.0)
 
     def _sample_number_of_changes(self, n):
-        sample = np.random.binomial(n=n, p=self.cur_mut_strength) 
+        sample = np.random.binomial(n=n, p=self.cur_mut_strength)
         return max(1, int(sample))
-
 
     def check_x(self, variables, x, raises=False):
         for val, var in zip(x, variables):
@@ -510,7 +510,8 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             impr_gen = n_gen
         is_stuck = (n_gen - impr_gen) >= self.n_stuck_gen
         if maxeval is not None:
-            expect_feval = int(self.gen_size * self.p_mutation * self.mut_attempts)\
+            expect_feval = int(self.gen_size * self.p_mutation *
+                               self.mut_attempts)\
                          + int(self.gen_size * self.p_crossover)\
                          + int(self.gen_size * self.p_random)
             stop_by_n_eval = (n_eval + expect_feval >= maxeval)
@@ -632,7 +633,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         if save_file is not None:
             ensure_file_existence(save_file)
 
-        # Prepare function to use it. 
+        # Prepare function to use it.
         # Fix args and cache
         prepared_f = self.prepare_f_for_opt(f, args)
         # Wrap for automatic evaluation logging
@@ -649,7 +650,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
 
         # Perform 0 generation of GA - initial design.
         X_gen, Y_gen = self.initial_design(f_in_opt, variables, num_init,
-                                    X_init, Y_init)
+                                           X_init, Y_init)
 
         X_total, Y_total = copy.deepcopy(X_gen), copy.deepcopy(Y_gen)
 
@@ -733,5 +734,6 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                                  Y=Y, n_eval=n_eval, n_iter=n_gen,
                                  X_out=X_gen, Y_out=Y_out)
         return result
-            
+
+
 register_global_optimizer('Genetic_algorithm', GeneticAlgorithm)

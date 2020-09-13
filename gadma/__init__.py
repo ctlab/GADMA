@@ -30,6 +30,7 @@ try:
     import GPyOpt
 except ImportError:
     GPyOpt = None
+import warnings
 
 PIL_available = PIL is not None
 matplotlib_available = matplotlib is not None
@@ -38,20 +39,19 @@ dadi_available = dadi is not None
 GPy_available = GPy is not None
 GPyOpt_available = GPyOpt is not None
 
-from .data import *
-from .engines import *
-from .models import *
-from .code_generator import id2printfunc
-from .utils import *
-from .optimizers import *
-from .cli import *
-from .core import *
-from .Inference import *
+from .data import *  # NOQA
+from .engines import *  # NOQA
+from .models import *  # NOQA
+from .code_generator import id2printfunc  # NOQA
+from .utils import *  # NOQA
+from .optimizers import *  # NOQA
+from .cli import *  # NOQA
+from .core import *  # NOQA
+from .Inference import *  # NOQA
 
-import warnings
 if moments_available:
-    warnings.filterwarnings("default", 
-                            ".*", 
+    warnings.filterwarnings("default",
+                            ".*",
                             UserWarning,
                             'moments.ModelPlot',
                             )

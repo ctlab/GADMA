@@ -4,27 +4,27 @@ from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable,\
 # Main options. Output and input.
 output_directory = None
 input_file = None
-#input_data = None
-#number_of_populations = None
+# input_data = None
+# number_of_populations = None
 population_labels = None
 projections = None
 outgroup = None
 sequence_length = None
 linked_snp_s = True
 directory_with_bootstrap = None
-#boots = None
+# boots = None
 
 # Pipeline
 theta0 = None
 time_for_generation = None
-#multinom = None
+# multinom = None
 only_sudden = False
 pts = None
 engine = 'moments'
 relative_parameters = False
 no_migrations = False
 
-#Custom model
+# Custom model
 custom_filename = None
 model_func = None
 lower_bound = None
@@ -59,9 +59,9 @@ stuck_generation_number = 100
 eps = 1e-2
 
 # just for logging evaluations
-#output_log_file = None
-#max_num_of_eval = None # maximum number of logll eval.
-#num_init_pts = None # can get value from Inference.optimize_ga
+# output_log_file = None
+# max_num_of_eval = None # maximum number of logll eval.
+# num_init_pts = None # can get value from Inference.optimize_ga
 
 # Local search
 local_optimizer = 'BFGS_log'
@@ -77,8 +77,8 @@ vmin = 1
 number_of_repeats = 1
 number_of_processes = 1
 test = False
-#resume_dir = None
-#only_models = None
+# resume_dir = None
+# only_models = None
 
 # Extra parameters
 
@@ -91,20 +91,20 @@ min_m = MigrationVariable.default_domain[0]
 max_m = MigrationVariable.default_domain[1]
 
 # Parameters for local search alg
-#ls_verbose = None
-#ls_flush_delay = 0.5
-#ls_epsilon = 1e-3
-#ls_gtol = 1e-05
-#ls_maxiter = None
+# ls_verbose = None
+# ls_flush_delay = 0.5
+# ls_epsilon = 1e-3
+# ls_gtol = 1e-05
+# ls_maxiter = None
 # for hill climbing
-#hc_mutation_rate = None
-#hc_const_for_mutation_rate = None
-#hc_stop_iter = None
+# hc_mutation_rate = None
+# hc_const_for_mutation_rate = None
+# hc_stop_iter = None
 
 # Options of mutation, crossing and random generating
 random_n_a = True
-#multinom_cross = False
-#multinom_mutate = False
+# multinom_cross = False
+# multinom_mutate = False
 
 # Options of printing summary information about repeats
 time_to_print_summary = 1  # min
@@ -112,13 +112,13 @@ time_to_print_summary = 1  # min
 verbose = 1
 
 # Options of distributions
-#distribution = 'normal'  # can be 'uniform'
-#std = None  # std for normal dist
+# distribution = 'normal'  # can be 'uniform'
+# std = None  # std for normal dist
 
 # Some options about drawing plots:
-#matplotlib_available = False
-#pil_available = False
-#moments_available = False
+# matplotlib_available = False
+# pil_available = False
+# moments_available = False
 
 X_init = None
 Y_init = None
@@ -126,7 +126,7 @@ mutation_rate = None
 
 # Additional constants
 P_IDS = {'n': PopulationSizeVariable, 't': TimeVariable,
-         'm': MigrationVariable, 'd': DynamicVariable, 's':FractionVariable,
+         'm': MigrationVariable, 'd': DynamicVariable, 's': FractionVariable,
          'f': FractionVariable}
 LONG_NAME_2_SHORT = {"log-likelihood": "logLL",
                      "aic score": "aic",

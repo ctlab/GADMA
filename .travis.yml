@@ -5,9 +5,11 @@ dist: bionic
 install:
  - pip install coverage
  - pip install codecov
+ - pip install pep8
  - ./install
 script:
  - nosetests -vs tests --with-coverage --cover-package gadma     --cover-branches --cover-erase --cover-xml --cover-inclusive tests
  - python3 -m codecov
+ - find gadma/ -name \*.py -exec pep8 {} +
 after_success:
  - bash <(curl -s https://codecov.io/bash)

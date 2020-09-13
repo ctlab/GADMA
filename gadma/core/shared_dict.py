@@ -5,12 +5,13 @@ from functools import partial
 from collections import OrderedDict
 import numpy as np
 
+
 class SharedDict(object):
     def __init__(self, multiprocessing=True):
-#        if multiprocessing:
-        self.dict = Manager().dict()
-#        else:
-#            self.dict = dict()
+        if multiprocessing:
+            self.dict = Manager().dict()
+        else:
+            self.dict = dict()
 
     def default_key(self, group):
         return None
@@ -93,6 +94,7 @@ class SharedDict(object):
             return None
         return models[0][1]
 
+
 class SharedDictForCoreRun(SharedDict):
     def default_key(self, group):
         return partial(self._key, group)
@@ -100,7 +102,7 @@ class SharedDictForCoreRun(SharedDict):
     def _model(self, group, engine, x, y):
         if not isinstance(y, dict):
             y = OrderedDict({group: y})
-        #print(type(x), x)
+        # print(type(x), x)
         if isinstance(x, WeightedMetaArray):
             return (engine, (x, x.metadata), y)
         return (engine, x, y)
@@ -123,7 +125,7 @@ class SharedDictForCoreRun(SharedDict):
         return sign * model[2]
 
     def update_best_model_for_process(self, process, group, engine, x, y):
-        #print(x)
+        # print(x)
         model = self._model(group, engine, x, y)
         r = super(SharedDictForCoreRun, self).update_best_model_for_process(
             process, group, model)

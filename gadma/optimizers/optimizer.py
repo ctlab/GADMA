@@ -1,11 +1,13 @@
-from ..utils import Variable, ContinuousVariable
-from ..utils import fix_args, cache_func, nan_fval_to_inf, WeightedMetaArray
-from ..utils import ensure_file_existence, variables_values_repr
-from ..utils import logarithm_transform, exponent_transform, ident_transform
 import copy
 import numpy as np
 from functools import wraps
 import sys
+
+from ..utils import Variable, ContinuousVariable
+from ..utils import fix_args, cache_func, nan_fval_to_inf, WeightedMetaArray
+from ..utils import ensure_file_existence, variables_values_repr
+from ..utils import logarithm_transform, exponent_transform, ident_transform
+
 
 class Optimizer(object):
     """
@@ -87,7 +89,7 @@ class Optimizer(object):
 
         :param f: Function to wrap.
         :param variables: Variables of function `f`.
-        :param verbose: Verbosity level. 
+        :param verbose: Verbosity level.
         :param report_file: Filename to save report.
         """
         @wraps(f)

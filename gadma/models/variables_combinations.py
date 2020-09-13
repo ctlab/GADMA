@@ -1,6 +1,7 @@
 from ..utils import Variable
 from .model import Model
 
+
 class VariablesCombination(Model):
     """
     Base class for combination of variables.
@@ -92,14 +93,17 @@ class BinaryOperation(VariablesCombination):
         """
         raise NotImplementedError
 
+
 class Addition(BinaryOperation):
     """
     The sum of two variables.
     """
     def operation(self, val1, val2):
         return val1 + val2
+
     def operation_str(self):
         return "+"
+
 
 class Subtraction(BinaryOperation):
     """
@@ -107,8 +111,10 @@ class Subtraction(BinaryOperation):
     """
     def operation(self, val1, val2):
         return val1 - val2
+
     def operation_str(self):
         return "-"
+
 
 class Multiplication(BinaryOperation):
     """
@@ -116,8 +122,10 @@ class Multiplication(BinaryOperation):
     """
     def operation(self, val1, val2):
         return val1 * val2
+
     def operation_str(self):
         return "*"
+
 
 class Division(BinaryOperation):
     """
@@ -125,5 +133,6 @@ class Division(BinaryOperation):
     """
     def operation(self, val1, val2):
         return val1 / val2
+
     def operation_str(self):
         return "/"

@@ -1,8 +1,8 @@
 from ..engines import get_engine, all_engines
 from ..utils import sort_by_other_list, ensure_dir_existence,\
-ensure_file_existence
+                    ensure_file_existence
 from ..utils import TimeVariable, PopulationSizeVariable, SelectionVariable,\
-DynamicVariable
+                    DynamicVariable
 from ..optimizers import GlobalOptimizerAndLocalOptimizer
 from ..utils import get_aic_score, get_claic_score
 from ..models import EpochDemographicModel
@@ -11,6 +11,7 @@ import os
 import numpy as np
 from collections import defaultdict, OrderedDict
 import copy
+
 
 class CoreRun(object):
     """
@@ -44,14 +45,13 @@ class CoreRun(object):
         self.global_optimizer = self.settings.get_global_optimizer()
         self.local_optimizer = self.settings.get_local_optimizer()
         self.optimize_kwargs = self.settings.get_optimizers_kwargs()
-#        self.optimize_kwargs['linear_constrain'] = self.settings.get_linear_constrain(self.engine)
         self.optimize_kwargs['callback'] = self.callback
 
         # 2.3 Check if we need to calculate and keep additional functions
         # values in callbacks during optimization.
         self.aic_score = not self.settings.linked_snp_s
-        self.claic_score = (not self.aic_score and
-            (self.settings.directory_with_bootstrap is not None))
+        has_boots = self.settings.directory_with_bootstrap is not None
+        self.claic_score = not self.aic_score and has_boots
         self.boots = self.settings.bootstrap_data
 
         # 2.4 Create all necessary output dirs and files
@@ -126,16 +126,14 @@ class CoreRun(object):
         if self.x_best is None or sign * self.y_best > sign * y:
             self.x_best = x
             self.y_best = y
-            updated = self.shared_dict.update_best_model_for_process(self.index,
-                                                                 best_by,
-                                                                 self.engine,
-                                                                 x, y_dict)
+            updated = self.shared_dict.update_best_model_for_process(
+                self.index, best_by, self.engine, x, y_dict)
 #        if self.index in self.shared_dict:
 #            engine, x_best, y_dict = self.shared_dict[self.index][best_by]
 #            y_best = y_dict[best_by]
 #        if (self.index not in self.shared_dict or
 #                np.allclose(y, y_best) or y > y_best):
-#            if self.index not in self.shared_dict:   
+#            if self.index not in self.shared_dict:
 #                new_dict = OrderedDict()
 #            else:
 #                new_dict = OrderedDict(self.shared_dict[self.index])
@@ -144,7 +142,8 @@ class CoreRun(object):
 #            print("base", new_dict[best_by][1])
 #            if self.aic_score:
 #                n_params = self.engine.model.get_number_of_parameters(x)
-#                new_dict[best_by][2]['AIC score'] = get_aic_score(n_params, y)
+#                new_dict[best_by][2]['AIC score'] = get_aic_score(n_params,
+#                                                                  y)
 #            self.shared_dict[self.index] = new_dict
 #            print("base", self.shared_dict[self.index][best_by][1])
             # Draw and generate code for current best model
@@ -152,14 +151,18 @@ class CoreRun(object):
 #            fig_title = f"Best by {best_by} model. {best_by}: {y: .2f}"
             prefix = (self.settings.LOCAL_OUTPUT_DIR_PREFIX +
                       self.settings.LONG_NAME_2_SHORT.get(best_by, best_by))
-#            save_plot_file = os.path.join(self.output_dir, prefix + "_model.png")
-            save_code_file = os.path.join(self.output_dir, prefix + "_model.py")
+#            save_plot_file = os.path.join(self.output_dir,
+#                                          prefix + "_model.png")
+            save_code_file = os.path.join(self.output_dir,
+                                          prefix + "_model.py")
 #            try:
-#               draw_plots_to_file(x, self.engine, self.settings, save_plot_file, fig_title)
+#               draw_plots_to_file(x, self.engine, self.settings,
+#                                  save_plot_file, fig_title)
 #            except Exception as e:
 #                pass
             try:
-                generate_code_to_file(x, self.engine, self.settings, save_code_file)
+                generate_code_to_file(x, self.engine,
+                                      self.settings, save_code_file)
             except Exception as e:
                 pass
 
@@ -176,7 +179,8 @@ class CoreRun(object):
                         f"Log-likelihood: {y:.2f}"
             save_file = os.path.join(self.pictures_dir,
                                      f"iteration_{n_iter}.png")
-            draw_plots_to_file(x, self.engine, self.settings, save_file, fig_title)
+            draw_plots_to_file(x, self.engine, self.settings,
+                               save_file, fig_title)
         self.draw_iter_callback_counter += 1
 
     def code_iter_callback(self, x, y):
@@ -255,14 +259,14 @@ class CoreRun(object):
 #        if best_by not in self.shared_dict[self.index]:
 #            new_dict[best_by] = OrderedDict()
 #        else:
-#            if not self.claic_score:                
+#            if not self.claic_score:
 #                engine, x_best, y_dict = new_dict[best_by]
 #                if y_dict[best_by] < value:
 #                    return
 #        y_dict = OrderedDict()
 #        y_dict['log-likelihood'] = y
 #        y_dict[best_by] = value
-#        element = (copy.deepcopy(self.engine), x, y_dict) 
+#        element = (copy.deepcopy(self.engine), x, y_dict)
 #        if not self.claic_score:
 #            new_dict[best_by] = element
 #        else:
@@ -291,12 +295,14 @@ class CoreRun(object):
         save_plot_file = os.path.join(self.output_dir, prefix + "_model.png")
         save_code_file = os.path.join(self.output_dir, prefix + "_model.py")
         try:
-            draw_plots_to_file(x, self.engine, self.settings, save_plot_file, fig_title)
+            draw_plots_to_file(x, self.engine, self.settings,
+                               save_plot_file, fig_title)
         except Exception as e:
             print(f"{bcolors.FAIL}Run {index}: failed to draw model due to "
                   f"the following exception: {e}{bcolors.ENDC}")
         try:
-            generate_code_to_file(x, self.engine, self.settings, save_code_file)
+            generate_code_to_file(x, self.engine,
+                                  self.settings, save_code_file)
         except Exception as e:
             print(f"{bcolors.FAIL}Run {index}: failed to generate code due to"
                   f" the following exception: {e}{bcolors.ENDC}")
@@ -312,11 +318,13 @@ class CoreRun(object):
         save_plot_file = os.path.join(self.output_dir, prefix + "_model.png")
         save_code_file = os.path.join(self.output_dir, prefix + "_model.py")
         try:
-            generate_code_to_file(x, self.engine, self.settings, save_code_file)
+            generate_code_to_file(x, self.engine,
+                                  self.settings, save_code_file)
         except Exception as e:
             pass
         try:
-           draw_plots_to_file(x, self.engine, self.settings, save_plot_file, fig_title)
+            draw_plots_to_file(x, self.engine, self.settings,
+                               save_plot_file, fig_title)
         except Exception as e:
             pass
 
@@ -359,4 +367,3 @@ class CoreRun(object):
         self.draw_model_in_output_dir(result.x, result.y)
         print(f'Finish genetic algorithm number {self.index}\n', end='')
         return result
-

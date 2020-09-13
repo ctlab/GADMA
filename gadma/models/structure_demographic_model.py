@@ -69,8 +69,8 @@ class StructureDemographicModel(EpochDemographicModel):
 
         if not (np.all(np.array(structure) <= self.final_structure)):
             raise ValueError(f"Elements of model structure ({structure}) "
-                             f"could not be greater than elements of the final "
-                             f"structure ({self.final_structure}).")
+                             f"could not be greater than elements of the "
+                             f"final structure ({self.final_structure}).")
         if np.any(np.array(structure) <= 0):
             raise ValueError(f"Elements of model structure ({structure}) "
                              "should be positive (> 0).")
@@ -102,7 +102,7 @@ class StructureDemographicModel(EpochDemographicModel):
                                 continue
                             if self.sym_migs and j < i:
                                 continue
-                            var = MigrationVariable('m%d_%d%d' % 
+                            var = MigrationVariable('m%d_%d%d' %
                                                     (i_int, i+1, j+1))
                             mig_vars[i][j] = var
                             if self.sym_migs:
@@ -120,7 +120,7 @@ class StructureDemographicModel(EpochDemographicModel):
                         var = DynamicVariable('dyn%d%d' % (i_int, i+1))
                         dyn_vars.append(var)
                 self.add_epoch(time_var, size_vars,
-                             mig_vars, dyn_vars, sel_vars)
+                               mig_vars, dyn_vars, sel_vars)
             if n_pop < len(structure):
                 if self.frac_split:
                     frac_var = FractionVariable(f"s{n_pop}")
@@ -153,7 +153,7 @@ class StructureDemographicModel(EpochDemographicModel):
     def increase_structure(self, new_structure=None, X=None):
         """
         Increase structure of the model. Raises ValueError if structure is
-        equal or greater than `final_structure`. 
+        equal or greater than `final_structure`.
 
         :param new_structure: New structure for the model. Should be greater
                               by 1 in one element. E.g. structure is (1,2),
@@ -251,9 +251,9 @@ class StructureDemographicModel(EpochDemographicModel):
                 old_vars = old_event.get_vars_not_in_init_args()
                 new_vars = new_event.get_vars_not_in_init_args()
             assert len(old_vars) == len(new_vars)
-            # Now we cretae correspondence between those variables        
+            # Now we cretae correspondence between those variables
             for old_var, new_var in zip(old_vars, new_vars):
-                assert type(old_var) == type(new_var)  #addit. check for types
+                assert type(old_var) == type(new_var)  # addit. check for types
                 oldvar2newvar[old_var] = new_var
     #    print(oldvar2newvar)
         new_X = []
@@ -269,7 +269,7 @@ class StructureDemographicModel(EpochDemographicModel):
                              if var.name in varname2value}
             for var in var2value:
                 new_var2value[oldvar2newvar[var]] = var2value[var]
-            event1 = self.events[event_index] # our new event
+            event1 = self.events[event_index]  # our new event
             event2 = self.events[event_index + 1]  # base event
             # Time / 2
             new_var2value[event2.time_arg] /= 2
@@ -278,21 +278,19 @@ class StructureDemographicModel(EpochDemographicModel):
 
             # Sizes
             for i, (size_in, size_out) in enumerate(zip(event1.init_size_args,
-                                                   event1.size_args)):
+                                                        event1.size_args)):
                 if event2.dyn_args is not None:
                     dyn_value = new_var2value[event2.dyn_args[i]]
                 else:
                     dyn_value = 'Sud'
                 if dyn_value != 'Sud':
-#                    new_var2value[size_out] = new_var2value[size_out]
-#                else:
                     func = DynamicVariable.get_func_from_value(dyn_value)
                     if event_index == 0:
                         y1 = 1.0
                     else:
                         # Init size could be with fraction.
                         if not isinstance(size_in, Variable):
-                            vals = [new_var2value[var] 
+                            vals = [new_var2value[var]
                                     for var in size_in.variables]
                             y1 = size_in.get_value(vals)
                         else:

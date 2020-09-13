@@ -98,7 +98,7 @@ class Model(object):
         """
         if isinstance(values, list) or isinstance(values, np.ndarray):
             ret_dict = {var: value for var, value in zip(self.variables,
-                                                               values)}
+                                                         values)}
         elif isinstance(values, dict):
             ret_dict = {}
             for key in values:

@@ -9,6 +9,7 @@ import os
 import numpy as np
 from functools import wraps
 
+
 class DadiOrMomentsEngine(Engine):
     """
     Base engine class for dadi and moments engines. It has all common methods
@@ -109,8 +110,6 @@ class DadiOrMomentsEngine(Engine):
 #                             f"{self.model.linear_constrain}\n"
 #                             f"and values:\n{values}.")
 #        optimal_theta = max(optimal_theta, lower_ub)
-            
-        
 
     def get_theta(self, values, grid_sizes):
         key = self._get_key(values, grid_sizes)
@@ -194,7 +193,7 @@ class DadiOrMomentsEngine(Engine):
         return ll_model
 
     def get_claic_component(self, x0, all_boots, grid_sizes, eps):
-        # Cache evaluations of the frequency spectrum inside our hessian/J 
+        # Cache evaluations of the frequency spectrum inside our hessian/J
         # evaluation function
         var2val = self.model.var2value(x0)
         is_not_discrete = np.array([not isinstance(var, DiscreteVariable)
@@ -209,11 +208,13 @@ class DadiOrMomentsEngine(Engine):
             return self.simulate(p, self.data.sample_sizes, grid_sizes)
 
         cached_simul = cache_func(simul_func)
+
         def func(x, data):
             model = cached_simul(x)
             return self.base_module.Inference.ll_multinom(model, self.data)
 
-        H = - self.base_module.Godambe.get_hess(func, p0, eps, args=[self.data])
+        H = - self.base_module.Godambe.get_hess(func, p0, eps,
+                                                args=[self.data])
         H_inv = np.linalg.inv(H)
 
         J = np.zeros((len(p0), len(p0)))
@@ -223,7 +224,7 @@ class DadiOrMomentsEngine(Engine):
                                                           eps, args=[boot])
             J_temp = np.outer(grad_temp, grad_temp)
             J += J_temp
-            
+
         J = J/len(all_boots)
 
         # G = J*H^-1
@@ -240,7 +241,8 @@ def _check_missing_population_labels(sfs, default_pop_labels=None,
 
     : param sfs: site frequency spectrum to check
     : type sfs: dadi.Spectrum (or analogue)
-    : param default_population_labels: if pop. labels are missing use this values.
+    : param default_population_labels: if pop. labels are missing use
+                                       this values.
     """
     if sfs.pop_ids is None:
         if default_pop_labels is not None:
@@ -379,7 +381,8 @@ def _read_data_snp_type(module, data_holder):
         size = data_holder.projections
     if data_holder.population_labels is not None:
         population_labels = data_holder.population_labels
-    sfs = module.Spectrum.from_data_dict(dd, population_labels, size, has_outgroup)
+    sfs = module.Spectrum.from_data_dict(dd, population_labels,
+                                         size, has_outgroup)
     sfs = _change_outgroup(sfs, data_holder.outgroup)
     return sfs
 

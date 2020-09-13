@@ -89,6 +89,7 @@ class NoneOptimizer(LocalOptimizer):
 register_local_optimizer("None", NoneOptimizer())
 register_local_optimizer(None, NoneOptimizer())
 
+
 class ScipyOptimizer(LocalOptimizer):
     """
     Class of Scipy local search algorithms.
@@ -107,13 +108,14 @@ class ScipyOptimizer(LocalOptimizer):
     scipy_methods = []
     maxeval_kwarg = {}
     opt_type = ''
+
     def __init__(self, method, log_transform=False, maximize=False):
         if method not in self.scipy_methods:
             raise ValueError(f"There is no such {self.opt_type} method "
                              f"{method} in scipy.minimize. Available methods"
                              f" are: {self.scipy_methods}")
         self.method = method
-        super(ScipyOptimizer, self).__init__(log_transform, maximize)            
+        super(ScipyOptimizer, self).__init__(log_transform, maximize)
 
     def save(self, x_best, y_best, is_finished, save_file):
         """
@@ -143,15 +145,17 @@ class ScipyOptimizer(LocalOptimizer):
 
     def prepare_callback(self, f, callback, save_file=None):
         new_callback = super(ScipyOptimizer, self).prepare_callback(callback)
+
         @wraps(new_callback)
         def wrapper(xk, result_obj=None):
             yk = f(xk)
-            r =  new_callback(xk, yk)
+            r = new_callback(xk, yk)
             if wrapper.x_best is None or wrapper.y_best > yk:
                 wrapper.x_best = xk
                 wrapper.y_best = yk
             self.save(xk, yk, False, save_file)
             return r
+
         wrapper.x_best = None
         return wrapper
 
@@ -209,8 +213,8 @@ class ScipyOptimizer(LocalOptimizer):
         if maxeval:
             if self.method not in self.maxeval_kwarg:
                 warnings.warn(f"Local optimization {self.method} do not have"
-                               "  an option of max number of evaluations. It "
-                               "will be used for maxiter.")
+                              "  an option of max number of evaluations. It "
+                              "will be used for maxiter.")
                 if maxiter:
                     options['maxiter'] = min(maxeval, maxiter)
                 else:
@@ -253,7 +257,8 @@ class ScipyOptimizer(LocalOptimizer):
             success = True
             status = 0
             message = "Zero parameters to optimize."
-            result = OptimizerResult(x, y, success, status, message, [x], [y], 1, 1)
+            result = OptimizerResult(x, y, success, status, message,
+                                     [x], [y], 1, 1)
             return result
 
         # Run optimization of SciPy
@@ -265,15 +270,17 @@ class ScipyOptimizer(LocalOptimizer):
         result = OptimizerResult.from_SciPy_OptimizeResult(res_obj)
         result.x = self.inv_transform(result.x)
         result.y = self.sign * result.y
-        
+
         result.X = [np.array(_x) for _x, _ in prepared_f.cache_info.all_calls]
-        result.Y = [self.sign * _y for _, _y in prepared_f.cache_info.all_calls]
+        result.Y = [self.sign * _y
+                    for _, _y in prepared_f.cache_info.all_calls]
 
         result.n_eval = prepared_f.cache_info.misses
 
         self.save(result.x, result.y, True, save_file)
-        
+
         return result
+
 
 class ScipyUnconstrOptimizer(ScipyOptimizer, UnconstrainedOptimizer):
     """
@@ -289,6 +296,7 @@ class ScipyUnconstrOptimizer(ScipyOptimizer, UnconstrainedOptimizer):
 
     def get_addit_scipy_kwargs(self, variables):
         return {}
+
 
 class ScipyConstrOptimizer(ScipyOptimizer, ConstrainedOptimizer):
     scipy_methods = ['L-BFGS-B', 'TNC', 'SLSQP']
@@ -371,15 +379,16 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
         if callback is not None:
             callback = self.prepare_callback(callback)
         result = self.optimizer.optimize(f_in_opt, vars_in_opt, x0_in_opt,
-                                      args=(bounds,), options=options,
-                                      verbose=0,
-                                      linear_constrain=linear_constrain,
-                                      maxiter=maxiter,
-                                      maxeval=maxeval, callback=callback)
+                                         args=(bounds,), options=options,
+                                         verbose=0,
+                                         linear_constrain=linear_constrain,
+                                         maxiter=maxiter,
+                                         maxeval=maxeval, callback=callback)
         # TODO: need to check result.X as they should be transformed somehow.
         result.x = self.inv_transform(result.x)
         result.X = [self.inv_transform(x) for x in result.X]
         return result
+
 
 register_local_optimizer('BFGS',
                          ManuallyConstrOptimizer(

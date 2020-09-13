@@ -99,7 +99,7 @@ class Engine(object):
         if model is None:
             self._model = None
             # in moments and dadi it is used to save thetas
-            self.saved_add_info = {}  
+            self.saved_add_info = {}
             return
         is_supported = False
         for cls in self.supported_models:

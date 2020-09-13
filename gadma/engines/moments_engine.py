@@ -19,7 +19,7 @@ class MomentsEngine(DadiOrMomentsEngine):
 
     id = 'moments'  #:
     import moments as base_module
-    supported_data = [SFSDataHolder]#, VCFDataHolder]  #:
+    supported_data = [SFSDataHolder]  # , VCFDataHolder]  #:
     inner_data_type = base_module.Spectrum  #:
     default_dt_fac = 0.01  #:
 
@@ -117,17 +117,17 @@ class MomentsEngine(DadiOrMomentsEngine):
                                 l_s[i][j] = self.get_value_from_var2value(
                                     var2value, yel)
                                 l_s[i][j] = addit_values.get(l_s[i][j],
-                                                                l_s[i][j])
+                                                             l_s[i][j])
                         kwargs[x] = l_s
-                    elif isinstance(y, list):  # pop. sizes, selection, dynamics
+                    elif isinstance(y, list):  # sizes, selection, dynamics
                         l_args = list()
                         for y1 in y:
                             l_args.append(self.get_value_from_var2value(
                                 var2value, y1))
                         kwargs[x] = lambda t: [addit_values[el](t)
-                                     if el in addit_values else el
-                                     for el in l_args]
-                    else: # time
+                                               if el in addit_values else el
+                                               for el in l_args]
+                    else:  # time
                         kwargs[x] = self.get_value_from_var2value(var2value, y)
                         kwargs[x] = addit_values.get(kwargs[x], kwargs[x])
                 fs.integrate(dt_fac=dt_fac, **kwargs)
@@ -143,7 +143,7 @@ class MomentsEngine(DadiOrMomentsEngine):
                 n_split += 1
         return fs
 
-    def draw_schematic_model_plot(self, values, save_file=None, 
+    def draw_schematic_model_plot(self, values, save_file=None,
                                   fig_title="Demographic Model from GADMA",
                                   nref=None, gen_time=1,
                                   gen_time_units="Generations"):
@@ -171,17 +171,17 @@ class MomentsEngine(DadiOrMomentsEngine):
         moments = self.base_module
         # From moments docs about ns:
         # List of sample sizes to be passed as the ns argument to model_func.
-        # Actual values do not matter, as long as the dimensionality is correct.
-        # So we take small size for fast drawing.
+        # Actual values do not matter, as long as the dimensionality is
+        # correct. So we take small size for fast drawing.
         ns = [4 for _ in range(len(self.data.sample_sizes))]
         plot_mod = moments.ModelPlot.generate_model(self._inner_func,
                                                     values, ns)
         draw_scale = nref is not None
-        show = save_file is None     
+        show = save_file is None
         if nref is not None:
-            nref = int(nref)  
+            nref = int(nref)
         moments.ModelPlot.plot_model(plot_mod,
-                                     save_file = save_file,
+                                     save_file=save_file,
                                      show=show,
                                      fig_title=fig_title,
                                      draw_scale=draw_scale,
@@ -194,7 +194,7 @@ class MomentsEngine(DadiOrMomentsEngine):
     def simulate(self, values, ns, dt_fac=default_dt_fac):
         """
         Returns simulated expected SFS for :attr:`demographic_model` with
-        values as parameters. 
+        values as parameters.
 
         :param values: Values of demographic model parameters.
         :param ns: sample sizes of the simulated SFS.
@@ -222,4 +222,6 @@ class MomentsEngine(DadiOrMomentsEngine):
     def generate_code(self, values, filename=None, dt_fac=default_dt_fac):
         return super(MomentsEngine, self).generate_code(values, filename,
                                                         dt_fac)
+
+
 register_engine(MomentsEngine)

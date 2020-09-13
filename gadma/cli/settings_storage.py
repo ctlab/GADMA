@@ -35,8 +35,8 @@ DEPRECATED_IDENTIFIERS = ["multinom", "verbose", "flush_delay",
                           "const_for_mutation_rate_for_hc",
                           "stop_iteration_for_hc"]
 
-class SettingsStorage(object):
 
+class SettingsStorage(object):
     def __setattr__(self, name, value):
         int_attrs = ['stuck_generation_number', 'sequence_length', 'verbose',
                      'print_models_code_every_n_iteration', 'n_elitism',
@@ -172,7 +172,7 @@ class SettingsStorage(object):
             try:
                 value = [float(x) for x in value]
                 super(SettingsStorage, self).__setattr__(name, value)
-            except:
+            except:  # NOQA
                 raise error
             if name in probs_list_attrs:
                 for val in value:
@@ -218,7 +218,7 @@ class SettingsStorage(object):
 
         # 1.10 Check that identifiers are good:
         if name == "parameter_identifiers":
-#            print(name, value)
+            # print(name, value)
             if isinstance(value, str):
                 value = [x for x in value.split(",")]
             value = [x.strip() for x in value]
@@ -228,7 +228,7 @@ class SettingsStorage(object):
                                      " with symbol from the following list: "
                                      f"{settings.P_IDS.keys()}")
             super(SettingsStorage, self).__setattr__(name, value)
- 
+
         # 2. Dependencies checks
         # 2.1 Const of mutation strength and rate
         if name in ['const_for_mutation_strength', 'const_for_mutation_rate']:
@@ -266,9 +266,9 @@ class SettingsStorage(object):
         # would be ignored
         elif name in ['engine', 'pts']:
             if self.engine != 'dadi' and self.pts != settings.pts:
-                warnings.warn(f"Engine {self.engine} does not need pts (for dadi "
-                              "only). It will be used only for generated code"
-                              " for dadi if any.")
+                warnings.warn(f"Engine {self.engine} does not need pts (for "
+                              "dadi only). It will be used only for generated"
+                              " code for dadi if any.")
         # 3.6 If we set number of populations, we can now check if length of
         # setted attributes are correct. We have already checked that they are
         # equal between each other
@@ -304,7 +304,7 @@ class SettingsStorage(object):
                 if (value != 'generations' and
                         not hasattr(self, 'time_for_generation')):
                     warnings.warn(f"There is no time for one generation, time"
-                            " will be in generations.")
+                                  " will be in generations.")
             else:
                 for key, val in d.items():
                     if val == value:
@@ -365,7 +365,7 @@ class SettingsStorage(object):
                 value is not None and self.custom_filename is not None):
             if self.lower_bound is not None and self.upper_bound is not None:
                 warnings.warn(f"Setting {name} will be ignored as the custom "
-                              "model is already set.")                
+                              "model is already set.")
 
     def __getattr__(self, name):
         try:
@@ -423,8 +423,8 @@ class SettingsStorage(object):
                     except StopIteration:  # no function
                         pass
             elif ((name == "lower_bound" or name == "upper_bound") and
-                    (self.custom_filename is not None or 
-                    self.model_func is not None)):
+                  (self.custom_filename is not None or
+                   self.model_func is not None)):
                 if self.parameter_identifiers is not None:
                     bound = list()
                     for p_id in self.parameter_identifiers:
@@ -526,7 +526,7 @@ class SettingsStorage(object):
                 warnings.warn(f"Setting `{key}` is renamed in 2 version of "
                               f"GADMA to `{setting_name}`. It is successfully"
                               " read.")
-                
+
             if not hasattr(settings_storage, attr_name):
                 if attr_name in DEPRECATED_IDENTIFIERS:
                     warnings.warn(f"Setting `{key}` was deprecated in 2 "
@@ -569,11 +569,10 @@ class SettingsStorage(object):
                                  Dumper=ruamel.yaml.RoundTripDumper)
 
     def get_global_optimizer(self):
-#        bo = get_global_optimizer("Bayesian_optimization")
-#        bo.log_transform = True
-#        bo.maximize = True
-#        return bo
-
+        # bo = get_global_optimizer("Bayesian_optimization")
+        # bo.log_transform = True
+        # bo.maximize = True
+        # return bo
         ga = get_global_optimizer("Genetic_algorithm")
         ga.gen_size = self.size_of_generation
         ga.n_elitism = self.n_elitism
@@ -602,17 +601,19 @@ class SettingsStorage(object):
 #                self.upper_bound_of_second_split is None):
 #            return None
 #        inv_theta0 = engine.get_N_ancestral_from_theta(1.0)
-# 
+#
 #        A = list()
 #        ub = list()
 #        if (self.upper_bound_of_first_split is not None):
 #            A1, b1 = engine.model.get_involved_for_split_time_vars(1)
 #            A.append(A1)
-#            ub.append(self.upper_bound_of_first_split / (2 * inv_theta0) - b1)
+#            ub.append(self.upper_bound_of_first_split /
+#                      (2 * inv_theta0) - b1)
 #        if (self.upper_bound_of_second_split is not None):
 #            A2, b2 = engine.model.get_involved_for_split_time_vars(2)
 #            A.append(A2)
-#            ub.append(self.upper_bound_of_second_split / (2 * inv_theta0) - b2)
+#            ub.append(self.upper_bound_of_second_split /
+#                      (2 * inv_theta0) - b2)
 #        lb = - np.inf * np.ones(len(ub))
 #        return LinearConstrainDemographics(np.array(A),
 #                                           np.array(lb), np.array(ub),
@@ -629,7 +630,7 @@ class SettingsStorage(object):
         return {'X_init': self.X_init, 'Y_init': self.Y_init}
 
     def get_engine_args(self, engine_id=None):
-        if engine_id == None:
+        if engine_id is None:
             engine_id = self.engine
         if engine_id == 'dadi':
             args = (self.pts,)
@@ -696,4 +697,3 @@ class SettingsStorage(object):
                 variables.append(var_cls(name, domain=[low_bound, upp_bound]))
             return CustomDemographicModel(self.model_func, variables,
                                           gen_time, theta0, mut_rate)
-        print(self.custom_filename, self.model_func, self.lower_bound, self.upper_bound)

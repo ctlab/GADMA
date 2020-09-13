@@ -1,6 +1,7 @@
 from ..utils import check_file_existence, ensure_file_existence
 import functools
 
+
 class DataHolder(object):
     """
     Class for data holding.
@@ -50,4 +51,4 @@ class VCFDataHolder(DataHolder):
         super(VCFDataHolder, self).__init__(vcf_file, sample_sizes, outgroup,
                                             population_labels, seq_len)
         self.popmap_file = popmap_file
-        self.bed_file=bed_file
+        self.bed_file = bed_file

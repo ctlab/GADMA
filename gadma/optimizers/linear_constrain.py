@@ -1,12 +1,14 @@
 import scipy
 import numpy as np
 
+
 def my_dot(A_i, x):
     res = 0
     for _a, _x in zip(A_i, x):
         if _a != 0:
             res += _x * _a
     return res
+
 
 class LinearConstrain(object):
     def __init__(self, A, lb, ub):
@@ -28,7 +30,7 @@ class LinearConstrain(object):
                                    self.constrain.lb, self.constrain.ub):
             A_ix = my_dot(A_i, x)
             if A_ix < lb_i:
-                C = lb_i / A_ix 
+                C = lb_i / A_ix
             if A_ix > ub_i:
                 C = A_ix / ub_i
             if A_ix < lb_i or A_ix > ub_i:
@@ -76,7 +78,7 @@ class LinearConstrain(object):
         ret_str = "\t".join([lb_str.format("lb"), "|",  A_str.format("A"),
                              "|", ub_str.format("ub")]) + "\n"
         for lb_i, A_i, ub_i in zip(self.lb, self.A, self.ub):
-            ret_str += "\t".join([lb_str.format(lb_i), "|", 
+            ret_str += "\t".join([lb_str.format(lb_i), "|",
                                   A_str.format(A_i), "|",
                                   ub_str.format(ub_i)]) + "\n"
 

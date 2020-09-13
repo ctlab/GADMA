@@ -12,6 +12,7 @@ from datetime import datetime
 import copy
 import numpy as np
 
+
 def draw_plots_to_file(x, engine, settings, filename, fig_title):
     """
     Draws plots of data (SFS) and model from :param:`engine` with parameters
@@ -79,12 +80,12 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
     except RuntimeError as e:
         warnings.warn(f"Schematic model plotting to {filename} file failed: "
                       f"{e.message}")
-    
+
     # 3. Concatenate plots if PIL is available
     if PIL_available:
         save_file_sfs.seek(0)
         save_file_model.seek(0)
-        
+
         img1 = Image.open(save_file_model)
         img2 = Image.open(save_file_sfs)
 
@@ -119,7 +120,7 @@ def generate_code_to_file(x, engine, settings, filename):
 
 
 def print_runs_summary(start_time, shared_dict, settings,
-                            log_file, precision, draw_model):
+                       log_file, precision, draw_model):
     """Prints best demographic model by logLL among all processes.
 
     start_time :    time when equation was started.
@@ -128,7 +129,7 @@ def print_runs_summary(start_time, shared_dict, settings,
     draw_model :    plot model best by logll and best by AIC (if needed).
     """
     s = (datetime.now() - start_time).total_seconds()
-    time_str = f"\n[{int(s//3600):03}:{int(s%3600//60):02}:{int(s%60):02}]" 
+    time_str = f"\n[{int(s//3600):03}:{int(s%3600//60):02}:{int(s%60):02}]"
     print(time_str)
     metric_names = shared_dict.get_available_groups()
     if len(metric_names) == 0:
@@ -138,10 +139,8 @@ def print_runs_summary(start_time, shared_dict, settings,
         if best_by == 'log-likelihood':
             models = list(reversed(models))
         local_metrics = models[0][1][2].keys()
-        sorted_models = models        
+        sorted_models = models
         metrics = local_metrics
-
-
 
 #    metric_names = list()  # ordered set
 #    for index in shared_dict:
@@ -251,5 +250,3 @@ def print_runs_summary(start_time, shared_dict, settings,
         elif gener:
             print("\nYou can find python code of best model in the output "
                   "directory.\n")
-
-

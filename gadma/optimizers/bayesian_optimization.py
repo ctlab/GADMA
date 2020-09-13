@@ -1,11 +1,3 @@
-from .optimizer import ConstrainedOptimizer
-from .global_optimizer import GlobalOptimizer, register_global_optimizer
-from .optimizer_result import OptimizerResult
-from ..utils import sort_by_other_list, choose_by_weight, eval_wrapper
-from ..utils import ensure_file_existence, fix_args
-
-from .. import GPyOpt
-from .. import GPy
 import operator as op
 from functools import partial, wraps
 import numpy as np
@@ -15,8 +7,17 @@ import sys
 import time
 
 import logging
+from .optimizer import ConstrainedOptimizer
+from .global_optimizer import GlobalOptimizer, register_global_optimizer
+from .optimizer_result import OptimizerResult
+from ..utils import sort_by_other_list, choose_by_weight, eval_wrapper
+from ..utils import ensure_file_existence, fix_args
+
+from .. import GPyOpt
+from .. import GPy
 
 logger = logging.getLogger(__name__)
+
 
 class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
     """
@@ -47,7 +48,6 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
     def evaluate(self, f, x, args=(), linear_constrain=None):
         return [super(BayesianOptimizer, self).evaluate(f, x[0], args,
                                                         linear_constrain)]
-
 
     def _concatenate_f_and_callback(self, f, callback):
         @wraps(f)
@@ -97,16 +97,20 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         else:
             stream = sys.stdout
 
-        print('====================== Iteration %05d ======================' % n_iter, file=stream)
-        print('Current state of the model:', file=stream)                                   
+        print('====================== Iteration %05d ======================' %
+              n_iter, file=stream)
+        print('Current state of the model:', file=stream)
+
         print(str(bo_obj.model), file=stream)
         print(bo_obj.model.model.kern.lengthscale, file=stream)
-        print('============================================================', file=stream)
+        print('=============================================================',
+              file=stream)
 
-        
-        print('******************************************************************', file=stream)
-        print('Current optimum: %0.3f'% y_best, file=stream)
-        print('******************************************************************', file=stream)
+        print('*************************************************************',
+              file=stream)
+        print('Current optimum: %0.3f' % y_best, file=stream)
+        print('*************************************************************',
+              file=stream)
 
         if report_file:
             stream.close()
@@ -145,7 +149,7 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         if save_file is not None:
             ensure_file_existence(save_file)
 
-        # Prepare function to use it. 
+        # Prepare function to use it.
         # Fix args and cache
         prepared_f = self.prepare_f_for_opt(f, args)
         # Wrap for automatic evaluation logging
@@ -163,7 +167,7 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         ndim = len(variables)
         if ndim == 0:
             x_best = []
-            y_best = f_in_opt([]) 
+            y_best = f_in_opt([])
             return OptimizerResult(x=x_best, y=self.sign*y_best,
                                    success=True, status="0",
                                    message="Number of variables == 0",
@@ -177,7 +181,7 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         # Initial design
         X, Y = self.initial_design(f_in_opt, variables, num_init,
                                    X_init, Y_init)
- 
+
         bo = BayesianOptimization(f=f_in_opt,
                                   domain=gpy_domain,
                                   model_type='GP',
@@ -192,13 +196,16 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
         if verbose > 0:
             write_report_f = partial(self.write_report, bo, report_file)
-            f_in_opt = self._concatenate_f_and_callback(f_in_opt, write_report_f)
+            f_in_opt = self._concatenate_f_and_callback(f_in_opt,
+                                                        write_report_f)
 
         bo.f = bo._sign(f_in_opt)
-        bo.objective = GPyOpt.core.task.objective.SingleObjective(bo.f, bo.batch_size, bo.objective_name)
+        bo.objective = GPyOpt.core.task.objective.SingleObjective(
+            bo.f, bo.batch_size, bo.objective_name)
 
         bo.run_optimization(max_iter=maxiter-len(X), eps=0, verbosity=False)
 
         return OptimizerResult.from_GPyOpt_OptimizerResult(bo)
 
-#register_global_optimizer('Bayesian_optimization', BayesianOptimizer)
+
+# register_global_optimizer('Bayesian_optimization', BayesianOptimizer)

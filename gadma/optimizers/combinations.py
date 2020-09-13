@@ -1,11 +1,11 @@
-from .global_optimizer import GlobalOptimizer
-from .optimizer import ConstrainedOptimizer
-from.optimizer_result import OptimizerResult
-from ..utils import DiscreteVariable, sort_by_other_list
-
+import sys
 from functools import wraps
 import numpy as np
-import sys
+
+from .global_optimizer import GlobalOptimizer
+from .optimizer import ConstrainedOptimizer
+from .optimizer_result import OptimizerResult
+from ..utils import DiscreteVariable, sort_by_other_list
 
 
 class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
@@ -30,6 +30,7 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
     def _f_for_local_opt(self, f, variables, x_best):
         is_filtered = self._get_filter(variables)
+
         @wraps(f)
         def wrapper(x, *args):
             full_x = self._transform_x(x, x_best, is_filtered)
@@ -40,11 +41,12 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         if callback is None:
             return None
         is_filtered = self._get_filter(variables)
+
         @wraps(callback)
         def wrapper(x, y):
             full_x = self._transform_x(x, x_best, is_filtered)
             return callback(full_x, y)
-        return wrapper 
+        return wrapper
 
     def optimize(self, f, variables, args=(), global_num_init=50,
                  X_init=None, Y_init=None, local_options={},
@@ -115,9 +117,10 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         y_best = local_result.y
         x_best = global_result.x
         x_best[is_filtered] = local_result.x
+        ga_maximize = self.global_optimizer.maximize
         X_out, Y_out = sort_by_other_list(global_result.X_out,
                                           global_result.Y_out,
-                                          reverse=self.global_optimizer.maximize)
+                                          reverse=ga_maximize)
         if np.allclose(Y_out[0], global_result.y):
             X_out[0] = x_best
         else:
@@ -129,7 +132,8 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         n_eval = global_result.n_eval + local_result.n_eval
         n_iter = global_result.n_iter + local_result.n_iter
         result = OptimizerResult(x_best, y_best, success, status, message,
-                                 X_total, Y_total, n_eval, n_iter, X_out, Y_out)
+                                 X_total, Y_total, n_eval, n_iter,
+                                 X_out, Y_out)
 
         if report_file:
             stream = open(report_file, 'a')

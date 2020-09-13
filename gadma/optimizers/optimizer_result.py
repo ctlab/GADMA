@@ -3,6 +3,7 @@ import numpy as np
 import copy
 from .. import GPyOpt
 
+
 class OptimizerResult(object):
     """
     Class for keeping optimizers result.
@@ -33,7 +34,7 @@ class OptimizerResult(object):
 
     """
     def __init__(self, x, y, success: bool, status: int, message: str,
-                 X, Y, n_eval: int, n_iter:int, X_out=[], Y_out=[]):
+                 X, Y, n_eval: int, n_iter: int, X_out=[], Y_out=[]):
         self.x = np.array(x, dtype=object)
         self.y = y
         self.success = success
@@ -90,7 +91,8 @@ class OptimizerResult(object):
             success = True
             status = 0
         else:
-            message = '** GPyOpt Bayesian Optimization class initialized successfully **'
+            message = '** GPyOpt Bayesian Optimization class initialized '\
+                      'successfully **'
             success = False
             status = 2
 

@@ -30,7 +30,7 @@ class DemographicModel(Model):
         self.fixed_vars = {}
         self.linear_constrain = linear_constrain
         super(DemographicModel, self).__init__(raise_excep=False)
-        
+
     def get_value(self, item):
         """
         Returns value of the item if it is variable, otherwise returns item
@@ -93,7 +93,7 @@ class EpochDemographicModel(DemographicModel):
         self.events = list()
         super(EpochDemographicModel, self).__init__(gen_time, theta0, mu,
                                                     linear_constrain)
-        
+
     def _get_current_pop_sizes(self):
         """
         Returns the populations sizes after the last epoch.

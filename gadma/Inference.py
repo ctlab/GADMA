@@ -5,6 +5,7 @@ from .data import SFSDataHolder
 from .engines import get_engine
 import warnings
 
+
 def load_data_from_dir(dirname, engine, projections=None,
                        population_labels=None, outgroup=None):
     """
@@ -27,8 +28,9 @@ def load_data_from_dir(dirname, engine, projections=None,
     settings.engine = engine
     engine_obj = settings.get_engine()
     settings.data_holder = SFSDataHolder(None, projections, outgroup,
-                                               population_labels)
+                                         population_labels)
     return settings.read_bootstrap_data()
+
 
 def get_claic_score(func_ex, all_boot, p0, data, engine=None, args=(),
                     eps=1e-2, pts=None):
@@ -63,7 +65,7 @@ def get_claic_score(func_ex, all_boot, p0, data, engine=None, args=(),
     # The following code exists because of backward compatibility with first
     # version of GADMA, where parameters were:
     warning_msg = ("It looks like get_claic_score function is used from GADMA "
-                  " of version 1.")
+                   " of version 1.")
     if pts is not None:
         engine = 'dadi'
         args = (pts,)
@@ -83,7 +85,7 @@ def get_claic_score(func_ex, all_boot, p0, data, engine=None, args=(),
     settings.engine = engine
     settings.model_func = func_ex
     settings._inner_data = data
-    settings.get_engine_args = lambda : args
+    settings.get_engine_args = lambda: args
     return get_claic_score(get_engine(engine), p0, all_boot, args)
 
 
@@ -149,10 +151,10 @@ def optimize_ga(data, model_func, engine, args=(),
     :param const_mut_rate: Const to change :param:`mut_rate` during GA.
     :type const_mut_rate: float
     :param eps: const for model's log likelihood compare.
-                Model is better if its log likelihood is greater than 
+                Model is better if its log likelihood is greater than
                 log likelihood of another model by epsilon.
     :type eps: float
-    :param n_stuck_gen: Number of iterations for GA stopping: GA stops when 
+    :param n_stuck_gen: Number of iterations for GA stopping: GA stops when
                         it can't improve model during n_stuck_gen generations.
     :type n_stuck_gen: int
     :param n_elitism: Number of best models from previous generation in GA
@@ -228,7 +230,7 @@ def optimize_ga(data, model_func, engine, args=(),
     local_optimizer = settings.get_local_optimizer()
 
     opt = GlobalOptimizerAndLocalOptimizer(global_optimizer,
-                                                 local_optimizer)
+                                           local_optimizer)
     result = opt.optimize(f, variables, args=args, global_num_init=num_init,
                           X_init=X_init, Y_init=Y_init, local_options={},
                           global_maxiter=ga_maxiter, local_maxiter=ls_maxiter,

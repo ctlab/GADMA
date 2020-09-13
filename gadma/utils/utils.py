@@ -160,7 +160,6 @@ def cache_func_2d(f):
     return cache_wrapper
 
 
-
 def nan_fval_to_inf(f):
     """
     Wrappes function to return infinity instead nan.
@@ -192,9 +191,10 @@ def eval_wrapper(f, eval_file=None):
         if not os.stat(eval_file).st_size == 0:
             with open(eval_file, 'r') as fl:
                 line = next(fl)
-        if  os.stat(eval_file).st_size == 0 or line.strip() != first_line:
+        if os.stat(eval_file).st_size == 0 or line.strip() != first_line:
             with open(eval_file, 'a') as fl:
                 print(first_line, file=fl, sep='\t')
+
     @wraps(f)
     def eval_wrapper_f(x):
         time_start = time.time()
@@ -202,8 +202,8 @@ def eval_wrapper(f, eval_file=None):
         time_end = time.time()
         if eval_file is not None:
             with open(eval_file, 'a') as fl:
-                print(time_start - time_init, y, list(x), time_end - time_start,
-                      file=fl, sep='\t')
+                print(time_start - time_init, y, list(x),
+                      time_end - time_start, file=fl, sep='\t')
         return y
     return eval_wrapper_f
 
@@ -227,24 +227,26 @@ def has_counter(f):
 class WeightedMetaArray(np.ndarray):
     """Array with metadata."""
     def __new__(cls, array, dtype=None, order=None):
-        obj = np.asarray(np.array(array, dtype=object), dtype=dtype, order=order).view(cls)                                 
+        obj = np.asarray(np.array(array, dtype=object),
+                         dtype=dtype, order=order).view(cls)
         obj.metadata = ''
         obj.weights = np.ones(obj.shape)
         return obj
 
     def __array_finalize__(self, obj):
-        if obj is None: return
+        if obj is None:
+            return
         self.metadata = getattr(obj, 'metadata', [{}]*(obj.ndim+1))
         self.weights = getattr(obj, 'weights', [{}]*(obj.ndim+1))
 
     def __str__(self):
-        super_str = super(WeightedMetaArray, self).__str__() 
+        super_str = super(WeightedMetaArray, self).__str__()
         if hasattr(self, 'metadata'):
             return super_str + '\t' + self.metadata
         return super_str
 
     def __repr__(self):
-        super_str = super(WeightedMetaArray, self).__repr__() 
+        super_str = super(WeightedMetaArray, self).__repr__()
         if hasattr(self, 'metadata'):
             return super_str + '\t' + self.metadata
         return super_str
@@ -294,12 +296,12 @@ class StdAndFileLogger(object):
             self.terminal.write(message)
             self.terminal.flush()
         with open(self.log_filename, 'a') as fl:
-            fl.write(message)  
+            fl.write(message)
 
     def flush(self):
-        #this flush method is needed for python 3 compatibility.
-        #this handles the flush command by doing nothing.
-        #you might want to specify some extra behavior here.
+        # this flush method is needed for python 3 compatibility.
+        # this handles the flush command by doing nothing.
+        # you might want to specify some extra behavior here.
         pass
 
 
@@ -334,7 +336,7 @@ def get_claic_score(engine, x0, boots,
 
 
 # Printing functions
-def float_repr(value, precision = 5):
+def float_repr(value, precision=5):
     if value < 10**(-precision):
         return f"{value:.2e}"
     return f"{round(value, precision)}"
@@ -358,6 +360,7 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
 
 def warning_format(message, category, filename, lineno, file=None, line=None):
     return f"{bcolors.WARNING}{category.__name__}: {message}"\

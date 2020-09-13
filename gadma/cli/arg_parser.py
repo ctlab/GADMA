@@ -2,6 +2,7 @@ import tempfile
 from ..version import __version__
 from .settings_storage import HOME_DIR
 from . import SettingsStorage
+from ..core import SUPPORT_STRING
 
 import warnings
 import argparse
@@ -9,6 +10,7 @@ import sys
 import os
 
 TEST_SETTINGS = os.path.join(HOME_DIR, "test_settings")
+
 
 def version():
     '''
@@ -24,17 +26,20 @@ def usage():
     Returns usage of tool.
     '''
     return version() + "" \
-        "Usage: \n\tgadma -p/--params <params_file> -e/--extra <extra_params_file>\n"\
+        "Usage: \n\tgadma\t-p/--params <params_file>\n"\
+        "\t\t-e/--extra <extra_params_file>\n"\
         "\n\n"\
         "Instead/With -p/--params and -e/--extra option you can set:\n"\
         "\t-o/--output <output_dir>\toutput directory.\n"\
-        "\t-i/--input <in.fs>/<in.txt>\tinput file with AFS or in dadi format.\n"\
-        "\t--resume <resume_dir>\t\tresume another launch from <resume_dir>.\n"\
-        "\t--only_models\t\t\tflag to take models only from another launch (--resume option).\n"\
-        "\n\n"\
+        "\t-i/--input <in.fs>/<in.txt>\tinput file with AFS or in dadi "\
+        "format.\n"\
+        "\t--resume <resume_dir>\t\tresume another launch from "\
+        "<resume_dir>.\n"\
+        "\t--only_models\t\t\tflag to take models only from another launch "\
+        "(--resume option).\n\n"\
         "\t-h/--help\t\tshow this help message and exit.\n"\
         "\t-v/--version\t\tshow version and exit.\n"\
-        "\t--test\t\t\trun test case.\n" #+ support.SUPPORT_STRING
+        "\t--test\t\t\trun test case.\n" + SUPPORT_STRING
 
 
 class ArgParser(argparse.ArgumentParser):
@@ -103,9 +108,10 @@ def get_settings():
         return settings_storage, args
     else:
         settings_storage = SettingsStorage.from_file(args.params, args.extra)
-        
+
     if args.only_models and args.resume is None:
-        support.error("Option --only_models  must be used with --resume option.")
+        raise ValueError("Option --only_models  must be used with "
+                         "--resume option.")
 
     if args.output is not None:
         if (settings_storage.output_dir is not None and
@@ -153,7 +159,7 @@ def get_settings():
 #            options_storage.resume_dir)) != os.path.abspath(
 #            os.path.expanduser(
 #                args.resume)):
-#        support.error(
-#            "Resume directory in parameters file doesn't match to one from --resume option")
+#        support.error("Resume directory in parameters file doesn't match "
+#                      "to one from --resume option")
 
     return settings_storage, args
