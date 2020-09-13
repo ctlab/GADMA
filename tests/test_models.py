@@ -105,7 +105,7 @@ class TestModels(unittest.TestCase):
         got = d.simulate(param, ns, pts)
         self.assertTrue(np.allclose(got, real))
         self.assertEqual(dm.number_of_populations(), 1)
-        dm.as_custom_string()
+        dm.as_custom_string(param)
 
     @unittest.skipIf(DADI_NOT_AVAILABLE, "Dadi module is not installed")
     def test_dadi_gut_2pop(self):
