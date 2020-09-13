@@ -42,9 +42,6 @@ class ArgParser(argparse.ArgumentParser):
     def format_help(self):
         return usage()
 
-    def error(self, message):
-        support.error(message)
-
 
 def test_args():
     '''

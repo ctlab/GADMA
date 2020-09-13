@@ -208,7 +208,7 @@ class StructureDemographicModel(EpochDemographicModel):
             new_event = self.events[0]
             new_values = []
             for var in new_event.variables:
-                if var in new_event.init_size_args:
+                if var not in new_event.get_vars_not_in_init_args():
                     continue
                 # We put as time some random value
                 if isinstance(var, TimeVariable):

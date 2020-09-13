@@ -19,7 +19,7 @@ class MomentsEngine(DadiOrMomentsEngine):
 
     id = 'moments'  #:
     import moments as base_module
-    supported_data = [SFSDataHolder, VCFDataHolder]  #:
+    supported_data = [SFSDataHolder]#, VCFDataHolder]  #:
     inner_data_type = base_module.Spectrum  #:
     default_dt_fac = 0.01  #:
 

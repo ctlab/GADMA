@@ -93,6 +93,9 @@ class TestModelStructure(unittest.TestCase):
                         new_dm = copy.deepcopy(dm)
                         new_dm, new_X = new_dm.increase_structure(
                             new_structure, [x])
+                        an_dm = copy.deepcopy(dm)
+                        _, X_none = an_dm.increase_structure()
+                        self.assertEqual(X_none, None)
                         engine.set_model(new_dm)
 #                        print("!!!", dm.var2value(x), new_dm.var2value(new_X[0]))
                         if check_ll and random_int == i:
@@ -132,6 +135,7 @@ class TestModelStructure(unittest.TestCase):
             # bigger or lesser structure in from_structure
             for cur_str, init_str, final_str in bad_cur_init_final_structs:
                 model = build_model(init_str, final_str)
+                self.assertRaises(ValueError, model.from_structure, cur_str)
                 self.assertRaises(ValueError, model.from_structure, cur_str)
 
             # not possible to increase structure

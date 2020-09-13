@@ -58,7 +58,7 @@ class TestDataHolder(unittest.TestCase):
         return data
 
     def test_vcf_dataholder_init(self):
-        sample_sizes = [2,1]
+        sample_sizes = (2,1)
         outgroup = True
         d = VCFDataHolder(vcf_file=VCF_DATA, popmap_file=POPMAP,
                           sample_sizes=sample_sizes, outgroup=outgroup)
@@ -90,7 +90,7 @@ class TestDataHolder(unittest.TestCase):
                          category=ResourceWarning)
         data_holder = SFSDataHolder(YRI_CEU_DATA, population_labels=[1, 2])
         self.assertRaises(ValueError, get_engine(id).read_data, data_holder)
-        data_holder = SFSDataHolder(YRI_CEU_DATA, projections=[40, 50])
+        data_holder = SFSDataHolder(YRI_CEU_DATA, projections=(40, 50))
         self.assertRaises(ValueError, get_engine(id).read_data, data_holder)
         data_holder = SFSDataHolder(YRI_CEU_F_DATA, outgroup=True)
         self.assertRaises(ValueError, get_engine(id).read_data, data_holder)
@@ -98,6 +98,8 @@ class TestDataHolder(unittest.TestCase):
         self.assertRaises(SyntaxError, get_engine(id).read_data, data_holder)
         data_holder = SFSDataHolder(DAMAGED_SNP_DATA)
         self.assertRaises(SyntaxError, get_engine(id).read_data, data_holder)
+        vcf_data = VCFDataHolder(VCF_DATA, POPMAP, (2, 1), True)
+        self.assertRaises(ValueError, get_engine(id).read_data, vcf_data)
 
     @unittest.skipIf(DADI_NOT_AVAILABLE, "Dadi module is not installed")
     def test_dadi_reading(self):
@@ -108,9 +110,21 @@ class TestDataHolder(unittest.TestCase):
         self._test_read_fails('dadi')
 
     @unittest.skipIf(MOMENTS_NOT_AVAILABLE, "Moments module is not installed")
-    def test_dadi_reading(self):
+    def test_moments_reading(self):
         self._test_sfs_reading('moments')
 
     @unittest.skipIf(MOMENTS_NOT_AVAILABLE, "Moments module is not installed")
-    def test_dadi_reading_fails(self):
+    def test_moments_reading_fails(self):
         self._test_read_fails('moments')
+
+    @unittest.skipIf(MOMENTS_NOT_AVAILABLE or DADI_NOT_AVAILABLE,
+                     'moments and dadi are not installed')
+    def test_data_transform(self):
+        data_holder = SFSDataHolder(YRI_CEU_DATA)
+        dadi_eng = get_engine('dadi')
+        dadi_eng.set_data(data_holder)
+        moments_eng = get_engine('moments')
+        moments_eng.set_data(dadi_eng.data)
+        dadi_eng.set_data(moments_eng.data)
+        moments_eng.set_data(np.array([[1, 2], [2, 3]]))
+        self.assertRaises(ValueError, moments_eng.set_data, set())

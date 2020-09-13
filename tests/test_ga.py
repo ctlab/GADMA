@@ -4,6 +4,7 @@ import numpy as np
 from .test_optimizers import get_func, get_1pop_sim_example_1
 from .test_optimizers import get_1pop_sim_example_2, get_2pop_sim_example_1
 from .test_data import YRI_CEU_DATA
+import gadma
 
 EXAMPLE_FOLDER = os.path.join(os.path.dirname(__file__), "test_data")
 EXAMPLE_DATA = os.path.join(EXAMPLE_FOLDER, "YRI_CEU.fs")
@@ -205,7 +206,8 @@ class TestGeneticAlg(unittest.TestCase):
                           eval_file='eval_file', callback=callback)
 
     def test_run_gadma_test(self):
-        sys.argv = ['python3', '--test']
+        sys.argv = ['gadma', '--test']
+        gadma.core.main()
 
     def test_inference(self):
         for engine in all_engines():
