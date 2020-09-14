@@ -145,13 +145,28 @@ class TestGeneticAlg(unittest.TestCase):
             args = ([40,50,60],)
         f, variables = example_func(engine_id, args)
 
+        report_file = 'report_file'
+        save_file = 'save_file'  # TODO
+        eval_file = 'eval_file'
+
         for opt in all_global_optimizers():
             if not_bayesopt and opt.id == 'Bayesian_optimization':
                 continue  # TODO
             with self.subTest(optimizer=opt.id):
+                open(report_file, 'w').close()
+                open(eval_file, 'w').close()
                 res = opt.optimize(f, variables, args=args,
-                                   num_init=10, maxeval=25,maxiter=5)
+                                   num_init=5, maxeval=20, maxiter=10,
+                                   report_file=report_file, verbose=1,
+                                   save_file=save_file, eval_file=eval_file)
                 self.assertEqual(res.y, f(res.x, *args))
+                self.assertTrue(os.stat(eval_file).st_size > 0)
+                self.assertTrue(os.stat(report_file).st_size > 0)
+                int_lines = 0
+                with open(eval_file) as fl:
+                    for line in fl:
+                        int_lines += 1
+                self.assertTrue(int_lines <= 20)
 
     def test_1pop_example_1(self):
         for engine in all_engines():

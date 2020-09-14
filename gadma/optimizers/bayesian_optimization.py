@@ -109,7 +109,7 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             x_best = x
             y_best = y
 
-        if report_file:
+        if report_file is not None:
             stream = open(report_file, 'a')
         else:
             stream = sys.stdout
@@ -129,7 +129,7 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         print('*************************************************************',
               file=stream)
 
-        if report_file:
+        if report_file is not None:
             stream.close()
 
     def optimize(self, f, variables, args=(), num_init=10,
@@ -209,12 +209,12 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                                   exact_feval=True,
                                   verbosity=True,
                                   )
-
         def union_callback(x, y):
             if verbose > 0:
                 self.write_report(bo, report_file, x, y)
-                if callback is not None:
-                    callback(x, y)
+            if callback is not None:
+                callback(x, y)
+
         f_in_opt = self._concatenate_f_and_callback(f_in_opt, union_callback)
 
         bo.f = bo._sign(f_in_opt)
@@ -224,7 +224,8 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         bo.run_optimization(max_iter=min(maxiter, maxeval)-len(X), eps=0,
                             verbosity=False)
 
-        return OptimizerResult.from_GPyOpt_OptimizerResult(bo)
+        result = OptimizerResult.from_GPyOpt_OptimizerResult(bo)
+        return result
 
 
 register_global_optimizer('Bayesian_optimization', BayesianOptimizer)
