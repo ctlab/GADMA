@@ -1,4 +1,3 @@
-
 import os
 import ruamel.yaml
 import numpy as np
@@ -15,6 +14,7 @@ import warnings
 import importlib.util
 import sys
 import copy
+import numbers
 
 HOME_DIR = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 PARAM_TEMPLATE = os.path.join(HOME_DIR, "params_template")
@@ -25,7 +25,9 @@ CHANGED_IDENTIFIERS = {"use_moments_or_dadi": "engine",
                        "fractions_in_ga": "fractions",
                        "epsilon": "eps",
                        "stop_iteration": "stuck_generation_number",
-                       "name_of_local_optimization": "local_optimizer"}
+                       "name_of_local_optimization": "local_optimizer",
+                       "lower_bounds": "lower_bound",
+                       "upper_bounds": "upper_bound"}
 
 DEPRECATED_IDENTIFIERS = ["multinom", "verbose", "flush_delay",
                           "epsilon_for_ls", "gtol", "maxiter",
@@ -72,9 +74,10 @@ class SettingsStorage(object):
         bounds_lists = ['lower_bound', 'upper_bound', 'parameter_identifiers']
         missed_attrs = ['engine', 'local_optimizer', '_inner_data',
                         '_bootstrap_data', 'X_init', 'Y_init', 'model_func',
-                        'get_engine_args']
+                        'get_engine_args', 'units_of_time_in_drawing']
 
         super_hasattr = True
+        setattr_at_the_end = True
         try:
             super(SettingsStorage, self).__getattr__(name)
         except AttributeError:
@@ -92,18 +95,20 @@ class SettingsStorage(object):
                 name not in bounds_lists and not super_hasattr):
             raise ValueError(f"Setting {name} should be checked.")
 
-        super(SettingsStorage, self).__setattr__(name, value)
-
         # -1. For structures it could be one number. We need to transfrom
         # it in list
         if name == 'initial_structure' or name == 'final_structure':
-            if isinstance(value, (int, np.integer)):
+            if isinstance(value, numbers.Integral):
                 value = [value]
-                super(SettingsStorage, self).__setattr__(name, value)
+                self.__setattr__(name, value)
 
+        if isinstance(value, str) and value.lower() == 'none':
+            value = None
         # 0. If attribute is equal to the same from setting storage
         # then we let it go any way. It is because of None's in settings
         we_check = True
+        if value is None:
+            we_check = False
         if hasattr(settings, name):
             default_value = getattr(settings, name)
             if (isinstance(value, np.ndarray) or
@@ -113,19 +118,26 @@ class SettingsStorage(object):
             else:
                 if default_value == value:
                     we_check = False
-                    delattr(self, name)
+                    try:
+                        existed = object.__getattribute__(self, name)
+                        if existed != value:
+                            delattr(self, name)
+                    except AttributeError:
+                        pass
+                    setattr_at_the_end = False
 
         # 1. Base checks
         # 1.1 Check is int (positive)
         if name in int_attrs and we_check:
-            if not isinstance(value, (int, np.integer)):
+            if (not isinstance(value, numbers.Integral) or
+                    isinstance(value, bool)):
                 raise ValueError(f"Setting {name} ({value}) must be integer.")
             if value < 0:
                 raise ValueError(f"Setting {name} ({value}) must be positive.")
         # 1.2 Check is float and probability
         if (name in float_attrs or name in probs_attrs) and we_check:
-            if (not isinstance(value, (int, float, np.float)) and
-                    not isinstance(value, (int, np.integer))):
+            if (not isinstance(value, numbers.Real) or
+                    isinstance(value, bool)):
                 raise ValueError(f"Setting {name} ({value}) must be float.")
             if name in probs_attrs and (value < 0 or value > 1):
                 raise ValueError(f"Setting {name} ({value}) must be between 0 "
@@ -141,13 +153,12 @@ class SettingsStorage(object):
             if isinstance(value, str):
                 try:
                     value = [int(x) for x in value.split(',')]
-                    super(SettingsStorage, self).__setattr__(name, value)
                 except:  # NOQA
                     raise error
             if not isinstance(value, (list, tuple, np.ndarray)):
                 raise error
             for val in value:
-                if not isinstance(val, (int, np.integer)):
+                if not isinstance(val, numbers.Integral):
                     raise error
                 if val < 0:
                     raise ValueError(f"Setting {name} ({value}) have positive"
@@ -164,14 +175,13 @@ class SettingsStorage(object):
             if isinstance(value, str):
                 try:
                     value = [float(x) for x in value.split(',')]
-                    super(SettingsStorage, self).__setattr__(name, value)
+                    self.__setattr__(name, value)
                 except:  # NOQA
                     raise error
             if not isinstance(value, (list, tuple, np.ndarray)):
                 raise error
             try:
                 value = [float(x) for x in value]
-                super(SettingsStorage, self).__setattr__(name, value)
             except:  # NOQA
                 raise error
             if name in probs_list_attrs:
@@ -182,9 +192,9 @@ class SettingsStorage(object):
         # and equal to the number of populations
         if name in attrs_with_equal_len:
             attrs_list = attrs_with_equal_len
-        elif name in bounds_attrs:
-            attrs_list = bounds_attrs
-        if ((name in attrs_with_equal_len or name in bounds_attrs) and
+        elif name in bounds_lists:
+            attrs_list = bounds_lists
+        if ((name in attrs_with_equal_len or name in bounds_lists) and
                 we_check):
             for attr_name in attrs_list:
                 attr_value = getattr(self, attr_name)
@@ -194,7 +204,7 @@ class SettingsStorage(object):
                     raise ValueError(f"Setting {name} ({value}) has different"
                                      f" length with another setting "
                                      f"{attr_name} ({attr_value}).")
-            if (name not in bounds_attrs and
+            if (name not in bounds_lists and
                     hasattr(self, 'number_of_populations') and
                     len(getattr(self, name)) != self.number_of_populations):
                 raise ValueError(f"Length of {name} should be equal to "
@@ -203,21 +213,19 @@ class SettingsStorage(object):
         if name == 'population_labels':
             if isinstance(value, str):
                 value = value.split(',')
-                super(SettingsStorage, self).__setattr__(name, value)
+                self.__setattr__(name, value)
 
         # 1.8 Check for empty dirs
-        if name in empty_dir_attrs:
+        if name in empty_dir_attrs and value is not None:
             value = ensure_dir_existence(value, check_emptiness=True)
-            super(SettingsStorage, self).__setattr__(name, value)
         # 1.9 Check file and dir exist
-        if name in exist_file_attrs:
+        if name in exist_file_attrs and value is not None:
             value = ensure_file_existence(value)
-            super(SettingsStorage, self).__setattr__(name, value)
-        if name in exist_dir_attrs:
+        if name in exist_dir_attrs and value is not None:
             value = check_dir_existence(value)
 
         # 1.10 Check that identifiers are good:
-        if name == "parameter_identifiers":
+        if name == "parameter_identifiers" and value is not None:
             # print(name, value)
             if isinstance(value, str):
                 value = [x for x in value.split(",")]
@@ -227,7 +235,6 @@ class SettingsStorage(object):
                     raise ValueError("Each parameter identifier should start"
                                      " with symbol from the following list: "
                                      f"{settings.P_IDS.keys()}")
-            super(SettingsStorage, self).__setattr__(name, value)
 
         # 2. Dependencies checks
         # 2.1 Const of mutation strength and rate
@@ -245,7 +252,7 @@ class SettingsStorage(object):
         # 3. Now change some other attributes according to new one
         # 3.1 If new_file we need to create data_holder
         if name == 'input_file':
-            data_holder = SFSDataHolder(self.input_file,
+            data_holder = SFSDataHolder(value,
                                         self.projections,
                                         self.outgroup,
                                         self.population_labels,
@@ -282,25 +289,51 @@ class SettingsStorage(object):
         # 3.7 If we set fractions or size of generation then we create/update
         # GA options that depend on these values.
         elif name == 'fractions' or name == 'size_of_generation':
-            n_elitism = int(self.fractions[0] * self.size_of_generation)
-            p_random = 1 - sum(self.fractions)
-            super(SettingsStorage, self).__setattr__('n_elitism',
-                                                     n_elitism)
-            super(SettingsStorage, self).__setattr__('p_mutation',
-                                                     self.fractions[1])
-            super(SettingsStorage, self).__setattr__('p_crossover',
-                                                     self.fractions[2])
-            super(SettingsStorage, self).__setattr__('p_random',
-                                                     p_random)
+            fractions = value
+            gen_size = value
+            if name == 'fractions':
+                name = '_fractions'
+                if len(fractions) not in [3, 4]:
+                    raise ValueError("Length of fractions ({value}) must be "
+                                     "equal to 3 (old,mut,cros) or 4 "
+                                     "(old,mut,cros,rand). Got length of "
+                                     f"{len(values)}")
+                if len(fractions) == 3:
+                    if sum(value) > 1:
+                        raise ValueError('Sum of fractions (when 3 fractions'
+                                         ' are setted) must be not greater '
+                                         f'than 1. ({value})')
+                if hasattr(self, 'size_of_generation'):
+                    gen_size = self.size_of_generation
+                else:
+                    gen_size = None
+            if name == 'size_of_generation':
+                if hasattr(self, 'fractions'):
+                    fractions = self.fractions
+                else:
+                    fractions = None
+            if fractions is not None:
+                if gen_size is not None:
+                    n_elitism = int(fractions[0] * gen_size)
+                    self.__setattr__('n_elitism', n_elitism)
+                if len(fractions) == 3:
+                    p_random = 1 - sum(fractions)
+                else:
+                    p_random = fractions[3]
+                self.__setattr__('p_mutation', fractions[1])
+                self.__setattr__('p_crossover', fractions[2])
+                self.__setattr__('p_random', p_random)
+                if name == '_fractions' and len(value) == 3:
+                    value.append(p_random)
         # 3.8 Units of time in drawings
         elif (name == 'units_of_time_in_drawing' or
                 name == 'const_of_time_in_drawing'):
-            d = {'generations': 1, 'years': 1,
+            d = {'generations': 1, 'years': 1, 'thousand years': 0.01,
                  'thousands of years': 0.01, 'kya': 0.01}
             if name == 'units_of_time_in_drawing':
                 if value not in d:
-                    raise ValueError(f"Setting {name} (value) must be one of:"
-                                     f" {d.keys()}")
+                    raise ValueError(f"Setting {name} ({value}) must be one "
+                                     f"of: {d.keys()}")
                 if (value != 'generations' and
                         not hasattr(self, 'time_for_generation')):
                     warnings.warn(f"There is no time for one generation, time"
@@ -308,8 +341,7 @@ class SettingsStorage(object):
             else:
                 for key, val in d.items():
                     if val == value:
-                        super(SettingsStorage, self).__setattr__(
-                            'units_of_time_in_drawing', key)
+                        self.__setattr__('units_of_time_in_drawing', key)
                         break
         # 3.9 Domain of variables
         elif name in bounds_attrs:
@@ -339,7 +371,7 @@ class SettingsStorage(object):
 
         # 3.10 If we set custom filename with model we should check it is
         # valid python code
-        if name == "custom_filename":
+        if name == "custom_filename" and value is not None:
             spec = importlib.util.spec_from_file_location("module", value)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
@@ -350,8 +382,7 @@ class SettingsStorage(object):
                 raise ValueError("There is no such function `model_func` in "
                                  f" file {value}.")
             model_func_value = getattr(module, func_name)
-            super(SettingsStorage, self).__setattr__("model_func",
-                                                     model_func_value)
+            self.__setattr__("model_func", model_func_value)
 
         if name in bounds_attrs and self.custom_filename is None:
             msg = f"Setting {name} is set before custom_filename is set."
@@ -366,17 +397,14 @@ class SettingsStorage(object):
             if self.lower_bound is not None and self.upper_bound is not None:
                 warnings.warn(f"Setting {name} will be ignored as the custom "
                               "model is already set.")
+        if setattr_at_the_end:
+            super(SettingsStorage, self).__setattr__(name, value)
+            assert(self.__getattr__(name) == value)
 
     def __getattr__(self, name):
         try:
-            return super(SettingsStorage, self).__getattr__(name)
+            return object.__getattribute__(self, name)
         except AttributeError:
-            if not hasattr(settings, name):
-                raise AttributeError(f"There is no such attribute {name} "
-                                     "for SettingsStorage.")
-            value = getattr(settings, name)
-            if value is not None:
-                return value
             # If it is None then maybe we want to return some default value
             if name == "initial_structure" and self.custom_filename is None:
                 if hasattr(self, "number_of_populations"):
@@ -435,7 +463,23 @@ class SettingsStorage(object):
                             bound.append(domain[1])
                     self.__setattr__(name, bound)
                     return bound
-            return value
+            if hasattr(settings, name):
+                return getattr(settings, name)
+            raise AttributeError(f"There is no such attribute {name} "
+                                 "for SettingsStorage.")
+
+    @property
+    def fractions(self):
+        if not hasattr(self, '_fractions'):
+            return settings.fractions
+        fracs = self._fractions
+        if hasattr(self, 'size_of_generation'):
+            if self.size_of_generation is not None:
+                p_1 = float(self.n_elitism) / self.size_of_generation
+            else:
+                p_1 = fracs[0]
+        fracs = [p_1, self.p_mutation, self.p_crossover, self.p_random]
+        return fracs
 
     def read_data(self):
         engine = get_engine(self.engine)
@@ -532,6 +576,7 @@ class SettingsStorage(object):
                     warnings.warn(f"Setting `{key}` was deprecated in 2 "
                                   "version of GADMA. If you have not set it "
                                   "in purpose, ignore this warning.")
+                    continue
                 else:
                     raise AttributeError(f"Unknown identifier: `{key}`.")
             settings_storage.__setattr__(attr_name, loaded_dict[key])

@@ -67,7 +67,7 @@ def all_local_optimizers():
     """
     Returns an iterator over all registered local optimizers.
     """
-    for optim in _registered_local_optimizers.values():
+    for optim in set(_registered_local_optimizers.values()):
         yield copy.deepcopy(optim)
 
 
@@ -86,8 +86,8 @@ class NoneOptimizer(LocalOptimizer):
         return result
 
 
-register_local_optimizer("None", NoneOptimizer())
 register_local_optimizer(None, NoneOptimizer())
+register_local_optimizer("None", _registered_local_optimizers[None])
 
 
 class ScipyOptimizer(LocalOptimizer):
@@ -308,9 +308,13 @@ class ScipyConstrOptimizer(ScipyOptimizer, ConstrainedOptimizer):
 
 
 register_local_optimizer('L-BFGS-B', ScipyConstrOptimizer('L-BFGS-B'))
+register_local_optimizer('optimize_lbfgsb',
+                         _registered_local_optimizers['L-BFGS-B'])
 register_local_optimizer('L-BFGS-B_log',
                          ScipyConstrOptimizer('L-BFGS-B',
                                               log_transform=True))
+register_local_optimizer('optimize_log_lbfgsb',
+                         _registered_local_optimizers['L-BFGS-B_log'])
 
 
 class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
@@ -393,21 +397,32 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
 register_local_optimizer('BFGS',
                          ManuallyConstrOptimizer(
                             ScipyUnconstrOptimizer('BFGS')))
+register_local_optimizer('optimize', _registered_local_optimizers['BFGS'])
 register_local_optimizer('BFGS_log',
                          ManuallyConstrOptimizer(
                             ScipyUnconstrOptimizer('BFGS'),
                             log_transform=True))
+register_local_optimizer('optimize_log',
+                         _registered_local_optimizers['BFGS_log'])
 register_local_optimizer('Powell',
                          ManuallyConstrOptimizer(
                             ScipyUnconstrOptimizer('Powell')))
+register_local_optimizer('optimize_powell',
+                         _registered_local_optimizers['Powell'])
 register_local_optimizer('Powell_log',
                          ManuallyConstrOptimizer(
                             ScipyUnconstrOptimizer('Powell'),
                             log_transform=True))
+register_local_optimizer('optimize_log_powell',
+                         _registered_local_optimizers['Powell_log'])
 register_local_optimizer('Nelder-Mead',
                          ManuallyConstrOptimizer(
                             ScipyUnconstrOptimizer('Nelder-Mead')))
+register_local_optimizer('optimize_fmin',
+                         _registered_local_optimizers['Nelder-Mead'])
 register_local_optimizer('Nelder-Mead_log',
                          ManuallyConstrOptimizer(
                             ScipyUnconstrOptimizer('Nelder-Mead'),
                             log_transform=True))
+register_local_optimizer('optimize_log_fmin',
+                         _registered_local_optimizers['Nelder-Mead_log'])
