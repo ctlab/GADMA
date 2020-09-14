@@ -23,7 +23,6 @@ class TestCLI(unittest.TestCase):
         self.assertRaises(SystemExit, get_settings)
 
     def test_settings_storage(self):
-        self.assertEqual(len(list(all_local_optimizers())), 5)
         settings = SettingsStorage()
 
         some_strange_attr = "some_strange_attr"
@@ -80,10 +79,8 @@ class TestCLI(unittest.TestCase):
         # equal length
         settings.lower_bound = [0.3, 2, 4]
         settings.upper_bound = [1.4, 3, 5]
-        print(settings.upper_bound)
         self.assertRaises(ValueError, settings.__setattr__,
                           'upper_bound', [1.4, 3])
-        print(settings.upper_bound)
         # self.assertRaises(ValueError, settings.__setattr__,
         #                   'upper_bound', [0, 3, 5])
         self.assertRaises(ValueError, settings.__setattr__,

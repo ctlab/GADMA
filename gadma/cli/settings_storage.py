@@ -283,7 +283,7 @@ class SettingsStorage(object):
             for attr_name in attrs_with_equal_len:
                 if getattr(self, attr_name) is None:
                     continue
-                if len(getattr(self, attr_name)) != self.number_of_populations:
+                if len(getattr(self, attr_name)) != value:
                     raise ValueError(f"Length of {attr_name} should be equal "
                                      f"to {self.number_of_populations}.")
         # 3.7 If we set fractions or size of generation then we create/update
@@ -399,7 +399,7 @@ class SettingsStorage(object):
                               "model is already set.")
         if setattr_at_the_end:
             super(SettingsStorage, self).__setattr__(name, value)
-            assert(self.__getattr__(name) == value)
+            # assert(self.__getattr__(name) == value)
 
     def __getattr__(self, name):
         try:
@@ -461,7 +461,7 @@ class SettingsStorage(object):
                             bound.append(domain[0])
                         else:
                             bound.append(domain[1])
-                    self.__setattr__(name, bound)
+                    value = bound
                     return bound
             if hasattr(settings, name):
                 return getattr(settings, name)
