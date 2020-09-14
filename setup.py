@@ -18,7 +18,7 @@ import os, sys
 
 
 NAME = 'gadma'
-VERSION = '1.0.1'
+VERSION = '2.0.0'
 SUPPORTED_PYTHON_VERSIONS = ['3.6', '3.7']
 
 
@@ -32,7 +32,8 @@ if sys.version[0:3] not in SUPPORTED_PYTHON_VERSIONS:
 
 # Create a simple version.py module; less trouble than hard-coding the version
 with open(os.path.join('gadma', 'version.py'), 'w') as f:
-    f.write('__version__ = version = %r' % VERSION)
+    f.write('__version__ = %r\nversion = __version__\n' % VERSION)
+    f.write('\n# This is a new line that ends the file.')
 
 
 # Load up the description from README.rst
