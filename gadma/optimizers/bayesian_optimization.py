@@ -29,6 +29,22 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         self.ARD = ARD
         self.acquisition_type = acquisition_type
         super(BayesianOptimizer, self).__init__(log_transform, maximize)
+        self.original_transform = copy.deepcopy(self.transform)
+        self.original_inv_transform = copy.deepcopy(self.inv_transform)
+
+        def new_transform(x):
+            return self.gpyopt_transform(self.original_transform(x))
+
+        def new_inv_transform(x):
+            return self.gpyopt_inv_transform(self.original_inv_transform(x))
+        self.transform = new_transform
+        self.inv_transform = new_inv_transform
+
+    def gpyopt_transform(self, x):
+        return [x]
+
+    def gpyopt_inv_transform(self, x):
+        return x[0]
 
     def _get_kernel_class(self):
         return op.attrgetter(self.kernel_name)(GPy.kern.src.stationary)
@@ -42,35 +58,36 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         for var in variables:
             gpy_domain.append({'name': var.name,
                                'type': var.var_type,
-                               'domain': self.transform(var.domain)})
+                               'domain': self.original_transform(var.domain)})
         return gpy_domain
 
-    def evaluate(self, f, x, args=(), linear_constrain=None):
-        return [super(BayesianOptimizer, self).evaluate(f, x[0], args,
-                                                        linear_constrain)]
+#    def evaluate(self, f, x, args=(), linear_constrain=None):
+#        return [super(BayesianOptimizer, self).evaluate(f, x[0], args,
+#                                                        linear_constrain)]
 
     def _concatenate_f_and_callback(self, f, callback):
         @wraps(f)
         def concat_wrapper(x):
             y = f(x)
-            callback(x[0], y[0])
-            return y
+            if callback is not None:
+                callback(self.inv_transform(x), y)
+            return [y]
         return concat_wrapper
 
-    def initial_design(self, f, variables, num_init, X_init=None, Y_init=None,
-                       random_type='resample', custom_rand_gen=None):
-        X = list()
-        if X_init is not None:
-            X = list(X_init)
-        for _ in range(num_init - len(X)):
-            x = [self.randomize(variables, random_type, custom_rand_gen)]
-            X.append(x)
-        Y = None
-        if Y_init is not None:
-            Y = np.array(Y).reshape(len(Y), -1)
-        X, Y = super(BayesianOptimizer, self).initial_design(f, variables,
-                                                             num_init, X, Y)
-        return [x[0] for x in X], Y
+#    def initial_design(self, f, variables, num_init, X_init=None, Y_init=None,
+#                       random_type='resample', custom_rand_gen=None):
+#        X = list()
+#        if X_init is not None:
+#            X = list(X_init)
+#        for _ in range(num_init - len(X)):
+#            x = [self.randomize(variables, random_type, custom_rand_gen)]
+#            X.append(x)
+#        Y = None
+#        if Y_init is not None:
+#            Y = np.array(Y).reshape(len(Y), -1)
+#        X, Y = super(BayesianOptimizer, self).initial_design(f, variables,
+#                                                             num_init, X, Y)
+#        return [x[0] for x in X], Y
 
     def write_report(self, bo_obj, report_file, x, y):
         """
@@ -140,7 +157,6 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         from GPyOpt.methods import BayesianOptimization
         if maxiter is None:
             maxiter = 100
-        print("here")
         # Create logging files
         if eval_file is not None:
             ensure_file_existence(eval_file)
@@ -161,13 +177,11 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         if callback is not None:
             callback = self.prepare_callback(callback)
 
-        f_in_opt = self._concatenate_f_and_callback(f_in_opt, callback)
-
         # Stuff for BO
         ndim = len(variables)
         if ndim == 0:
             x_best = []
-            y_best = f_in_opt([])
+            y_best = f_in_opt([x_best])
             return OptimizerResult(x=x_best, y=self.sign*y_best,
                                    success=True, status="0",
                                    message="Number of variables == 0",
@@ -179,8 +193,10 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         gpy_domain = self.get_domain(variables)
 
         # Initial design
-        X, Y = self.initial_design(f_in_opt, variables, num_init,
+        X, Y = self.initial_design(finally_wrapped_f, variables, num_init,
                                    X_init, Y_init)
+
+        Y = np.array(Y).reshape(len(Y), -1)
 
         bo = BayesianOptimization(f=f_in_opt,
                                   domain=gpy_domain,
@@ -194,18 +210,21 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                                   verbosity=True,
                                   )
 
-        if verbose > 0:
-            write_report_f = partial(self.write_report, bo, report_file)
-            f_in_opt = self._concatenate_f_and_callback(f_in_opt,
-                                                        write_report_f)
+        def union_callback(x, y):
+            if verbose > 0:
+                self.write_report(bo, report_file, x, y)
+                if callback is not None:
+                    callback(x, y)
+        f_in_opt = self._concatenate_f_and_callback(f_in_opt, union_callback)
 
         bo.f = bo._sign(f_in_opt)
         bo.objective = GPyOpt.core.task.objective.SingleObjective(
             bo.f, bo.batch_size, bo.objective_name)
 
-        bo.run_optimization(max_iter=maxiter-len(X), eps=0, verbosity=False)
+        bo.run_optimization(max_iter=min(maxiter, maxeval)-len(X), eps=0,
+                            verbosity=False)
 
         return OptimizerResult.from_GPyOpt_OptimizerResult(bo)
 
 
-# register_global_optimizer('Bayesian_optimization', BayesianOptimizer)
+register_global_optimizer('Bayesian_optimization', BayesianOptimizer)

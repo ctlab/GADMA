@@ -7,6 +7,8 @@ install:
  - pip install codecov
  - pip install pycodestyle
  - ./install
+ - pip install GPy
+ - pip install GPyOpt
  - cat gadma/version.py
 script:
  - cat gadma/version.py

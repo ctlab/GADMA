@@ -139,16 +139,18 @@ class TestGeneticAlg(unittest.TestCase):
                           variables, X_gen, selection_type='bad_type')
 
 
-    def run_example(self, engine_id, example_func):
+    def run_example(self, engine_id, example_func, not_bayesopt=False):
         args = ()
         if engine_id == 'dadi':
             args = ([40,50,60],)
         f, variables = example_func(engine_id, args)
 
         for opt in all_global_optimizers():
+            if not_bayesopt and opt.id == 'Bayesian_optimization':
+                continue  # TODO
             with self.subTest(optimizer=opt.id):
-                res = opt.optimize(f, variables, 
-                                   args=args, num_init=20, maxeval=35)
+                res = opt.optimize(f, variables, args=args,
+                                   num_init=10, maxeval=25,maxiter=5)
                 self.assertEqual(res.y, f(res.x, *args))
 
     def test_1pop_example_1(self):
@@ -159,7 +161,8 @@ class TestGeneticAlg(unittest.TestCase):
     def test_1pop_example_2(self):
         for engine in all_engines():
             with self.subTest(engine=engine.id):
-                self.run_example(engine.id, get_1pop_sim_example_2)
+                self.run_example(engine.id, get_1pop_sim_example_2,
+                                 not_bayesopt=True)
 
     def test_2pop_example_1(self):
         for engine in all_engines():

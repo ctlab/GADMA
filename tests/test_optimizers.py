@@ -201,7 +201,7 @@ class TestLocalOpt(TestBaseOptClass):
         for opt in all_global_optimizers():
             with self.subTest(optimizer=opt.id):
                 res = opt.optimize(f, dm.variables, num_init=10,
-                                   args=args, maxeval=25)
+                                   args=args, maxeval=25, maxiter=5)
         for opt in all_local_optimizers():
             with self.subTest(local_optimizer=opt.id):
                 res = opt.optimize(f, dm.variables, x0=values,
