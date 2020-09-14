@@ -209,6 +209,7 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                                   exact_feval=True,
                                   verbosity=True,
                                   )
+
         def union_callback(x, y):
             if verbose > 0:
                 self.write_report(bo, report_file, x, y)
