@@ -10,6 +10,7 @@ install:
 script:
  - nosetests -vs tests --with-coverage --cover-package gadma     --cover-branches --cover-erase --cover-xml --cover-inclusive tests
  - python3 -m codecov
+ - cat gadma/version.py
  - pycodestyle gadma
 after_success:
  - bash <(curl -s https://codecov.io/bash)
