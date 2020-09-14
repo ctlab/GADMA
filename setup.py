@@ -33,7 +33,7 @@ if sys.version[0:3] not in SUPPORTED_PYTHON_VERSIONS:
 # Create a simple version.py module; less trouble than hard-coding the version
 with open(os.path.join('gadma', 'version.py'), 'w') as f:
     f.write('__version__ = %r\nversion = __version__\n' % VERSION)
-    f.write('\n# This is a new line that ends the file.')
+    f.write('\n# This is a new line that ends the file.\n')
 
 
 # Load up the description from README.rst
