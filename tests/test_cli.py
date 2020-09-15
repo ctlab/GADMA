@@ -3,6 +3,7 @@ import sys
 import os
 import numpy as np
 import copy
+import shutil
 
 from gadma.cli.arg_parser import ArgParser, get_settings
 from gadma.cli import SettingsStorage
@@ -16,11 +17,15 @@ class TestCLI(unittest.TestCase):
         parser = ArgParser()
         parser.format_help()
 
-        sys.argv = ['gadma', '--test']
-        get_settings()
+        old_argv = copy.copy(sys.argv)
+        try:
+            sys.argv = ['gadma', '--test']
+            get_settings()
 
-        sys.argv = ['gadma']
-        self.assertRaises(SystemExit, get_settings)
+            sys.argv = ['gadma']
+            self.assertRaises(SystemExit, get_settings)
+        finally:
+            sys.argv = old_argv
 
     def test_settings_storage(self):
         settings = SettingsStorage()
@@ -111,8 +116,19 @@ class TestCLI(unittest.TestCase):
         settings = SettingsStorage()
         settings.from_file(old_param_file)
 
+    def test_another_param_file(self):
+        param_file = os.path.join(DATA_PATH, 'another_test_params')
+        out_dir = os.path.join(os.path.dirname(__file__), 'output_dir')
+        if check_dir_existence(out_dir):
+            shutil.rmtree(out_dir)
+
+        old_argv = copy.copy(sys.argv)
+        try:
+            sys.argv = ['gadma', '-p', param_file]
+            core.main()
+        finally:
+            shutil.rmtree(out_dir)
+            sys.argv = old_argv
+ 
 
 
-        
-       
-        

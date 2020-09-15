@@ -36,15 +36,6 @@ def job(index, shared_dict, settings):
         raise e
 
 
-def worker_init():
-    """Graceful way to interrupt all processes by Ctrl+C."""
-    # ignore the SIGINT in sub process
-    def sig_int(signal_num, frame):
-        pass
-
-    signal.signal(signal.SIGINT, sig_int)
-
-
 def main():
     settings_storage, args = arg_parser.get_settings()
 
@@ -90,7 +81,6 @@ def main():
     print(f"{bcolors.OKBLUE}--Start pipeline--{bcolors.ENDC}")
 
     # Change output stream both to stdout and log file
-    sys.stdout = saved_stdout
     sys.stdout = StdAndFileLogger(log_file, settings_storage.silence)
 
     # Create shared dictionary
@@ -132,6 +122,8 @@ def main():
                       f"exception:{bcolors.ENDC}", file=sys.stderr)
                 print(traceback.format_exc(), file=sys.stderr)
                 print(SUPPORT_STRING)
+                sys.stdout = saved_stdout
+                sys.stderr = saved_stderr
                 os._exit(1)
         if all_finished:
             break
@@ -164,8 +156,6 @@ def main():
     print_runs_summary(start_time, shared_dict, settings_storage, None,
                        None, None)
 
-    sys.stdout = StdAndFileLogger(log_file)
-
     print('\n--Finish pipeline--\n')
     if args.test:
         print('--Test passed correctly--')
@@ -179,6 +169,9 @@ def main():
 
     print('Thank you for using GADMA!')
     print(SUPPORT_STRING)
+
+    sys.stdout = saved_stdout
+    sys.stderr = saved_stderr
 
 
 if __name__ == '__main__':

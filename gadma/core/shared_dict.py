@@ -55,7 +55,7 @@ class SharedDict(object):
             models = self.get_models_in_group(process, group)
         else:
             models = []
-        models = models.extend(model)
+        models.append(model)
         process_dict[group] = copy.deepcopy(models)
         self.dict[process] = process_dict
 
@@ -120,9 +120,10 @@ class SharedDictForCoreRun(SharedDict):
         sign = -1
         if group == 'log-likelihood':
             sign = 1
-        if isinstance(model[2], dict):
-            return sign * model[2][group]
-        return sign * model[2]
+        _1, _2, y = self._model(group, *model)
+        if isinstance(y[group], tuple):
+            return sign * y[group][0]
+        return sign * y[group]
 
     def update_best_model_for_process(self, process, group, engine, x, y):
         # print(x)

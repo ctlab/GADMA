@@ -258,6 +258,10 @@ def update_by_one_fifth_rule(value, const, was_improved):
     return value / (const) ** (0.25)
 
 
+def abspath(path):
+    return os.path.abspath(os.path.expanduser(path))
+
+
 def check_file_existence(path_to_file):
     return os.path.exists(path_to_file) and os.path.isfile(path_to_file)
 
@@ -267,14 +271,14 @@ def check_dir_existence(path_to_dir):
 
 
 def ensure_file_existence(path_to_file):
-    filename = os.path.abspath(os.path.expanduser(path_to_file))
+    filename = abspath(path_to_file)
     if not check_file_existence(filename):
         open(filename, 'w').close()
     return filename
 
 
 def ensure_dir_existence(path_to_dir, check_emptiness=False):
-    dirname = os.path.abspath(os.path.expanduser(path_to_dir))
+    dirname = abspath(path_to_dir)
     if not os.path.exists(dirname):
         os.makedirs(dirname)
     if os.listdir(dirname) != [] and check_emptiness:

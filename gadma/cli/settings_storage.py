@@ -8,7 +8,8 @@ from ..models import StructureDemographicModel, CustomDemographicModel
 from ..optimizers import get_local_optimizer, get_global_optimizer
 from ..optimizers import LinearConstrainDemographics, LinearConstrain
 from ..utils import ensure_dir_existence, ensure_file_existence,\
-                    check_dir_existence, custom_generator
+                    check_dir_existence, check_file_existence, abspath,\
+                    custom_generator
 
 import warnings
 import importlib.util
@@ -97,10 +98,17 @@ class SettingsStorage(object):
 
         # -1. For structures it could be one number. We need to transfrom
         # it in list
-        if name == 'initial_structure' or name == 'final_structure':
-            if isinstance(value, numbers.Integral):
+        if name in int_list_attrs or name in float_list_attrs:
+            if isinstance(value, numbers.Real):
                 value = [value]
                 self.__setattr__(name, value)
+                return
+        if name == 'population_labels' or name == 'parameter_identifiers':
+            if isinstance(value, str):
+                if len(value.split(',')) == 1:
+                    value = [value]
+                    self.__setattr__(name, value)
+                    return
 
         if isinstance(value, str) and value.lower() == 'none':
             value = None
@@ -215,14 +223,23 @@ class SettingsStorage(object):
                 value = value.split(',')
                 self.__setattr__(name, value)
 
+        # 1.8.0 expand path of files:
+        if (value is not None and
+                (name in empty_dir_attrs or
+                 name in exist_file_attrs or name in exist_dir_attrs)):
+            value = abspath(value)
         # 1.8 Check for empty dirs
         if name in empty_dir_attrs and value is not None:
             value = ensure_dir_existence(value, check_emptiness=True)
         # 1.9 Check file and dir exist
         if name in exist_file_attrs and value is not None:
-            value = ensure_file_existence(value)
+            if not check_file_existence(value):
+                raise ValueError(f"Setting {name} should be set to existed"
+                                 f"file. File {value} does not exist.")
         if name in exist_dir_attrs and value is not None:
-            value = check_dir_existence(value)
+            if not check_dir_existence(value):
+                raise ValueError(f"Setting {name} should be set to existed"
+                                 f"directory. Dir {value} does not exist.")
 
         # 1.10 Check that identifiers are good:
         if name == "parameter_identifiers" and value is not None:
@@ -441,7 +458,8 @@ class SettingsStorage(object):
                         line = next(f)
                         p_ids = line.strip().split("=")[0].split(",")
                         p_ids = [x.strip() for x in p_ids]
-                        self.__setattr__("parameter_identifiers", p_ids)
+                        object.__setattr__(self,
+                                           "parameter_identifiers", p_ids)
 #                        print(f"Found parameter identifiers in file: {p_ids}")
                         return p_ids
                     except ValueError:  # wrong list

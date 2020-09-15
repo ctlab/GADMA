@@ -3,6 +3,7 @@ from ..models import DemographicModel, StructureDemographicModel,\
                      CustomDemographicModel, Epoch, Split
 from ..utils import DynamicVariable, DiscreteVariable, rpartial, cache_func
 from .. import SFSDataHolder
+from .. import dadi_available, moments_available
 
 import warnings
 import os
@@ -193,6 +194,13 @@ class DadiOrMomentsEngine(Engine):
         return ll_model
 
     def get_claic_component(self, x0, all_boots, grid_sizes, eps):
+        if dadi_available:
+            from dadi import Godambe
+        elif moments_available:
+            from moments import Godambe
+        else:
+            ImportError("For CLAIC evalueation either dadi or moments is"
+                        " required.")
         # Cache evaluations of the frequency spectrum inside our hessian/J
         # evaluation function
         var2val = self.model.var2value(x0)
@@ -213,15 +221,13 @@ class DadiOrMomentsEngine(Engine):
             model = cached_simul(x)
             return self.base_module.Inference.ll_multinom(model, self.data)
 
-        H = - self.base_module.Godambe.get_hess(func, p0, eps,
-                                                args=[self.data])
+        H = - Godambe.get_hess(func, p0, eps, args=[self.data])
         H_inv = np.linalg.inv(H)
 
         J = np.zeros((len(p0), len(p0)))
         for ii, boot in enumerate(all_boots):
             boot = self.base_module.Spectrum(boot)
-            grad_temp = self.base_module.Godambe.get_grad(func, p0,
-                                                          eps, args=[boot])
+            grad_temp = Godambe.get_grad(func, p0, eps, args=[boot])
             J_temp = np.outer(grad_temp, grad_temp)
             J += J_temp
 

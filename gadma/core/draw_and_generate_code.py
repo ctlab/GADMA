@@ -77,9 +77,12 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
     try:
         engine.draw_schematic_model_plot(x, save_file_model, fig_title, nref,
                                          gen_time, gen_time_units)
-    except RuntimeError as e:
+    except Exception as e:
+        save_file_sfs.seek(0)
+        open(filename, 'wb').write(save_file_sfs.read())
         warnings.warn(f"Schematic model plotting to {filename} file failed: "
-                      f"{e.message}")
+                      f"{str(e)}")
+        return
 
     # 3. Concatenate plots if PIL is available
     if PIL_available:

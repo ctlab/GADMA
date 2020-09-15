@@ -1,9 +1,0 @@
---Successful arguments' parsing--
-
-You can find all parameters of this run in:		/home/katenos/Workspace/popgen/GADMA/tests/test_data/output_dir/params
-
-All output is saved (without warnings and errors) in:	/home/katenos/Workspace/popgen/GADMA/tests/test_data/output_dir/GADMA.log
-
---Start pipeline--
-
-Run genetic algorithm number 1

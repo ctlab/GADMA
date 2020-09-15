@@ -150,6 +150,9 @@ class DadiEngine(DadiOrMomentsEngine):
                                could be Years, Generations, Thousand Years and
                                so on.
         """
+        if isinstance(self.model, CustomDemographicModel):
+            raise RuntimeError("Could not draw model plot for dadi's "
+                               "custom file.")
         try:
             moments_engine = get_engine('moments')
         except AttributeError:
