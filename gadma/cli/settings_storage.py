@@ -10,6 +10,7 @@ from ..optimizers import LinearConstrainDemographics, LinearConstrain
 from ..utils import ensure_dir_existence, ensure_file_existence,\
                     check_dir_existence, check_file_existence, abspath,\
                     custom_generator
+from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable
 
 import warnings
 import importlib.util
@@ -50,7 +51,9 @@ class SettingsStorage(object):
                        'const_of_time_in_drawing', 'vmin', 'min_n', 'max_n',
                        'min_t', 'max_t', 'min_m', 'max_m',
                        'upper_bound_of_first_split',
-                       'upper_bound_of_second_split']
+                       'upper_bound_of_second_split',
+                       'const_for_mutation_strength',
+                       'const_for_mutation_rate']
         probs_attrs = ['mean_mutation_strength', 'mean_mutation_rate',
                        'p_mutation', 'p_crossover', 'p_random']
         bool_attrs = ['outgroup', 'linked_snp_s', 'only_sudden',
@@ -68,7 +71,6 @@ class SettingsStorage(object):
         exist_file_attrs = ['input_file', 'custom_filename']
         exist_dir_attrs = ['directory_with_bootstrap']
         empty_dir_attrs = ['output_directory']
-
         data_holder_attrs = ['projections', 'outgroup',
                              'population_labels', 'sequence_length']
         bounds_attrs = ['min_n', 'max_n', 'min_t', 'max_t', 'min_m', 'max_m']
@@ -228,17 +230,17 @@ class SettingsStorage(object):
                 (name in empty_dir_attrs or
                  name in exist_file_attrs or name in exist_dir_attrs)):
             value = abspath(value)
-        # 1.8 Check for empty dirs
-        if name in empty_dir_attrs and value is not None:
-            value = ensure_dir_existence(value, check_emptiness=True)
+        # 1.8 Check for empty dirs (NOW IN ARG_PARSER)
+        # if name in empty_dir_attrs and value is not None:
+        #     value = ensure_dir_existence(value, check_emptiness=True)
         # 1.9 Check file and dir exist
         if name in exist_file_attrs and value is not None:
             if not check_file_existence(value):
-                raise ValueError(f"Setting {name} should be set to existed"
+                raise ValueError(f"Setting {name} should be set to existed "
                                  f"file. File {value} does not exist.")
         if name in exist_dir_attrs and value is not None:
             if not check_dir_existence(value):
-                raise ValueError(f"Setting {name} should be set to existed"
+                raise ValueError(f"Setting {name} should be set to existed "
                                  f"directory. Dir {value} does not exist.")
 
         # 1.10 Check that identifiers are good:
@@ -256,8 +258,6 @@ class SettingsStorage(object):
         # 2. Dependencies checks
         # 2.1 Const of mutation strength and rate
         if name in ['const_for_mutation_strength', 'const_for_mutation_rate']:
-            if not isinstance(value, float):
-                raise ValueError(f"Setting {name} ({value}) must be float.")
             if value < 1 or value > 2:
                 raise ValueError(f"Setting {name} ({value}) must be between 1 "
                                  "and 2.")
@@ -320,15 +320,9 @@ class SettingsStorage(object):
                         raise ValueError('Sum of fractions (when 3 fractions'
                                          ' are setted) must be not greater '
                                          f'than 1. ({value})')
-                if hasattr(self, 'size_of_generation'):
-                    gen_size = self.size_of_generation
-                else:
-                    gen_size = None
+                gen_size = self.size_of_generation
             if name == 'size_of_generation':
-                if hasattr(self, 'fractions'):
-                    fractions = self.fractions
-                else:
-                    fractions = None
+                fractions = self.fractions
             if fractions is not None:
                 if gen_size is not None:
                     n_elitism = int(fractions[0] * gen_size)
@@ -348,20 +342,36 @@ class SettingsStorage(object):
             d = {'generations': 1, 'years': 1, 'thousand years': 0.01,
                  'thousands of years': 0.01, 'kya': 0.01}
             if name == 'units_of_time_in_drawing':
+                value = value.lower()
                 if value not in d:
                     raise ValueError(f"Setting {name} ({value}) must be one "
                                      f"of: {d.keys()}")
+                object.__setattr__(self, 'const_of_time_in_drawing', d[value])
                 if (value != 'generations' and
                         not hasattr(self, 'time_for_generation')):
                     warnings.warn(f"There is no time for one generation, time"
-                                  " will be in generations.")
+                                  " will be in generations.")  # TODO move
             else:
-                for key, val in d.items():
-                    if val == value:
-                        self.__setattr__('units_of_time_in_drawing', key)
-                        break
+                if d[self.units_of_time_in_drawing] != value:
+                    found = False
+                    for key, val in d.items():
+                        if val == value:
+                            self.__setattr__('units_of_time_in_drawing', key)
+                            found = True
+                            break
+                    if not found:
+                        warnings.warn("No such constant for time drawing. It "
+                                      "will be equal to 1 and time will be in"
+                                      " generations.")
+                        self.__setattr__('units_of_time_in_drawing',
+                                         'generations')
+                        return
+
         # 3.9 Domain of variables
         elif name in bounds_attrs:
+            if name in ['min_n', 'min_t'] and value <= 0:
+                raise ValueError(f"Lower bound {name} should be greater "
+                                 "than 0.")
             if name == 'min_n':
                 PopulationSizeVariable.default_domain[0] = value
             elif name == 'max_n':
@@ -458,6 +468,8 @@ class SettingsStorage(object):
                         line = next(f)
                         p_ids = line.strip().split("=")[0].split(",")
                         p_ids = [x.strip() for x in p_ids]
+                        for x in p_ids:
+                            settings.P_IDS[x[0].lower()]
                         object.__setattr__(self,
                                            "parameter_identifiers", p_ids)
 #                        print(f"Found parameter identifiers in file: {p_ids}")
@@ -467,6 +479,8 @@ class SettingsStorage(object):
                     except IndexError:
                         pass
                     except StopIteration:  # no function
+                        pass
+                    except KeyError:  # not in P_IDS
                         pass
             elif ((name == "lower_bound" or name == "upper_bound") and
                   (self.custom_filename is not None or

@@ -3,6 +3,7 @@ from ..version import __version__
 from .settings_storage import HOME_DIR
 from . import SettingsStorage
 from ..core import SUPPORT_STRING
+from ..utils import ensure_dir_existence
 
 import warnings
 import argparse
@@ -114,12 +115,16 @@ def get_settings():
                          "--resume option.")
 
     if args.output is not None:
-        if (settings_storage.output_dir is not None and
-                settings_storage.output_dir != args.output):
+        if (settings_storage.output_directory is not None and
+                settings_storage.output_directory != args.output):
             warnings.warn("Output directory in parameters file doesn't match "
                           "to one from the -o/--output option. "
                           "The last is taken.")
-        settings_storage.output_dir = args.output
+        settings_storage.output_directory = args.output
+    if settings_storage.output_directory is not None:
+        ensure_dir_existence(settings_storage.output_directory,
+                             check_emptiness=True)
+
     if args.input is not None:
         if (settings_storage.input_file is not None and
                 settings_storage.input_file != args.input):

@@ -1,5 +1,3 @@
-Input file : tests/test_data/small_1pop.fs
-Output directory: tests/output_dir
 Projections : 6
 Directory with bootstrap: tests/test_data/small_1_pop_bootstrap
 Linked SNP's : True
