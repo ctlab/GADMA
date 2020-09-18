@@ -8,6 +8,7 @@ Pts : 5, 10, 15
 Custom filename : tests/test_data/small_1pop_dem_model.py
 Draw models every N iteration : 10
 Print models' code every N iteration : 10
+Relative parameters: True
 Local optimizer: None
 Eps: 1
 Stuck generation number: 10

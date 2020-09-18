@@ -207,12 +207,18 @@ class DadiOrMomentsEngine(Engine):
         is_not_discrete = np.array([not isinstance(var, DiscreteVariable)
                                     for var in var2val])
         x0 = np.array(list(var2val.values()), dtype=object)
-        p0 = x0[is_not_discrete]
+        if len(x0) > 0:
+            p0 = x0[is_not_discrete]
+        else:
+            p0 = x0
 
         @wraps(self.simulate)
         def simul_func(x):
             p = np.array(x0)
-            p[is_not_discrete] = x
+            if len(p) > 0:
+                p[is_not_discrete] = x
+            else:
+                p = x
             return self.simulate(p, self.data.sample_sizes, grid_sizes)
 
         cached_simul = cache_func(simul_func)

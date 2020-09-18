@@ -1,6 +1,6 @@
 from .. import matplotlib, moments, dadi, Image
 from .. import matplotlib_available, PIL_available, moments_available
-from ..models import DemographicModel, Split
+from ..models import EpochDemographicModel, Split
 from ..engines import get_engine, all_engines
 from ..utils import bcolors, WeightedMetaArray
 
@@ -109,7 +109,7 @@ def generate_code_to_file(x, engine, settings, filename):
         pos = len(filename)
     prefix = filename[:pos]
     # Generate code
-    if isinstance(engine.model, DemographicModel):
+    if isinstance(engine.model, EpochDemographicModel):
         engines = all_engines()
     else:
         engines = [copy.deepcopy(engine)]

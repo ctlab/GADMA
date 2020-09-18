@@ -274,12 +274,15 @@ class TestCoreRun(TestBaseOptClass):
         settings.verbose = 10
         shared_dict = gadma.shared_dict.SharedDictForCoreRun(
             multiprocessing=False)
-        core_run = CoreRun(0, shared_dict, settings)
-        core_run.run()
+        gadma.core.job(0, shared_dict, settings)
 
+        settings.custom_filename = os.path.join(DATA_PATH,
+                                                "small_1pop_dem_model.py")
         settings.directory_with_bootstrap = os.path.join(
             DATA_PATH, 'small_1_pop_bootstrap')
+        settings.read_bootstrap_data()
+        settings.linked_snp_s = True
+        settings.relative_parameters = True
         shared_dict = gadma.shared_dict.SharedDictForCoreRun(
             multiprocessing=False)
-        core_run = CoreRun(0, shared_dict, settings)
-        core_run.run()
+        gadma.core.job(0, shared_dict, settings)
