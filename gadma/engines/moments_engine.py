@@ -56,7 +56,9 @@ class MomentsEngine(DadiOrMomentsEngine):
                         continue
                     ret_dict['m'][i, j] = event.mig_args[i][j]
         if event.sel_args is not None:
-            ret_dict['h'] = event.sel_args
+            ret_dict['gamma'] = event.sel_args
+        if event.dom_args is not None:
+            ret_dict['h'] = event.dom_args
         return ret_dict
 
     def _inner_func(self, values, ns, dt_fac=0.01):
@@ -109,7 +111,7 @@ class MomentsEngine(DadiOrMomentsEngine):
                 kwargs_with_vars = self._get_kwargs(event, var2value)
                 kwargs = {}
                 for x, y in kwargs_with_vars.items():
-                    if isinstance(y, np.ndarray):  # migration
+                    if x == 'm' and isinstance(y, np.ndarray):  # migration
                         l_s = np.array(y, dtype=object)
                         for i in range(y.shape[0]):
                             for j in range(y.shape[1]):
@@ -119,14 +121,27 @@ class MomentsEngine(DadiOrMomentsEngine):
                                 l_s[i][j] = addit_values.get(l_s[i][j],
                                                              l_s[i][j])
                         kwargs[x] = l_s
-                    elif isinstance(y, list):  # sizes, selection, dynamics
-                        l_args = list()
+                    elif x == 'Npop':  # sizes
+                        n_pop_list = list()
+                        all_sudden = True
                         for y1 in y:
-                            l_args.append(self.get_value_from_var2value(
+                            n_pop_list.append(self.get_value_from_var2value(
                                 var2value, y1))
-                        kwargs[x] = lambda t: [addit_values[el](t)
-                                               if el in addit_values else el
-                                               for el in l_args]
+                            if n_pop_list[-1] in addit_values:
+                                all_sudden = False
+                        if not all_sudden:
+                            kwargs[x] = lambda t: [addit_values[el](t)
+                                                   if el in addit_values
+                                                   else el
+                                                   for el in list(n_pop_list)]
+                        else:
+                            kwargs[x] = n_pop_list
+                    elif x in ['gamma', 'h']:
+                        l_args = list()
+                        for i in range(len(y)):
+                            l_args.append(self.get_value_from_var2value(
+                                    var2value, y[i]))
+                        kwargs[x] = l_args
                     else:  # time
                         kwargs[x] = self.get_value_from_var2value(var2value, y)
                         kwargs[x] = addit_values.get(kwargs[x], kwargs[x])

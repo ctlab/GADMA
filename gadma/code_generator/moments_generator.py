@@ -92,7 +92,9 @@ def _print_moments_func(model, values, dt_fac):
                     ret_str += f"\tmigs = np.array([{', '.join(rows)}])\n"
                     kwargs[x] = 'migs'
                 elif isinstance(y, list):  # pop. sizes, selection, dynamics
-                    varnames = [var.name if isinstance(var, Variable)
+                    varnames = [var.name
+                                if isinstance(var, (Variable,
+                                                    BinaryOperation))
                                 else str(var) for var in y]
                     if x == 'Npop':  # pop size
                         if all_sudden:
@@ -100,7 +102,8 @@ def _print_moments_func(model, values, dt_fac):
                         else:
                             strs = []
                             for y1 in y:
-                                if isinstance(y1, Variable):
+                                if isinstance(y1, (Variable,
+                                                   BinaryOperation)):
                                     strs.append(y1.name)
                                 else:
                                     if y1 in func_names:
@@ -111,7 +114,8 @@ def _print_moments_func(model, values, dt_fac):
                     else:
                         kwargs[x] = f"[{','.join(varnames)}]"
                 else:  # time
-                    kwargs[x] = y.name if isinstance(y, Variable) else y
+                    kwargs[x] = y.name if isinstance(
+                        y, (Variable, BinaryOperation)) else y
 
             kwargs = [f"{key}={value}" for key, value in kwargs.items()]
             ret_str += f"\tfs.integrate({', '.join(kwargs)}, "\

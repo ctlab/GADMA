@@ -281,36 +281,59 @@ class TestModels(unittest.TestCase):
         s = SelectionVariable('s')
         d1 = DynamicVariable('d1')
         d2 = DynamicVariable('d2')
-        model = EpochDemographicModel()
-        model.add_epoch(t, [nu1])
-        model.add_split(0, [nu1, nu2])
-        model.add_epoch(t, [nu2, nu1], [[0, m], [0, 0]], [d1, d2])#, [s, 0])
-        model.add_split(1, [nu2, nu1])
-        model.add_epoch(t, [nu1, nu2, nu1], None, None)#, [s, 0, s])
+        f = FractionVariable('f')
+        h = FractionVariable('h')
+        fxnu1 = Multiplication(f, nu1)
+
+        model1 = EpochDemographicModel()
+        model1.add_epoch(t, [nu1])
+        model1.add_split(0, [nu1, nu2])
+        model1.add_epoch(t, [nu2, fxnu1], [[0, m], [0, 0]], [d1, d2])
+        model1.add_split(1, [nu2, nu1])
+        model1.add_epoch(t, [nu1, nu2, nu1], None, None)
+
+        model2 = EpochDemographicModel()
+        model2.add_epoch(t, [nu1])
+        model2.add_split(0, [nu1, nu2])
+        model2.add_epoch(t, [nu2, fxnu1], [[0, m], [0, 0]], [d1, d2],
+                         [0, s])
+        model2.add_split(1, [nu2, nu1])
+        model2.add_epoch(t, [nu1, nu2, nu1], None, None, [s, 0, s])
+
+        model3 = EpochDemographicModel()
+        model3.add_epoch(t, [nu1])
+        model3.add_split(0, [nu1, nu2])
+        model3.add_epoch(t, [nu2, fxnu1], [[0, m], [0, 0]], [d1, d2],
+                         [0, s],  [0.1, 0.8])
+        model3.add_split(1, [nu2, nu1])
+        model3.add_epoch(t, [nu1, nu2, nu1], None, None,
+                         [s, 0, s], [h, 0.5, 0])
+
 
         values = {nu1: 2, nu2: 0.5, t: 0.3,
-                  m: 0.1, s: 0.1, d1: 'Exp', d2: 'Lin'}
+                  m: 0.1, s: 0.1, d1: 'Exp', d2: 'Lin', f: 0.5, h: 0.3}
 
-        for description, data in self._sfs_datasets():
-            for engine in all_engines():
-                if engine.id == 'dadi':
-                    options = {'pts': [5, 10, 15]}
-                    args = (options['pts'],)
-                else:
-                    options = {}
-                    args = ()
-                engine.mu = 1e-8
-                data.sequence_length = 1e10
+        for ind, model in enumerate([model1, model2, model3]):
+            for description, data in self._sfs_datasets():
+                for engine in all_engines():
+                    msg = f"for model {ind + 1} and {description} data and "\
+                          f"{engine.id} engine"
+                    if engine.id == 'dadi':
+                        options = {'pts': [5, 10, 15]}
+                        args = (options['pts'],)
+                    else:
+                        options = {}
+                        args = ()
+                    model.mu = 1e-8
+                    data.sequence_length = 1e10
 
-                true_ll = engine.set_and_evaluate(values, model,
-                                                  data, options)
+                    true_ll = engine.set_and_evaluate(values, model,
+                                                      data, options)
 
-                cmd = engine.generate_code(values, None, *args)
+                    cmd = engine.generate_code(values, None, *args)
+                    d = {}
+                    exec(cmd, d)
 
-
-                d = {}
-                exec(cmd, d)
-
-                msg = f"for {description} data and {engine.id} engine: "\
-                      f"{true_ll} != {d['ll_model']}"
-                self.assertTrue(np.allclose(true_ll, d['ll_model']), msg=msg)
+                    msg += f": {true_ll} != {d['ll_model']}"
+                    self.assertTrue(np.allclose(true_ll, d['ll_model']),
+                                    msg=msg)

@@ -109,7 +109,7 @@ class EpochDemographicModel(DemographicModel):
         return len(self._get_current_pop_sizes())
 
     def add_epoch(self, time_arg, size_args, mig_args=None,
-                  dyn_args=None, sel_args=None):
+                  dyn_args=None, sel_args=None, dom_args=None):
         """
         Adds new epoch to the demographic model events.
 
@@ -119,6 +119,7 @@ class EpochDemographicModel(DemographicModel):
         :param dyn_args: dynamics of the populations during the epoch.
         :param sel_args: selection coefficients of the populations during
                          the epoch.
+        :param dom_args: dominance coefficients.
 
         :note: all arguments could contain variables of :class:`Variable`\
                class as well as different constants/values including\
@@ -126,7 +127,7 @@ class EpochDemographicModel(DemographicModel):
         """
         sizes = self._get_current_pop_sizes()
         new_epoch = Epoch(time_arg, sizes, size_args,
-                          mig_args, dyn_args, sel_args)
+                          mig_args, dyn_args, sel_args, dom_args)
         self.events.append(new_epoch)
         self.add_variables(new_epoch.variables)
 
@@ -222,7 +223,8 @@ class EpochDemographicModel(DemographicModel):
                                event.size_args,
                                event.mig_args,
                                event.dyn_args,
-                               event.sel_args)
+                               event.sel_args,
+                               event.dom_args)
             variables = help_event.variables
             if event.dyn_args is not None:
                 for dyn in event.dyn_args:

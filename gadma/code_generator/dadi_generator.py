@@ -52,7 +52,9 @@ def _print_dadi_func(model, values):
                         funcstr = func.func_str(y1, y2, x_diff)
                         ret_str += "\tnu%d_func = %s\n" % (i+1, funcstr)
             kwargs_with_vars = DadiEngine._get_kwargs(event, var2value)
-            str_kwargs = ["%s=%s" % (k, v.name if isinstance(v, Variable)
+            str_kwargs = ["%s=%s" % (k, v.name
+                                     if isinstance(v, (Variable,
+                                                       BinaryOperation))
                                      else v)
                           for k, v in kwargs_with_vars.items()]
             if event.n_pop == 1:

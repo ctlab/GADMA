@@ -51,7 +51,7 @@ class Epoch(Event):
     :type sel_args: list of values and/or :class:`gadma.SelectionVariable`
     """
     def __init__(self, time_arg, init_size_args, size_args,
-                 mig_args=None, dyn_args=None, sel_args=None):
+                 mig_args=None, dyn_args=None, sel_args=None, dom_args=None):
         # Simple checks
         assert(len(init_size_args) == len(size_args))
         if mig_args is not None:
@@ -64,12 +64,18 @@ class Epoch(Event):
             assert (len(dyn_args) == len(size_args))
         if sel_args is not None:
             assert (len(sel_args) == len(size_args))
+        if dom_args is not None:
+            assert (len(dom_args) == len(size_args))
 
         self.n_pop = len(init_size_args)
         self.time_arg = time_arg
         self.init_size_args = init_size_args
         self.size_args = size_args
         self.sel_args = sel_args
+        self.dom_args = dom_args
+        if self.dom_args is not None and self.sel_args is None:
+            raise ValueError("Dominance coefficients could be set only with"
+                             " selection coefficients.")
         self.mig_args = mig_args
         self.dyn_args = dyn_args
         super(Epoch, self).__init__()
@@ -78,6 +84,7 @@ class Epoch(Event):
         self.add_variables(init_size_args)
         self.add_variables(size_args)
         self.add_variables(sel_args)
+        self.add_variables(dom_args)
         self.add_variables(dyn_args)
         self.add_variables(mig_args)
 
@@ -125,7 +132,13 @@ class Epoch(Event):
         sels_repr = ""
         if self.sel_args is not None:
             sels_repr = [help_f(arg) for arg in self.sel_args]
-            sels_repr = f"[{', '.join(sels_repr)}]"
+            if self.dom_args is not None:
+                dom_repr = [help_f(arg) for arg in self.dom_args]
+                together = [f'{x}({y})' for x, y in zip(self.sel_args,
+                                                        self.dom_args)]
+                sels_repr = f"[{', '.join(together)}]"
+            else:
+                sels_repr = f"[{', '.join(sels_repr)}]"
             all_repr.append(sels_repr)
         if self.dyn_args is not None:
             dyns_repr = [help_f(arg) for arg in self.dyn_args]

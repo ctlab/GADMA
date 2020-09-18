@@ -63,6 +63,13 @@ class DadiEngine(DadiOrMomentsEngine):
                 arg_name = 'gamma%d' % (i+1)
             for i in range(event.n_pop):
                 ret_dict[arg_name] = event.sel_args[i]
+        if event.dom_args is not None:
+            if event.n_pop == 1:
+                arg_name = 'h'
+            else:
+                arg_name = 'h%d' % (i+1)
+            for i in range(event.n_pop):
+                ret_dict[arg_name] = event.dom_args[i]
         return ret_dict
 
     def _inner_func(self, values, ns, pts):
