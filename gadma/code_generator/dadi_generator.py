@@ -67,8 +67,8 @@ def _print_dadi_func(model, values):
             if event.n_pop == 1:
                 ret_str += "\tphi = dadi.PhiManip.phi_1D_to_2D"
             else:
-                ret_str += "\tphi = dadi.PhiManip.phi_%dD_to_%dD_%d" %\
-                           (event.n_pop-1, event.n_pop, event.pop_to_div + 1)
+                ret_str += "\tphi = dadi.PhiManip.phi_%dD_to_%dD_split_%d" %\
+                           (event.n_pop, event.n_pop+1, event.pop_to_div + 1)
             ret_str += "(xx, phi)\n"
     ret_str += "\tsfs = dadi.Spectrum.from_phi(phi, ns, [xx]*len(ns))\n"
     ret_str += "\treturn sfs\n"
@@ -90,24 +90,36 @@ def _print_load_data(data_holder, is_fs, mode='dadi'):
     if is_fs is None:
         ret_str += f"dd = {mode}.Misc.make_data_dict('{fname}')\n"
         ret_str += f"data = {mode}.Spectrum.from_data_dict"
-        lbls = str(data_holder.pop_labels)
-        size = str(data_holder.sample_sizes)
-        outg = str(data_holder.outgroup)
-        ret_str += "(dd, %s, %s, %s)\n" % (lbls, size, outg)
+        if (data_holder.population_labels is None or
+                data_holder.projections is None or
+                data_holder.outgroup is None):
+            raise ValueError("Please specify data_holder carefully. "
+                             "Some attribute is None.")
+        lbls = list(data_holder.population_labels)
+        size = list(data_holder.projections)
+        outg = data_holder.outgroup
+        ret_str += f"(dd, {lbls}, {size}, polarized={outg})\n"
     else:
         data = is_fs
         ret_str += f"data = {mode}.Spectrum.from_file('{fname}')\n"
-        if list(data.sample_sizes) != list(data_holder.projections):
-            size = data_holder.sample_sizes
+        if (data_holder.projections is not None and
+                list(data.sample_sizes) != list(data_holder.projections)):
+            size = data_holder.projections
             ret_str += "data = data.project(%s)\n" % (str(list(size)))
         if data.folded == data_holder.outgroup:
             ret_str += "data = data.fold()\n"
         if data.pop_ids is None:
-            data.pop_ids = data_holder.population_labels
-            ret_str += f"data.pop_ids = {data_holder.population_labels}\n"
-        if data.pop_ids != data_holder.population_labels:
+            if data_holder.population_labels is None:
+                data.pop_ids = [f"Pop{i}" for i in range(data.ndim)]
+            else:
+                data.pop_ids = data_holder.population_labels
+            ret_str += f"data.pop_ids = {data.pop_ids}\n"
+        if (data_holder.population_labels is not None and
+                list(data.pop_ids) != list(data_holder.population_labels)):
             d = {x: i for i, x in enumerate(data.pop_ids)}
+            d = [d[x] for x in data_holder.population_labels]
             ret_str += "data = np.transpose(data, %s)\n" % (str(d))
+            ret_str += f"data.pop_ids = {data_holder.population_labels}\n"
     return ret_str
 
 

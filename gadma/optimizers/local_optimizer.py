@@ -1,6 +1,6 @@
 from . import Optimizer, ConstrainedOptimizer, UnconstrainedOptimizer
 from .optimizer_result import OptimizerResult
-from ..utils import eval_wrapper, rpartial, fix_args
+from ..utils import eval_wrapper, ensure_file_existence, fix_args
 
 import warnings
 import copy

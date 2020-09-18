@@ -46,7 +46,8 @@ class TestDataHolder(unittest.TestCase):
                          category=ResourceWarning)
         if data.split('.')[-1] == 'txt':
             d = dadi.Misc.make_data_dict(data)
-            data = dadi.Spectrum.from_data_dict(d, labels, size, outgroup)
+            data = dadi.Spectrum.from_data_dict(d, labels, size,
+                                                polarized=outgroup)
             return data
         data = dadi.Spectrum.from_file(YRI_CEU_DATA)
         if labels == ["CEU", "YRI"]:
@@ -76,11 +77,13 @@ class TestDataHolder(unittest.TestCase):
                                                          seq_lens, outgroup):
             with self.subTest(data=dat, size=siz, labels=lab,
                               seq_len=seq, outgroup=out):
-                sfs_holder = SFSDataHolder(dat, siz, out, lab, seq)
+                sfs_holder = SFSDataHolder(dat, projections=siz, outgroup=out,
+                                           population_labels=lab,
+                                           sequence_length=seq)
                 data = get_engine(id).read_data(sfs_holder)
                 siz = siz or ((20,20) if (dat == YRI_CEU_DATA) else (24, 44))
                 lab = lab or ["YRI", "CEU"]
-                out = out or True
+                out = True if out is None else out
                 self._check_data(data, lab, out, siz)
                 sfs = self._load_with_dadi(dat, siz, lab, out)
                 self.assertTrue(np.allclose(data, sfs))

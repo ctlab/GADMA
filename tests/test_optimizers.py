@@ -219,16 +219,32 @@ class TestLocalOpt(TestBaseOptClass):
         f, variables = example_func(engine_id, args)
         x0 = [var.resample() for var in variables]
 
+        def callback(x, y):
+            pass
+
+#        save_file = 'save_file'
+        report_file = 'report_file'
+        eval_file = 'eval_file'
+
         for opt in all_local_optimizers():
             with self.subTest(local_optimizer=opt.id):
 #                print(opt.id)
                 msg = f"(optimization {opt.id}, engine {engine_id})"
                 if will_collapse and opt.id != 'None' and opt.id != None:
                     self.assertRaises(AssertionError, opt.optimize, f,
-                                      variables, x0=x0, args=args, maxiter=2)
+                                      variables, x0=x0, args=args,
+                                      maxeval=10, maxiter=2,
+                                      callback=callback,
+                                      report_file=report_file,
+#                                      save_file=save_file,
+                                      eval_file=eval_file)
                 else:
                     res = opt.optimize(f, variables, x0=x0,
-                                       args=args, maxiter=2)
+                                       args=args, maxiter=2, maxeval=10,
+                                       callback=callback,
+                                       report_file=report_file,
+#                                       save_file=save_file,
+                                       eval_file=eval_file)
                     self.assertEqual(res.y, f(res.x, *args), msg=msg)
                     self.assertTrue(res.y <= f(x0, *args),
                                     msg=msg + f" {res.y} > {f(x0, *args)}")

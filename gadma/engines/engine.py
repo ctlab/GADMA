@@ -2,7 +2,7 @@ from ..code_generator import id2printfunc
 from ..data import DataHolder
 from ..utils import Variable
 from ..models import BinaryOperation
-
+import copy
 
 _registered_engines = {}
 
@@ -148,7 +148,11 @@ class Engine(object):
                                  f"{self.inner_data_type}")
         if isinstance(data, DataHolder):
             self.inner_data = self.read_data(data)
-            self.data_holder = data
+            self.data_holder = copy.deepcopy(data)
+            # TODO valid for dadi and moments
+            self.data_holder.projections = self.inner_data.sample_sizes
+            self.data_holder.population_labels = self.inner_data.pop_ids
+            self.data_holder.outgroup = not self.inner_data.folded
         elif isinstance(data, self.inner_data_type):
             self.inner_data = data
             self.data_holder = None

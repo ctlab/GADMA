@@ -45,3 +45,14 @@ class TestVariables(unittest.TestCase):
         for i, cls in enumerate(test_classes):
             with self.subTest(variable_cls=cls):
                 self._test_variable(cls('var%d' % i))
+
+        d = DiscreteVariable('d')
+        self.assertRaises(ValueError, d.get_bounds)
+        d = DiscreteVariable('d', [0, 1, 5, 4])
+        self.assertTrue(d.get_bounds() == [0, 5])
+
+        ContinuousVariable('c')
+
+        d = DynamicVariable('d')
+        self.assertRaises(Exception, DynamicVariable, 'd', domain=[5, 'Sud'])
+        self.assertRaises(Exception, d.get_func_from_value, 100)

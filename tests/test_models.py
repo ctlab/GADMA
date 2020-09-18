@@ -257,3 +257,60 @@ class TestModels(unittest.TestCase):
                                          f'nu1 {op_str} (f {op_str2} 5)')
 
                 self.assertRaises(AssertionError, cls, const, const)
+
+    def _sfs_datasets(self):
+        yield ("usual fs",
+               SFSDataHolder(os.path.join(EXAMPLE_FOLDER, '3d_sfs.fs')))
+        yield ("folded fs with mixed labels and downsizing",
+               SFSDataHolder(os.path.join(EXAMPLE_FOLDER, '3d_sfs.fs'),
+                             projections=[8, 8, 8],
+                             population_labels=['YRI', 'ASW', 'CEU'],
+                             outgroup=False))
+        yield ("fs without pop labels",
+               SFSDataHolder(os.path.join(EXAMPLE_FOLDER, '3d_sfs_no_name.fs'),
+                             population_labels=['1', '2', '3']))
+        yield ("dadi snp file",
+               SFSDataHolder(os.path.join(EXAMPLE_FOLDER,
+                                          'dadi_snp_file.txt')))
+
+    def test_code_generation(self):
+        nu1 = PopulationSizeVariable('nu1')
+        nu2 = PopulationSizeVariable('nu2')
+        t = TimeVariable('t1')
+        m = MigrationVariable('m')
+        s = SelectionVariable('s')
+        d1 = DynamicVariable('d1')
+        d2 = DynamicVariable('d2')
+        model = EpochDemographicModel()
+        model.add_epoch(t, [nu1])
+        model.add_split(0, [nu1, nu2])
+        model.add_epoch(t, [nu2, nu1], [[0, m], [0, 0]], [d1, d2])#, [s, 0])
+        model.add_split(1, [nu2, nu1])
+        model.add_epoch(t, [nu1, nu2, nu1], None, None)#, [s, 0, s])
+
+        values = {nu1: 2, nu2: 0.5, t: 0.3,
+                  m: 0.1, s: 0.1, d1: 'Exp', d2: 'Lin'}
+
+        for description, data in self._sfs_datasets():
+            for engine in all_engines():
+                if engine.id == 'dadi':
+                    options = {'pts': [5, 10, 15]}
+                    args = (options['pts'],)
+                else:
+                    options = {}
+                    args = ()
+                engine.mu = 1e-8
+                data.sequence_length = 1e10
+
+                true_ll = engine.set_and_evaluate(values, model,
+                                                  data, options)
+
+                cmd = engine.generate_code(values, None, *args)
+
+
+                d = {}
+                exec(cmd, d)
+
+                msg = f"for {description} data and {engine.id} engine: "\
+                      f"{true_ll} != {d['ll_model']}"
+                self.assertTrue(np.allclose(true_ll, d['ll_model']), msg=msg)

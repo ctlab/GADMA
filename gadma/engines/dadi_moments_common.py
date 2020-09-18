@@ -10,7 +10,6 @@ import os
 import numpy as np
 from functools import wraps
 
-
 class DadiOrMomentsEngine(Engine):
     """
     Base engine class for dadi and moments engines. It has all common methods
@@ -299,7 +298,7 @@ def _project(sfs, new_size):
         return sfs
     if not list(new_size) == list(sfs.sample_sizes):
         try:
-            sfs = sfs.project(new_size)
+            sfs = sfs.project(np.array(new_size))
         except Exception as e:
             raise ValueError("Wrong projections of SFS: " + str(e))
     return sfs
@@ -344,7 +343,7 @@ def _change_outgroup(sfs, new_outgroup):
         if new_outgroup and sfs.folded:
             raise ValueError("Data does not have outgroup.")
         if not new_outgroup:
-            sfs.fold()
+            sfs = sfs.fold()
     return sfs
 
 
