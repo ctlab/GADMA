@@ -2,6 +2,7 @@ import unittest
 
 from .test_data import YRI_CEU_DATA
 from gadma import *
+import gadma
 import dadi
 
 
@@ -261,3 +262,11 @@ class TestLocalOpt(TestBaseOptClass):
 #    def test_2pop_example_1(self):
 #        for engine in all_engines():
 #            self.run_example(engine.id, get_2pop_sim_example_1)
+
+class TestCoreRun(TestBaseOptClass):
+    def test_core_run(self):
+        settings = test_args()
+        shared_dict = gadma.shared_dict.SharedDictForCoreRun(
+            multiprocessing=False)
+        core_run = CoreRun(0, shared_dict, settings)
+        core_run.run()

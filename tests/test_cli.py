@@ -51,7 +51,6 @@ class TestCLI(unittest.TestCase):
             sys.argv = ['gadma', '-p', param_file]
             self.assertRaises(AttributeError, get_settings)
 
-
         finally:
             sys.argv = old_argv
 
