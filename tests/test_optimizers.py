@@ -5,6 +5,8 @@ from gadma import *
 import gadma
 import dadi
 
+DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
+
 
 def get_func(engine, variables):
     def func(x, *args):
@@ -266,6 +268,17 @@ class TestLocalOpt(TestBaseOptClass):
 class TestCoreRun(TestBaseOptClass):
     def test_core_run(self):
         settings = test_args()
+        settings.input_file = os.path.join(DATA_PATH, 'small_1pop.fs')
+        settings.draw_models_every_n_iteration = 100
+        settings.print_models_code_every_n_iteration = 100
+        settings.verbose = 10
+        shared_dict = gadma.shared_dict.SharedDictForCoreRun(
+            multiprocessing=False)
+        core_run = CoreRun(0, shared_dict, settings)
+        core_run.run()
+
+        settings.directory_with_bootstrap = os.path.join(
+            DATA_PATH, 'small_1_pop_bootstrap')
         shared_dict = gadma.shared_dict.SharedDictForCoreRun(
             multiprocessing=False)
         core_run = CoreRun(0, shared_dict, settings)
