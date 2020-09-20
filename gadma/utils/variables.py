@@ -434,7 +434,7 @@ class DynamicVariable(DiscreteVariable):
         """
         if value not in DynamicVariable._help_dict:
             raise ValueError(f"Value {value} not in domain:"
-                            f"{DynamicVariable._help_dict.keys()}.")
+                             f"{DynamicVariable._help_dict.keys()}.")
         return DynamicVariable._help_dict[value]._inner_func
 
     def get_bounds(self):

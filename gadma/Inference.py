@@ -84,7 +84,7 @@ def get_claic_score(func_ex, all_boot, p0, data, engine=None, args=(),
                       " pts in GADMA v1) argument is not specified (None). If"
                       " some other error will happen next then please specify"
                       f" engine. Engine: {engine}, pts: {pts}, eps: {eps}")
-        
+
     if not isinstance(args, tuple) and isinstance(args, float):
         eps = args
         args = ()

@@ -116,31 +116,31 @@ def cache_func(f):
     return cache_wrapper
 
 
-#def cache_func_2d(f):
-#    """
-#    Cashes function with two arguments.
-#    :param f: function such that f(x, y).
-#    :returns: function that is cashed.
-#    """
-#    @lru_cache
-#    @wraps(f)
-#    def tuple_wrapper(x_y_tuple):
-#        x, y = x_y_tuple
-#        if isinstance(y, tuple) and isinstance(y[0], tuple):
-#            y = np.array(y)
-#        return f(x, y)
+# def cache_func_2d(f):
+#     """
+#     Cashes function with two arguments.
+#     :param f: function such that f(x, y).
+#     :returns: function that is cashed.
+#     """
+#     @lru_cache
+#     @wraps(f)
+#     def tuple_wrapper(x_y_tuple):
+#         x, y = x_y_tuple
+#         if isinstance(y, tuple) and isinstance(y[0], tuple):
+#             y = np.array(y)
+#         return f(x, y)
 #
-#    @wraps(tuple_wrapper)
-#    def cache_wrapper(x, y):
-#        y_tuple = tuple(y)
-#        if (isinstance(y, (list, np.ndarray)) and
-#                isinstance(y[0], (list, np.ndarray))):
-#            for i in range(len(y_tuple)):
-#                y_tuple[i] = tuple(y_tuple[i])
-#        return tuple_wrapper(tuple(x), y_tuple)
+#     @wraps(tuple_wrapper)
+#     def cache_wrapper(x, y):
+#         y_tuple = tuple(y)
+#         if (isinstance(y, (list, np.ndarray)) and
+#                 isinstance(y[0], (list, np.ndarray))):
+#             for i in range(len(y_tuple)):
+#                 y_tuple[i] = tuple(y_tuple[i])
+#         return tuple_wrapper(tuple(x), y_tuple)
 #
-#    cache_wrapper.cache_info = tuple_wrapper.cache_info
-#    return cache_wrapper
+#     cache_wrapper.cache_info = tuple_wrapper.cache_info
+#     return cache_wrapper
 
 
 def nan_fval_to_inf(f):

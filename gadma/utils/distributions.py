@@ -80,7 +80,7 @@ def custom_generator(variables):
     return np.array(values, dtype=object)
 
 
-#def multiply_generator(gen1, domain1, gen2, domain2):
-#    def generator(domain):
-#        return gen1(domain1) * gen2(domain2)
-#    return generator
+# def multiply_generator(gen1, domain1, gen2, domain2):
+#     def generator(domain):
+#         return gen1(domain1) * gen2(domain2)
+#     return generator
