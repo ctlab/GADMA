@@ -21,7 +21,7 @@ class DataHolder(object):
         self.population_labels = population_labels
         self.sequence_length = sequence_length
 
-        if check_file_existence(self.filename):
+        if self.filename is not None and check_file_existence(self.filename):
             self.filename = ensure_file_existence(self.filename)
 
 

@@ -1,7 +1,7 @@
 from . import Engine
 from ..models import DemographicModel, StructureDemographicModel,\
                      CustomDemographicModel, Epoch, Split
-from ..utils import DynamicVariable, DiscreteVariable, rpartial, cache_func
+from ..utils import DynamicVariable, DiscreteVariable, cache_func
 from .. import SFSDataHolder
 from .. import dadi_available, moments_available
 
@@ -206,8 +206,8 @@ class DadiOrMomentsEngine(Engine):
         var2val = self.model.var2value(x0)
         is_not_discrete = np.array([not isinstance(var, DiscreteVariable)
                                     for var in var2val])
-        x0 = np.array(list(var2val.values()), dtype=object)
-        if len(x0) > 0:
+        if len(x0) > 0 and len(var2val) > 0:
+            x0 = np.array(list(var2val.values()), dtype=object)
             p0 = x0[is_not_discrete]
         else:
             p0 = x0
@@ -215,7 +215,7 @@ class DadiOrMomentsEngine(Engine):
         @wraps(self.simulate)
         def simul_func(x):
             p = np.array(x0)
-            if len(p) > 0:
+            if len(p) > 0 and len(var2val) > 0:
                 p[is_not_discrete] = x
             else:
                 p = x
@@ -226,7 +226,6 @@ class DadiOrMomentsEngine(Engine):
         def func(x, data):
             model = cached_simul(x)
             return self.base_module.Inference.ll_multinom(model, self.data)
-
         H = - Godambe.get_hess(func, p0, eps, args=[self.data])
         H_inv = np.linalg.inv(H)
 

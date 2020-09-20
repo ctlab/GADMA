@@ -77,7 +77,8 @@ class SettingsStorage(object):
         bounds_lists = ['lower_bound', 'upper_bound', 'parameter_identifiers']
         missed_attrs = ['engine', 'local_optimizer', '_inner_data',
                         '_bootstrap_data', 'X_init', 'Y_init', 'model_func',
-                        'get_engine_args', 'units_of_time_in_drawing']
+                        'get_engine_args', 'units_of_time_in_drawing',
+                        'data_holder']
 
         super_hasattr = True
         setattr_at_the_end = True
@@ -532,7 +533,7 @@ class SettingsStorage(object):
         if self.directory_with_bootstrap is None:
             return
         if (not hasattr(self, '_inner_data') and
-                self.data_holder.input_file is not None):
+                self.data_holder.filename is not None):
             self.read_data()
         dirname = self.directory_with_bootstrap
         engine = get_engine(self.engine)
@@ -773,4 +774,7 @@ class SettingsStorage(object):
                                                            names):
                 variables.append(var_cls(name, domain=[low_bound, upp_bound]))
             return CustomDemographicModel(self.model_func, variables,
+                                          gen_time, theta0, mut_rate)
+        elif self.custom_filename is None and self.model_func is not None:
+            return CustomDemographicModel(self.model_func, None,
                                           gen_time, theta0, mut_rate)

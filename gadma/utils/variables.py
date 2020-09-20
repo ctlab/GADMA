@@ -1,7 +1,6 @@
 import numpy as np
 from .distributions import uniform_generator, trunc_normal_sigma_generator,\
                            trunc_lognormal_sigma_generator
-from .utils import extract_args
 from functools import partial
 from keyword import iskeyword
 
@@ -308,14 +307,16 @@ class Dynamic(object):
 
 def linear(y1, y2, x_diff, x):
     y = y1 + (y2 - y1) * (x / x_diff)
-#    print("linear", y1, y2, x_diff, x, y)
     return y
 
 
 def exponent(y1, y2, x_diff, x):
     y = y1 * (y2 / y1) ** (x / x_diff)
-#    print("exponent", y1, y2, x_diff, x, y)
     return y
+
+
+def constant(y1, y2, x_diff, x):
+    return y2
 
 
 class Exp(Dynamic):
@@ -375,7 +376,7 @@ class Sud(Dynamic):
         """
         Returns y2.
         """
-        return y2
+        return partial(constant, y1, y2, x_diff)
 
     def __str__(self):
         """
@@ -387,12 +388,10 @@ class Sud(Dynamic):
 def dynamic_generator(domain):
     p = []
     for x in domain:
-        if x == 'Sud':
+        if x == 'Sud' or x == 0:
             p.append(len(domain) + 1)
-        elif x == 'Lin':
+        elif x == 'Lin' or x == 1:
             p.append(len(domain) - 1)
-        elif x == 'Exp':
-            p.append(len(domain))
         else:
             p.append(len(domain))
     p = np.array(p) / np.sum(p)
@@ -411,18 +410,17 @@ class DynamicVariable(DiscreteVariable):
     * :attr:`default_rand_gen` = random choice over domain.
     """
 
-    _help_dict = {'Sud': Sud, 'Lin': Lin, 'Exp': Exp}
+    _help_dict = {'Sud': Sud, 'Lin': Lin, 'Exp': Exp, 0: Sud, 1: Lin, 2: Exp}
     default_domain = np.array(['Sud', 'Lin', 'Exp'])
     default_rand_gen = dynamic_generator
 
     def __init__(self, name, domain=None, rand_gen=None):
         if domain is None:
             domain = self.__class__.default_domain
-        if not all(dom in self.__class__.default_domain for dom in domain):
-            raise Exception("Domain of DynamicVariable must be a subset "
-                            "of the following general domain: %s"
-                            % ", ".join([x.__name__
-                                         for x in self.default_domain]))
+        if not all(dom in self.__class__._help_dict for dom in domain):
+            raise ValueError("Domain of DynamicVariable must be a subset "
+                             "of the following general domain: "
+                             f"{self._help_dict.keys()}")
         super(DynamicVariable, self).__init__(name, domain, rand_gen)
 
     @staticmethod
@@ -435,7 +433,7 @@ class DynamicVariable(DiscreteVariable):
         :type value: :class:`gadma.utils.variables.Dynamic`
         """
         if value not in DynamicVariable._help_dict:
-            raise Exception(f"Value {value} not in domain:"
+            raise ValueError(f"Value {value} not in domain:"
                             f"{DynamicVariable._help_dict.keys()}.")
         return DynamicVariable._help_dict[value]._inner_func
 

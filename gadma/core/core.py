@@ -1,5 +1,5 @@
 from ..cli import arg_parser
-from ..utils import parallel_wrap, StdAndFileLogger, bcolors
+from ..utils import StdAndFileLogger, bcolors
 
 from .draw_and_generate_code import print_runs_summary
 from .core_run import CoreRun

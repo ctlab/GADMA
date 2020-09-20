@@ -193,14 +193,16 @@ class TestModels(unittest.TestCase):
         nu1F, nu2B, nu2F, m, Tp, T, Dyn = self.get_variables_for_gut_2009()
         f = FractionVariable('f')
         Dyn2 = DynamicVariable('SudDyn')
+        sel = SelectionVariable('s')
 
         dm = EpochDemographicModel()
-        dm.add_epoch(Tp, [nu1F], dyn_args=[Dyn2])
+        dm.add_epoch(Tp, [nu1F], dyn_args=[Dyn2], sel_args=[sel])
         dm.add_split(0, [nu1F, Multiplication(f, nu2B)])
         dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', Dyn])
 
-        dic = {'nu1F': 1.880, nu2B: 0.0724, 'f': 1.0, 'nu2F': 1.764, 'm': 0.930,
-               'Tp':  0.363, 'T': 0.112, 'Dyn': 'Exp', 'SudDyn': 'Sud'}
+        dic = {'nu1F': 1.880, nu2B: 0.0724, 'f': 1.0, 'nu2F': 1.764,
+               'm': 0.930, 'Tp':  0.363, 'T': 0.112, 'Dyn': 'Exp',
+               'SudDyn': 'Sud', 's': 0.1}
 
         data = SFSDataHolder(YRI_CEU_DATA)
         for engine in all_engines():

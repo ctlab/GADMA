@@ -1,4 +1,5 @@
 from .optimizer import Optimizer, ConstrainedOptimizer
+from ..utils import ContinuousVariable
 
 import copy
 import scipy
@@ -31,8 +32,13 @@ class GlobalOptimizer(Optimizer):
         * 'custom' - sample values of parameters from `custom_rand_gen`.
         """
         if random_type == 'uniform':
-            return np.array([np.random.uniform(*var.domain)
-                             for var in variables], dtype=object)
+            arr = []
+            for var in variables:
+                if isinstance(var, ContinuousVariable):
+                    arr.append(np.random.uniform(*var.domain))
+                else:
+                    arr.append(np.random.choice(var.domain))
+            return np.array(arr, dtype=object)
         elif random_type == 'resample':
             arr = [var.resample() for var in variables]
             return np.array(arr, dtype=object)

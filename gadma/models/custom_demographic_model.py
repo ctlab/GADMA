@@ -26,4 +26,6 @@ class CustomDemographicModel(DemographicModel):
                  gen_time=None, theta0=None, mu=None):
         self.function = function
         super(CustomDemographicModel, self).__init__(gen_time, theta0, mu)
+        if variables is None:
+            variables = VariablePool()
         self.variables = variables

@@ -16,7 +16,10 @@ def trunc_lognormal(mean, sigma, lower, upper):
     """
     Truncated log-normal distribution.
     """
-    return np.exp(trunc_normal(np.log(mean), np.log(sigma),
+    mean_plus_sigma = mean + sigma
+    transf_mean = np.log(mean)
+    transf_sigma = np.log(mean_plus_sigma) - transf_mean
+    return np.exp(trunc_normal(transf_sigma, transf_sigma,
                                np.log(lower), np.log(upper)))
 
 
@@ -44,11 +47,24 @@ def uniform_generator(domain):
 
 
 def trunc_lognormal_sigma_generator(domain):
-    return trunc_lognormal_3_sigma_rule(1, domain[0], domain[1])
+    lower = domain[0]
+    if domain[0] == 0:
+        lower = 1e-15
+    mean = 1
+    if mean < domain[0]:
+        mean = domain[0]
+    if mean > domain[1]:
+        mean = domain[1]
+    return trunc_lognormal_3_sigma_rule(mean, lower, domain[1])
 
 
 def trunc_normal_sigma_generator(domain):
-    return trunc_normal_3_sigma_rule(1, domain[0], domain[1])
+    mean = 1
+    if mean < domain[0]:
+        mean = domain[0]
+    if mean > domain[1]:
+        mean = domain[1]
+    return trunc_normal_3_sigma_rule(mean, domain[0], domain[1])
 
 
 def custom_generator(variables):
@@ -64,7 +80,7 @@ def custom_generator(variables):
     return np.array(values, dtype=object)
 
 
-def multiply_generator(gen1, domain1, gen2, domain2):
-    def generator(domain):
-        return gen1(domain1) * gen2(domain2)
-    return generator
+#def multiply_generator(gen1, domain1, gen2, domain2):
+#    def generator(domain):
+#        return gen1(domain1) * gen2(domain2)
+#    return generator

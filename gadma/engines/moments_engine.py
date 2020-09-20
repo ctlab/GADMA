@@ -69,11 +69,10 @@ class MomentsEngine(DadiOrMomentsEngine):
         :param ns: sample sizes of simulated SFS
         :param dt_fac: step size for numerical solution
         """
-        var2value = self.model.var2value(values)
         if isinstance(self.model, CustomDemographicModel):
-            vals = [var2value[var] for var in self.model.variables]
-            return self.model.function(vals, ns)
+            return self.model.function(values, ns)
 
+        var2value = self.model.var2value(values)
         moments = self.base_module
 
         sts = moments.LinearSystem_1D.steady_state_1D(np.sum(ns))

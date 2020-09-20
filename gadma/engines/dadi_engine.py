@@ -80,11 +80,10 @@ class DadiEngine(DadiOrMomentsEngine):
         :param ns: sample sizes of simulated SFS
         :param pts: grid points for numerical solution
         """
-        var2value = self.model.var2value(values)
         if isinstance(self.model, CustomDemographicModel):
-            vals = [var2value[var] for var in self.model.variables]
-            return self.model.function(vals, ns, pts)
+            return self.model.function(values, ns, pts)
 
+        var2value = self.model.var2value(values)
         dadi = self.base_module
 
         xx = dadi.Numerics.default_grid(pts)
@@ -182,6 +181,7 @@ class DadiEngine(DadiOrMomentsEngine):
         """
         dadi = self.base_module
         func_ex = dadi.Numerics.make_extrap_log_func(self._inner_func)
+#        print(values, ns, pts)
         model = func_ex(values, ns, pts)
         # TODO: Nref
         return model

@@ -112,6 +112,14 @@ class TestBaseOptClass(unittest.TestCase):
 
 
 class TestLocalOpt(TestBaseOptClass):
+    def test_registered_local_optimizers_fails(self):
+        self.assertRaises(ValueError, get_local_optimizer, 'some strange_id')
+        ex_id = 'BFGS_log'
+        opt = get_local_optimizer(ex_id)
+        self.assertRaises(ValueError, register_local_optimizer,
+                          ex_id, opt.__class__)
+        self.assertRaises(ValueError, register_local_optimizer, 'id_ok', list)
+
     def test_initialization(self):
         """
         Check that local optimizers initialize correctly

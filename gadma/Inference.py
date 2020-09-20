@@ -3,7 +3,9 @@ from .cli import SettingsStorage
 from .optimizers import GlobalOptimizerAndLocalOptimizer
 from .data import SFSDataHolder
 from .engines import get_engine
+from . import utils
 import warnings
+import numpy as np
 
 
 def load_data_from_dir(dirname, engine, projections=None,
@@ -26,9 +28,10 @@ def load_data_from_dir(dirname, engine, projections=None,
     settings = SettingsStorage()
     settings.directory_with_bootstrap = dirname
     settings.engine = engine
-    engine_obj = settings.get_engine()
-    settings.data_holder = SFSDataHolder(None, projections, outgroup,
-                                         population_labels)
+    settings.data_holder = SFSDataHolder(None,
+                                         projections=projections,
+                                         outgroup=outgroup,
+                                         population_labels=population_labels)
     return settings.read_bootstrap_data()
 
 
@@ -66,27 +69,39 @@ def get_claic_score(func_ex, all_boot, p0, data, engine=None, args=(),
     # version of GADMA, where parameters were:
     warning_msg = ("It looks like get_claic_score function is used from GADMA "
                    " of version 1.")
-    if pts is not None:
+    if pts is not None and engine is None:
         engine = 'dadi'
-        args = (pts,)
         warnings.warn(warning_msg + " Deprecated argument pts is used - dadi "
                       "engine is chosen.")
-    if engine is None:
+    if (engine is None or
+            (isinstance(engine, (list, np.ndarray)) and len(engine) == 3)):
+        if engine is not None:
+            pts = engine
         engine = 'moments'
+        if pts is not None:
+            engine = 'dadi'
         warnings.warn(warning_msg + " The 5th argument (engine in GADMA v2 vs"
                       " pts in GADMA v1) argument is not specified (None). If"
                       " some other error will happen next then please specify"
-                      " engine.")
+                      f" engine. Engine: {engine}, pts: {pts}, eps: {eps}")
+        
     if not isinstance(args, tuple) and isinstance(args, float):
         eps = args
+        args = ()
     # End of backward compatibility of versions.
 
     settings = SettingsStorage()
     settings.engine = engine
+    if len(args) > 0:
+        func_ex = utils.fix_args(func_ex, args)
     settings.model_func = func_ex
-    settings._inner_data = data
-    settings.get_engine_args = lambda: args
-    return get_claic_score(get_engine(engine), p0, all_boot, args)
+    engine_obj = get_engine(engine)
+    engine_obj.set_data(data)
+    engine_obj.set_model(settings.get_model())
+    if pts is not None:
+        settings.pts = pts
+    return utils.get_claic_score(engine_obj, p0, all_boot,
+                                 settings.get_engine_args())
 
 
 def optimize_ga(data, model_func, engine, args=(),

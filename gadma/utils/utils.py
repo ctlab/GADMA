@@ -31,13 +31,6 @@ def ident_transform(x):
     return x
 
 
-def extract_args(func):
-    @wraps(func)
-    def extract_args_wrapper(args):
-        return func(*args)
-    return extract_args_wrapper
-
-
 def choose_by_weight(X, weights, nsample):
     """
     Choose `nsample` samples from `X` according to `weights`.
@@ -79,16 +72,6 @@ class CacheInfo(object):
         self.misses = 0
         self.cache = {}
         self.all_calls = []
-
-
-def rpartial(func, *args):
-    """
-    Reversed partial. Fixation of last arguments.
-    """
-    @wraps(func)
-    def rpartial_wrapper(*part_args, **kwargs):
-        return func(*(part_args + args), **kwargs)
-    return rpartial_wrapper
 
 
 def lru_cache(func):
@@ -133,31 +116,31 @@ def cache_func(f):
     return cache_wrapper
 
 
-def cache_func_2d(f):
-    """
-    Cashes function with two arguments.
-    :param f: function such that f(x, y).
-    :returns: function that is cashed.
-    """
-    @lru_cache
-    @wraps(f)
-    def tuple_wrapper(x_y_tuple):
-        x, y = x_y_tuple
-        if isinstance(y, tuple) and isinstance(y[0], tuple):
-            y = np.array(y)
-        return f(x, y)
-
-    @wraps(tuple_wrapper)
-    def cache_wrapper(x, y):
-        y_tuple = tuple(y)
-        if (isinstance(y, (list, np.ndarray)) and
-                isinstance(y[0], (list, np.ndarray))):
-            for i in range(len(y_tuple)):
-                y_tuple[i] = tuple(y_tuple[i])
-        return tuple_wrapper(tuple(x), y_tuple)
-
-    cache_wrapper.cache_info = tuple_wrapper.cache_info
-    return cache_wrapper
+#def cache_func_2d(f):
+#    """
+#    Cashes function with two arguments.
+#    :param f: function such that f(x, y).
+#    :returns: function that is cashed.
+#    """
+#    @lru_cache
+#    @wraps(f)
+#    def tuple_wrapper(x_y_tuple):
+#        x, y = x_y_tuple
+#        if isinstance(y, tuple) and isinstance(y[0], tuple):
+#            y = np.array(y)
+#        return f(x, y)
+#
+#    @wraps(tuple_wrapper)
+#    def cache_wrapper(x, y):
+#        y_tuple = tuple(y)
+#        if (isinstance(y, (list, np.ndarray)) and
+#                isinstance(y[0], (list, np.ndarray))):
+#            for i in range(len(y_tuple)):
+#                y_tuple[i] = tuple(y_tuple[i])
+#        return tuple_wrapper(tuple(x), y_tuple)
+#
+#    cache_wrapper.cache_info = tuple_wrapper.cache_info
+#    return cache_wrapper
 
 
 def nan_fval_to_inf(f):
@@ -206,22 +189,6 @@ def eval_wrapper(f, eval_file=None):
                       time_end - time_start, file=fl, sep='\t')
         return y
     return eval_wrapper_f
-
-
-def parallel_wrap(f, x):
-    """
-    Partial for first argument and result function could be used
-    in multiprocessing.
-    """
-    return f(*x)
-
-
-def has_counter(f):
-    """
-    Creates attribute `counter` for function f.
-    """
-    f.counter = 0
-    return f
 
 
 class WeightedMetaArray(np.ndarray):
@@ -321,7 +288,6 @@ def get_claic_score(engine, x0, boots,
     eps = 1e-5
     claic_score = None
     while eps <= 1e-2:
-        print(eps)
         try:
             claic_component = engine.get_claic_component(x0, boots,
                                                          *args, eps)

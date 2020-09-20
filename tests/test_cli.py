@@ -33,6 +33,9 @@ class TestCLI(unittest.TestCase):
             settings, _ = get_settings()
             self.assertEqual(settings.output_directory, abspath('some_dir'))
             self.assertEqual(settings.input_file, abspath(another_fs))
+            sys.argv = ['gadma', '-p', param_file, '-o', 'tests',
+                        '-i', another_fs]
+            self.assertRaises(RuntimeError, get_settings)
 
             param_file = os.path.join(DATA_PATH,
                                       'another_test_params_without_base')

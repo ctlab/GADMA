@@ -44,6 +44,7 @@ class TestVariablePool(unittest.TestCase):
         pool.extend([m, t])  # v,x, m, t
         self.assertEqual(pool.names, set(['var1', 'nu', 'm', 't']))
         pool[2:4] = [t, m]
+        self.assertRaises(NameError, pool.__setitem__, slice(2, 4), [t, n])
 
     def test_delete(self):
         v = Variable("var1", '', '', '')

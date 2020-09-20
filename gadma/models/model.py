@@ -96,6 +96,8 @@ class Model(object):
 
         :param values: List or dict {var_name: value} of values.
         """
+        if len(self.variables) == 0:
+            return {}
         if isinstance(values, list) or isinstance(values, np.ndarray):
             ret_dict = {var: value for var, value in zip(self.variables,
                                                          values)}

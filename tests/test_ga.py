@@ -5,9 +5,20 @@ from .test_optimizers import get_func, get_1pop_sim_example_1
 from .test_optimizers import get_1pop_sim_example_2, get_2pop_sim_example_1
 from .test_data import YRI_CEU_DATA
 import gadma
+import importlib
 
 EXAMPLE_FOLDER = os.path.join(os.path.dirname(__file__), "test_data")
 EXAMPLE_DATA = os.path.join(EXAMPLE_FOLDER, "YRI_CEU.fs")
+
+class TestGlobalOptimizers(unittest.TestCase):
+    def test_registered_global_optimizers_fails(self):
+        self.assertRaises(ValueError, get_global_optimizer, 'some strange_id')
+        ex_id = 'Genetic_algorithm'
+        opt = get_global_optimizer(ex_id)
+        self.assertRaises(ValueError, register_global_optimizer,
+                          ex_id, opt.__class__)
+        self.assertRaises(ValueError, register_global_optimizer, 'id_ok', list)
+
 
 class TestGeneticAlg(unittest.TestCase):
     def check_diff(self, diff, ind, msg):
@@ -19,6 +30,35 @@ class TestGeneticAlg(unittest.TestCase):
 
     def test_initialization(self):
         get_global_optimizer('Genetic_algorithm')
+
+    def test_random(self):
+        random_types = ['uniform', 'resample', 'custom']
+        ga = get_global_optimizer('Genetic_algorithm')
+
+        variables = []
+        variables.append(PopulationSizeVariable('n', domain=[0, 1]))
+        variables.append(MigrationVariable('m', domain=[0, 1]))
+        variables.append(SelectionVariable('s', domain=[0, 1]))
+        variables.append(FractionVariable('f', domain=[0, 1]))
+        variables.append(TimeVariable('t', domain=[1e-15, 1]))
+        variables.append(DynamicVariable('var_disc',
+                                          domain=[2, 0, 'Exp']))
+        variables[0].domain = [90, 100]
+
+        for r_type in random_types:
+            ga.random_type = r_type
+            ga.custom_rand_gen = None
+            if r_type == 'custom':
+                self.assertRaises(TypeError, ga.randomize, variables,
+                                  random_type=r_type, custom_rand_gen=None)
+            else:
+                ga.randomize(variables, random_type=r_type,
+                             custom_rand_gen=None)
+            ga.randomize(variables, random_type=r_type,
+                         custom_rand_gen=custom_generator)
+        self.assertRaises(ValueError, ga.randomize, variables,
+                          random_type='some_unknown_type')
+
 
     def test_mutation(self):
         mut_types = ['uniform', 'gaussian', 'resample']
@@ -34,6 +74,7 @@ class TestGeneticAlg(unittest.TestCase):
         variables[0].domain = [90, 100]
         x_list = [var.resample() for var in variables]
         x_arr = WeightedMetaArray(x_list)
+        x_arr.__str__()
 
         for ind in range(n_var):
             for mut_type in mut_types:
@@ -209,13 +250,13 @@ class TestGeneticAlg(unittest.TestCase):
             y = engine.evaluate(x)
             return y
         res = ga.optimize(f, dm.variables, verbose=0, maxeval=30)
-        #print(res)
+        # print(res)
 
         engine.model.fix_dynamics(res.x)
         x0 = res.x[np.array(engine.model.is_fixed) == False]
         ls = get_local_optimizer("BFGS")
         ls.maximize = True
-        #print(ls.optimize(f, engine.model.variables, x0, verbose=0, maxiter=1))
+        # print(ls.optimize(f, engine.model.variables, x0, verbose=0, maxiter=1))
 
         def callback(x, y):
             pass
@@ -227,7 +268,9 @@ class TestGeneticAlg(unittest.TestCase):
         sys.argv = ['gadma', '--test']
         gadma.core.main()
 
-    def test_inference(self):
+
+class TestInference(unittest.TestCase):
+    def test_inference_ga(self):
         for engine in all_engines():
             with self.subTest(engine=engine.id):
                 if engine.id == "dadi":
@@ -252,3 +295,67 @@ class TestGeneticAlg(unittest.TestCase):
                     verbose=1, callback=None,
                     save_file='save_file', eval_file='eval_file',
                     report_file='report_file')
+
+    def test_inference_funcs(self):
+        dirname = os.path.join(EXAMPLE_FOLDER, 'YRI_CEU_test_boots')
+        for engine in all_engines():
+            data = engine.read_data(SFSDataHolder(os.path.join(EXAMPLE_FOLDER,
+                                                               'YRI_CEU.fs')))
+            boots = gadma.Inference.load_data_from_dir(dirname, engine.id)
+
+            p0 = [1.881, 0.0710, 1.845, 0.911, 0.355, 0.111]
+            filename = os.path.join(
+                EXAMPLE_FOLDER, f'demographic_model_{engine.id}_YRI_CEU.py')
+            spec = importlib.util.spec_from_file_location("module", filename)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            func = module.model_func
+
+            if engine.id == 'dadi':
+                pts = [20, 30, 40]
+                c1 = gadma.Inference.get_claic_score(func, boots, p0, data,
+                                                     engine.id, pts=pts)
+                c2 = gadma.Inference.get_claic_score(func, boots, p0, data,
+                                                     pts=pts)
+                # old interface
+                c3 = gadma.Inference.get_claic_score(func, boots, p0, data,
+                                                     pts=pts, eps=1e-2)
+                c4 = gadma.Inference.get_claic_score(func, boots, p0, data,
+                                                     pts, 1e-2)
+                c5 = gadma.Inference.get_claic_score(func, boots, p0, data,
+                                                     pts, eps=1e-2)
+
+                self.assertEqual(c1, c2)
+                self.assertEqual(c2, c3)
+                self.assertEqual(c3, c4)
+                self.assertEqual(c4, c5)
+                # fails
+                self.assertRaises(Exception, gadma.Inference.get_claic_score,
+                                  func, boots, p0, data)
+                self.assertRaises(Exception, gadma.Inference.get_claic_score,
+                                  func, boots, p0, data, 'moments', pts)
+                self.assertRaises(Exception, gadma.Inference.get_claic_score,
+                                  func, boots, p0, data, None, 1e-2)
+            elif engine.id == 'moments':
+                pts = [20, 30, 40]
+                c1 = gadma.Inference.get_claic_score(func, boots, p0, data,
+                                                engine.id, pts=pts)
+                c2 = gadma.Inference.get_claic_score(func, boots, p0, data,
+                                                engine.id)
+                # old interface
+                c3 = gadma.Inference.get_claic_score(func, boots, p0, data,
+                                                pts=None, eps=1e-2)
+                c4 = gadma.Inference.get_claic_score(func, boots, p0, data,
+                                                None, 1e-2)
+                c5 = gadma.Inference.get_claic_score(func, boots, p0, data,
+                                                None, eps=1e-2)
+
+                self.assertEqual(c1, c2)
+                self.assertEqual(c2, c3)
+                self.assertEqual(c3, c4)
+                self.assertEqual(c4, c5)
+
+                # fails
+                self.assertRaises(Exception, gadma.Inference.get_claic_score,
+                                  func, boots, p0, data, pts=pts)
+

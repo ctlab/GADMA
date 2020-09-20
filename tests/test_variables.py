@@ -1,6 +1,7 @@
 import unittest
 
 from gadma import *
+import gadma
 
 
 class TestVariables(unittest.TestCase):
@@ -56,3 +57,30 @@ class TestVariables(unittest.TestCase):
         d = DynamicVariable('d')
         self.assertRaises(Exception, DynamicVariable, 'd', domain=[5, 'Sud'])
         self.assertRaises(Exception, d.get_func_from_value, 100)
+
+        dyn = gadma.variables.Dynamic()
+        self.assertRaises(NotImplementedError, dyn._inner_func, 1, 2, 0.2)
+        self.assertRaises(NotImplementedError, dyn.__str__)
+
+        var = Variable('var', 'discrete', [0, 1], np.random.choice)
+        self.assertRaises(NotImplementedError, var.get_bounds)
+        self.assertRaises(NotImplementedError, var.get_possible_values)
+        self.assertRaises(NotImplementedError, var.correct_value, 5)
+
+    def test_dynamics(self):
+        y1 = 1
+        y2 = 5
+        t = 3
+        for cls in [gadma.variables.Exp, gadma.variables.Lin,
+                    gadma.variables.Sud]:
+            el = cls()
+            print(el)
+            func = el._inner_func(y1, y2, t)
+            print(func)
+            if str(el) != 'Sud':
+                self.assertEqual(func(0), y1)
+            else:
+                self.assertEqual(func(0), y2)
+                self.assertEqual(func(t / 2), y2)
+            self.assertEqual(func(t), y2)
+
