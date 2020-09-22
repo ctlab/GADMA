@@ -451,22 +451,25 @@ class SettingsStorage(object):
                             continue
                         if found_func and line.strip().startswith("'''"):
                             if big_comment and big_comment_str == "'''":
-                                break
-                            big_comment = True
-                            if big_comment_str == "":
-                                big_comment_str = "'''"
-                        if found_func and line.strip().startswith('"""'):
+                                big_comment = False
+                                big_comment_str = ""
+                            else:
+                                big_comment = True
+                                if big_comment_str == "":
+                                    big_comment_str = "'''"
+                        elif found_func and line.strip().startswith('"""'):
                             if big_comment and big_comment_str == '"""':
-                                break
-                            big_comment = True
-                            if big_comment_str == "":
-                                big_comment_str = '"""'
-                        if found_func and not big_comment:
+                                big_comment = False
+                                big_comment_str = ""
+                            else:
+                                big_comment = True
+                                if big_comment_str == "":
+                                    big_comment_str = '"""'
+                        elif found_func and not big_comment:
                             break
                         if line.startswith("def model_func"):
                             found_func = True
                     try:
-                        line = next(f)
                         p_ids = line.strip().split("=")[0].split(",")
                         p_ids = [x.strip() for x in p_ids]
                         for x in p_ids:
