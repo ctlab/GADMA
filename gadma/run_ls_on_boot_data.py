@@ -93,7 +93,7 @@ def load_parameters_from_python_file(filename, as_module=False):
         f = support.check_file_existence(filename)
         try:
             module = imp.load_source('module', f)
-        except Exceprint, e:
+        except Exception as e:
             support.error('File ' + filename + " is not valid python file.", error_instance=e)
     else:
         module = filename
