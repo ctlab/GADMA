@@ -122,14 +122,15 @@ def generate_code_to_file(x, engine, settings, filename):
         other_engine.generate_code(x, save_file, *args)
 
 
-def print_runs_summary(start_time, shared_dict, settings,
-                       log_file, precision, draw_model):
+def print_runs_summary(start_time, shared_dict, settings):
     """Prints best demographic model by logLL among all processes.
 
-    start_time :    time when equation was started.
-    shared_dict :   dictionary to share information between processes.
-    log_file :      file to write logs.
-    draw_model :    plot model best by logll and best by AIC (if needed).
+    :param start_time: Time when equation was started.
+    :type start_time: float
+    :param shared_dict: Dictionary to share information between processes.
+    :type shared_dict: :class:`gadma.core.SharedDict`
+    :param settings: Settings of run.
+    :type settings: :class:`gadma.cli.SettingsStorage`
     """
     s = (datetime.now() - start_time).total_seconds()
     time_str = f"\n[{int(s//3600):03}:{int(s%3600//60):02}:{int(s%60):02}]"
@@ -145,35 +146,6 @@ def print_runs_summary(start_time, shared_dict, settings,
         sorted_models = models
         metrics = local_metrics
 
-#    metric_names = list()  # ordered set
-#    for index in shared_dict:
-#        for name in shared_dict[index]:
-#            if name not in metric_names:
-#                metric_names.append(name)
-#    for best_by in metric_names:
-#        models = list()
-#        for index in shared_dict:
-#            if best_by not in shared_dict[index]:
-#                continue
-#            elem = shared_dict[index][best_by]
-#            print("elem", elem[1])
-#            if isinstance(elem, list):
-#                models.extend((index, el) for el in elem)
-#            else:
-#                models.append((index, elem))
-#        def key(x):
-#            value = x[1][2][best_by]
-#            if isinstance(value, tuple):
-#                value = value[0]
-#            return value or np.inf
-#        sorted_models = sorted(models, key=key)
-#        if best_by == 'log-likelihood':
-#            sorted_models = list(reversed(sorted_models))
-#        metrics = list()  # ordered set
-#        for model in sorted_models:
-#            for key in model[1][2]:
-#                if key not in metrics:
-#                    metrics.append(key)
         print(f"All best by {best_by} models")
         print("Number", *metrics, "Model", sep='\t')
         for model in sorted_models:

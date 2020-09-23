@@ -110,6 +110,7 @@ def get_settings():
     else:
         settings_storage = SettingsStorage.from_file(args.params, args.extra)
 
+
     if args.only_models and args.resume is None:
         raise ValueError("Option --only_models  must be used with "
                          "--resume option.")
@@ -121,9 +122,6 @@ def get_settings():
                           "to one from the -o/--output option. "
                           "The last is taken.")
         settings_storage.output_directory = args.output
-    if settings_storage.output_directory is not None:
-        ensure_dir_existence(settings_storage.output_directory,
-                             check_emptiness=True)
 
     if args.input is not None:
         if (settings_storage.input_file is not None and
@@ -146,6 +144,8 @@ def get_settings():
     if settings_storage.output_directory is None:
         raise AttributeError("Output directory is requiered. It could be set "
                              "by -o/--output option or via parameters file.")
+    ensure_dir_existence(settings_storage.output_directory,
+                         check_emptiness=True)
 
     if settings_storage.custom_filename is not None:
         if (settings_storage.lower_bound is None or

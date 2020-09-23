@@ -196,7 +196,7 @@ class WeightedMetaArray(np.ndarray):
     def __new__(cls, array, dtype=None, order=None):
         obj = np.asarray(np.array(array, dtype=object),
                          dtype=dtype, order=order).view(cls)
-        obj.metadata = ''
+        obj.metadata = ""
         obj.weights = np.ones(obj.shape)
         return obj
 
@@ -217,6 +217,37 @@ class WeightedMetaArray(np.ndarray):
         if hasattr(self, 'metadata'):
             return super_str + '\t' + self.metadata
         return super_str
+
+    def serialize(self):
+        return (self, self.weights, self.metadata)
+
+    def deserialize(self, data):
+        self = WeightedMetaArray(data[0])
+        self.weights = data[1]
+        self.metadata = data[2]
+
+
+def list_with_weights_for_pickle(X):
+    new_X = list()
+    for x in X:
+        if isinstance(x, WeightedMetaArray):
+            new_X.append(x.serialize())
+        else:
+            new_X.append(x)
+    return new_X
+
+
+def list_with_weights_after_pickle(X):
+    new_X = list()
+    for x in X:
+        if isinstance(x, tuple):
+            arr = WeightedMetaArray(x[0])
+            arr.weights = x[1]
+            arr.metadata = x[2]
+            new_X.append(arr)
+        else:
+            new_X.append(x)
+    return new_X
 
 
 def update_by_one_fifth_rule(value, const, was_improved):

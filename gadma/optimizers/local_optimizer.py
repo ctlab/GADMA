@@ -7,6 +7,7 @@ import copy
 import numpy as np
 import scipy
 from functools import partial, wraps
+import pickle
 
 _registered_local_optimizers = {}
 
@@ -76,11 +77,26 @@ class NoneOptimizer(LocalOptimizer):
     Class that inherits :class:`gadma.optimizers.LocalOptimizer` but do not
     run any optimization.
     """
+    def save(self, x0, y, save_file):
+        if save_file is None:
+            return
+        with open(save_file, 'wb') as fl:
+            pickle.dump((self.inv_transform(x0), self.sign * y), fl)
+
+    def load(self, save_file):
+        with open(save_file, 'rb') as fl:
+            t = pickle.load(fl)
+        return t
+
     def optimize(self, f, variables, x0, args=(), options={},
                  linear_constrain=None, maxiter=None, maxeval=None,
                  verbose=0, callback=None, eval_file=None, report_file=None,
-                 save_file=None):
-        y = f(x0, *args)
+                 save_file=None, restore_file=None, restore_models_only=False):
+        if restore_file is not None:
+            x0, y = self.load(restore_file)
+        if restore_file is None or restore_models_only:
+            y = f(x0, *args)
+        self.save(x0, y, save_file)
         result = OptimizerResult(x0, y, True, 1, message="SUCCESS",
                                  X=[x0], Y=[y], n_eval=1, n_iter=0)
         return result
@@ -117,7 +133,7 @@ class ScipyOptimizer(LocalOptimizer):
         self.method = method
         super(ScipyOptimizer, self).__init__(log_transform, maximize)
 
-    def save(self, x_best, y_best, is_finished, save_file):
+    def save(self, x_best, y_best, n_iter, n_eval, is_finished, save_file):
         """
         Save current achievement in optimization. Dumps `x_best`, `y_best` and
         `is_finished` to `save_file` using :mod:`pickle`.
@@ -130,7 +146,8 @@ class ScipyOptimizer(LocalOptimizer):
         if save_file is None:
             return
         with open(save_file, 'wb') as fl:
-            pickle.dump((x_best, y_best, is_finished), fl)
+            pickle.dump((x_best, y_best,
+                         n_iter, n_eval, is_finished), fl)
 
     def load(self, save_file):
         """
@@ -140,8 +157,8 @@ class ScipyOptimizer(LocalOptimizer):
         :param save_file: Filename with dumped data.
         """
         with open(save_file, 'rb') as fl:
-            x_best, y_best, is_finished = pickle.load(fl)
-        return x_best, y_best, is_finished
+            t = pickle.load(fl)
+        return t
 
     def prepare_callback(self, f, callback, save_file=None):
         new_callback = super(ScipyOptimizer, self).prepare_callback(callback)
@@ -153,10 +170,17 @@ class ScipyOptimizer(LocalOptimizer):
             if wrapper.x_best is None or wrapper.y_best > yk:
                 wrapper.x_best = xk
                 wrapper.y_best = yk
-            self.save(xk, yk, False, save_file)
+            n_eval = None
+            if hasattr(f, 'cache_info'):
+                n_eval = f.cache_info.misses
+            self.save(self.inv_transform(wrapper.x_best),
+                      self.sign * wrapper.y_best, wrapper.n_iter, n_eval,
+                      False, save_file)
+            wrapper.n_iter += 1
             return r
 
         wrapper.x_best = None
+        wrapper.n_iter = 0
         return wrapper
 
     def get_addit_scipy_kwargs(self, variables):
@@ -165,7 +189,7 @@ class ScipyOptimizer(LocalOptimizer):
     def optimize(self, f, variables, x0, args=(), options={},
                  linear_constrain=None, maxiter=None, maxeval=None,
                  verbose=0, callback=None, eval_file=None, report_file=None,
-                 save_file=None):
+                 save_file=None, restore_file=None, restore_models_only=False):
         """
         Run Scipy optimization.
 
@@ -205,12 +229,47 @@ class ScipyOptimizer(LocalOptimizer):
         if save_file is not None:
             ensure_file_existence(save_file)
 
+        is_finished = False
+        if restore_file is not None:
+            x0, _y, _n_iter, _n_eval, is_finished = self.load(restore_file)
+            if restore_models_only:
+                if maxiter is not None:
+                    maxiter -= _n_iter
+                if maxeval is not None and _n_eval is not None:
+                    maxeval -= _n_eval
+                is_finished = False
+            print('restore', x0, _y)
+
         x0 = np.array(x0, dtype=np.float)
+
+        # Fix args in function f and cache it.
+        # TODO: not intuitive solution, think more about it.
+        # Fix args and cache
+        prepared_f = self.prepare_f_for_opt(f, args)
+        # Wrap for automatic evaluation log
+        wrapped_f = eval_wrapper(prepared_f, eval_file)
+        # Wrap for writing report
+        finally_wrapped_f = self.wrap_for_report(wrapped_f, variables,
+                                                 verbose, report_file)
+
+        f_in_opt = partial(self.evaluate, finally_wrapped_f)
+        f_in_opt = fix_args(f_in_opt, (), linear_constrain)
+
         x0_in_opt = self.transform(x0)
+
+        if is_finished or maxiter == 0 or maxeval == 0:
+            success = True
+            status = 0
+            message = "maxiter or maxeval is 0"
+            x = x0
+            y = self.sign * f_in_opt(x0_in_opt)
+            return OptimizerResult(x, y, success, status, message,
+                                   [x], [y], 1, 0, X_out=[], Y_out=[])
+
         self.check_variables(variables)
-        if maxiter:
+        if maxiter is not None:
             options['maxiter'] = int(maxiter)
-        if maxeval:
+        if maxeval is not None and maxeval > 0:
             if self.method not in self.maxeval_kwarg:
                 warnings.warn(f"Local optimization {self.method} do not have"
                               "  an option of max number of evaluations. It "
@@ -227,19 +286,6 @@ class ScipyOptimizer(LocalOptimizer):
                                   f"number of function evaluations for "
                                   f"{self.method} optimizer.")
                     options[kwarg] = min(maxeval, maxiter)
-
-        # Fix args in function f and cache it.
-        # TODO: not intuitive solution, think more about it.
-        # Fix args and cache
-        prepared_f = self.prepare_f_for_opt(f, args)
-        # Wrap for automatic evaluation log
-        wrapped_f = eval_wrapper(prepared_f, eval_file)
-        # Wrap for writing report
-        finally_wrapped_f = self.wrap_for_report(wrapped_f, variables,
-                                                 verbose, report_file)
-
-        f_in_opt = partial(self.evaluate, finally_wrapped_f)
-        f_in_opt = fix_args(f_in_opt, (), linear_constrain)
 
         # Create callback for scipy
         if callback is not None:
@@ -277,7 +323,7 @@ class ScipyOptimizer(LocalOptimizer):
 
         result.n_eval = prepared_f.cache_info.misses
 
-        self.save(result.x, result.y, True, save_file)
+        self.save(result.x, result.y, result.n_iter, result.n_eval, True, save_file)
 
         return result
 
@@ -357,7 +403,8 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
 
     def optimize(self, f, variables, x0, args=(), options={},
                  linear_constrain=None, maxiter=None, maxeval=None,
-                 verbose=0, callback=None, eval_file=None, report_file=None):
+                 verbose=0, callback=None, eval_file=None, report_file=None,
+                 save_file=None, restore_file=None, restore_models_only=False):
         self.check_variables(variables)
         x0 = np.array(x0, dtype=np.float)
         x0_in_opt = self.optimizer.transform(self.transform(x0))
@@ -387,7 +434,12 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
                                          verbose=0,
                                          linear_constrain=linear_constrain,
                                          maxiter=maxiter,
-                                         maxeval=maxeval, callback=callback)
+                                         maxeval=maxeval, callback=callback,
+                                         eval_file=eval_file,
+                                         report_file=report_file,
+                                         save_file=save_file,
+                                         restore_file=restore_file,
+                                         restore_models_only=restore_models_only)
         # TODO: need to check result.X as they should be transformed somehow.
         result.x = self.inv_transform(result.x)
         result.X = [self.inv_transform(x) for x in result.X]

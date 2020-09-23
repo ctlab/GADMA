@@ -80,9 +80,6 @@ def main():
 
     print(f"{bcolors.OKBLUE}--Start pipeline--{bcolors.ENDC}")
 
-    # Change output stream both to stdout and log file
-    sys.stdout = StdAndFileLogger(log_file, settings_storage.silence)
-
     # Create shared dictionary
     shared_dict = SharedDictForCoreRun()
 
@@ -129,32 +126,12 @@ def main():
             break
         if (time.time() - check_time) >= time_diff:
             check_time = time.time()
-            print_runs_summary(start_time, shared_dict,
-                               settings_storage, None, None, None)
+            print_runs_summary(start_time, shared_dict, settings_storage)
             time_bias = time.time() - check_time
             time_bias %= get_time
 
     pool.join()
-#        # graceful way to interrupt all processes by Ctrl+C
-#        min_counter = 0
-#        while True:
-#            try:
-#                multiple_results = pool_map.get(60)
-#                    # 60 * settings_storage.time_to_print_summary)
-#                break
-#            # catch TimeoutError and get again
-#            except multiprocessing.TimeoutError as ex:
-#                print_runs_summary(start_time, shared_dict,
-#                                   settings_storage, None,
-#                                   precision, None)
-#            except Exception as e:
-#                print("Catch exception in main")
-#                pool.terminate()
-#                pool.close()
-#                raise RuntimeError(str(e))
-#        pool.close()
-    print_runs_summary(start_time, shared_dict, settings_storage, None,
-                       None, None)
+    print_runs_summary(start_time, shared_dict, settings_storage)
 
     print('\n--Finish pipeline--\n')
     if args.test:

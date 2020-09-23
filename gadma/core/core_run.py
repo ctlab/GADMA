@@ -128,38 +128,10 @@ class CoreRun(object):
             self.y_best = y
             updated = self.shared_dict.update_best_model_for_process(
                 self.index, best_by, self.engine, x, y_dict)
-#        if self.index in self.shared_dict:
-#            engine, x_best, y_dict = self.shared_dict[self.index][best_by]
-#            y_best = y_dict[best_by]
-#        if (self.index not in self.shared_dict or
-#                np.allclose(y, y_best) or y > y_best):
-#            if self.index not in self.shared_dict:
-#                new_dict = OrderedDict()
-#            else:
-#                new_dict = OrderedDict(self.shared_dict[self.index])
-#            new_dict[best_by] = (copy.deepcopy(self.engine), x,
-#                                 OrderedDict({best_by: y}))
-#            print("base", new_dict[best_by][1])
-#            if self.aic_score:
-#                n_params = self.engine.model.get_number_of_parameters(x)
-#                new_dict[best_by][2]['AIC score'] = get_aic_score(n_params,
-#                                                                  y)
-#            self.shared_dict[self.index] = new_dict
-#            print("base", self.shared_dict[self.index][best_by][1])
-            # Draw and generate code for current best model
-#        if updated:
-#            fig_title = f"Best by {best_by} model. {best_by}: {y: .2f}"
             prefix = (self.settings.LOCAL_OUTPUT_DIR_PREFIX +
                       self.settings.LONG_NAME_2_SHORT.get(best_by, best_by))
-#            save_plot_file = os.path.join(self.output_dir,
-#                                          prefix + "_model.png")
             save_code_file = os.path.join(self.output_dir,
                                           prefix + "_model.py")
-#            try:
-#               draw_plots_to_file(x, self.engine, self.settings,
-#                                  save_plot_file, fig_title)
-#            except Exception as e:
-#                pass
             try:
                 generate_code_to_file(x, self.engine,
                                       self.settings, save_code_file)
@@ -253,31 +225,6 @@ class CoreRun(object):
                                                            best_by,
                                                            self.engine,
                                                            x, y_dict)
-#        if self.index not in self.shared_dict:
-#            self.shared_dict[self.index] = OrderedDict()
-#        new_dict = OrderedDict(self.shared_dict[self.index])
-#        if best_by not in self.shared_dict[self.index]:
-#            new_dict[best_by] = OrderedDict()
-#        else:
-#            if not self.claic_score:
-#                engine, x_best, y_dict = new_dict[best_by]
-#                if y_dict[best_by] < value:
-#                    return
-#        y_dict = OrderedDict()
-#        y_dict['log-likelihood'] = y
-#        y_dict[best_by] = value
-#        element = (copy.deepcopy(self.engine), x, y_dict)
-#        if not self.claic_score:
-#            new_dict[best_by] = element
-#        else:
-#            if best_by not in self.shared_dict[self.index]:
-#                new_list = list()
-#            else:
-#                new_list = copy.deepcopy(
-#                    self.shared_dict[self.index][best_by])
-#            new_list.append(element)
-#            new_dict[best_by] = new_list
-#        self.shared_dict[self.index] = new_dict
 
         # Draw and generate code for best_by model
         if self.aic_score:
@@ -337,7 +284,8 @@ class CoreRun(object):
         optimizer = GlobalOptimizerAndLocalOptimizer(self.global_optimizer,
                                                      self.local_optimizer)
 
-        result = optimizer.optimize(f, variables, **self.optimize_kwargs)
+        opt_kwargs = {**self.optimize_kwargs, **initial_kwargs}
+        result = optimizer.optimize(f, variables, **opt_kwargs)
         self.intermediate_callback(result.x, result.y)
         return result
 
