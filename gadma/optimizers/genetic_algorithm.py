@@ -580,7 +580,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         Save some values of genetic algorithm to file.
         """
         if save_file is None:
-            return 
+            return
         with open(save_file, 'wb') as fl:
             pickle.dump((n_gen, n_eval, n_impr_gen,
                          list_with_weights_for_pickle(X_gen), Y_gen,
@@ -678,7 +678,6 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         f_in_opt = partial(self.evaluate, finally_wrapped_f)
         f_in_opt = fix_args(f_in_opt, (), linear_constrain)
 
-
         # prepare variables
         vars_in_opt = copy.deepcopy(variables)
         for var in vars_in_opt:
@@ -699,9 +698,8 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         if Y_init is not None:
             Y_init = [self.sign * y for y in Y_init]
         X_gen, Y_gen = self.initial_design(f_in_opt, variables, num_init,
-                                                   X_init, Y_init,
-                                                   self.random_type,
-                                                   self.custom_rand_gen)
+                                           X_init, Y_init, self.random_type,
+                                           self.custom_rand_gen)
         X_gen, Y_gen = sort_by_other_list(X_gen, Y_gen, reverse=False)
         X_gen = X_gen[:self.gen_size]
         Y_gen = Y_gen[:self.gen_size]

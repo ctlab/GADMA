@@ -110,7 +110,6 @@ def get_settings():
     else:
         settings_storage = SettingsStorage.from_file(args.params, args.extra)
 
-
     if args.only_models and args.resume is None:
         raise ValueError("Option --only_models  must be used with "
                          "--resume option.")

@@ -323,7 +323,8 @@ class ScipyOptimizer(LocalOptimizer):
 
         result.n_eval = prepared_f.cache_info.misses
 
-        self.save(result.x, result.y, result.n_iter, result.n_eval, True, save_file)
+        self.save(result.x, result.y, result.n_iter, result.n_eval,
+                  True, save_file)
 
         return result
 
@@ -429,6 +430,7 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
 
         if callback is not None:
             callback = self.prepare_callback(callback)
+        models_only = restore_models_only
         result = self.optimizer.optimize(f_in_opt, vars_in_opt, x0_in_opt,
                                          args=(bounds,), options=options,
                                          verbose=0,
@@ -439,7 +441,7 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
                                          report_file=report_file,
                                          save_file=save_file,
                                          restore_file=restore_file,
-                                         restore_models_only=restore_models_only)
+                                         restore_models_only=models_only)
         # TODO: need to check result.X as they should be transformed somehow.
         result.x = self.inv_transform(result.x)
         result.X = [self.inv_transform(x) for x in result.X]
