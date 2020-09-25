@@ -7,6 +7,9 @@ import dadi
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
 
+def calc_func(x, y):
+    x = np.array(x)
+    return np.sum(x ** 4 + 2 * x ** 3 - 12 * x ** 2 - 2 * x + 6)
 
 def get_func(engine, variables):
     def func(x, *args):
@@ -134,17 +137,63 @@ class TestLocalOpt(TestBaseOptClass):
         for optim in all_local_optimizers():
             self.assertEqual(optim.evaluate(f, optim.transform(x)), y)
 
-    def f(self, x, y):
-        x = np.array(x)
-        return np.sum(x ** 4 + 2 * x ** 3 - 12 * x ** 2 - 2 * x + 6)
-
     def test_optimization_run(self):
         var1 = ContinuousVariable('var1', domain=[0, 1])
         var2 = ContinuousVariable('var2', domain=[1, 2])
         var3 = ContinuousVariable('var3', domain=[0, 20])
         x0 = [0.5, 1.5, 10]
+        eval_file = 'eval_file'
+        save_file = 'save_file'
+        report_file = 'report_file'
+        if os.path.isfile(eval_file):
+            os.remove(eval_file)
+        if os.path.isfile(save_file):
+            os.remove(save_file)
+        if os.path.isfile(report_file):
+            os.remove(report_file)
+
+        def wrap(*args, **kwargs):
+            wrap.counter += 1
+            y = calc_func(*args, **kwargs)
+            return y
+        wrap.counter = 0
+
         for opt in all_local_optimizers():
-            opt.optimize(self.f, [var1, var2, var3], x0, args=(5,), verbose=0, maxiter=1)
+            maxit = 30
+            maxev = 10
+            wrap.counter = 0
+            res = opt.optimize(wrap, [var1, var2, var3], x0, args=(5,),
+                               verbose=1, maxiter=maxit, maxeval=maxev,
+                               eval_file=eval_file,
+                               save_file=save_file, report_file=report_file)
+            self.assertTrue(res.n_iter <= maxit)
+            method = None
+            if isinstance(opt, ScipyOptimizer):
+                method = opt.method
+                maxeval_kwarg = opt.maxeval_kwarg
+            elif isinstance(opt, ManuallyConstrOptimizer):
+                method = opt.optimizer.method
+                maxeval_kwarg = opt.optimizer.maxeval_kwarg
+            known_falues = ['Powell', 'Nelder-Mead']
+            if method is not None and method in maxeval_kwarg:
+                if method not in known_falues:
+                    # sometimes optimizers do not stop at exactly maxeval so
+                    # we allow to do 2x evaluations in test
+                    self.assertTrue(res.n_eval <= 2 * maxev)
+            self.assertEqual(res.n_eval, wrap.counter)
+            self.assertTrue(os.path.getsize(eval_file) > 0)
+            def nlines(filename):
+                n_lines = 0
+                with open(filename) as fl:
+                    for line in fl:
+                        n_lines += 1
+                return n_lines
+            self.assertEqual(res.n_eval + 1, nlines(eval_file))
+            self.assertTrue(os.path.getsize(save_file) > 0)
+            self.assertTrue(os.path.getsize(report_file) > 0)
+            os.remove(eval_file)
+            os.remove(save_file)
+            os.remove(report_file)
 
     def get_yri_ceu_ll(self, x_dict, ns=[20,20]):
         def func(x_dict, ns, pts):

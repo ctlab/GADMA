@@ -15,6 +15,12 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         if self.global_optimizer.maximize != self.local_optimizer.maximize:
             raise ValueError("Global and local optimizers must both maximize "
                              "(or minimize) the function.")
+        # For restore and save files
+        if not hasattr(self.global_optimizer, "id"):
+            self.global_optimizer.id = "global_optimizer"
+        if not hasattr(self.local_optimizer, "id"):
+            self.local_optimizer.id = "local_optimizer"
+
         super(GlobalOptimizerAndLocalOptimizer, self).__init__(
             log_transform=False, maximize=self.global_optimizer.maximize)
 
@@ -54,7 +60,8 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                  global_maxiter=None, local_maxiter=None,
                  global_maxeval=None, local_maxeval=None,
                  verbose=0, callback=None, eval_file=None,
-                 report_file=None, save_file=None):
+                 report_file=None, save_file=None,
+                 restore_file=None, restore_models_only=False):
         if report_file:
             stream = open(report_file, 'a')
         else:
@@ -74,7 +81,9 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                                                        global_maxeval,
                                                        verbose, callback,
                                                        report_file, eval_file,
-                                                       save_file)
+                                                       save_file,
+                                                       restore_file,
+                                                       restore_models_only)
         if report_file:
             stream = open(report_file, 'a')
         else:
@@ -107,7 +116,10 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                                                      local_maxiter,
                                                      local_maxeval,
                                                      verbose, callback_local,
-                                                     eval_file, report_file)
+                                                     eval_file, report_file,
+                                                     save_file,
+                                                     restore_file,
+                                                     restore_models_only)
         # Create result
         success = local_result.success
         message = f"GLOBAL OPTIMIZATION: {global_result.message}; "\

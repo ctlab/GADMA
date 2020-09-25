@@ -7,6 +7,8 @@ import dadi
 import copy
 import pickle
 
+DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
+
 
 def rosenbrock(X):
     """
@@ -46,8 +48,8 @@ class TestRestore(unittest.TestCase):
 
     def test_ls_restore(self):
         for opt in all_local_optimizers():
-            print(opt.id)
             f = rosenbrock
+            # positive domain because we check log scaling optimizations too
             variables = [ContinuousVariable('var1', [10, 20]),
                          ContinuousVariable('var2', [1, 2])]
             x0 = [var.resample() for var in variables]
@@ -56,21 +58,17 @@ class TestRestore(unittest.TestCase):
             res1 = opt.optimize(f, variables, x0=x0, maxiter=5, verbose=1,
                                 report_file=report_file,
                                 save_file=save_file)
-            print(res1)
             res2 = opt.optimize(f, variables, x0=x0, maxiter=5, verbose=1,
                                 report_file=report_file,
                                 restore_file=save_file,
                                 restore_models_only=True)
-            print(res2)
             res3 = opt.optimize(f, variables, x0=x0, maxiter=5, verbose=1,
                                 report_file=report_file,
                                 restore_file=save_file)
-            print(res3)
             res4 = opt.optimize(f, variables, x0=x0, maxiter=10, verbose=1,
                                 report_file=report_file,
                                 restore_file=save_file,
                                 restore_models_only=True)
-            print(res4)
             self.assertEqual(res1.y, res3.y)
             self.assertTrue(res1.y >= res2.y)
             self.assertTrue(res2.y >= res4.y)

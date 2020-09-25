@@ -5,12 +5,13 @@ from ..utils import TimeVariable, PopulationSizeVariable, SelectionVariable,\
                     DynamicVariable
 from ..optimizers import GlobalOptimizerAndLocalOptimizer
 from ..utils import get_aic_score, get_claic_score
-from ..models import EpochDemographicModel
+from ..models import EpochDemographicModel, StructureDemographicModel
 from .draw_and_generate_code import draw_plots_to_file, generate_code_to_file
 import os
 import numpy as np
 from collections import defaultdict, OrderedDict
 import copy
+import warnings
 
 
 class CoreRun(object):
@@ -28,6 +29,10 @@ class CoreRun(object):
                      and so on will be taken from settings.
     :type settings: :class:`gadma.SettingsStorage`
     """
+    REPORT_FILENAME = 'GADMA_GA.log'
+    EVAL_FILENAME = 'eval_file'
+    SAVE_FILENAME = 'save_file'
+
     def __init__(self, index, shared_dict, settings):
         # 1. Save all init arguments
         self.index = index
@@ -58,14 +63,25 @@ class CoreRun(object):
         if settings.output_directory is not None:
             self.output_dir = os.path.join(settings.output_directory,
                                            str(self.index))
+
+            self.resume_dir = None
+            if self.settings.resume_from is not None:
+                self.resume_dir = os.path.join(settings.resume_from,
+                                               str(self.index))
+
             self.output_dir = ensure_dir_existence(self.output_dir)
-            self.eval_file = os.path.join(self.output_dir, 'eval_file')
+            self.eval_file = os.path.join(self.output_dir, self.EVAL_FILENAME)
             self.eval_file = ensure_file_existence(self.eval_file)
-            self.report_file = os.path.join(self.output_dir, 'GADMA_GA.log')
+            self.report_file = os.path.join(self.output_dir,
+                                            self.REPORT_FILENAME)
             self.report_file = ensure_file_existence(self.report_file)
+            self.save_file = os.path.join(self.output_dir, self.SAVE_FILENAME)
+            self.save_file = ensure_file_existence(self.save_file)
+
             # Tell optimizers about output files
             self.optimize_kwargs['eval_file'] = self.eval_file
             self.optimize_kwargs['report_file'] = self.report_file
+            self.optimize_kwargs['save_file'] = self.save_file
             # Create directory for pictures if needed
             if self.settings.draw_models_every_n_iteration != 0:
                 self.pictures_dir = os.path.join(self.output_dir, 'pictures')
@@ -275,9 +291,34 @@ class CoreRun(object):
         except Exception as e:
             pass
 
+    def get_restore_file(self):
+        if self.settings.restore_from is None:
+            return None, False
+        suffix = ""
+        if isinstance(self.model, StructureDemographicModel):
+            suffix = "_".join([str(x) for x in self.model.get_structure()])
+            suffix = "_" + suffix
+        restore_file = os.path.join(self.settings.restore_from, self.index,
+                                    self.SAVE_FILENAME + suffix)
+        gs_valid = self.global_optimizer.valid_restore_file(restore_file)
+        ls_valid = self.local_optimizer.valid_restore_file(restore_file)
+
+    def get_save_file(self):
+        if isinstance(self.model, StructureDemographicModel):
+            suffix = "_".join([str(x) for x in self.model.get_structure()])
+            suffix = "_" + suffix
+            return self.save_file + suffix
+        return self.save_file
+
     def run_without_increase(self, initial_kwargs={}):
         np.random.seed()
         self.optimize_kwargs['callback'] = self.callback
+        self.optimize_kwargs['save_file'] = self.get_save_file()
+        # We set some kwargs if they were not set in run_with_increase
+        if self.settings.initial_structure is None:
+            restore_file, _, only_models = self.get_run_options()
+            self.optimize_kwargs['restore_file'] = restore_file
+            self.optimize_kwargs['restore_models_only'] = only_models
         f = self.engine.evaluate
         variables = self.model.variables
 
@@ -295,15 +336,99 @@ class CoreRun(object):
         assert self.settings.initial_structure is not None
         assert self.settings.final_structure is not None
 
+        options = zip(*self.get_run_options())
+
+        restore_file, struct, only_models = next(options)
+        if struct is not None and struct != self.model.get_structure():
+            warnings.warn(f"Initial structure ({init_struct}) with saved file "
+                          f"of optimization from restored dir looks different "
+                          f"to current ({self.settings.initial_structure}). "
+                          f"It will be restored.")
+            self.settings.initial_structure = struct
+            self.model = self.model.from_structure(struct)
+        self.optimize_kwargs['restore_file'] = restore_file
+        self.optimize_kwargs['restore_models_only'] = only_models
+
         result = self.run_without_increase(initial_kwargs)
         while (self.model.get_structure() != self.settings.final_structure):
-            self.model, X_init = self.model.increase_structure(X=result.X_out)
+            restore_file, structure, only_models = next(options)
+            self.model, X_init = self.model.increase_structure(structure,
+                                                               X=result.X_out)
             Y_init = copy.copy(result.Y_out)
             self.optimize_kwargs['X_init'] = X_init
             self.optimize_kwargs['Y_init'] = Y_init
+            self.optimize_kwargs['restore_file'] = restore_file
+            self.optimize_kwargs['restore_models_only'] = only_models
             result = self.run_without_increase()
 #        self.final_callback()
         return result
+
+    def get_run_options(self, initial_kwargs={}):
+        restore_files = []
+        only_models = []
+        structures = []
+        if self.resume_dir is not None:
+            for filename in os.listdir(self.resume_dir):
+                if filename.startswith(self.SAVE_FILENAME):
+                    if self.initial_structure is None:
+                        if filename == self.SAVE_FILENAME:
+                            restore_files.append(filename)
+                            break
+                        continue
+                    if len(filename) == len(self.SAVE_FILENAME):
+                        warnings.warn(f"File {filename} has name like saved"
+                                      f" file of optimization but has no "
+                                      f"structure at the end of the name. "
+                                      f"So it is ignored.")
+                        continue
+                    restore_files.append(filename)
+                    strct_str = filename[len(self.SAVE_FILENAME)+1:]
+                    structures.append([int(x) for x in strct_str.split('_')])
+            if self.initial_structure is not None:
+                restore_files, structures = sort_by_other_list(
+                    restore_files, structures, key=lambda x: sum(x))
+            else:
+                return restore_files[0], None, self.settings.only_models
+
+            some_file_not_valid = False
+            for i in range(len(restore_files)):
+                if some_file_not_valid:
+                    restore_files[i] = None
+                    only_models.append(False)
+                    continue
+                gs = self.global_optimizer.valid_restore_file(restore_files[i])
+                ls = self.local_optimizer.valid_restore_file(restore_files[i])
+                if gs and not ls:
+                    some_file_not_valid = True
+                    only_models.append(self.settings.only_models)
+                if not gs:
+                    some_file_not_valid = True
+                    only_models[-1] = self.settings.only_models
+                    only_models.append(False)
+            if not some_file_not_valid:
+                only_models[-1] = self.settings.only_models
+
+        if self.settings.initial_structure is None:
+            return None, None, False
+
+        final_sum = sum(self.settings.final_structure)
+        initial_sum = sum(self.settings.initial_structure)
+        res_files, res_strct, res_bools = [], [], []
+        for i in range(final_sum - initial_sum + 1):
+            if i >= len(restore_files):
+                restore_file = None
+            else:
+                restore_file = restore_files[i]
+            if i >= len(structures) or restore_file is None:
+                structure = None
+            else:
+                structure = structures[i]
+            if i >= len(only_models):
+                restore_models_only = False
+            res_files.append(restore_file)
+            res_strct.append(structure)
+            res_bools.append(restore_models_only)
+        return res_files, res_strct, res_bools
 
     def run(self, initial_kwargs={}):
         print(f'Run launch number {self.index}\n', end='')

@@ -77,8 +77,8 @@ vmin = 1
 number_of_repeats = 1
 number_of_processes = 1
 test = False
-# resume_dir = None
-# only_models = None
+resume_from = None
+only_models = None
 
 # Extra parameters
 

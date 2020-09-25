@@ -58,7 +58,7 @@ class SettingsStorage(object):
                        'p_mutation', 'p_crossover', 'p_random']
         bool_attrs = ['outgroup', 'linked_snp_s', 'only_sudden',
                       'no_migrations', 'silence', 'test', 'random_n_a',
-                      'relative_parameters']
+                      'relative_parameters', 'only_models']
         int_list_attrs = ['pts', 'initial_structure', 'final_structure',
                           'projections']
         float_list_attrs = ['lower_bound', 'upper_bound']
@@ -69,7 +69,7 @@ class SettingsStorage(object):
                          'const_for_mutation_rate', 'vmin',
                          'parameter_identifiers']
         exist_file_attrs = ['input_file', 'custom_filename']
-        exist_dir_attrs = ['directory_with_bootstrap']
+        exist_dir_attrs = ['directory_with_bootstrap', 'resume_from']
         empty_dir_attrs = ['output_directory']
         data_holder_attrs = ['projections', 'outgroup',
                              'population_labels', 'sequence_length']

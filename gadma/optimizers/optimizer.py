@@ -2,11 +2,14 @@ import copy
 import numpy as np
 from functools import wraps
 import sys
+import os
 
 from ..utils import Variable, ContinuousVariable
 from ..utils import fix_args, cache_func, nan_fval_to_inf, WeightedMetaArray
-from ..utils import ensure_file_existence, variables_values_repr
+from ..utils import ensure_file_existence, check_file_existence,\
+                    variables_values_repr
 from ..utils import logarithm_transform, exponent_transform, ident_transform
+import pickle
 
 
 class Optimizer(object):
@@ -154,6 +157,33 @@ class Optimizer(object):
         """
         for var in variables:
             assert isinstance(var, Variable)
+
+    def save(self, info, save_file):
+        if save_file is None:
+            return
+        if hasattr(self, 'id'):
+            if (check_file_existence(save_file) and
+                    os.path.getsize(save_file) > 0):
+                with open(save_file, 'rb') as fl:
+                    d = pickle.load(fl)
+                if not isinstance(d, dict):
+                    d = {}
+            else:
+                d = {}
+            d[self.id] = copy.copy(info)
+            info = d
+        with open(save_file, 'wb') as fl:
+            pickle.dump(info, fl)
+
+    def valid_restore_file(self, save_file):
+        raise NotImplementedError
+
+    def load(self, save_file):
+        with open(save_file, 'rb') as fl:
+            info = pickle.load(fl)
+        if hasattr(self, 'id'):
+            return info[self.id]
+        return info
 
     def optimize(f, variables, args=(), options={}, linear_constrain=None,
                  maxiter=None):

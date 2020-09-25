@@ -581,20 +581,37 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         """
         if save_file is None:
             return
-        with open(save_file, 'wb') as fl:
-            pickle.dump((n_gen, n_eval, n_impr_gen,
-                         list_with_weights_for_pickle(X_gen), Y_gen,
-                         list_with_weights_for_pickle(X_total), Y_total,
-                         self.cur_mut_rate, self.cur_mut_strength), fl)
+        info = (int(n_gen), int(n_eval), int(n_impr_gen),
+                list_with_weights_for_pickle(X_gen), Y_gen,
+                list_with_weights_for_pickle(X_total), Y_total,
+                float(self.cur_mut_rate), float(self.cur_mut_strength))
+        super(GeneticAlgorithm, self).save(info, save_file)
 
-    @staticmethod
-    def load(save_file):
+    def valid_restore_file(self, save_file):
+        info = self.load(save_file)
+        if not isinstance(info, tuple):
+            return False
+        if not len(info) == 9:
+            return False
+        if (not isinstance(info[0], int) or not isinstance(info[1], int) or
+                not isinstance(info[2], int)):
+            return False
+        if not isinstance(info[3], list) or not isinstance(info[4], list):
+            return False
+        if not isinstance(info[5], list) or not isinstance(info[6], list):
+            return False
+        if not isinstance(info[7], float) or not isinstance(info[8], float):
+            return False
+        return True
+
+    def load(self, save_file):
         """
         Load some values of genetic algorithm from file.
         """
-        with open(save_file, 'rb') as fl:
-            (n_gen, n_eval, n_impr_gen, X_gen, Y_gen,
-             X_total, Y_total, cur_rate, cur_strength) = pickle.load(fl)
+        (n_gen, n_eval, n_impr_gen,
+         X_gen, Y_gen, X_total, Y_total,
+         cur_rate, cur_strength) = super(GeneticAlgorithm,
+                                         self).load(save_file)
         return (n_gen, n_eval, n_impr_gen,
                 list_with_weights_after_pickle(X_gen), Y_gen,
                 list_with_weights_after_pickle(X_total), Y_total,
@@ -632,7 +649,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         X_total = []
         Y_total = []
 
-        if restore_file is not None:
+        if restore_file is not None and self.valid_restore_file(restore_file):
             (n_gen_old, n_eval_old, n_impr_gen_old, X_gen, Y_gen, X_total,
              Y_total, cur_mut_rate, cur_mut_strength) = self.load(restore_file)
             if not restore_models_only:

@@ -45,11 +45,15 @@ def choose_by_weight(X, weights, nsample):
     return np.random.choice(X, size=nsample, replace=False)
 
 
-def sort_by_other_list(x, y, reverse=False):
+def sort_by_other_list(x, y, reverse=False, key=None):
     """
     Sort x and y according to values in y.
     """
-    sort_zip = sorted(zip(x, y), key=lambda p: p[1])
+    def ident(x):
+        return x
+    if key is None:
+        key = ident
+    sort_zip = sorted(zip(x, y), key=lambda p: key(p[1]))
     return [p[0] for p in sort_zip], [p[1] for p in sort_zip]
 
 
@@ -72,6 +76,9 @@ class CacheInfo(object):
         self.misses = 0
         self.cache = {}
         self.all_calls = []
+
+    def __str__(self):
+        return f"hits: {self.hits}, misses: {self.misses}"
 
 
 def lru_cache(func):
