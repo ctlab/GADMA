@@ -392,6 +392,15 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
         self.out_of_bounds = np.inf
 
     @property
+    def id(self):
+        return self._id
+
+    @id.setter
+    def id(self, new_id):
+        self._id = new_id
+        self.optimizer.id = self._id
+
+    @property
     def maximize(self):
         return self.optimizer.maximize
 

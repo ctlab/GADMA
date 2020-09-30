@@ -11,7 +11,7 @@ Print models' code every N iteration : 10
 Relative parameters: True
 Local optimizer: None
 Eps: 1
-Stuck generation number: 10
+Stuck generation number: 5
 Number of repeats : 1
 Number of processes: 1
 

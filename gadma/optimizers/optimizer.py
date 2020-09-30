@@ -181,7 +181,7 @@ class Optimizer(object):
     def load(self, save_file):
         with open(save_file, 'rb') as fl:
             info = pickle.load(fl)
-        if hasattr(self, 'id'):
+        if hasattr(self, 'id') and isinstance(info, dict):
             return info[self.id]
         return info
 

@@ -369,22 +369,23 @@ class CoreRun(object):
         structures = []
         if self.resume_dir is not None:
             for filename in os.listdir(self.resume_dir):
+                file_path = os.path.join(self.resume_dir, filename)
                 if filename.startswith(self.SAVE_FILENAME):
-                    if self.initial_structure is None:
+                    if self.settings.initial_structure is None:
                         if filename == self.SAVE_FILENAME:
-                            restore_files.append(filename)
+                            restore_files.append(file_path)
                             break
                         continue
                     if len(filename) == len(self.SAVE_FILENAME):
-                        warnings.warn(f"File {filename} has name like saved"
+                        warnings.warn(f"File {file_path} has name like saved"
                                       f" file of optimization but has no "
                                       f"structure at the end of the name. "
                                       f"So it is ignored.")
                         continue
-                    restore_files.append(filename)
+                    restore_files.append(file_path)
                     strct_str = filename[len(self.SAVE_FILENAME)+1:]
                     structures.append([int(x) for x in strct_str.split('_')])
-            if self.initial_structure is not None:
+            if self.settings.initial_structure is not None:
                 restore_files, structures = sort_by_other_list(
                     restore_files, structures, key=lambda x: sum(x))
             else:
