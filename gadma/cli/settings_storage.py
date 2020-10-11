@@ -6,7 +6,7 @@ from ..data import SFSDataHolder
 from ..engines import get_engine, MomentsEngine
 from ..models import StructureDemographicModel, CustomDemographicModel
 from ..optimizers import get_local_optimizer, get_global_optimizer
-from ..optimizers import LinearConstrainDemographics, LinearConstrain
+from ..optimizers import LinearConstrain
 from ..utils import ensure_dir_existence, ensure_file_existence,\
                     check_dir_existence, check_file_existence, abspath,\
                     custom_generator

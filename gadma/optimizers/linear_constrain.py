@@ -73,37 +73,39 @@ class LinearConstrain(object):
         for lb_i, A_i, ub_i in zip(self.lb, self.A, self.ub):
             lb_size = max(lb_size, len(str(self.lb)))
             ub_size = max(ub_size, len(str(self.ub)))
-            A_size = max(A_size, len(A_i))
+            A_size = max(A_size, len(str(A_i)))
 
-        lb_str = "{<" + str(lb_size) + "}"
-        ub_str = "{<" + str(ub_size) + "}"
-        A_str = "{<" + str(A_size) + "}"
+        lb_str = "{0: <" + str(lb_size) + "}"
+        ub_str = "{0: <" + str(ub_size) + "}"
+        A_str = "{0: <" + str(A_size) + "}"
+
         ret_str = "\t".join([lb_str.format("lb"), "|",  A_str.format("A"),
                              "|", ub_str.format("ub")]) + "\n"
         for lb_i, A_i, ub_i in zip(self.lb, self.A, self.ub):
             ret_str += "\t".join([lb_str.format(lb_i), "|",
-                                  A_str.format(A_i), "|",
+                                  A_str.format(str(A_i)), "|",
                                   ub_str.format(ub_i)]) + "\n"
+        return ret_str
 
 
-class LinearConstrainDemographics(LinearConstrain):
-    def __init__(self, A, lb, ub, engine, engine_args):
-        self.engine = engine
-        self.engine_args = engine_args
-        self.original_lb = lb
-        self.original_ub = ub
-        super(LinearConstrainDemographics, self).__init__(A, lb, ub)
-
-    def fits(self, x):
-        theta = self.engine.get_theta(x, *self.engine_args)
-        self.constrain.lb = self.original_lb / theta
-        self.constrain.ub = self.original_ub / theta
-        return super(LinearConstrainDemographics, self).fits(x)
-
-    def try_to_transform(self, x):
-        theta = self.engine.get_theta(x, *self.engine_args)
-        lb = self.original_lb / theta
-        ub = self.original_ub / theta
-        lin_constr = LinearConstrain(self.constrain.A, lb, ub)
-        print("!!!", ub)
-        return lin_constr.try_to_transform(x)
+# class LinearConstrainDemographics(LinearConstrain):
+#     def __init__(self, A, lb, ub, engine, engine_args):
+#         self.engine = engine
+#         self.engine_args = engine_args
+#         self.original_lb = lb
+#         self.original_ub = ub
+#         super(LinearConstrainDemographics, self).__init__(A, lb, ub)
+#
+#     def fits(self, x):
+#         theta = self.engine.get_theta(x, *self.engine_args)
+#         self.constrain.lb = self.original_lb / theta
+#         self.constrain.ub = self.original_ub / theta
+#         return super(LinearConstrainDemographics, self).fits(x)
+#
+#     def try_to_transform(self, x):
+#         theta = self.engine.get_theta(x, *self.engine_args)
+#         lb = self.original_lb / theta
+#         ub = self.original_ub / theta
+#         lin_constr = LinearConstrain(self.constrain.A, lb, ub)
+#         print("!!!", ub)
+#         return lin_constr.try_to_transform(x)
