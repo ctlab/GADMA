@@ -10,6 +10,7 @@ from ..utils import ensure_file_existence, check_file_existence,\
                     variables_values_repr
 from ..utils import logarithm_transform, exponent_transform, ident_transform
 import pickle
+import warnings
 
 
 class Optimizer(object):

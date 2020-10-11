@@ -144,8 +144,8 @@ class DadiOrMomentsEngine(Engine):
                        values or dictionary {variable name: value}.
         :type values: list or dict
         :param grid_sizes: special parameter for numerical solutions. It is
-                           :param:`pts` for :class:`DadiEngine` and
-                           :param:`dt_fac` for :class:`MomentsEngine`.
+                           `pts` for :class:`DadiEngine` and
+                           `dt_fac` for :class:`MomentsEngine`.
         :param save_file: File to save picture. If None then picture will be
                           displayed to the screen.
         :type save_file: str

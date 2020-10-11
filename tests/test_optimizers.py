@@ -4,6 +4,7 @@ from .test_data import YRI_CEU_DATA
 from gadma import *
 import gadma
 import dadi
+import scipy
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
 
@@ -322,7 +323,7 @@ class TestLocalOpt(TestBaseOptClass):
 #        for engine in all_engines():
 #            self.run_example(engine.id, get_2pop_sim_example_1)
 
-class TestCoreRun(TestBaseOptClass):
+class TestCoreRun(unittest.TestCase):
     def test_core_run(self):
         settings = test_args()
         settings.input_file = os.path.join(DATA_PATH, 'small_1pop.fs')
@@ -343,3 +344,31 @@ class TestCoreRun(TestBaseOptClass):
         shared_dict = gadma.shared_dict.SharedDictForCoreRun(
             multiprocessing=False)
         gadma.core.job(0, shared_dict, settings)
+
+
+class TestLinearConstrains(unittest.TestCase):
+    def test_linear_constrain(self):
+        f = scipy.optimize.rosen
+        variables = list()
+        variables = [ContinuousVariable('var1', [-1, 2]),
+                     ContinuousVariable('var2', [0, 1.5]),
+                     ContinuousVariable('var3', [0.5, 4])]
+        A = [[1, 0, 0],
+             [2, 1, 0],
+             [-1, 0, 1]]
+        lb = [None, None, -0.5]
+        ub = [1.5, 4, None]
+        constrain = LinearConstrain(A, lb, ub)
+        x0 = [0, 0.5, 2]
+        maxiter = 10
+        for opt in all_local_optimizers():
+            if opt.log_transform:
+                continue
+            opt.optimize(f, variables, x0, linear_constrain=constrain,
+                         maxiter=maxiter)
+            
+        for opt in all_global_optimizers():
+            if opt.log_transform:
+                continue
+            opt.optimize(f, variables, linear_constrain=constrain,
+                         maxiter=maxiter)

@@ -12,7 +12,9 @@ def my_dot(A_i, x):
 
 class LinearConstrain(object):
     def __init__(self, A, lb, ub):
-        self.constrain = scipy.optimize.LinearConstraint(A, lb, ub)
+        lb = np.nan_to_num(np.array(lb, dtype=np.float), nan=-np.inf)
+        ub = np.nan_to_num(np.array(ub, dtype=np.float), nan=np.inf)
+        self.constrain = scipy.optimize.LinearConstraint(np.array(A), lb, ub)
 
     def _get_value(self, x):
         return np.array([my_dot(A_i, x) for A_i in self.constrain.A])
@@ -28,14 +30,15 @@ class LinearConstrain(object):
         x_tr = np.array(x)
         for A_i, lb_i, ub_i in zip(self.constrain.A,
                                    self.constrain.lb, self.constrain.ub):
-            A_ix = my_dot(A_i, x)
+            A_ix = my_dot(A_i, x_tr)
             if A_ix < lb_i:
-                C = lb_i / A_ix
+                C = lb_i
             if A_ix > ub_i:
-                C = A_ix / ub_i
+                C = ub_i
             if A_ix < lb_i or A_ix > ub_i:
                 involved = (A_i != 0)
-                x_tr[involved] /= C * A_i[involved] / np.sum(A_i[involved])
+                sign = np.sign(A_i[involved])
+                x_tr[involved] = sign * C / np.sum(np.abs(A_i[involved]))
         success = self.fits(x)
         return x_tr, success
 
