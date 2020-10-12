@@ -6,6 +6,7 @@ from ..core import SUPPORT_STRING
 from ..utils import ensure_dir_existence
 
 import warnings
+import copy
 import argparse
 import sys
 import os
@@ -98,10 +99,10 @@ def get_settings():
         parser.print_help()
         sys.exit(1)
 
-    # Parse arguments
+    # 1. Parse arguments
     args = parser.parse_args()
 
-    # Create Settings storage
+    # 2. Create Settings storage
     if args.test:
         print("--Running test case--")
         settings_storage = test_args()
@@ -110,9 +111,45 @@ def get_settings():
     else:
         settings_storage = SettingsStorage.from_file(args.params, args.extra)
 
-    if args.only_models and args.resume is None:
-        raise ValueError("Option --only_models  must be used with "
-                         "--resume option.")
+    # Check for resume
+    if args.resume is not None:
+        args.resume = os.path.abspath(os.path.expanduser(args.resume))
+        if (settings_storage.resume_from is not None and
+                settings_storage.resume_from != args.resume):
+            raise ValueError(f"Resume directory in parameters file "
+                             f"({settings_storage.resume_from}) doesn't "
+                             f"match to one from the --resume option "
+                             f"({args.resume})")
+        settings_storage.resume_from = args.resume
+
+    if settings_storage.resume_from is not None:
+        old_params_file = os.path.join(settings_storage.resume_from,
+                                       'params_file')
+        old_extra_file = os.path.join(settings_storage.resume_from,
+                                      'extra_params_file')
+        if not os.path.exists(old_params_file):
+            warnings.warn("There is no saved params file in resume directory. "
+                          "Resume option will be ignored.")
+            settings_storage.resume_from = None
+            settings_storage.only_models = False
+        else:
+            if not os.path.exists(old_extra_file):
+                old_extra_file = None
+            resume_from_settings = SettingsStorage.from_file(
+                old_params_file, old_extra_file)
+            if (settings_storage.output_directory is None and
+                    args.output is None):
+                resume_from_settings.output_directory += "_resumed"
+            else:
+                resume_from_settings.output_directory = None
+            resume_from_settings.only_models = False
+            settings_storage = copy.copy(resume_from_settings)
+            settings_storage.from_file(args.params, args.extra)
+            if args.resume:
+                settings_storage.resume_from = args.resume
+
+    if args.only_models:
+        settings_storage.only_models = True
 
     if args.output is not None:
         if (settings_storage.output_directory is not None and
@@ -128,21 +165,19 @@ def get_settings():
             warnings.warn("Input file in parameters file doesn't match to one"
                           " from -i/--input option. The last is taken.")
         settings_storage.input_file = args.input
-    if args.resume is not None:
-        warnings.warn("Resume is not working")
-#        settings_storage.resume_dir = args.resume
-    if args.only_models:
-        warnings.warn("Resume is not working")
-#        settings_storage.only_models = True
 
-    # Checks that we have got all required
-    # TODO: case of resume!!
-    if settings_storage.input_file is None:
-        raise AttributeError("Input file is requiered. It could be set by "
+    # 3. Checks that we have got all required
+    if (settings_storage.input_file is None and
+            settings_storage.resume_from is None):
+        raise AttributeError("Input file is required. It could be set by "
                              "-i/--input option or via parameters file.")
-    if settings_storage.output_directory is None:
-        raise AttributeError("Output directory is requiered. It could be set "
+    if (settings_storage.output_directory is None and
+            settings_storage.resume_from is None):
+        raise AttributeError("Output directory is required. It could be set "
                              "by -o/--output option or via parameters file.")
+    if settings_storage.output_directory is None:
+        old_dir = settings_storage.resume_from_settings.output_directory
+        settings_storage.output_directory = old_dir + "_resumed"
     ensure_dir_existence(settings_storage.output_directory,
                          check_emptiness=True)
 
@@ -158,12 +193,13 @@ def get_settings():
             raise AttributeError("Please specify either structure of "
                                  "demographic history or filename with custom"
                                  " model.")
-#    if args.resume is not None and os.path.abspath(
-#        os.path.expanduser(
-#            options_storage.resume_dir)) != os.path.abspath(
-#            os.path.expanduser(
-#                args.resume)):
-#        support.error("Resume directory in parameters file doesn't match "
-#                      "to one from --resume option")
 
+    if settings_storage.resume_from is not None:
+        old_settings = SettingsStorage.from_file(
+            os.path.join(settings_storage.resume_from, 'params_file'),
+            os.path.join(settings_storage.resume_from, 'extra_params_file'))
+    else:
+        if settings_storage.only_models:
+            warnings.warn("Option `only models`/--only_models  must be used "
+                          " --resume option only. It would be ignored.")
     return settings_storage, args

@@ -1,4 +1,5 @@
 from ..utils import WeightedMetaArray
+from ..engines import get_engine
 import copy
 from multiprocessing import Manager
 from functools import partial

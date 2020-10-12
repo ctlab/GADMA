@@ -421,6 +421,9 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
             return callback(self.inv_transform(x), y)
         return wrapper
 
+    def valid_restore_file(self, save_file):
+        return self.optimizer.valid_restore_file(save_file)
+
     def optimize(self, f, variables, x0, args=(), options={},
                  linear_constrain=None, maxiter=None, maxeval=None,
                  verbose=0, callback=None, eval_file=None, report_file=None,

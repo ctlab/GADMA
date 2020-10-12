@@ -118,8 +118,7 @@ class DadiOrMomentsEngine(Engine):
             warnings.warn("Additional evaluation for theta. Nothing to worry "
                           "if this warning is seldom.")
             self.evaluate(values, grid_sizes)
-        model_sfs = self.saved_add_info[key]
-        theta = self._get_theta_from_sfs(values, model_sfs)
+        theta = self.saved_add_info[key]
         return theta
 
     def get_N_ancestral_from_theta(self, theta):
@@ -158,10 +157,7 @@ class DadiOrMomentsEngine(Engine):
         show = save_file is None
         n_pop = len(self.data.sample_sizes)
         # Get simulated data
-        key = self._get_key(values, grid_sizes)
-        if key not in self.saved_add_info:
-            self.evaluate(values, grid_sizes)
-        model = self.saved_add_info[key]
+        model = self.simulate(values, self.data.sample_sizes, grid_sizes)
         # Draw
         if n_pop == 1:
             self.base_module.Plotting.plot_1d_comp_Poisson(model, self.data,
@@ -190,7 +186,7 @@ class DadiOrMomentsEngine(Engine):
         ll_model = self.base_module.Inference.ll(theta * model_sfs, self.data)
         # Save simulated data
         key = self._get_key(values, grid_sizes)
-        self.saved_add_info[key] = model_sfs
+        self.saved_add_info[key] = theta
         return ll_model
 
     def get_claic_component(self, x0, all_boots, grid_sizes, eps):

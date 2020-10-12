@@ -53,12 +53,13 @@ class SettingsStorage(object):
                        'upper_bound_of_first_split',
                        'upper_bound_of_second_split',
                        'const_for_mutation_strength',
-                       'const_for_mutation_rate']
+                       'const_for_mutation_rate', 'mutation_rate']
         probs_attrs = ['mean_mutation_strength', 'mean_mutation_rate',
                        'p_mutation', 'p_crossover', 'p_random']
         bool_attrs = ['outgroup', 'linked_snp_s', 'only_sudden',
                       'no_migrations', 'silence', 'test', 'random_n_a',
-                      'relative_parameters', 'only_models']
+                      'relative_parameters', 'only_models',
+                      'symmetric_migrations']
         int_list_attrs = ['pts', 'initial_structure', 'final_structure',
                           'projections']
         float_list_attrs = ['lower_bound', 'upper_bound']
@@ -78,7 +79,7 @@ class SettingsStorage(object):
         missed_attrs = ['engine', 'local_optimizer', '_inner_data',
                         '_bootstrap_data', 'X_init', 'Y_init', 'model_func',
                         'get_engine_args', 'units_of_time_in_drawing',
-                        'data_holder']
+                        'data_holder', 'resume_from_settings']
 
         super_hasattr = True
         setattr_at_the_end = True
@@ -504,6 +505,33 @@ class SettingsStorage(object):
             raise AttributeError(f"There is no such attribute {name} "
                                  "for SettingsStorage.")
 
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+        for attr_name in set(dir(self) + dir(other)):
+            if attr_name.startswith("_") or attr_name == "data_holder":
+                continue
+            try:
+                other_value = getattr(other, attr_name)
+            except KeyError:
+                return False
+            try:
+                self_value = getattr(self, attr_name)
+            except KeyError:
+                return False
+
+            if callable(self_value) or callable(other_value):
+                continue
+
+            if (isinstance(self_value, np.ndarray) or
+                    isinstance(other_value, np.ndarray)):
+                if not np.all(np.array(self_value) == np.array(other_value)):
+                    return False
+            else:
+                if not self_value == other_value:
+                    return False
+        return True
+
     @property
     def fractions(self):
         if not hasattr(self, '_fractions'):
@@ -579,7 +607,7 @@ class SettingsStorage(object):
     @staticmethod
     def from_file(param_file, extra_param_file=None):
         # Load all values
-        if param_file is None and extra_params_file is None:
+        if param_file is None and extra_param_file is None:
             return SettingsStorage()
         loaded_dict = {}
         if param_file is not None:
@@ -620,7 +648,12 @@ class SettingsStorage(object):
 
     def to_files(self, params_file, extra_params_file):
         # TODO comments with default values
-        known_missed_attrs = ['data_holder', 'const_of_time_in_drawing']
+        known_missed_attrs = ['data_holder', 'model_func',
+                              'const_of_time_in_drawing', 'bootstrap_data',
+                              'inner_data', 'number_of_populations',
+                              'X_init', 'Y_init', 'initial_structure_unit',
+                              'test', 'resume_from_settings']
+        saved_attrs = []
         for filename, template in zip([params_file, extra_params_file],
                                       [PARAM_TEMPLATE, EXTRA_PARAM_TEMPLATE]):
             with open(template) as fl:
@@ -634,20 +667,52 @@ class SettingsStorage(object):
                 attr_name = attr_name.replace("'", '_')
                 attr_name = attr_name.replace("__", "_")
                 value = getattr(self, attr_name)
-                # get rid of umpy as yaml could not serialize it
+                # get rid of numpy as yaml could not serialize it
                 if isinstance(value, np.ndarray):
                     value = value.tolist()
-                if isinstance(value, np.float):
-                    value = float(value)
-                if isinstance(value, np.integer):
+                    print(attr_name, value, type(value[0]))
+                if isinstance(value, numbers.Integral):
                     value = int(value)
-                if isinstance(value, np.bool):
-                    value = bool(value)
-                loaded_template[key_name] = value
+                elif isinstance(value, numbers.Real):
+                    value = float(value)
+                if isinstance(value, list):
+                    for i in range(len(value)):
+                        if isinstance(value[i], numbers.Integral):
+                            value[i] = int(value[i])
+                        elif isinstance(value[i], numbers.Real):
+                            value[i] = float(value[i])
 
+                loaded_template[key_name] = value
+                saved_attrs.append(attr_name)
+
+            # For representation of None's
+            def my_represent_none(self, data):
+                r = self.represent_scalar(u'tag:yaml.org,2002:null', u'Null')
+                return r
+            ruamel.yaml.RoundTripRepresenter.add_representer(type(None),
+                                                             my_represent_none)
             with open(filename, 'w') as fl:
                 ruamel.yaml.dump(loaded_template, fl,
+                                 default_flow_style=True,
                                  Dumper=ruamel.yaml.RoundTripDumper)
+        # save missed attributes at the end of extra file
+        final_dict = dict()
+        with open(extra_params_file, 'a') as fl:
+            fl.write("\n#\tOther parameters of run without description:\n")
+            for attr_name in set(dir(self) + dir(settings)):
+                if (attr_name.startswith("_") or
+                        attr_name.isupper() or
+                        attr_name in known_missed_attrs or
+                        attr_name in saved_attrs):
+                    continue
+                value = getattr(self, attr_name)
+                if callable(value):
+                    continue
+                # get rid of numpy as yaml could not serialize it
+                if isinstance(value, np.ndarray):
+                    value = value.tolist()
+                final_dict[attr_name] = value
+            fl.write(ruamel.yaml.dump(final_dict, default_flow_style=False))
 
     def get_global_optimizer(self):
         # bo = get_global_optimizer("Bayesian_optimization")
@@ -745,7 +810,7 @@ class SettingsStorage(object):
             create_migs = not self.no_migrations
             create_sels = False
             create_dyns = not self.only_sudden
-            sym_migs = False
+            sym_migs = self.symmetric_migrations
             model = StructureDemographicModel(self.initial_structure,
                                               self.final_structure,
                                               create_migs, create_sels,

@@ -3,10 +3,11 @@ import unittest
 from .test_data import YRI_CEU_DATA
 from gadma import *
 import gadma
-import gadma
+from gadma import *
 import dadi
 import copy
 import pickle
+import shutil
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
 
@@ -36,6 +37,7 @@ def rosenbrock(X):
     b = y - x*x
     return a*a + b*b*100.
 
+
 class TestRestore(unittest.TestCase):
     def test_ga_restore(self):
         ga = get_global_optimizer("Genetic_algorithm")
@@ -56,8 +58,8 @@ class TestRestore(unittest.TestCase):
                            report_file=report_file,
                            restore_file=save_file)
 
-        self.assertEqual(res1.y, res3.y)
-        self.assertTrue(res1.y >= res2.y)
+        self.assertEqual(res1.y, res3.y, msg=f"{res1}\n{res3}")
+        self.assertTrue(res1.y >= res2.y, msg=f"{res1}\n{res2}")
 
     def test_ls_restore(self):
         for opt in all_local_optimizers():
@@ -71,21 +73,17 @@ class TestRestore(unittest.TestCase):
             res1 = opt.optimize(f, variables, x0=x0, maxiter=5, verbose=1,
                                 report_file=report_file,
                                 save_file=save_file)
-#            print(res1)
             res2 = opt.optimize(f, variables, x0=x0, maxiter=5, verbose=1,
                                 report_file=report_file,
                                 restore_file=save_file,
                                 restore_models_only=True)
-#            print(res2)
             res3 = opt.optimize(f, variables, x0=x0, maxiter=5, verbose=1,
                                 report_file=report_file,
                                 restore_file=save_file)
-#            print(res3)
             res4 = opt.optimize(f, variables, x0=x0, maxiter=10, verbose=1,
                                 report_file=report_file,
                                 restore_file=save_file,
                                 restore_models_only=True)
-#            print(res4)
             self.assertEqual(res1.y, res3.y)
             self.assertTrue(res1.y >= res2.y)
             self.assertTrue(res2.y >= res4.y)
@@ -111,14 +109,12 @@ class TestRestore(unittest.TestCase):
             core_run = CoreRun(0, shared_dict, settings)
             res1 = core_run.run()
 
-#            print(res1)
             restore_settings = copy.copy(settings)
             restore_settings.output_directory = out_dir
             restore_settings.resume_from = settings.output_directory
 
             restore_core_run = CoreRun(0, shared_dict, restore_settings)
             res2 = restore_core_run.run()
-#            print(res2)
 
             self.assertEqual(res1.y, res2.y)
             if os.path.exists(out_dir):
@@ -127,8 +123,16 @@ class TestRestore(unittest.TestCase):
             restore_settings.only_models = True
             restore_core_run = CoreRun(0, shared_dict, restore_settings)
             res3 = restore_core_run.run()
-#            print(res3)
 
             self.assertTrue(res3.y >= res2.y)
         if os.path.exists(settings.output_directory):
             rmdir(settings.output_directory)
+
+    def test_restore_finished_run(self):
+        finished_run_dir = os.path.join(DATA_PATH, 'my_example_run')
+        sys.argv = ['gadma', '--resume', finished_run_dir]
+        try:
+            core.main()
+        finally:
+            if check_dir_existence(finished_run_dir + '_resumed'):
+                shutil.rmtree(finished_run_dir + '_resumed')

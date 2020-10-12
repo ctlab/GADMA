@@ -406,6 +406,8 @@ class CoreRun(object):
                     some_file_not_valid = True
                     only_models[-1] = self.settings.only_models
                     only_models.append(False)
+                if gs and ls:
+                    only_models.append(False)
             if not some_file_not_valid:
                 only_models[-1] = self.settings.only_models
 
@@ -426,6 +428,8 @@ class CoreRun(object):
                 structure = structures[i]
             if i >= len(only_models):
                 restore_models_only = False
+            else:
+                restore_models_only = only_models[i]
             res_files.append(restore_file)
             res_strct.append(structure)
             res_bools.append(restore_models_only)

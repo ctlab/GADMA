@@ -23,6 +23,7 @@ pts = None
 engine = 'moments'
 relative_parameters = False
 no_migrations = False
+symmetric_migrations = False
 
 # Custom model
 custom_filename = None
@@ -78,7 +79,7 @@ number_of_repeats = 1
 number_of_processes = 1
 test = False
 resume_from = None
-only_models = None
+only_models = False
 
 # Extra parameters
 
