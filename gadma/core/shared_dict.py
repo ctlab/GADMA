@@ -123,8 +123,12 @@ class SharedDictForCoreRun(SharedDict):
             sign = 1
         _1, _2, y = self._model(group, *model)
         if isinstance(y[group], tuple):
-            return sign * y[group][0]
-        return sign * y[group]
+            ff = y[group][0]
+        else:
+            ff = y[group]
+        if ff is None:
+            return ff
+        return sign * ff
 
     def update_best_model_for_process(self, process, group, engine, x, y):
         # print(x)

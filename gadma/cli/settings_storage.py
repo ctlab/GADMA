@@ -506,10 +506,16 @@ class SettingsStorage(object):
                                  "for SettingsStorage.")
 
     def __eq__(self, other):
+        known_missed_attrs = ['data_holder', 'model_func',
+                              'units_of_time_in_drawing', 'bootstrap_data',
+                              'inner_data', 'number_of_populations',
+                              'test']
         if not isinstance(other, self.__class__):
             return False
         for attr_name in set(dir(self) + dir(other)):
-            if attr_name.startswith("_") or attr_name == "data_holder":
+            if attr_name in known_missed_attrs:
+                continue
+            if attr_name.startswith("_"):
                 continue
             try:
                 other_value = getattr(other, attr_name)
@@ -526,6 +532,10 @@ class SettingsStorage(object):
             if (isinstance(self_value, np.ndarray) or
                     isinstance(other_value, np.ndarray)):
                 if not np.all(np.array(self_value) == np.array(other_value)):
+                    return False
+            elif (isinstance(self_value, tuple) or
+                    isinstance(other_value, tuple)):
+                if not (self_value == other_value).all():
                     return False
             else:
                 if not self_value == other_value:
@@ -671,27 +681,40 @@ class SettingsStorage(object):
                 if isinstance(value, np.ndarray):
                     value = value.tolist()
                     print(attr_name, value, type(value[0]))
-                if isinstance(value, numbers.Integral):
+                if (isinstance(value, numbers.Integral) and
+                        not isinstance(value, bool)):
                     value = int(value)
-                elif isinstance(value, numbers.Real):
+                elif (isinstance(value, numbers.Real) and
+                        not isinstance(value, bool)):
                     value = float(value)
                 if isinstance(value, list):
                     for i in range(len(value)):
-                        if isinstance(value[i], numbers.Integral):
+                        if (isinstance(value[i], numbers.Integral) and
+                                not isinstance(value, bool)):
                             value[i] = int(value[i])
-                        elif isinstance(value[i], numbers.Real):
+                        elif (isinstance(value[i], numbers.Real) and
+                                not isinstance(value, bool)):
                             value[i] = float(value[i])
 
                 loaded_template[key_name] = value
                 saved_attrs.append(attr_name)
 
-            # For representation of None's
+            # For representation of None's and bools
             def my_represent_none(self, data):
                 r = self.represent_scalar(u'tag:yaml.org,2002:null', u'Null')
                 return r
+            def my_represent_bool(self, data):
+                if data:
+                    value = u'True'
+                else:
+                    value = u'False'
+                return self.represent_scalar(u'tag:yaml.org,2002:bool', value)
             ruamel.yaml.RoundTripRepresenter.add_representer(type(None),
                                                              my_represent_none)
+            ruamel.yaml.RoundTripRepresenter.add_representer(bool,
+                                                             my_represent_bool)
             with open(filename, 'w') as fl:
+#                print(ruamel.yaml.dump(loaded_template))
                 ruamel.yaml.dump(loaded_template, fl,
                                  default_flow_style=True,
                                  Dumper=ruamel.yaml.RoundTripDumper)

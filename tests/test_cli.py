@@ -238,3 +238,16 @@ class TestCLI(unittest.TestCase):
             if check_dir_existence(out_dir):
                 shutil.rmtree(out_dir)
             sys.argv = old_argv
+
+    def test_saved_settings_storage(self):
+        param_file = os.path.join(DATA_PATH, 'another_test_params')
+        saved_params_file = os.path.join(DATA_PATH, 'params_file')
+        saved_extra_params_file = os.path.join(DATA_PATH, 'extra_params_file')
+
+        settings1 = SettingsStorage.from_file(param_file)
+        settings1.to_files(saved_params_file, saved_extra_params_file)
+        print(settings1.relative_parameters)
+        settings2 = SettingsStorage.from_file(saved_params_file,
+                                              saved_extra_params_file)
+
+        self.assertEqual(settings1, settings2)
