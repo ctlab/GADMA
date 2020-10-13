@@ -4,7 +4,7 @@ from ..utils import sort_by_other_list, ensure_dir_existence,\
 from ..utils import TimeVariable, PopulationSizeVariable, SelectionVariable,\
                     DynamicVariable
 from ..optimizers import GlobalOptimizerAndLocalOptimizer
-from ..utils import get_aic_score, get_claic_score
+from ..utils import get_aic_score, get_claic_score, ident_transform
 from ..models import EpochDemographicModel, StructureDemographicModel
 from .draw_and_generate_code import draw_plots_to_file, generate_code_to_file
 import os
@@ -316,9 +316,10 @@ class CoreRun(object):
         self.optimize_kwargs['save_file'] = self.get_save_file()
         # We set some kwargs if they were not set in run_with_increase
         if self.settings.initial_structure is None:
-            restore_file, _, only_models = self.get_run_options()
+            restore_file, _, only_models, x_transform = self.get_run_options()
             self.optimize_kwargs['restore_file'] = restore_file
             self.optimize_kwargs['restore_models_only'] = only_models
+            self.optimize_kwargs['restore_x_transform'] = x_transform
         f = self.engine.evaluate
         variables = self.model.variables
 
@@ -338,7 +339,7 @@ class CoreRun(object):
 
         options = zip(*self.get_run_options())
 
-        restore_file, struct, only_models = next(options)
+        restore_file, struct, only_models, x_transform = next(options)
         if struct is not None and struct != self.model.get_structure():
             warnings.warn(f"Initial structure ({init_struct}) with saved file "
                           f"of optimization from restored dir looks different "
@@ -348,10 +349,11 @@ class CoreRun(object):
             self.model = self.model.from_structure(struct)
         self.optimize_kwargs['restore_file'] = restore_file
         self.optimize_kwargs['restore_models_only'] = only_models
+        self.optimize_kwargs['restore_x_transform'] = x_transform
 
         result = self.run_without_increase(initial_kwargs)
         while (self.model.get_structure() != self.settings.final_structure):
-            restore_file, structure, only_models = next(options)
+            restore_file, structure, only_models, x_transform = next(options)
             self.model, X_init = self.model.increase_structure(structure,
                                                                X=result.X_out)
             Y_init = copy.copy(result.Y_out)
@@ -359,6 +361,7 @@ class CoreRun(object):
             self.optimize_kwargs['Y_init'] = Y_init
             self.optimize_kwargs['restore_file'] = restore_file
             self.optimize_kwargs['restore_models_only'] = only_models
+            self.optimize_kwargs['restore_x_transform'] = x_transform
             result = self.run_without_increase()
 #        self.final_callback()
         return result
@@ -389,7 +392,11 @@ class CoreRun(object):
                 restore_files, structures = sort_by_other_list(
                     restore_files, structures, key=lambda x: sum(x))
             else:
-                return restore_files[0], None, self.settings.only_models
+                x_transform = None
+                if self.settings.generate_x_transform:
+                    x_transform = ident_transform
+                return (restore_files[0], None,
+                        self.settings.only_models, x_transform)
 
             some_file_not_valid = False
             for i in range(len(restore_files)):
@@ -412,11 +419,17 @@ class CoreRun(object):
                 only_models[-1] = self.settings.only_models
 
         if self.settings.initial_structure is None:
-            return None, None, False
+            return None, None, False, None
 
         final_sum = sum(self.settings.final_structure)
         initial_sum = sum(self.settings.initial_structure)
-        res_files, res_strct, res_bools = [], [], []
+        res_files, res_strct, res_bools, res_trans = [], [], [], []
+        if self.settings.generate_x_transform:
+            old_params = os.path.join(self.settings.resume_from, 'params_file')
+            old_extra = os.path.join(self.settings.resume_from,
+                                     'extra_params_file')
+            old_settings = SettingsStorage.from_file(old_params, old_extra)
+            old_init_model = old_settings.get_model()
         for i in range(final_sum - initial_sum + 1):
             if i >= len(restore_files):
                 restore_file = None
@@ -426,14 +439,22 @@ class CoreRun(object):
                 structure = None
             else:
                 structure = structures[i]
-            if i >= len(only_models):
+            if i >= len(only_models) or restore_file is None:
                 restore_models_only = False
             else:
                 restore_models_only = only_models[i]
+            if not self.settings.generate_x_transform or restore_file is None:
+                x_transform = None
+            else:
+                old_init_model = old_init_model.from_structure(structure)
+                x_transform = partial(
+                    old_init_model.transform_values_from_other_model,
+                    old_init_model)
             res_files.append(restore_file)
             res_strct.append(structure)
             res_bools.append(restore_models_only)
-        return res_files, res_strct, res_bools
+            res_trans.append(x_transform)
+        return res_files, res_strct, res_bools, res_trans
 
     def run(self, initial_kwargs={}):
         print(f'Run launch number {self.index}\n', end='')

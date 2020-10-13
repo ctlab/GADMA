@@ -364,7 +364,6 @@ class TestLinearConstrains(unittest.TestCase):
                                     np.array([-np.inf, -np.inf, -0.5])))
         self.assertTrue(np.allclose(constrain.ub,
                                     np.array([1.5, 4, np.inf])))
-        print(constrain)
         x0 = [0, 0.5, 2]
         maxiter = 10
         for opt in all_local_optimizers():

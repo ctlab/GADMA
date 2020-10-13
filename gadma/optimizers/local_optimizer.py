@@ -92,14 +92,18 @@ class NoneOptimizer(LocalOptimizer):
     def optimize(self, f, variables, x0, args=(), options={},
                  linear_constrain=None, maxiter=None, maxeval=None,
                  verbose=0, callback=None, eval_file=None, report_file=None,
-                 save_file=None, restore_file=None, restore_models_only=False):
+                 save_file=None, restore_file=None, restore_models_only=False,
+                 restore_x_transform=None):
         prepared_f = self.prepare_f_for_opt(f, args, cache=True)
         wrapped_f = eval_wrapper(prepared_f, eval_file)
         finally_wrapped_f = self.wrap_for_report(wrapped_f, variables,
                                                  verbose, report_file)
         if restore_file is not None and self.valid_restore_file(restore_file):
             x0, y = self.load(restore_file)
-        if restore_file is None or restore_models_only:
+            if restore_x_transform is not None:
+                x0 = restore_x_transform(x)
+                y = None
+        if restore_file is None or restore_models_only or y is None:
             y = finally_wrapped_f(x0)
         self.save(x0, y, save_file)
         result = OptimizerResult(x0, y, True, 1, message="SUCCESS",
@@ -192,7 +196,8 @@ class ScipyOptimizer(LocalOptimizer):
     def optimize(self, f, variables, x0, args=(), options={},
                  linear_constrain=None, maxiter=None, maxeval=None,
                  verbose=0, callback=None, eval_file=None, report_file=None,
-                 save_file=None, restore_file=None, restore_models_only=False):
+                 save_file=None, restore_file=None, restore_models_only=False,
+                 restore_x_transform=None):
         """
         Run Scipy optimization.
 
@@ -235,6 +240,8 @@ class ScipyOptimizer(LocalOptimizer):
         is_finished = False
         if restore_file is not None and self.valid_restore_file(restore_file):
             x0, _y, _n_iter, _n_eval, is_finished = self.load(restore_file)
+            if restore_x_transform is not None:
+                x0 = restore_x_transform(x0)
             if restore_models_only:
                 if maxiter is not None:
                     maxiter -= _n_iter
@@ -427,7 +434,8 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
     def optimize(self, f, variables, x0, args=(), options={},
                  linear_constrain=None, maxiter=None, maxeval=None,
                  verbose=0, callback=None, eval_file=None, report_file=None,
-                 save_file=None, restore_file=None, restore_models_only=False):
+                 save_file=None, restore_file=None, restore_models_only=False,
+                 restore_x_transform=None):
         self.check_variables(variables)
         x0 = np.array(x0, dtype=np.float)
         x0_in_opt = self.optimizer.transform(self.transform(x0))
@@ -453,6 +461,7 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
         if callback is not None:
             callback = self.prepare_callback(callback)
         models_only = restore_models_only
+        x_transf = restore_x_transform
         result = self.optimizer.optimize(f_in_opt, vars_in_opt, x0_in_opt,
                                          args=(bounds,), options=options,
                                          verbose=0,
@@ -463,7 +472,8 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
                                          report_file=None,
                                          save_file=save_file,
                                          restore_file=restore_file,
-                                         restore_models_only=models_only)
+                                         restore_models_only=models_only,
+                                         restore_x_transform=x_transf)
         # TODO: need to check result.X as they should be transformed somehow.
         result.x = self.inv_transform(result.x)
         result.X = [self.inv_transform(x) for x in result.X]

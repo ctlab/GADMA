@@ -24,6 +24,7 @@ engine = 'moments'
 relative_parameters = False
 no_migrations = False
 symmetric_migrations = False
+split_fractions = True
 
 # Custom model
 custom_filename = None
@@ -80,6 +81,7 @@ number_of_processes = 1
 test = False
 resume_from = None
 only_models = False
+generate_x_transform = False
 
 # Extra parameters
 

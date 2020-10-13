@@ -59,7 +59,8 @@ class SettingsStorage(object):
         bool_attrs = ['outgroup', 'linked_snp_s', 'only_sudden',
                       'no_migrations', 'silence', 'test', 'random_n_a',
                       'relative_parameters', 'only_models',
-                      'symmetric_migrations']
+                      'symmetric_migrations', 'split_fractions',
+                      'generate_x_transform']
         int_list_attrs = ['pts', 'initial_structure', 'final_structure',
                           'projections']
         float_list_attrs = ['lower_bound', 'upper_bound']
@@ -509,7 +510,7 @@ class SettingsStorage(object):
         known_missed_attrs = ['data_holder', 'model_func',
                               'units_of_time_in_drawing', 'bootstrap_data',
                               'inner_data', 'number_of_populations',
-                              'test']
+                              'test', 'generate_x_transform']
         if not isinstance(other, self.__class__):
             return False
         for attr_name in set(dir(self) + dir(other)):
@@ -662,7 +663,8 @@ class SettingsStorage(object):
                               'const_of_time_in_drawing', 'bootstrap_data',
                               'inner_data', 'number_of_populations',
                               'X_init', 'Y_init', 'initial_structure_unit',
-                              'test', 'resume_from_settings']
+                              'test', 'resume_from_settings',
+                              'generate_x_transform']
         saved_attrs = []
         for filename, template in zip([params_file, extra_params_file],
                                       [PARAM_TEMPLATE, EXTRA_PARAM_TEMPLATE]):
@@ -680,7 +682,6 @@ class SettingsStorage(object):
                 # get rid of numpy as yaml could not serialize it
                 if isinstance(value, np.ndarray):
                     value = value.tolist()
-                    print(attr_name, value, type(value[0]))
                 if (isinstance(value, numbers.Integral) and
                         not isinstance(value, bool)):
                     value = int(value)
@@ -703,6 +704,7 @@ class SettingsStorage(object):
             def my_represent_none(self, data):
                 r = self.represent_scalar(u'tag:yaml.org,2002:null', u'Null')
                 return r
+
             def my_represent_bool(self, data):
                 if data:
                     value = u'True'
@@ -714,7 +716,6 @@ class SettingsStorage(object):
             ruamel.yaml.RoundTripRepresenter.add_representer(bool,
                                                              my_represent_bool)
             with open(filename, 'w') as fl:
-#                print(ruamel.yaml.dump(loaded_template))
                 ruamel.yaml.dump(loaded_template, fl,
                                  default_flow_style=True,
                                  Dumper=ruamel.yaml.RoundTripDumper)
@@ -834,10 +835,11 @@ class SettingsStorage(object):
             create_sels = False
             create_dyns = not self.only_sudden
             sym_migs = self.symmetric_migrations
+            split_f = self.split_fractions
             model = StructureDemographicModel(self.initial_structure,
                                               self.final_structure,
                                               create_migs, create_sels,
-                                              create_dyns, sym_migs, True,
+                                              create_dyns, sym_migs, split_f,
                                               gen_time, theta0, mut_rate)
             constrain = self.get_linear_constrain_for_model(model)
             model.linear_constrain = constrain

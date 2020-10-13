@@ -198,6 +198,49 @@ def get_settings():
         old_settings = SettingsStorage.from_file(
             os.path.join(settings_storage.resume_from, 'params_file'),
             os.path.join(settings_storage.resume_from, 'extra_params_file'))
+        # check what have changed and can we deal with it
+        if not settings_storage == old_settings:
+            data_settings = ['input_file', 'projections', 'population_labels',
+                             'outgroup']
+            engine_settings = ['engine', 'pts', 'lower_bound', 'upper_bound',
+                               'upper_bound_of_first_split',
+                               'upper_bound_of_second_split']
+            if_true_settings = ['no_migrations', 'only_sudden',
+                                'symmetric_migrations', 'split_fractions']
+            forbiden_settings = ['custom_filename', 'initial_structure']
+
+            def differ_in_element(l):
+                for attr in l:
+                    if getattr(settings_storage, attr) !=\
+                            getattr(old_settings, attr):
+                        yield attr
+            differ_attrs = differ_in_element(data_settings + engine_settings)
+            for attr in differ_attrs:
+                if not settings_storage.only_models:
+                    warn.warning(f"Setting {attr} is different in new "
+                                 "settings and all likelihoods should be "
+                                 "recalculated in new run. Check option "
+                                 "only_models maybe it should be set to True.")
+                    settings_storage.generate_x_transform = True
+                    break
+            differ_attrs = differ_in_element(if_true_settings)
+            for attr in differ_attrs:
+                if (getattr(settings_storage) and
+                        not settings_storage.only_models):
+                    warn.warning(f"Setting {attr} was changed from False to "
+                                 "True in new settings and all likelihoods "
+                                 "should be recalculated in new run. Check "
+                                 "option only_models maybe it should be set to"
+                                 " True.")
+                    model = settings_storage.get_model()
+                    old_model = old_settings.get_model()
+                    settings_storage.generate_x_transform = True
+                    break
+            differ_attrs = differ_in_element(forbiden_settings)
+            for attr in differ_attrs:
+                raise ValueError(f"Setting {attr} could not be changed in "
+                                 "resumed run.")
+
     else:
         if settings_storage.only_models:
             warnings.warn("Option `only models`/--only_models  must be used "

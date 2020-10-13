@@ -307,3 +307,84 @@ class StructureDemographicModel(EpochDemographicModel):
             new_X.append([new_var2value[var] for var in self.variables])
 
         return self, new_X
+
+    def transform_values_from_other_model(self, model, x):
+        assert isinstance(model, StructureDemographicModel)
+        assert np.all(self.get_structure() == model.get_structure())
+
+        other_varname2value = {var.name: other_var2value[var]
+                               for var in model.var2value(x)}
+        var2value = {}
+        # First fill with common variables
+        for var in self.variables:
+            if isinstance(var, MigrationVariable):
+                if self.have_migs == model.have_migs:
+                    if self.sym_migs == model.sym_migs:
+                        new_var2value[var] = other_varname2value[var.name]
+            elif isinstance(var, SelectionVariable):
+                if self.have_sels == model.have_sels:
+                    new_var2value[var] = other_varname2value[var.name]
+            elif isinstance(var, DynamicVariable):
+                if self.have_dyns == model.have_dyns:
+                    new_var2value[var] = other_varname2value[var.name]
+            elif isinstance(var, FractionVariable):
+                if self.frac_split == model.frac_split:
+                    new_var2value[var] = other_varname2value[var.name]
+
+        # Transform other values
+        varname2value = {}
+        for var in self.variables:
+            if var.name in varname2value:
+                var2value[var] = varname2value[var.name]
+            if var in var2value:
+                continue
+            if isinstance(var, MigrationVariable):
+                if not model.have_migs:
+                    var2value[var] = 0
+                elif self.sym_migs != model.sym_migs:
+                    ij = var.name.split('_')[-1]
+                    assert len(ij) == 2
+                    sym_mig_name = var.name[:-2] + ij[::-1]
+                    if self.sym_migs and not model.sym_migs:
+                        var2value[var] = ((other_varname2value[var.name] +
+                                           other_varname2value[sym_mig_name]) /
+                                          2)
+                    else:
+                        var2value[var] = other_varname2value[var.name]
+                        varname2value[sym_mig_name] = var2value[var]
+            elif isinstance(var, SelectionVariable):
+                assert self.have_sels and not model.have_sels
+                var2value[var] = 0
+            elif isinstance(var, DynamicVariable):
+                assert self.have_dyns and not model.have_dyns
+                var2value[var] = 'Sud'
+            elif isinstance(var, FractionVariable):
+                assert self.frac_split and not model.frac_split
+                n_split = int(var.name[1:])
+                ind_before_split = sum(self.get_structure()[:n_split]) - 1
+                nu1_before_split_name = "nu%d%d" % (ind_before_split, n_split)
+                nu1_after_split_name = "nu%d%d_1" % (ind_before_split + 1,
+                                                     n_split)
+                fraction = nu1_after_split_name / nu1_before_split_name
+                fraction = max(fraction, var.domain[0])
+                fraction = min(fraction, var.domain[1])
+                var2value[var] = fraction
+            elif isinstance(var, PopulationSizeVariable):
+                assert not self.frac_split and model.frac_split
+                assert len(var.name.split("_")) > 1
+
+                nu_before_split_name = var.name[:-2]  # remove last _1 or _2
+                frac_name = "s" + nu_before_split_name[-1]
+
+                pop_size = other_varname2value[nu_before_split_name]
+                fraction = other_varname2value[frac_name]
+
+                if var.name[-1] == "1":
+                    var2value[var] = fraction * pop_size
+                elif var.name[-2] == "2":
+                    var2value[var] = (1 - fraction) * pop_size
+            else:
+                raise ValueError("Some changes in demographic models are not "
+                                 "allowed or implemented. Got new variable "
+                                 f"({var}) that cannot be processed.")
+            return [var2value[var] for var in self.variables]

@@ -61,7 +61,8 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                  global_maxeval=None, local_maxeval=None,
                  verbose=0, callback=None, eval_file=None,
                  report_file=None, save_file=None,
-                 restore_file=None, restore_models_only=False):
+                 restore_file=None, restore_models_only=False,
+                 restore_x_transform=None):
         if report_file:
             stream = open(report_file, 'a')
         else:
@@ -97,8 +98,15 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         x_best = np.array(global_result.x)
         is_filtered = self._get_filter(variables)
         x0 = x_best[is_filtered]
+
         variables_local = np.array(variables)[is_filtered]
 
+        if restore_x_transform is not None:
+            def new_x_transform(x):
+                return restore_x_transform(x)[is_filtered]
+            passed_x_transform = new_x_transform
+        else:
+            passed_x_transform = None
         f_local = self._f_for_local_opt(f, variables, x_best)
         callback_local = self._callback_for_local_opt(callback, variables,
                                                       x_best)
@@ -119,7 +127,8 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                                                      eval_file, report_file,
                                                      save_file,
                                                      restore_file,
-                                                     restore_models_only)
+                                                     restore_models_only,
+                                                     passed_x_transform)
         # Create result
         success = local_result.success
         message = f"GLOBAL OPTIMIZATION: {global_result.message}; "\

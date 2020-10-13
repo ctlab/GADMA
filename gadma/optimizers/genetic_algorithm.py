@@ -621,7 +621,8 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                  X_init=None, Y_init=None,
                  linear_constrain=None, maxiter=None, maxeval=None,
                  verbose=0, callback=None, report_file=None, eval_file=None,
-                 save_file=None, restore_file=None, restore_models_only=False):
+                 save_file=None, restore_file=None, restore_models_only=False,
+                 restore_x_transform=None):
         """
         Return best values of `variables` that minimizes/maximizes
         the function `f`.
@@ -653,6 +654,11 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         if restore_file is not None and self.valid_restore_file(restore_file):
             (n_gen_old, n_eval_old, n_impr_gen_old, X_gen, Y_gen, X_total,
              Y_total, cur_mut_rate, cur_mut_strength) = self.load(restore_file)
+            if restore_x_transform is not None:
+                X_gen = [restore_x_transform(x) for x in X_gen]
+                X_total = [restore_x_transform(x) for x in X_total]
+                Y_gen = []
+                Y_total = [None for _ in X_total]
             if not restore_models_only:
                 n_gen = n_gen_old
                 n_impr_gen = n_impr_gen_old
