@@ -69,14 +69,14 @@ class GlobalOptimizer(Optimizer):
         X = list()
         Y = list()
         if X_init is not None:
+            X = X_init
             if Y_init is not None:
-                X = X_init
                 Y = Y_init
-                assert len(X) == len(Y)
             else:
-                for x in X_init:
-                    X.append(x)
-                    Y.append(f(x))
+                Y = list()
+            for x in X_init[len(Y_init):]:
+                X.append(x)
+                Y.append(f(x))
         for _ in range(num_init - len(X)):
             x = self.randomize(variables, random_type, custom_rand_gen)
             X.append(x)

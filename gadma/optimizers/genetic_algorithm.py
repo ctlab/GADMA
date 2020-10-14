@@ -650,43 +650,6 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         X_total = []
         Y_total = []
 
-        restored = False
-        if restore_file is not None and self.valid_restore_file(restore_file):
-            (n_gen_old, n_eval_old, n_impr_gen_old, X_gen, Y_gen, X_total,
-             Y_total, cur_mut_rate, cur_mut_strength) = self.load(restore_file)
-            if restore_x_transform is not None:
-                X_gen = [restore_x_transform(x) for x in X_gen]
-                X_total = [restore_x_transform(x) for x in X_total]
-                Y_gen = []
-                Y_total = [None for _ in X_total]
-            if not restore_models_only:
-                n_gen = n_gen_old
-                n_impr_gen = n_impr_gen_old
-                self.cur_mut_rate = cur_mut_rate
-                self.cur_mut_strength = cur_mut_strength
-                n_eval_init = n_eval_old
-                num_init = len(X_gen)
-            if X_init is None:
-                X_init = X_gen
-                Y_init = Y_gen
-            elif Y_init is None:
-                if Y_gen is not None:
-                    assert len(X_gen) == len(Y_gen)
-                    Y_gen.extend(Y_init)
-                X_gen.extend(X_init)
-                X_init, Y_init = X_gen, Y_gen
-            elif len(X_init) == len(Y_init):
-                X_init.extend(X_gen)
-                Y_init.extend(Y_gen)
-            else:
-                assert len(X_init) > len(Y_init)
-                new_X_init = copy.copy(X_init[:len(Y_init)])
-                new_X_init.extend(X_gen)
-                new_X_init.extend(X_init[len(Y_init):])
-                Y_init.extend(Y_gen)
-                X_init = new_X_init
-            restored = True
-
         # Create logging files
         if eval_file is not None:
             ensure_file_existence(eval_file)
@@ -716,6 +679,46 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         # Write first line of report
         if verbose > 0 and report_file is not None:
             report_file = ensure_file_existence(report_file)
+
+        # Initial design
+        restored = False
+        if restore_file is not None and self.valid_restore_file(restore_file):
+            (n_gen_old, n_eval_old, n_impr_gen_old, X_gen, Y_gen, X_total,
+             Y_total, cur_mut_rate, cur_mut_strength) = self.load(restore_file)
+            if restore_x_transform is not None:
+                X_gen = [restore_x_transform(x) for x in X_gen]
+                X_total = [restore_x_transform(x) for x in X_total]
+                # Let's remember our recalculation but this Y_gen will become
+                # Y_init and Y_init is in usual units without * sign.
+                Y_gen = [self.sign * f_in_opt(x) for x in X_gen]
+                Y_total = [None for _ in X_total]
+            if not restore_models_only:
+                n_gen = n_gen_old
+                n_impr_gen = n_impr_gen_old
+                self.cur_mut_rate = cur_mut_rate
+                self.cur_mut_strength = cur_mut_strength
+                n_eval_init = n_eval_old
+                num_init = len(X_gen)
+            if X_init is None:
+                X_init = X_gen
+                Y_init = Y_gen
+            elif Y_init is None:
+                if Y_gen is not None:
+                    assert len(X_gen) == len(Y_gen)
+                    Y_gen.extend(Y_init)
+                X_gen.extend(X_init)
+                X_init, Y_init = X_gen, Y_gen
+            elif len(X_init) == len(Y_init):
+                X_init.extend(X_gen)
+                Y_init.extend(Y_gen)
+            else:
+                assert len(X_init) > len(Y_init)
+                new_X_init = copy.copy(X_init[:len(Y_init)])
+                new_X_init.extend(X_gen)
+                new_X_init.extend(X_init[len(Y_init):])
+                Y_init.extend(Y_gen)
+                X_init = new_X_init
+            restored = True
 
         # Perform 0 generation of GA - initial design.
         if X_init is not None:

@@ -246,7 +246,6 @@ class TestCLI(unittest.TestCase):
 
         settings1 = SettingsStorage.from_file(param_file)
         settings1.to_files(saved_params_file, saved_extra_params_file)
-        print(settings1.relative_parameters)
         settings2 = SettingsStorage.from_file(saved_params_file,
                                               saved_extra_params_file)
 

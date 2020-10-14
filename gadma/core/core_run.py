@@ -7,11 +7,13 @@ from ..optimizers import GlobalOptimizerAndLocalOptimizer
 from ..utils import get_aic_score, get_claic_score, ident_transform
 from ..models import EpochDemographicModel, StructureDemographicModel
 from .draw_and_generate_code import draw_plots_to_file, generate_code_to_file
+from ..cli import SettingsStorage
 import os
 import numpy as np
 from collections import defaultdict, OrderedDict
 import copy
 import warnings
+from functools import partial
 
 
 class CoreRun(object):
@@ -319,7 +321,8 @@ class CoreRun(object):
             restore_file, _, only_models, x_transform = self.get_run_options()
             self.optimize_kwargs['restore_file'] = restore_file
             self.optimize_kwargs['restore_models_only'] = only_models
-            self.optimize_kwargs['restore_x_transform'] = x_transform
+            self.optimize_kwargs['global_x_transform'] = x_transform[0]
+            self.optimize_kwargs['local_x_transform'] = x_transform[1]
         f = self.engine.evaluate
         variables = self.model.variables
 
@@ -349,19 +352,22 @@ class CoreRun(object):
             self.model = self.model.from_structure(struct)
         self.optimize_kwargs['restore_file'] = restore_file
         self.optimize_kwargs['restore_models_only'] = only_models
-        self.optimize_kwargs['restore_x_transform'] = x_transform
+        self.optimize_kwargs['global_x_transform'] = x_transform[0]
+        self.optimize_kwargs['local_x_transform'] = x_transform[1]
 
         result = self.run_without_increase(initial_kwargs)
-        while (self.model.get_structure() != self.settings.final_structure):
-            restore_file, structure, only_models, x_transform = next(options)
-            self.model, X_init = self.model.increase_structure(structure,
-                                                               X=result.X_out)
+        for restore_file, structure, only_models, x_transform in options:
+            X_init = result.X_out
+            if self.model.get_structure() != structure:
+                self.model, X_init = self.model.increase_structure(structure,
+                                                                   X=X_init)
             Y_init = copy.copy(result.Y_out)
             self.optimize_kwargs['X_init'] = X_init
             self.optimize_kwargs['Y_init'] = Y_init
             self.optimize_kwargs['restore_file'] = restore_file
             self.optimize_kwargs['restore_models_only'] = only_models
-            self.optimize_kwargs['restore_x_transform'] = x_transform
+            self.optimize_kwargs['global_x_transform'] = x_transform[0]
+            self.optimize_kwargs['local_x_transform'] = x_transform[1]
             result = self.run_without_increase()
 #        self.final_callback()
         return result
@@ -394,7 +400,7 @@ class CoreRun(object):
             else:
                 x_transform = None
                 if self.settings.generate_x_transform:
-                    x_transform = ident_transform
+                    x_transform = (ident_transform, ident_transform)
                 return (restore_files[0], None,
                         self.settings.only_models, x_transform)
 
@@ -406,20 +412,15 @@ class CoreRun(object):
                     continue
                 gs = self.global_optimizer.valid_restore_file(restore_files[i])
                 ls = self.local_optimizer.valid_restore_file(restore_files[i])
-                if gs and not ls:
+                only_models.append(False)
+                if not gs or not ls:
                     some_file_not_valid = True
-                    only_models.append(self.settings.only_models)
-                if not gs:
-                    some_file_not_valid = True
-                    only_models[-1] = self.settings.only_models
-                    only_models.append(False)
-                if gs and ls:
-                    only_models.append(False)
-            if not some_file_not_valid:
-                only_models[-1] = self.settings.only_models
+            if self.settings.only_models:
+                only_models.append(True)
+                structures.append(structures[-1])
 
         if self.settings.initial_structure is None:
-            return None, None, False, None
+            return None, None, False, (None, None)
 
         final_sum = sum(self.settings.final_structure)
         initial_sum = sum(self.settings.initial_structure)
@@ -430,30 +431,42 @@ class CoreRun(object):
                                      'extra_params_file')
             old_settings = SettingsStorage.from_file(old_params, old_extra)
             old_init_model = old_settings.get_model()
-        for i in range(final_sum - initial_sum + 1):
+        for i in range(final_sum - initial_sum + 1 +
+                       int(self.settings.only_models)):
             if i >= len(restore_files):
                 restore_file = None
             else:
                 restore_file = restore_files[i]
-            if i >= len(structures) or restore_file is None:
+            if i >= len(structures):
                 structure = None
             else:
                 structure = structures[i]
-            if i >= len(only_models) or restore_file is None:
+            if i >= len(only_models):
                 restore_models_only = False
             else:
                 restore_models_only = only_models[i]
-            if not self.settings.generate_x_transform or restore_file is None:
-                x_transform = None
+            if not self.settings.generate_x_transform:
+                gs_x_transform = None
+                ls_x_transform = None
             else:
                 old_init_model = old_init_model.from_structure(structure)
-                x_transform = partial(
-                    old_init_model.transform_values_from_other_model,
-                    old_init_model)
+                gs_x_transform = partial(
+                    self.model.transform_values_from_other_model,
+                    copy.deepcopy(old_init_model))
+                copy_old_model = copy.deepcopy(old_init_model)
+                copy_self_model = copy.deepcopy(self.model)
+                copy_old_model.have_dyns = False
+                copy_old_model = copy_old_model.from_structure(structure)
+                copy_self_model.have_dyns = False
+                copy_self_model = copy_self_model.from_structure(structure)
+                ls_x_transform = partial(
+                    copy_self_model.transform_values_from_other_model,
+                    copy_old_model)
+
             res_files.append(restore_file)
             res_strct.append(structure)
             res_bools.append(restore_models_only)
-            res_trans.append(x_transform)
+            res_trans.append((gs_x_transform, ls_x_transform))
         return res_files, res_strct, res_bools, res_trans
 
     def run(self, initial_kwargs={}):

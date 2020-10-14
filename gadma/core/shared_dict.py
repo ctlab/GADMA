@@ -70,7 +70,7 @@ class SharedDict(object):
         if group not in process_dict:
             return []
         if isinstance(process_dict[group], (list, np.ndarray)):
-            return sorted(process_dict[group], key=key)
+            return sorted(process_dict[group], key=key, reverse=True)
         return [process_dict[group]]
 
     def get_models_in_group(self, group, key=None):
@@ -84,7 +84,7 @@ class SharedDict(object):
             if len(process_models) > 0:
                 for model in process_models:
                     models.append([process, model])
-            models = sorted(models, key=lambda x: key(x[1]))
+            models = sorted(models, key=lambda x: key(x[1]), reverse=True)
         return models
 
     def get_best_model_in_group(self, process, group, key=None):

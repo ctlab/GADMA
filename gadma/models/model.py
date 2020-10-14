@@ -105,12 +105,16 @@ class Model(object):
             ret_dict = {}
             for key in values:
                 if isinstance(key, str):
-                    ret_dict[self.get_variable(key)] = values[key]
+                    var = self.get_variable(key)
+                    if var is not None:
+                        ret_dict[var] = values[key]
                 elif isinstance(key, Variable):
-                    ret_dict[key] = values[key]
+                    if key in self.variables:
+                        ret_dict[key] = values[key]
         else:
             raise TypeError("Values are either not list nor dict.")
 
+        assert len(ret_dict) == len(self.variables)
         return {**ret_dict, **self.fixed_values}
 
     def string_repr(self, values):

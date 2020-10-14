@@ -510,7 +510,8 @@ class SettingsStorage(object):
         known_missed_attrs = ['data_holder', 'model_func',
                               'units_of_time_in_drawing', 'bootstrap_data',
                               'inner_data', 'number_of_populations',
-                              'test', 'generate_x_transform']
+                              'test', 'generate_x_transform', 'resume_from',
+                              'output_directory']
         if not isinstance(other, self.__class__):
             return False
         for attr_name in set(dir(self) + dir(other)):
@@ -615,11 +616,10 @@ class SettingsStorage(object):
             self._bootstrap_data = self.read_bootstrap_data(self)
         return self._bootstrap_data
 
-    @staticmethod
-    def from_file(param_file, extra_param_file=None):
+    def update_from_file(self, param_file, extra_param_file=None):
         # Load all values
         if param_file is None and extra_param_file is None:
-            return SettingsStorage()
+            return self
         loaded_dict = {}
         if param_file is not None:
             with open(param_file) as fl:
@@ -631,8 +631,6 @@ class SettingsStorage(object):
                                               ruamel.yaml.RoundTripLoader)
             loaded_dict = {**loaded_dict, **extra_dict}
 
-        # Create object
-        settings_storage = SettingsStorage()
         for key in loaded_dict:
             attr_name = key.lower().strip()
             attr_name = attr_name.replace(" ", "_")
@@ -646,7 +644,7 @@ class SettingsStorage(object):
                               f"GADMA to `{setting_name}`. It is successfully"
                               " read.")
 
-            if not hasattr(settings_storage, attr_name):
+            if not hasattr(self, attr_name):
                 if attr_name in DEPRECATED_IDENTIFIERS:
                     warnings.warn(f"Setting `{key}` was deprecated in 2 "
                                   "version of GADMA. If you have not set it "
@@ -654,8 +652,13 @@ class SettingsStorage(object):
                     continue
                 else:
                     raise AttributeError(f"Unknown identifier: `{key}`.")
-            settings_storage.__setattr__(attr_name, loaded_dict[key])
-        return settings_storage
+            self.__setattr__(attr_name, loaded_dict[key])
+        return self
+
+    @staticmethod
+    def from_file(param_file, extra_param_file=None):
+        obj = SettingsStorage()
+        return obj.update_from_file(param_file, extra_param_file)
 
     def to_files(self, params_file, extra_params_file):
         # TODO comments with default values

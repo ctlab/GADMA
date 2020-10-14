@@ -144,7 +144,7 @@ class Epoch(Event):
             dyns_repr = [help_f(arg) for arg in self.dyn_args]
             dyns_repr = f"[{', '.join(dyns_repr)}]"
         else:
-            dyns_repr = "[{', '.join(['Sud' for _ in self.size_args])}]"
+            dyns_repr = f"[{', '.join(['Sud' for _ in self.size_args])}]"
         all_repr.append(dyns_repr)
         return f"[ {', '.join(all_repr)} ]"
 

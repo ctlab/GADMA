@@ -140,8 +140,6 @@ def print_runs_summary(start_time, shared_dict, settings):
         print("No models yet")
     for best_by in metric_names:
         models = shared_dict.get_models_for_group(best_by, align_y_dict=True)
-        if best_by == 'log-likelihood':
-            models = list(reversed(models))
         local_metrics = models[0][1][2].keys()
         sorted_models = models
         metrics = local_metrics

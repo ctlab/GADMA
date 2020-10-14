@@ -144,7 +144,8 @@ def get_settings():
                 resume_from_settings.output_directory = None
             resume_from_settings.only_models = False
             settings_storage = copy.copy(resume_from_settings)
-            settings_storage.from_file(args.params, args.extra)
+            settings_storage = settings_storage.update_from_file(args.params,
+                                                                 args.extra)
             if args.resume:
                 settings_storage.resume_from = args.resume
 
@@ -214,30 +215,25 @@ def get_settings():
                     if getattr(settings_storage, attr) !=\
                             getattr(old_settings, attr):
                         yield attr
-            differ_attrs = differ_in_element(data_settings + engine_settings)
-            for attr in differ_attrs:
+            for attr in differ_in_element(data_settings + engine_settings):
+                settings_storage.generate_x_transform = True
                 if not settings_storage.only_models:
-                    warn.warning(f"Setting {attr} is different in new "
-                                 "settings and all likelihoods should be "
-                                 "recalculated in new run. Check option "
-                                 "only_models maybe it should be set to True.")
-                    settings_storage.generate_x_transform = True
+                    warnings.warn(f"Setting {attr} is different in new "
+                                  "settings and all likelihoods should be "
+                                  "recalculated in new run. Check option only_"
+                                  "models maybe it should be set to True.")
                     break
-            differ_attrs = differ_in_element(if_true_settings)
-            for attr in differ_attrs:
-                if (getattr(settings_storage) and
-                        not settings_storage.only_models):
-                    warn.warning(f"Setting {attr} was changed from False to "
-                                 "True in new settings and all likelihoods "
-                                 "should be recalculated in new run. Check "
-                                 "option only_models maybe it should be set to"
-                                 " True.")
-                    model = settings_storage.get_model()
-                    old_model = old_settings.get_model()
+            for attr in differ_in_element(if_true_settings):
+                if getattr(settings_storage, attr):
                     settings_storage.generate_x_transform = True
+                    if not settings_storage.only_models:
+                        warnings.warn(f"Setting {attr} was changed from False "
+                                      "to True in new settings and all "
+                                      "likelihoods should be recalculated in "
+                                      "new run. Check option only_models maybe"
+                                      " it should be set to True.")
                     break
-            differ_attrs = differ_in_element(forbiden_settings)
-            for attr in differ_attrs:
+            for attr in differ_in_element(forbiden_settings):
                 raise ValueError(f"Setting {attr} could not be changed in "
                                  "resumed run.")
 

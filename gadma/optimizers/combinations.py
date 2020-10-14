@@ -1,6 +1,7 @@
 import sys
 from functools import wraps
 import numpy as np
+import copy
 
 from .global_optimizer import GlobalOptimizer
 from .optimizer import ConstrainedOptimizer
@@ -24,7 +25,8 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         super(GlobalOptimizerAndLocalOptimizer, self).__init__(
             log_transform=False, maximize=self.global_optimizer.maximize)
 
-    def _get_filter(self, variables):
+    @staticmethod
+    def _get_filter(variables):
         is_not_discrete = [not isinstance(var, DiscreteVariable)
                            for var in variables]
         return np.array(is_not_discrete, dtype=bool)
@@ -62,7 +64,7 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                  verbose=0, callback=None, eval_file=None,
                  report_file=None, save_file=None,
                  restore_file=None, restore_models_only=False,
-                 restore_x_transform=None):
+                 global_x_transform=None, local_x_transform=None):
         if report_file:
             stream = open(report_file, 'a')
         else:
@@ -84,7 +86,8 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                                                        report_file, eval_file,
                                                        save_file,
                                                        restore_file,
-                                                       restore_models_only)
+                                                       restore_models_only,
+                                                       global_x_transform)
         if report_file:
             stream = open(report_file, 'a')
         else:
@@ -96,17 +99,11 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
         # Transform best x to local optimizer as x0 and functions for local
         x_best = np.array(global_result.x)
-        is_filtered = self._get_filter(variables)
-        x0 = x_best[is_filtered]
+        is_not_discrete = self._get_filter(variables)
+        x0 = x_best[is_not_discrete]
 
-        variables_local = np.array(variables)[is_filtered]
+        variables_local = np.array(variables)[is_not_discrete]
 
-        if restore_x_transform is not None:
-            def new_x_transform(x):
-                return restore_x_transform(x)[is_filtered]
-            passed_x_transform = new_x_transform
-        else:
-            passed_x_transform = None
         f_local = self._f_for_local_opt(f, variables, x_best)
         callback_local = self._callback_for_local_opt(callback, variables,
                                                       x_best)
@@ -128,7 +125,7 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                                                      save_file,
                                                      restore_file,
                                                      restore_models_only,
-                                                     passed_x_transform)
+                                                     local_x_transform)
         # Create result
         success = local_result.success
         message = f"GLOBAL OPTIMIZATION: {global_result.message}; "\
@@ -137,7 +134,7 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
         y_best = local_result.y
         x_best = global_result.x
-        x_best[is_filtered] = local_result.x
+        x_best[is_not_discrete] = local_result.x
         ga_maximize = self.global_optimizer.maximize
         X_out, Y_out = sort_by_other_list(global_result.X_out,
                                           global_result.Y_out,

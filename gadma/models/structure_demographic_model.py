@@ -312,24 +312,30 @@ class StructureDemographicModel(EpochDemographicModel):
         assert isinstance(model, StructureDemographicModel)
         assert np.all(self.get_structure() == model.get_structure())
 
+#        print('other', model.variables)
+#        print('self', self.variables)
+#        print('x', x)
+        other_var2value = model.var2value(x)
         other_varname2value = {var.name: other_var2value[var]
-                               for var in model.var2value(x)}
+                               for var in other_var2value}
         var2value = {}
         # First fill with common variables
         for var in self.variables:
             if isinstance(var, MigrationVariable):
                 if self.have_migs == model.have_migs:
                     if self.sym_migs == model.sym_migs:
-                        new_var2value[var] = other_varname2value[var.name]
+                        var2value[var] = other_varname2value[var.name]
             elif isinstance(var, SelectionVariable):
                 if self.have_sels == model.have_sels:
-                    new_var2value[var] = other_varname2value[var.name]
+                    var2value[var] = other_varname2value[var.name]
             elif isinstance(var, DynamicVariable):
                 if self.have_dyns == model.have_dyns:
-                    new_var2value[var] = other_varname2value[var.name]
+                    var2value[var] = other_varname2value[var.name]
             elif isinstance(var, FractionVariable):
                 if self.frac_split == model.frac_split:
-                    new_var2value[var] = other_varname2value[var.name]
+                    var2value[var] = other_varname2value[var.name]
+            elif var.name in other_varname2value:
+                var2value[var] = other_varname2value[var.name]
 
         # Transform other values
         varname2value = {}
@@ -374,17 +380,23 @@ class StructureDemographicModel(EpochDemographicModel):
                 assert len(var.name.split("_")) > 1
 
                 nu_before_split_name = var.name[:-2]  # remove last _1 or _2
-                frac_name = "s" + nu_before_split_name[-1]
 
-                pop_size = other_varname2value[nu_before_split_name]
+                # if there was ancestral population split there is no variable
+                if (nu_before_split_name == "nu" and
+                        nu_before_split_name not in varname2value):
+                    pop_size = 1.0
+                    frac_name = "s1"
+                else:
+                    pop_size = other_varname2value[nu_before_split_name]
+                    frac_name = "s" + nu_before_split_name[-1]
                 fraction = other_varname2value[frac_name]
 
                 if var.name[-1] == "1":
                     var2value[var] = fraction * pop_size
-                elif var.name[-2] == "2":
+                elif var.name[-1] == "2":
                     var2value[var] = (1 - fraction) * pop_size
             else:
                 raise ValueError("Some changes in demographic models are not "
                                  "allowed or implemented. Got new variable "
                                  f"({var}) that cannot be processed.")
-            return [var2value[var] for var in self.variables]
+        return [var2value[var] for var in self.variables]

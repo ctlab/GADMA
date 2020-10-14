@@ -130,9 +130,60 @@ class TestRestore(unittest.TestCase):
 
     def test_restore_finished_run(self):
         finished_run_dir = os.path.join(DATA_PATH, 'my_example_run')
-        sys.argv = ['gadma', '--resume', finished_run_dir]
+        params_file = 'params'
+        with open(params_file, 'w') as fl:
+            fl.write("Linked SNP's: False")
+        sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
         try:
             core.main()
         finally:
             if check_dir_existence(finished_run_dir + '_resumed'):
                 shutil.rmtree(finished_run_dir + '_resumed')
+            os.remove(params_file)
+
+    def test_restore_models_from_finished_run(self):
+        finished_run_dir = os.path.join(DATA_PATH, 'my_example_run')
+        params_file = 'params'
+        with open(params_file, 'w') as fl:
+            fl.write("Stuck generation number: 2\n"
+                     "Only models: True\n"
+                     "Projections: [4,4]")
+        sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
+        try:
+            core.main()
+        finally:
+            if check_dir_existence(finished_run_dir + '_resumed'):
+                shutil.rmtree(finished_run_dir + '_resumed')
+            os.remove(params_file)
+
+    def test_restore_with_different_options_1(self):
+        finished_run_dir = os.path.join(DATA_PATH, 'my_example_run')
+        params_file = 'params'
+        with open(params_file, 'w') as fl:
+            fl.write("Stuck generation number: 2\n"
+                     "Symmetric migrations: True\n"
+                     "Only sudden: True\n"
+                     "Split fractions: False\n"
+                     "Projections: 4,4")
+        sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
+        try:
+            core.main()
+        finally:
+            if check_dir_existence(finished_run_dir + '_resumed'):
+                shutil.rmtree(finished_run_dir + '_resumed')
+            os.remove(params_file)
+
+    def test_restore_with_different_options_2(self):
+        finished_run_dir = os.path.join(DATA_PATH, 'my_example_run')
+        params_file = 'params'
+        with open(params_file, 'w') as fl:
+            fl.write("Stuck generation number: 2\n"
+                     "Engine: dadi\n"
+                     "Projections: 4,4")
+        sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
+        try:
+            core.main()
+        finally:
+            if check_dir_existence(finished_run_dir + '_resumed'):
+                shutil.rmtree(finished_run_dir + '_resumed')
+            os.remove(params_file)

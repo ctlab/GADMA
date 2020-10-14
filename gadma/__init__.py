@@ -49,10 +49,4 @@ from .cli import *  # NOQA
 from .core import *  # NOQA
 from .Inference import *  # NOQA
 
-if moments_available:
-    warnings.filterwarnings("default",
-                            ".*",
-                            UserWarning,
-                            'moments.ModelPlot',
-                            )
 warnings.formatwarning = utils.warning_format
