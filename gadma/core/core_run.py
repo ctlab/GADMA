@@ -398,7 +398,7 @@ class CoreRun(object):
                 restore_files, structures = sort_by_other_list(
                     restore_files, structures, key=lambda x: sum(x))
             else:
-                x_transform = None
+                x_transform = (None, None)
                 if self.settings.generate_x_transform:
                     x_transform = (ident_transform, ident_transform)
                 return (restore_files[0], None,
