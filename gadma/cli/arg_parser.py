@@ -210,8 +210,8 @@ def get_settings():
                                 'symmetric_migrations', 'split_fractions']
             forbiden_settings = ['custom_filename', 'initial_structure']
 
-            def differ_in_element(l):
-                for attr in l:
+            def differ_in_element(attr_list):
+                for attr in attr_list:
                     if getattr(settings_storage, attr) !=\
                             getattr(old_settings, attr):
                         yield attr
