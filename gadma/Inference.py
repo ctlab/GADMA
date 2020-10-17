@@ -42,17 +42,17 @@ def get_claic_score(func_ex, all_boot, p0, data, engine=None, args=(),
 
     :param func_ex: Custom function to evaluate demographic model.
                     Usually it is model_func function from generated code of
-                    GADMA. It is run by calling func_ex(p, ns, *args), where
+                    GADMA. It is run by calling func_ex(p, ns, \*args), where
                     p is values of parameters and ns - sample sizes.
     :param all_boot: List of bootstrapped data for CLAIC evaluation.
-    :param p0: Values of parameters for :param:`func_ex` demographic model.
+    :param p0: Values of parameters for ``func_ex`` demographic model.
     :param data: Original data for CLAIC evaluation. It is data that was used
                  for demographic inference.
     :param engine: Engine id for likelihood evaluations. Could be one of the
                    following:
                    - dadi
                    - moments
-    :param args: Arguments of :param:`func_ex` function.
+    :param args: Arguments of ``func_ex`` function.
     :param eps: Step size for Hessian and gradient calculations. Usually is
                 between 1e-5 and 1e-2. The smaller eps is the more accurate
                 CLAIC value is.
@@ -60,7 +60,7 @@ def get_claic_score(func_ex, all_boot, p0, data, engine=None, args=(),
                 warning is printed.
 
     returns: None if failed to get CLAIC due to singular matrix of Hessian.\
-             Could be solved by increasing value of :param:`eps`.
+             Could be solved by increasing value of ``eps``.
 
     note: There differencies between GADMA v1 and GADMA v2, there is some\
           backward compatibility, but sometimes errors could be raised.
@@ -116,19 +116,19 @@ def optimize_ga(data, model_func, engine, args=(),
                 save_file=None, eval_file=None, report_file=None):
     """
     Runs genetic algorithm optimizer in order to find best values of
-    parameters for :param:`model_func` demographic model from :param:`data`.
+    parameters for ``model_func`` demographic model from ``data``.
 
     :param data: Data for demographic inference.
     :param model_func: Function to use for demographic inference that
-                       simulates SFS to compare it with :param:`data` with
-                       log-likelihood. Is called by model_func(p, ns, *args),
+                       simulates SFS to compare it with ``data`` with
+                       log-likelihood. Is called by model_func(p, ns, \*args),
                        where p is values of parameters, ns - sample size and
                        args - other arguments.
     :param engine: Engine id for demographic inference. Could be one of the
                    following:
                    - 'dadi'
                    - 'moments'
-    :param args: Arguments for :param:`model_func` function. It is `pts` for
+    :param args: Arguments for ``model_func`` function. It is `pts` for
                  `dadi` engine and could be `dt_fac` (or nothing) for
                  `moments` engine.
     :param lower_bound: Lower bound for each demographic parameter.
@@ -158,12 +158,12 @@ def optimize_ga(data, model_func, engine, args=(),
     :type gen_size: int
     :param mut_strength: Mean fraction of parameters for mutation in GA.
     :type mut_strength: float
-    :param const_mut_strength: Const to change :param:`mut_strength` during
+    :param const_mut_strength: Const to change ``mut_strength`` during
                                GA according to one-fifth rule.
     :type const_mut_strength: float
     :param mut_rate: Mean rate of mutation in GA.
     :type mut_rate: float
-    :param const_mut_rate: Const to change :param:`mut_rate` during GA.
+    :param const_mut_rate: Const to change ``mut_rate`` during GA.
     :type const_mut_rate: float
     :param eps: const for model's log likelihood compare.
                 Model is better if its log likelihood is greater than

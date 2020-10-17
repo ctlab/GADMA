@@ -14,9 +14,9 @@ class Variable(object):
     class attributes and :func:`get_bounds`, :func:`get_possible_values`
     methods implemented.
 
-    :cvar default_domain: default domain of the variable.
-    :cvar default_rand_gen: default random generator of the variable. Is
-                            used in :func:`resample` method.
+    :cvar Variable.default_domain: default domain of the variable.
+    :cvar Variable.default_rand_gen: default random generator of the variable.
+                                     Is used in :func:`resample` method.
 
     :param name: unique name of the variable.
     :type name: str
@@ -128,12 +128,13 @@ class DiscreteVariable(Variable):
     :param rand_gen: random generator for the variable, if `None` then
                      :attr:`default_rand_gen` will be taken.
 
-    * :attr:`default_domain` = array([])
-
-    * :attr:`default_rand_gen` = random choice over domain.
     """
     default_domain = np.array([])
-    default_rand_gen = np.random.choice
+    def default_rand_gen(a, size=None, replace=True, p=None):
+        """
+        See documentation of ``numpy.random.choice`` for more information.
+        """
+        return np.random.choice(a, size, replace, p)
 
     def __init__(self, name, domain=None, rand_gen=None):
         if domain is None:
@@ -176,7 +177,7 @@ class PopulationSizeVariable(ContinuousVariable):
 
     * :attr:`default_domain` = array([1e-2, 100])
 
-    * :attr:`default_rand_gen` = truncated log normal distribution over
+    * :attr:`default_rand_gen` = truncated log normal distribution over\
         domain with mean equal to 1.
 
     :note: Values are assumed to be in genetic units.
@@ -190,6 +191,11 @@ class PopulationSizeVariable(ContinuousVariable):
 
 
 def migration_generator(domain):
+    """
+    Generates random value of the migration. With probability of 0.5 generates
+    zero, otherwise runs
+    :func:`gadma.utils.distributions.trunc_normal_sigma_generator`.
+    """
     if 0 == domain[0] and np.random.choice([False, True]):
         return 0
     return trunc_normal_sigma_generator(domain)
@@ -201,8 +207,8 @@ class MigrationVariable(ContinuousVariable):
 
     * :attr:`default_domain` = array([0, 10])
 
-    * :attr:`default_rand_gen` = truncated log normal distribution over
-        domain with mean equal to 1.
+    * :attr:`default_rand_gen` = truncated log normal distribution over\
+      domain with mean equal to 1.
 
     :note: Values are assumed to be in genetic units.
     """
@@ -220,7 +226,7 @@ class TimeVariable(ContinuousVariable):
 
     * :attr:`default_domain` = array([0, 5])
 
-    * :attr:`default_rand_gen` = truncated log normal distribution over
+    * :attr:`default_rand_gen` = truncated log normal distribution over\
         domain with mean equal to 1.
 
     :note: Values are assumed to be in genetic units.
@@ -239,7 +245,7 @@ class SelectionVariable(ContinuousVariable):
 
     * :attr:`default_domain` = array([0, 10])
 
-    * :attr:`default_rand_gen` = truncated log normal distribution over
+    * :attr:`default_rand_gen` = truncated log normal distribution over\
         domain with mean equal to 1.
 
     :note: Values are assumed to be in genetic units.
@@ -275,7 +281,7 @@ class Dynamic(object):
     attribute and implement :func:`_inner_func` (staticmethod),
     :func:`__str__` and :func:`func_str` methods.
 
-    :cvar format_str: format string for string representation of the dynamic.
+    :cvar Dynamic.format_str: format string for string representation of the dynamic.
     """
     format_str = ''
 

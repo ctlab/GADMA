@@ -9,7 +9,12 @@ import sys
 
 def _print_moments_func(model, values, dt_fac):
     """
-    values are needed to fix dynamics of populations.
+    Returns string with function of demographic model for :py:mod:`moments`.
+    Parameter `values` is needed to fix dynamics of populations.
+
+    :param model: Demographic model.
+    :type model: :class:`gadma.models.model.Model`
+    :param values: List of values for parameters of model.
     """
     import moments
     from ..engines import MomentsEngine  # to avoid cross import
@@ -136,6 +141,13 @@ def _print_moments_func(model, values, dt_fac):
 
 
 def _is_fs_via_moments(data_holder):
+    """
+    Check that data is allele frequency spectrum saved for moments.
+
+    :param data_holder: Data holder with data.
+    :type data_holder: :class:`gadma.data.data_holder.DataHolder`
+    """
+
     import moments
     try:
         data = moments.Spectrum.from_file(data_holder.filename)
@@ -162,6 +174,17 @@ def _print_moments_main(engine, values):
 
 
 def print_moments_code(engine, values, dt_fac, filename):
+    """
+    Generates code for `moments` to file. Code have function of demographic
+    model that simulates AFS and main part where simulation takes place as well
+    as calculation of log-likelihood.
+
+    :param engine: Engine that was used with data and model.
+    :param values: Value of model parameters.
+    :param dt_fac: Grid step for moments.
+    :param filename: File to save generated code.
+    """
+
     ret_str = "import moments\nimport numpy as np\n\n"
     ret_str += _print_moments_func(engine.model, values, dt_fac)
     ret_str += "\n"

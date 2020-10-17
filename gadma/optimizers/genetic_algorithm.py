@@ -154,6 +154,10 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
 
     def mutation_by_ind(self, x, variables, index, mutation_type='gaussian',
                         one_fifth_rule=True):
+        """
+        Mutation of `x` in index `index`. For more information see
+        :meth:`mutation`.
+        """
         x_mut = WeightedMetaArray(x, dtype=object)
         var = variables[index]
         # Start mutation procedure
@@ -621,14 +625,14 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                  X_init=None, Y_init=None,
                  linear_constrain=None, maxiter=None, maxeval=None,
                  verbose=0, callback=None, report_file=None, eval_file=None,
-                 save_file=None, restore_file=None, restore_models_only=False,
+                 save_file=None, restore_file=None, restore_points_only=False,
                  restore_x_transform=None):
         """
         Return best values of `variables` that minimizes/maximizes
         the function `f`.
 
         :param f: function to minimize/maximize. The usage must be the
-                  following: f(x, *args), where x is list of values.
+                  following: f(x, \*args), where x is list of values.
         :param variables: list of variables (instances of
                           :class:`gadma.Variable` class) of the function.
         :param X_init: list of initial values.
@@ -692,7 +696,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                 # Y_init and Y_init is in usual units without * sign.
                 Y_gen = [self.sign * f_in_opt(x) for x in X_gen]
                 Y_total = [None for _ in X_total]
-            if not restore_models_only:
+            if not restore_points_only:
                 n_gen = n_gen_old
                 n_impr_gen = n_impr_gen_old
                 self.cur_mut_rate = cur_mut_rate
@@ -791,7 +795,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                     self.cur_mut_rate, self.const_mut_rate, is_impr)
                 self.cur_mut_rate = min(self.cur_mut_rate, 1.0)
             is_mut_best = False
-            if hasattr(x_best, 'weights'):
+            if hasattr(x_best, 'weights') and len(x_best.metadata) > 0:
                 is_mut_best = x_best.metadata[-1] == 'm'
             self.cur_mut_strength = update_by_one_fifth_rule(
                 self.cur_mut_strength, self.const_mut_strength,

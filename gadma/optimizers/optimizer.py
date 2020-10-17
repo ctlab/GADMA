@@ -17,6 +17,10 @@ class Optimizer(object):
     """
     Base class for optimizer. The most important methods:
     :meth:`gadma.optimizers.Optimizer.evaluate` and
+    :meth:`gadma.optimizers.Optimizer.optimize`.
+
+    To create new class for optimizer one should at least implement
+    :meth:`gadma.optimizers.Optimizer.valid_restore_file` and
     :meth:`gadma.optimizers.Optimizer.optimize`
 
     :param log_transform: If True then all parameters are optimized in log
@@ -160,6 +164,16 @@ class Optimizer(object):
             assert isinstance(var, Variable)
 
     def save(self, info, save_file):
+        """
+        Save some information into file. Is supposed to save info during
+        optimization in order to restore it.
+
+        :param info: Information to dump.
+        :param save_file: File to save information.
+
+        :note: if save_file is None then nothing will be done. In base class\
+               method just dumps `info` to `save_file` with `pickle`.
+        """
         if save_file is None:
             return
         if hasattr(self, 'id'):
@@ -177,9 +191,22 @@ class Optimizer(object):
             pickle.dump(info, fl)
 
     def valid_restore_file(self, save_file):
+        """
+        Checks that `save_file` contains valid information and it could be
+        restored from it.
+
+        :param save_file: File to check.
+        """
         raise NotImplementedError
 
     def load(self, save_file):
+        """
+        Loads information that was saved by :meth:`save` method.
+
+        :param save_file: File to restore information from.
+
+        :note: In base class method just loads from `save_file` with pickle.
+        """
         with open(save_file, 'rb') as fl:
             info = pickle.load(fl)
         if hasattr(self, 'id') and isinstance(info, dict):
@@ -187,7 +214,10 @@ class Optimizer(object):
         return info
 
     def optimize(f, variables, args=(), options={}, linear_constrain=None,
-                 maxiter=None):
+                 maxiter=None, maxeval=None, verbose=0, callback=None,
+                 report_file=None, eval_file=None, save_file=None,
+                 restore_file=None, restore_points_only=False,
+                 restore_x_transform=None):
         """
         Run optimization for target function.
 
@@ -199,18 +229,44 @@ class Optimizer(object):
         :type args: tuple
         :param options: Additional options kwargs for optimization.
         :type options: dict
-        :param linear_constrain: Linear constrain on optimized variables.
+        :param linear_constrain: Linear constrain on optimized variables. It is
+                                 optional argument. Could be missed in
+                                 unconstrained optimizers.
         :type linear_constrain: :class:`gadma.optimizers.LinearConstrain`
         :param maxiter: Maximum number of iterations to run. If None then run
                         until converge.
         :type maxiter: int
+        :param maxeval: Maximum number of evaluations to run. If None then run
+                        until converge.
+        :type maxeval: int
+        :param verbose: Verbosity of the output. If 0 then no reports.
+        :type verbose: int
+        :param callback: Callback to run after each iteration of optimization.
+                         Should be called as `callback(x, y)`
+        :type callback: function
+        :param report_file: File to save report. Check option `verbose`.
+        :type report_file: str
+        :param eval_file: File to save all evaluations of the function `f`.
+        :type eval_file: str
+        :param save_file: File to save information during optimization for its
+                          reconstruction.
+        :type save_file: str
+        :param restore_file: File to restore previous run.
+        :type restore_file: str
+        :param restore_points_only: Restore point/points from previous run and
+                                    run optimization from them once more. If
+                                    False then previous run will be resumed.
+        :type restore_points_only: bool
+        :param restore_x_transform: Restore points but transform them before
+                                    usage in this run.
+        :type restore_x_transform: function
         """
         raise NotImplementedError
 
 
 class ContinuousOptimizer(Optimizer):
     """
-    Base class for optimization of continous variables.
+    Base class for optimization of continuous variables.
     """
     def check_variables(self, variables):
         """

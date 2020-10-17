@@ -3,6 +3,11 @@ import copy
 
 
 class VariablePool(list):
+    """
+    Class for list of variables. All variables should have different names.
+
+    :param lst: list of the variables.
+    """
     def __init__(self, lst=None):
         self.names = set()
         if lst is not None:
@@ -10,10 +15,16 @@ class VariablePool(list):
                 self.append(item)
 
     def check_type(self, item):
+        """
+        Raises ValueError if ``item`` is not Variable.
+        """
         if not isinstance(item, Variable):
             raise ValueError(f"Items of VariablePool could be Variables only.")
 
     def append(self, item):
+        """
+        Append new ``item`` to pool.
+        """
         self.check_type(item)
         if item.name not in self.names:
             self.names.add(item.name)
@@ -23,6 +34,9 @@ class VariablePool(list):
                             f"the same name ({item.name}).")
 
     def extend(self, items):
+        """
+        Extend pool with other list.
+        """
         for item in items:
             self.append(item)
 

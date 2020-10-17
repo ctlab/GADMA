@@ -17,7 +17,11 @@ class LocalOptimizer(Optimizer):
     Base class for local optimization.
     See :class:`gadma.optimizers.Optimizer` for more information.
     """
-    def optimize(self, f, variables, x0, args=(), options={}, maxiter=None):
+    def optimize(self, f, variables, x0, args=(), options={}, maxiter=None,
+                 maxeval=None, verbose=0, callback=None,
+                 report_file=None, eval_file=None, save_file=None,
+                 restore_file=None, restore_points_only=False,
+                 restore_x_transform=None):
         """
         Run optimization of local search algorithm.
 
@@ -33,6 +37,30 @@ class LocalOptimizer(Optimizer):
         :type options: dict
         :param maxiter: Maximum number of iterations to run.
         :type maxiter: int
+        :param maxeval: Maximum number of evaluations to run. If None then run
+                        until converge.
+        :type maxeval: int
+        :param verbose: Verbosity of the output. If 0 then no reports.
+        :type verbose: int
+        :param callback: Callback to run after each iteration of optimization.
+                         Should be called as `callback(x, y)`
+        :type callback: function
+        :param report_file: File to save report. Check option `verbose`.
+        :type report_file: str
+        :param eval_file: File to save all evaluations of the function `f`.
+        :type eval_file: str
+        :param save_file: File to save information during optimization for its
+                          reconstruction.
+        :type save_file: str
+        :param restore_file: File to restore previous run.
+        :type restore_file: str
+        :param restore_points_only: Restore point/points from previous run and
+                                    run optimization from them once more. If
+                                    False then previous run will be resumed.
+        :type restore_points_only: bool
+        :param restore_x_transform: Restore points but transform them before
+                                    usage in this run.
+        :type restore_x_transform: function
         """
         raise NotImplementedError
 
@@ -92,7 +120,7 @@ class NoneOptimizer(LocalOptimizer):
     def optimize(self, f, variables, x0, args=(), options={},
                  linear_constrain=None, maxiter=None, maxeval=None,
                  verbose=0, callback=None, eval_file=None, report_file=None,
-                 save_file=None, restore_file=None, restore_models_only=False,
+                 save_file=None, restore_file=None, restore_points_only=False,
                  restore_x_transform=None):
         prepared_f = self.prepare_f_for_opt(f, args, cache=True)
         wrapped_f = eval_wrapper(prepared_f, eval_file)
@@ -103,7 +131,7 @@ class NoneOptimizer(LocalOptimizer):
             if restore_x_transform is not None:
                 x0 = restore_x_transform(x)
                 y = None
-        if restore_file is None or restore_models_only or y is None:
+        if restore_file is None or restore_points_only or y is None:
             y = finally_wrapped_f(x0)
         self.save(x0, y, save_file)
         result = OptimizerResult(x0, y, True, 1, message="SUCCESS",
@@ -119,9 +147,10 @@ class ScipyOptimizer(LocalOptimizer):
     """
     Class of Scipy local search algorithms.
 
-    :cvar scipy_methods: List of methods names that are available.
-    :cvar maxeval_kwarg: List of methods names that support `maxeval`
-                         argument.
+    :cvar ScipyOptimizer.scipy_methods: List of methods names that are
+                                        available.
+    :cvar ScipyOptimizer.maxeval_kwarg: List of methods names that support
+                                        `maxeval` argument.
 
     :param method: name of method from :func:`scipy.optimize.minimize`.
     :type method: str
@@ -196,7 +225,7 @@ class ScipyOptimizer(LocalOptimizer):
     def optimize(self, f, variables, x0, args=(), options={},
                  linear_constrain=None, maxiter=None, maxeval=None,
                  verbose=0, callback=None, eval_file=None, report_file=None,
-                 save_file=None, restore_file=None, restore_models_only=False,
+                 save_file=None, restore_file=None, restore_points_only=False,
                  restore_x_transform=None):
         """
         Run Scipy optimization.
@@ -214,19 +243,30 @@ class ScipyOptimizer(LocalOptimizer):
         :type options: dict
         :param maxiter: Maximum number of iterations to run.
         :type maxiter: int
-        :param maxeval: Maximum number of target function evaluations.
+        :param maxeval: Maximum number of evaluations to run. If None then run
+                        until converge.
         :type maxeval: int
-        :param verbose: Verbosity of reports.
+        :param verbose: Verbosity of the output. If 0 then no reports.
         :type verbose: int
-        :param callback: callback to call after each iteration.
-                        `callback(x_best, y_best)`.
-        :type callback: func
-        :param eval_file: File to save evaluations.
-        :type eval_file: str
-        :param report_file: File to save reports.
+        :param callback: Callback to run after each iteration of optimization.
+                         Should be called as `callback(x, y)`
+        :type callback: function
+        :param report_file: File to save report. Check option `verbose`.
         :type report_file: str
-        :param save_file: File to dump current state after each iteration.
+        :param eval_file: File to save all evaluations of the function `f`.
+        :type eval_file: str
+        :param save_file: File to save information during optimization for its
+                          reconstruction.
         :type save_file: str
+        :param restore_file: File to restore previous run.
+        :type restore_file: str
+        :param restore_points_only: Restore point/points from previous run and
+                                    run optimization from them once more. If
+                                    False then previous run will be resumed.
+        :type restore_points_only: bool
+        :param restore_x_transform: Restore points but transform them before
+                                    usage in this run.
+        :type restore_x_transform: function
         """
         self.check_variables(variables)
         # Create logging files
@@ -242,7 +282,7 @@ class ScipyOptimizer(LocalOptimizer):
             x0, _y, _n_iter, _n_eval, is_finished = self.load(restore_file)
             if restore_x_transform is not None:
                 x0 = restore_x_transform(x0)
-            if restore_models_only:
+            if restore_points_only:
                 if maxiter is not None:
                     maxiter -= _n_iter
                 if maxeval is not None and _n_eval is not None:
@@ -434,7 +474,7 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
     def optimize(self, f, variables, x0, args=(), options={},
                  linear_constrain=None, maxiter=None, maxeval=None,
                  verbose=0, callback=None, eval_file=None, report_file=None,
-                 save_file=None, restore_file=None, restore_models_only=False,
+                 save_file=None, restore_file=None, restore_points_only=False,
                  restore_x_transform=None):
         self.check_variables(variables)
         x0 = np.array(x0, dtype=np.float)
@@ -460,7 +500,7 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
 
         if callback is not None:
             callback = self.prepare_callback(callback)
-        models_only = restore_models_only
+        points_only = restore_points_only
         x_transf = restore_x_transform
         result = self.optimizer.optimize(f_in_opt, vars_in_opt, x0_in_opt,
                                          args=(bounds,), options=options,
@@ -472,7 +512,7 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
                                          report_file=None,
                                          save_file=save_file,
                                          restore_file=restore_file,
-                                         restore_models_only=models_only,
+                                         restore_points_only=points_only,
                                          restore_x_transform=x_transf)
         # TODO: need to check result.X as they should be transformed somehow.
         result.x = self.inv_transform(result.x)

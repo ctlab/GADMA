@@ -45,8 +45,13 @@ def usage():
 
 
 class ArgParser(argparse.ArgumentParser):
-
+    """
+    Overrided class for argument parser.
+    """
     def format_help(self):
+        """
+        Returns usage by calling :func:`usage`.
+        """
         return usage()
 
 
@@ -71,6 +76,8 @@ def test_args():
 def get_settings():
     '''
     Parse args from command line and store them in options_storage.
+
+    :returns: tuple of parsed arguments and settings storage.
     '''
     usage = str(sys.argv[0]) + " -p <params_file>"
 

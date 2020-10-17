@@ -41,7 +41,20 @@ DEPRECATED_IDENTIFIERS = ["multinom", "verbose", "flush_delay",
 
 
 class SettingsStorage(object):
+    """
+    Class to hold all settings of GADMA run. All default values of settings
+    are defined in :mod:`gadma.cli.settings`.
+    """
     def __setattr__(self, name, value):
+        """
+        Sets attribute. The default values of all attributes are in
+        :mod:`gadma.cli.settings`. If value is equal to default no checks are
+        done. Otherwise value is checked at least for type. If name is not
+        known setting then error is raised.
+
+        :param name: Name of attribute.
+        :param value: Value of the attribute.
+        """
         int_attrs = ['stuck_generation_number', 'sequence_length', 'verbose',
                      'print_models_code_every_n_iteration', 'n_elitism',
                      'draw_models_every_n_iteration', 'size_of_generation',
@@ -558,6 +571,10 @@ class SettingsStorage(object):
         return fracs
 
     def read_data(self):
+        """
+        Reads data with engine. Attribute of`engine` and `data_holder` should
+        be set.
+        """
         engine = get_engine(self.engine)
         data = engine.read_data(self.data_holder)
         self.projections = data.sample_sizes
@@ -573,6 +590,12 @@ class SettingsStorage(object):
         return data
 
     def read_bootstrap_data(self, return_filenames=False):
+        """
+        Reads all data in the directory `self.bootstrap_data`.
+
+        :param return_filenames: If True then each data is a tuple of
+                                 corresponding filename and data.
+        """
         if self.directory_with_bootstrap is None:
             return
         if (not hasattr(self, '_inner_data') and
@@ -617,6 +640,12 @@ class SettingsStorage(object):
         return self._bootstrap_data
 
     def update_from_file(self, param_file, extra_param_file=None):
+        """
+        Updates settings by reading new from files.
+
+        :param param_file: File with base parameters.
+        :param extra_param_file: File with extra parameters.
+        """
         # Load all values
         if param_file is None and extra_param_file is None:
             return self
@@ -657,10 +686,22 @@ class SettingsStorage(object):
 
     @staticmethod
     def from_file(param_file, extra_param_file=None):
+        """
+        Creates new object with settings from files.
+
+        :param param_file: File with base parameters.
+        :param extra_param_file: File with extra parameters.
+        """
         obj = SettingsStorage()
         return obj.update_from_file(param_file, extra_param_file)
 
     def to_files(self, params_file, extra_params_file):
+        """
+        Saves current options to files.
+
+        :param params_file: File with base parameters.
+        :param extra_param_file: File with extra parameters.
+        """
         # TODO comments with default values
         known_missed_attrs = ['data_holder', 'model_func',
                               'const_of_time_in_drawing', 'bootstrap_data',
@@ -742,6 +783,10 @@ class SettingsStorage(object):
             fl.write(ruamel.yaml.dump(final_dict, default_flow_style=False))
 
     def get_global_optimizer(self):
+        """
+        Return object of global optimizer for optimization according to current
+        settings.
+        """
         # bo = get_global_optimizer("Bayesian_optimization")
         # bo.log_transform = True
         # bo.maximize = True
@@ -765,6 +810,10 @@ class SettingsStorage(object):
         return ga
 
     def get_local_optimizer(self):
+        """
+        Return object of local optimizer for optimization according to current
+        settings.
+        """
         ls = get_local_optimizer(self.local_optimizer)
         ls.maximize = True
         return ls
@@ -793,6 +842,9 @@ class SettingsStorage(object):
 #                                           engine, self.get_engine_args())
 
     def get_optimizers_kwargs(self):
+        """
+        Returns kwargs for optimizations. (`args` and `verbose`).
+        """
         kwargs = {}
         kwargs['args'] = self.get_engine_args()
         kwargs['verbose'] = self.verbose
@@ -800,9 +852,15 @@ class SettingsStorage(object):
         return kwargs
 
     def get_optimizers_init_kwargs(self):
+        """
+        Returns kwargs for first run of optimization. (`X_init` and `Y_init`).
+        """
         return {'X_init': self.X_init, 'Y_init': self.Y_init}
 
     def get_engine_args(self, engine_id=None):
+        """
+        Returns `args` of :func:`engine.evaluate` function.
+        """
         if engine_id is None:
             engine_id = self.engine
         if engine_id == 'dadi':
@@ -812,6 +870,10 @@ class SettingsStorage(object):
         return args
 
     def get_linear_constrain_for_model(self, model):
+        """
+        Returns linear constrain for model based of setted upper bound of
+        splits. NOT WORKING.
+        """
         if (self.upper_bound_of_first_split is None and
                 self.upper_bound_of_second_split is None):
             return None
@@ -829,6 +891,9 @@ class SettingsStorage(object):
         return LinearConstrain(np.array(A), np.array(lb), np.array(ub))
 
     def get_model(self):
+        """
+        Returns demographic model to use according to current settings.
+        """
         gen_time = self.time_for_generation
         theta0 = self.theta0
         mut_rate = self.mutation_rate

@@ -15,13 +15,13 @@ import numpy as np
 
 def draw_plots_to_file(x, engine, settings, filename, fig_title):
     """
-    Draws plots of data (SFS) and model from :param:`engine` with parameters
-    :param:`x`.
+    Draws plots of data (SFS) and model from ``engine`` with parameters
+    ``x``.
 
     :param x: Values of the parameters in model.
     :type x: list or dict
     :param engine: Engine with specified model and data.
-    :type engine: :class:`Engine`
+    :type engine: :class:`gadma.engines.engine.Engine`
     :param filename: File name to save picture.
     :type filename: str
     :param fig_title: Title of the schematic model plot.
@@ -104,6 +104,19 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
 
 
 def generate_code_to_file(x, engine, settings, filename):
+    """
+    Generates code of demographic model to file. Settings are required to get
+    ``engine`` arguments in :func:`evaluation` function.
+
+    :param x: Values of the parameters in model.
+    :type x: list or dict
+    :param engine: Engine with specified model and data.
+    :type engine: :class:`gadma.engines.engine.Engine`
+    :param settings: Settings of the run.
+    :type settings: :class:`gadma.cli.settings_storage.SettingsStorage`
+    :param filename: File name to save picture.
+    :type filename: str
+    """
     pos = filename.rfind('.')
     if pos == -1 or filename[pos:] != '.py':
         pos = len(filename)
@@ -123,14 +136,15 @@ def generate_code_to_file(x, engine, settings, filename):
 
 
 def print_runs_summary(start_time, shared_dict, settings):
-    """Prints best demographic model by logLL among all processes.
+    """
+    Prints best demographic model by logLL among all processes.
 
     :param start_time: Time when equation was started.
     :type start_time: float
     :param shared_dict: Dictionary to share information between processes.
-    :type shared_dict: :class:`gadma.core.SharedDict`
+    :type shared_dict: :class:`gadma.core.shared_dict.SharedDict`
     :param settings: Settings of run.
-    :type settings: :class:`gadma.cli.SettingsStorage`
+    :type settings: :class:`gadma.cli.settings_storage.SettingsStorage`
     """
     s = (datetime.now() - start_time).total_seconds()
     time_str = f"\n[{int(s//3600):03}:{int(s%3600//60):02}:{int(s%60):02}]"

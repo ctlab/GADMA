@@ -26,6 +26,18 @@ SUPPORT_STRING = "\nIn case of any questions or problems, "\
 
 
 def job(index, shared_dict, settings):
+    """
+    Function of one parallel run of GADMA. Creates
+    :class:`gadma.core.core_run.CoreRun` object and call its :meth:`run`
+    method.
+
+    :param index: Index of the run.
+    :type index: int
+    :param shared_dict: Shared dict between all runs.
+    :type shared_dict: :class:`gadma.core.shared_dict.SharedDictForCoreRun`
+    :param settings: Settings of the run.
+    :type settings: :class:`gadma.cli.settings_storage.SettingsStorage`
+    """
     try:
         obj = CoreRun(index, shared_dict, settings)
         obj.run(settings.get_optimizers_init_kwargs())
@@ -37,6 +49,11 @@ def job(index, shared_dict, settings):
 
 
 def main():
+    """
+    Main function that is called from command line. Creates parallel runs of
+    GADMA and holds base pool of processes. Prints progress periodically for
+    each run, saves plots and pictures of best model and generates code.
+    """
     settings_storage, args = arg_parser.get_settings()
 
     # Form output directory

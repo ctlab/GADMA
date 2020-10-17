@@ -3,6 +3,9 @@ import numpy as np
 
 
 def my_dot(A_i, x):
+    """
+    Implemented easy version of multiplication of two vectors (row and column).
+    """
     res = 0
     for _a, _x in zip(A_i, x):
         if _a != 0:
@@ -11,15 +14,32 @@ def my_dot(A_i, x):
 
 
 class LinearConstrain(object):
+    """
+    Class containing linear constrain. `lb <= A*x <= ub`
+
+    :param A: Matrix.
+    :param lb: Lower bound.
+    :param ub: Upper bound.
+    """
     def __init__(self, A, lb, ub):
         lb = np.nan_to_num(np.array(lb, dtype=np.float), nan=-np.inf)
         ub = np.nan_to_num(np.array(ub, dtype=np.float), nan=np.inf)
         self.constrain = scipy.optimize.LinearConstraint(np.array(A), lb, ub)
 
     def _get_value(self, x):
+        """
+        Multiply matrix A by `x`.
+
+        :param x: Vector.
+        """
         return np.array([my_dot(A_i, x) for A_i in self.constrain.A])
 
     def fits(self, x):
+        """
+        Checks that `x` is good for constrain.
+
+        :param x: Vector to check that `lb <= A*x <=ub`.
+        """
         Ax = self._get_value(x)
         lb = self.constrain.lb
         ub = self.constrain.ub
@@ -27,6 +47,17 @@ class LinearConstrain(object):
                 np.all(np.logical_or(Ax < ub, np.isclose(Ax, ub))))
 
     def try_to_transform(self, x):
+        """
+        Try to transform x to fit the constrain.
+        Current implementation go through each pair of bounds and if `x`
+        multiplied by the corresponding column of `A` does not fit bounds then
+        values of `x` that take part in this constrain are changed so that
+        they fit the bounds.
+
+        :param x: Vector to change.
+
+        :returns: transformed x and bool if transformation was successful.
+        """
         x_tr = np.array(x)
         for A_i, lb_i, ub_i in zip(self.constrain.A,
                                    self.constrain.lb, self.constrain.ub):
@@ -67,6 +98,9 @@ class LinearConstrain(object):
         self.constrain.A = new_value
 
     def __str__(self):
+        """
+        String representation of constrain.
+        """
         lb_size = 0
         ub_size = 0
         A_size = 0

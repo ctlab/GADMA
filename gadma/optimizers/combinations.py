@@ -10,6 +10,17 @@ from ..utils import DiscreteVariable, sort_by_other_list
 
 
 class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
+    """
+    Class for run of global optimizer followed by local optimizer. It is
+    classified as global optimizer with constrains. Function :meth:`optimize`
+    got function and variables, runs global optimizer then filter discrete
+    variables out and optimize the rest with local optimizer.
+
+    :param global_optimizer: Global optimizer to use inside.
+    :type global_optimizer: :class:`gadma.optimizers.GlobalOptimizer`
+    :param local_optimizer: Local optimizer to use inside.
+    :type local_optimizer: :class:`gadma.optimizers.LocalOptimizer`
+    """
     def __init__(self, global_optimizer, local_optimizer):
         self.global_optimizer = global_optimizer
         self.local_optimizer = local_optimizer
@@ -27,16 +38,33 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
     @staticmethod
     def _get_filter(variables):
+        """
+        Returns filter to filter out discrete variables for local optimizer.
+        Returns numpy array of bools.
+
+        :param variables: List of Variables to get filter for.
+        """
         is_not_discrete = [not isinstance(var, DiscreteVariable)
                            for var in variables]
         return np.array(is_not_discrete, dtype=bool)
 
     def _transform_x(self, x, base_x, is_filtered):
+        """
+        Transforms vector `x` back from local optimizer according to filter.
+
+        :param x: Vector from local optimizer.
+        :param base_x: Base vector from global optimizer that have fixed values
+                       that were filtered out.
+        :param is_filtered: Filter that was used on `base_x`.
+        """
         full_x = np.array(base_x)
         full_x[is_filtered] = x
         return full_x
 
     def _f_for_local_opt(self, f, variables, x_best):
+        """
+        Transforms objective function to take vectors from local optimization.
+        """
         is_filtered = self._get_filter(variables)
 
         @wraps(f)
@@ -46,6 +74,9 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         return wrapper
 
     def _callback_for_local_opt(self, callback, variables, x_best):
+        """
+        Transforms callback function to take vectors from local optimization.
+        """
         if callback is None:
             return None
         is_filtered = self._get_filter(variables)
@@ -63,8 +94,63 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                  global_maxeval=None, local_maxeval=None,
                  verbose=0, callback=None, eval_file=None,
                  report_file=None, save_file=None,
-                 restore_file=None, restore_models_only=False,
+                 restore_file=None, restore_points_only=False,
                  global_x_transform=None, local_x_transform=None):
+        """
+        :param f: Objective function.
+        :type f: func
+        :param variables: List of objective function variables.
+        :type variables: list of class:`gadma.utils.VariablesPool`
+        :param args: Arguments of `f`.
+        :type args: tuple
+        :param global_num_init: Number of initial points for global optimizer.
+        :type global_num_init: int
+        :param X_init: List of initial vectors.
+        :type X_init: list
+        :param Y_init: List of values of target function on points of `X_init`.
+        :type Y_init: list
+        :param local_options: Options for local optimizer.
+        :type local_options: dict
+        :param linear_constrain: Linear constrain on variables.
+        :type linear_constrain: :class:`gadma.optimizers.LinearConstrain`
+        :param global_maxiter: Maximum number of global optimizer iterations
+                               to run.
+        :type global_maxiter: int
+        :param global_maxeval: Maximum number of function evaluation during
+                               global optimization.
+        :type global_maxeval: int
+        :param local_maxiter: Maximum number of local optimizer iterations
+                              to run.
+        :type local_maxiter: int
+        :param local_maxeval: Maximum number of function evaluation during
+                              local optimization.
+        :type local_maxeval: int
+        :param verbose: Varbosity of reports. If 0 then no output.
+        :type verbose: int
+        :param callback: callback to run after each iteration of both
+                         optimizers.
+        :type callback: func
+        :param eval_file: File to save of objective function evaluations.
+        :type eval_file: str
+        :param report_file: File to save report each `verbose` iteration. If
+                            None and `verbose` > 0 then report will be printed
+                            to stdout.
+        :type report_file: str
+        :param save_file: File to save information during the run.
+        :type save_file: str
+        :param restore_file: File to restore previous run that was saved by
+                             :meth:`save` method.
+        :type restore_file: str
+        :param restore_points_only: Restore run last results and run again from
+                                    it.
+        :type restore_points_only: bool
+        :param global_x_transform: Transformation of vectors after restore
+                                   before run of global optimizer.
+        :type global_x_transform: func
+        :param local_x_transform: Transformation of vectors after restore
+                                  before run of local optimizer.
+        :type local_x_transform: bool
+        """
         if report_file:
             stream = open(report_file, 'a')
         else:
@@ -86,7 +172,7 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                                                        report_file, eval_file,
                                                        save_file,
                                                        restore_file,
-                                                       restore_models_only,
+                                                       restore_points_only,
                                                        global_x_transform)
         if report_file:
             stream = open(report_file, 'a')
@@ -124,7 +210,7 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                                                      eval_file, report_file,
                                                      save_file,
                                                      restore_file,
-                                                     restore_models_only,
+                                                     restore_points_only,
                                                      local_x_transform)
         # Create result
         success = local_result.success

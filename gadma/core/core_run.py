@@ -20,16 +20,19 @@ class CoreRun(object):
     """
     Class of main run in GADMA.
     Has a :meth:`run` method to start launch.
+    Runs creates new directory named by its `index` in the output directory
+    then all log, code and pictures will be saved there. AIC and CLAIC is
+    calculated here.
 
     :param index: Index of the run. Like id.
     :type index: int
     :param shared_dict: Dictionary to save results in callbacks. Will be saved
-                        with key equal to :param:`index`. Is used for
+                        with key equal to `index`. Is used for
                         multiprocessing cooperation.
-    :type shared_dict: dict
+    :type shared_dict: :class:`gadma.cor.shared_dict.SharedDictForCoreRun`
     :param settings: Settings of the run. Information to form output directory
                      and so on will be taken from settings.
-    :type settings: :class:`gadma.SettingsStorage`
+    :type settings: :class:`gadma.cli.settings_storage.SettingsStorage`
     """
     REPORT_FILENAME = 'GADMA_GA.log'
     EVAL_FILENAME = 'eval_file'
@@ -107,19 +110,31 @@ class CoreRun(object):
 
     @property
     def model(self):
+        """
+        Returns current demographic model.
+        """
         return self._model
 
     @model.setter
     def model(self, model):
+        """
+        Sets new demographic model and updates model in the engine.
+        """
         self._model = model
         self.engine.set_model(model)
 
     @property
     def data(self):
+        """
+        Returns current data.
+        """
         return self._data
 
     @data.setter
     def data(self, data):
+        """
+        Sets new data and updates data in the engine.
+        """
         self._data = data
         self.engine.set_data(data)
 
@@ -128,9 +143,11 @@ class CoreRun(object):
         Base callback:
 
         1) Updates values of best solution in :attr:`shared_dict`.
+        2) If new best values are received then draws and generates code to\
+        the `output_dir` of this run.
 
-        2)If new values are received then draws and generates code to the
-        :attr:`output_dir`.
+        :param x: Vector of values for model parameters.
+        :param y: Value of log-likelihood for this values.
         """
         best_by = 'log-likelihood'
         if self.aic_score:
@@ -159,8 +176,12 @@ class CoreRun(object):
     def draw_iter_callback(self, x, y):
         """
         Draws best model on current iteration in the pictures directory.
-        It happens every :attr:`self.settings.draw_models_every_n_iteration`
-        iteration.
+        Pictures directory is located in the output directory of this run.
+        Drawing happens every
+        :attr:`self.settings.draw_models_every_n_iteration` iteration.
+
+        :param x: Vector of values for model parameters.
+        :param y: Value of log-likelihood for this values.
         """
         n_iter = self.draw_iter_callback_counter
         verbose = self.settings.draw_models_every_n_iteration
@@ -176,8 +197,12 @@ class CoreRun(object):
     def code_iter_callback(self, x, y):
         """
         Generates code of best model on current iteration to the code
-        directory. It happens every
+        directory. Code directory is located in the output directory of this
+        run. Generation happens every
         :attr:`self.settings.print_models_code_every_n_iteration` iteration.
+
+        :param x: Vector of values for model parameters.
+        :param y: Value of log-likelihood for this values.
         """
         n_iter = self.code_iter_callback_counter
         verbose = self.settings.print_models_code_every_n_iteration
@@ -200,7 +225,16 @@ class CoreRun(object):
 
     def callback(self, x, y):
         """
-        Main callback for optimizers to get.
+        Main callback for optimizers to get. It is combination of three
+        callbacks:
+
+        1) :meth:`base_callback`
+        2) :meth:`draw_iter_callback`
+        3) :meth:`code_iter_callback`
+
+        :param x: Vector of values for model parameters.
+        :param y: Value of log-likelihood for this values.
+
         """
         self.base_callback(x, y)
         try:
@@ -218,6 +252,10 @@ class CoreRun(object):
         optimization.
 
         Saves AIC and CLAIC values in the :attr:`shared_dict` if needed.
+        If new best by AIC or CLAIC vector then code and picture are generated.
+
+        :param x: Vector of values for model parameters.
+        :param y: Value of log-likelihood for this values.
         """
         if self.aic_score:
             best_by = "AIC score"
@@ -274,6 +312,17 @@ class CoreRun(object):
 
     def draw_model_in_output_dir(self, x, y,
                                  best_by='log-likelihood', final=True):
+        """
+        Draws picture of demographic model with `x` as parameters to the
+        output directory of run.
+
+        :param x: Vector of values for model parameters.
+        :param y: Value of log-likelihood for this values.
+        :param best_by: By what function (log-likelihood, AIC, CLAIC) this
+                        colution is best.
+        :param final: If True then solution is final and it will be saved by
+                      `final` name.
+        """
         fig_title = f"Best by {best_by} model. {best_by}: {y: .2f}"
         if final:
             prefix = self.settings.LOCAL_OUTPUT_DIR_PREFIX_FINAL
@@ -293,19 +342,12 @@ class CoreRun(object):
         except Exception as e:
             pass
 
-    def get_restore_file(self):
-        if self.settings.restore_from is None:
-            return None, False
-        suffix = ""
-        if isinstance(self.model, StructureDemographicModel):
-            suffix = "_".join([str(x) for x in self.model.get_structure()])
-            suffix = "_" + suffix
-        restore_file = os.path.join(self.settings.restore_from, self.index,
-                                    self.SAVE_FILENAME + suffix)
-        gs_valid = self.global_optimizer.valid_restore_file(restore_file)
-        ls_valid = self.local_optimizer.valid_restore_file(restore_file)
-
     def get_save_file(self):
+        """
+        Returns filename to save optimization run. If demographic model does
+        not have structure then returns `self.save_file` else adds suffix about
+        structure at the end of `self.save_file`.
+        """
         if isinstance(self.model, StructureDemographicModel):
             suffix = "_".join([str(x) for x in self.model.get_structure()])
             suffix = "_" + suffix
@@ -313,14 +355,22 @@ class CoreRun(object):
         return self.save_file
 
     def run_without_increase(self, initial_kwargs={}):
+        """
+        Run one launch without any increase of demographic model structure.
+        Runs one global+local optimization for the current model.
+
+        :param initial_kwargs: Initial kwargs for optimization.
+        """
         np.random.seed()
         self.optimize_kwargs['callback'] = self.callback
         self.optimize_kwargs['save_file'] = self.get_save_file()
         # We set some kwargs if they were not set in run_with_increase
         if self.settings.initial_structure is None:
-            restore_file, _, only_models, x_transform = self.get_run_options()
+            options = list(self.get_run_options())
+            assert len(options) > 0
+            restore_file, _, only_models, x_transform = options[0]
             self.optimize_kwargs['restore_file'] = restore_file
-            self.optimize_kwargs['restore_models_only'] = only_models
+            self.optimize_kwargs['restore_points_only'] = only_models
             self.optimize_kwargs['global_x_transform'] = x_transform[0]
             self.optimize_kwargs['local_x_transform'] = x_transform[1]
         f = self.engine.evaluate
@@ -335,12 +385,21 @@ class CoreRun(object):
         return result
 
     def run_with_increase(self, initial_kwargs={}):
+        """
+        Run launch with increase of the demographic model structure.
+        Structure of the model will be increased up to final structure. Then
+        the final solution will be returned.
+        Runs :meth:`run_without_increase` and ``increase_structure()`` in the
+        loop.
+
+        :param initial_kwargs: Initial kwargs for optimization.
+        """
         np.random.seed()
         # Simple checks
         assert self.settings.initial_structure is not None
         assert self.settings.final_structure is not None
 
-        options = zip(*self.get_run_options())
+        options = self.get_run_options()
 
         restore_file, struct, only_models, x_transform = next(options)
         if struct is not None and struct != self.model.get_structure():
@@ -351,7 +410,7 @@ class CoreRun(object):
             self.settings.initial_structure = struct
             self.model = self.model.from_structure(struct)
         self.optimize_kwargs['restore_file'] = restore_file
-        self.optimize_kwargs['restore_models_only'] = only_models
+        self.optimize_kwargs['restore_points_only'] = only_models
         self.optimize_kwargs['global_x_transform'] = x_transform[0]
         self.optimize_kwargs['local_x_transform'] = x_transform[1]
 
@@ -365,14 +424,26 @@ class CoreRun(object):
             self.optimize_kwargs['X_init'] = X_init
             self.optimize_kwargs['Y_init'] = Y_init
             self.optimize_kwargs['restore_file'] = restore_file
-            self.optimize_kwargs['restore_models_only'] = only_models
+            self.optimize_kwargs['restore_points_only'] = only_models
             self.optimize_kwargs['global_x_transform'] = x_transform[0]
             self.optimize_kwargs['local_x_transform'] = x_transform[1]
             result = self.run_without_increase()
 #        self.final_callback()
         return result
 
-    def get_run_options(self, initial_kwargs={}):
+    def get_run_options(self):
+        """
+        Returns iterator of run options, each element has four options:
+
+        1) File to restore optimization from. If None then no resume.
+        2) Structure of the demographic model for the run.
+        3) Bool `points_only` - if True then resumed run uses old points as\
+        initial points only and optimization is run from the beginning.
+        4) Function of x transformation - for case when restored vectors\
+        should be transformed somehow before they will be used in the\
+        optimization.
+
+        """
         restore_files = []
         only_models = []
         structures = []
@@ -420,7 +491,7 @@ class CoreRun(object):
                 structures.append(structures[-1])
 
         if self.settings.initial_structure is None:
-            return None, None, False, (None, None)
+            return iter([(None, None, False, (None, None))])
 
         final_sum = sum(self.settings.final_structure)
         initial_sum = sum(self.settings.initial_structure)
@@ -442,9 +513,9 @@ class CoreRun(object):
             else:
                 structure = structures[i]
             if i >= len(only_models):
-                restore_models_only = False
+                restore_points_only = False
             else:
-                restore_models_only = only_models[i]
+                restore_points_only = only_models[i]
             if not self.settings.generate_x_transform:
                 gs_x_transform = None
                 ls_x_transform = None
@@ -465,11 +536,16 @@ class CoreRun(object):
 
             res_files.append(restore_file)
             res_strct.append(structure)
-            res_bools.append(restore_models_only)
+            res_bools.append(restore_points_only)
             res_trans.append((gs_x_transform, ls_x_transform))
-        return res_files, res_strct, res_bools, res_trans
+        return zip(res_files, res_strct, res_bools, res_trans)
 
     def run(self, initial_kwargs={}):
+        """
+        Main method of the class to run optimization. Runs
+        :meth:`run_without_increase` or :meth:`run_with_increase` according to
+        `settings`.
+        """
         print(f'Run launch number {self.index}\n', end='')
         if self.settings.initial_structure is None:
             result = self.run_without_increase(initial_kwargs)

@@ -8,6 +8,9 @@ import copy
 
 
 def logarithm_transform(x):
+    """
+    Transforms ``x`` by applying ``numpy.log`` on it.
+    """
     if isinstance(x, (int, float, np.integer, np.float)):
         x = [x]
     if not isinstance(x, (list, np.ndarray)):
@@ -18,6 +21,9 @@ def logarithm_transform(x):
 
 
 def exponent_transform(x):
+    """
+    Transforms ``x`` by applying ``numpy.exp`` on it.
+    """
     if isinstance(x, (int, float, np.integer, np.float)):
         x = [x]
     if not isinstance(x, (list, np.ndarray)):
@@ -28,15 +34,18 @@ def exponent_transform(x):
 
 
 def ident_transform(x):
+    """
+    Identical transform. Just returns ``x``.
+    """
     return x
 
 
 def choose_by_weight(X, weights, nsample):
     """
-    Choose `nsample` samples from `X` according to `weights`.
+    Choose ``nsample`` samples from ``X`` according to ``weights``.
     The greater weight is the greater the probability to choose sample is.
 
-    Note: if weights is None then choice will be uniform
+    :note: if weights is None then choice will be uniform
     """
     if weights is None:
         weights = np.ones(len(X))
@@ -47,7 +56,7 @@ def choose_by_weight(X, weights, nsample):
 
 def sort_by_other_list(x, y, reverse=False, key=None):
     """
-    Sort x and y according to values in y.
+    Sort ``x`` and ``y`` according to values in ``y``.
     """
     def ident(x):
         return x
@@ -60,8 +69,10 @@ def sort_by_other_list(x, y, reverse=False, key=None):
 def fix_args(f, *args):
     """
     Fixes argumets of function.
-    :param f: function such that f(x, *args)
-    :param args: tuple of function arguments.
+
+    :param f: Function such that f(x, \*args)
+    :param args: Tuple of function arguments.
+
     :returns: function that will take only x as argument.
     """
     @wraps(f)
@@ -71,6 +82,10 @@ def fix_args(f, *args):
 
 
 class CacheInfo(object):
+    """
+    Class for keeping cache info like one from ``functools.lru_cache``
+    cache_info.
+    """
     def __init__(self):
         self.hits = 0
         self.misses = 0
@@ -167,7 +182,8 @@ def eval_wrapper(f, eval_file=None):
     """
     Returns good function for optimization. Each evaluation of function will
     be written in file. If needed function will be cached.
-    :param f: function. Is called as f(x, *args).
+
+    :param f: function. Is called as f(x, \*args).
     :param args: tuple of arguments.
     :param eval_file: file to write evaluations.
     :param cache: if True then function will be cached.
@@ -199,7 +215,13 @@ def eval_wrapper(f, eval_file=None):
 
 
 class WeightedMetaArray(np.ndarray):
-    """Array with metadata."""
+    """
+    Array with metadata.
+
+    :param array: array to keep.
+    :param dtype: dtype of elements of the array.
+    :param order: see ``numpy.ndarray`` for more information.
+    """
     def __new__(cls, array, dtype=None, order=None):
         obj = np.asarray(np.array(array, dtype=object),
                          dtype=dtype, order=order).view(cls)
@@ -225,26 +247,32 @@ class WeightedMetaArray(np.ndarray):
             return super_str + '\t' + self.metadata
         return super_str
 
-    def serialize(self):
-        return (self, self.weights, self.metadata)
-
-    def deserialize(self, data):
-        self = WeightedMetaArray(data[0])
-        self.weights = data[1]
-        self.metadata = data[2]
+#    def serialize(self):
+#        return (self, self.weights, self.metadata)
+#
+#    def deserialize(self, data):
+#        self = WeightedMetaArray(data[0])
+#        self.weights = data[1]
+#        self.metadata = data[2]
 
 
 def list_with_weights_for_pickle(X):
+    """
+    Transforms elements of ``X`` to pickle it.
+    """
     new_X = list()
     for x in X:
         if isinstance(x, WeightedMetaArray):
-            new_X.append(x.serialize())
+            new_X.append((x, x.weights, x.metadata))
         else:
             new_X.append(x)
     return new_X
 
 
 def list_with_weights_after_pickle(X):
+    """
+    Transforms back pickles version of ``X``.
+    """
     new_X = list()
     for x in X:
         if isinstance(x, tuple):
@@ -258,6 +286,14 @@ def list_with_weights_after_pickle(X):
 
 
 def update_by_one_fifth_rule(value, const, was_improved):
+    """
+    Updates ``value`` according to 'one-fifth' rule and ``const``. Used in
+    genetic algorithm.
+
+    :param value: Value to change.
+    :param const: Const for rule.
+    :param was_improved: Bool if fitness was improved or not.
+    """
     if was_improved:
         return value * const
     return value / (const) ** (0.25)
@@ -293,6 +329,9 @@ def ensure_dir_existence(path_to_dir, check_emptiness=False):
 
 
 class StdAndFileLogger(object):
+    """
+    Logger for printing output both in file and stdout.
+    """
     def __init__(self, log_filename, silent=False):
         self.terminal = sys.stdout
         self.log_filename = log_filename
@@ -315,12 +354,27 @@ class StdAndFileLogger(object):
 
 
 def get_aic_score(n_params, log_likelihood):
+    """
+    Returns AIC score.
+
+    :param n_params: Number of parameters of model.
+    :param log_likelihood: Value of log likelihood.
+    """
     return 2 * n_params - 2 * log_likelihood
 
 
 def get_claic_score(engine, x0, boots,
                     args=(), log_likelihood=None, return_eps=False):
-    """Calculate CLAIC score for the model."""
+    """
+    Calculate CLAIC score for the model.
+
+    :param engine: Engine with model and data.
+    :param x0: Parameters of the model.
+    :param boots: Bootstrap data.
+    :params args: Arguments for engine's ``evaluate`` function.
+    :params log_likelihood: Value of log-likelihood for ``x0``.
+    :params return_eps: If True then tuple (CLAIC, eps) is returned.
+    """
     if log_likelihood is None:
         log_likelihood = engine.evaluate(x0, *args)
     eps = 1e-5

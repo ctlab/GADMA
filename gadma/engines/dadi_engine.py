@@ -152,7 +152,7 @@ class DadiEngine(DadiOrMomentsEngine):
         :type nref: int
         :param gen_type: Time of one generation.
         :type gen_type: float
-        :param gen_time_units: Units of :param:`gen_type`. For example, it
+        :param gen_time_units: Units of `gen_type`. For example, it
                                could be Years, Generations, Thousand Years and
                                so on.
         """

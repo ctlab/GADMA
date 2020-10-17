@@ -43,10 +43,16 @@ def trunc_lognormal_3_sigma_rule(mean, lower, upper):
 
 # Random generators
 def uniform_generator(domain):
+    """
+    Uniform generator. Runs ``numpy.random.uniform`` on ``domain``.
+    """
     return np.random.uniform(domain[0], domain[1])
 
 
 def trunc_lognormal_sigma_generator(domain):
+    """
+    Generator for :func:`trunc_lognormal_3_sigma_rule`
+    """
     lower = domain[0]
     if domain[0] == 0:
         lower = 1e-15
@@ -59,6 +65,9 @@ def trunc_lognormal_sigma_generator(domain):
 
 
 def trunc_normal_sigma_generator(domain):
+    """
+    Generator for :func:`trunc_normal_3_sigma_rule`
+    """
     mean = 1
     if mean < domain[0]:
         mean = domain[0]
@@ -68,6 +77,9 @@ def trunc_normal_sigma_generator(domain):
 
 
 def custom_generator(variables):
+    """
+    Custom generator for demographic model variables.
+    """
     from .variables import PopulationSizeVariable, ContinuousVariable
     N_A = PopulationSizeVariable("__name").resample()
     values = list()

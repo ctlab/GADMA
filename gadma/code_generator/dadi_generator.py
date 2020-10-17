@@ -7,7 +7,12 @@ FUNCTION_NAME = 'model_func'
 
 def _print_dadi_func(model, values):
     """
-    values are needed to fix dynamics of populations.
+    Returns string with function of demographic model for :py:mod:`dadi`.
+    Parameter `values` is needed to fix dynamics of populations.
+
+    :param model: Demographic model.
+    :type model: :class:`gadma.models.model.Model`
+    :param values: List of values for parameters of model.
     """
     from ..engines import DadiEngine  # to avoid cross import
     if isinstance(model, CustomDemographicModel):
@@ -78,6 +83,12 @@ def _print_dadi_func(model, values):
 
 
 def _is_fs_via_dadi(data_holder):
+    """
+    Check that data is allele frequency spectrum saved for dadi.
+
+    :param data_holder: Data holder with data.
+    :type data_holder: :class:`gadma.data.data_holder.DataHolder`
+    """
     import dadi
     try:
         data = dadi.Spectrum.from_file(data_holder.filename)
@@ -87,6 +98,13 @@ def _is_fs_via_dadi(data_holder):
 
 
 def _print_load_data(data_holder, is_fs, mode='dadi'):
+    """
+    Returns strings for code that loads data for analysis.
+
+    :param data_holder: Data holder with data.
+    :param is_fs: If True then data isin AFS format of dadi.
+    :param mode: Which mode to use, could be 'dadi' or 'moments'.
+    """
     ret_str = ""
     fname = data_holder.filename
     if is_fs is None:
@@ -126,15 +144,28 @@ def _print_load_data(data_holder, is_fs, mode='dadi'):
 
 
 def _print_dadi_load_data(data_holder):
+    """
+    Check :func:`_print_load_data` for more information.
+    Checks that `data_holder` is in AFS format of dadi and runs
+    :func:`_print_load_data` with 'dadi' mode.
+    """
     is_fs = _is_fs_via_dadi(data_holder)
     return _print_load_data(data_holder, is_fs, mode='dadi')
 
 
 def _print_p0(values):
+    """
+    Returns code for p0 with values.
+
+    :param values: Values for p0.
+    """
     return "p0 = [%s]\n" % ", ".join([str(x) for x in values])
 
 
 def _print_dadi_simulation():
+    """
+    Returns string of code about simulation with dadi.
+    """
     ret_str = f"func_ex = dadi.Numerics.make_extrap_log_func"\
               f"({FUNCTION_NAME})\n"
     ret_str += "model = func_ex(p0, ns, pts)\n"
@@ -142,6 +173,13 @@ def _print_dadi_simulation():
 
 
 def _print_main(engine, values, mode='dadi'):
+    """
+    Returns string for main part of generated code.
+
+    :param engine: Engine that was used with data and model.
+    :param values: best values of model parameters.
+    :param mode: 'dadi' or 'moments'
+    """
     ret_str = f"ll_model = {mode}.Inference.ll_multinom(model, data)\n"
     ret_str += "print('Model log likelihood (LL(model, data)): "\
                "{0}'.format(ll_model))\n"
@@ -176,6 +214,16 @@ def _print_dadi_main(engine, values):
 
 
 def print_dadi_code(engine, values, pts, filename):
+    """
+    Generates code for dadi to file. Code have function of demographic model
+    that simulates AFS and main part where simulation takes place as well as
+    calculation of log-likelihood.
+
+    :param engine: Engine that was used with data and model.
+    :param values: Value of model parameters.
+    :param pts: Grid sizes for dadi.
+    :param filename: File to save generated code.
+    """
     ret_str = "import dadi\nimport numpy as np\n\n"
     ret_str += _print_dadi_func(engine.model, values)
     ret_str += "\n"

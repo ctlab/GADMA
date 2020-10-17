@@ -48,14 +48,13 @@ class Engine(object):
     New engine should be inheritted from this class.
     Engine must have at least the ``id``, ``supported_models``,
     ``supported_data`` and ``inner_data`` attributes, and
-    implementations of :func:`read_data`, :func:`get_pop_labels`,
-    :func:`get_sample_sizes`, :func:`get_outgroup`, :func:`get_seq_len`
-    and :func:`objective_function` functions of this abstract class.
+    implementations of :func:`read_data`
+    and :func:`evaluate` functions of this abstract class.
 
-    :cvar str id: the unique identifier of the engine.
-    :cvar supported_models: list of supported :class:`Model` classes.
-    :cvar supported_data: list of supported :class:`DataHolder` classes.
-    :cvar inner_data_type: class of inner data that is used by engine.
+    :cvar str Engine.id: the unique identifier of the engine.
+    :cvar Engine.supported_models: list of supported :class:`Model` classes.
+    :cvar Engine.supported_data: list of supported :class:`DataHolder` classes.
+    :cvar Engine.inner_data_type: class of inner data that is used by engine.
     """
     id = ''
     supported_models = []

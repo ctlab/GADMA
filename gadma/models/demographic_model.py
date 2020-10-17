@@ -9,8 +9,7 @@ import numpy as np
 
 class DemographicModel(Model):
     """
-    Class for demographic model.
-
+    Base class for demographic model.
 
     :param gen_time: Time of one generation.
     :type gen_time: float
