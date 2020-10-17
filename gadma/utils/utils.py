@@ -67,10 +67,10 @@ def sort_by_other_list(x, y, reverse=False, key=None):
 
 
 def fix_args(f, *args):
-    """
+    r"""
     Fixes argumets of function.
 
-    :param f: Function such that f(x, \*args)
+    :param f: Function such that f(x, *args)
     :param args: Tuple of function arguments.
 
     :returns: function that will take only x as argument.
@@ -179,11 +179,11 @@ def nan_fval_to_inf(f):
 
 
 def eval_wrapper(f, eval_file=None):
-    """
+    r"""
     Returns good function for optimization. Each evaluation of function will
     be written in file. If needed function will be cached.
 
-    :param f: function. Is called as f(x, \*args).
+    :param f: function. Is called as f(x, *args).
     :param args: tuple of arguments.
     :param eval_file: file to write evaluations.
     :param cache: if True then function will be cached.

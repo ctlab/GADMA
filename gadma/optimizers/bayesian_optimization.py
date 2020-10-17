@@ -137,12 +137,12 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                  linear_constrain=None, maxiter=100, maxeval=100,
                  verbose=0, callback=None, report_file=None, eval_file=None,
                  save_file=None):
-        """
+        r"""
         Return best values of `variables` that minimizes/maximizes
         the function `f`.
 
         :param f: function to minimize/maximize. The usage must be the
-                  following: f(x, \*args), where x is list of values.
+                  following: f(x, *args), where x is list of values.
         :param variables: list of variables (instances of
                           :class:`gadma.Variable` class) of the function.
         :param X_init: list of initial values.

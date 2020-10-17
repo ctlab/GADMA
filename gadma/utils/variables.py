@@ -130,6 +130,7 @@ class DiscreteVariable(Variable):
 
     """
     default_domain = np.array([])
+
     def default_rand_gen(a, size=None, replace=True, p=None):
         """
         See documentation of ``numpy.random.choice`` for more information.
@@ -281,7 +282,8 @@ class Dynamic(object):
     attribute and implement :func:`_inner_func` (staticmethod),
     :func:`__str__` and :func:`func_str` methods.
 
-    :cvar Dynamic.format_str: format string for string representation of the dynamic.
+    :cvar Dynamic.format_str: format string for string representation of the
+                              dynamic.
     """
     format_str = ''
 
