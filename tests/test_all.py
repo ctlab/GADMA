@@ -76,14 +76,14 @@ class TestRestore(unittest.TestCase):
             res2 = opt.optimize(f, variables, x0=x0, maxiter=5, verbose=1,
                                 report_file=report_file,
                                 restore_file=save_file,
-                                restore_models_only=True)
+                                restore_points_only=True)
             res3 = opt.optimize(f, variables, x0=x0, maxiter=5, verbose=1,
                                 report_file=report_file,
                                 restore_file=save_file)
             res4 = opt.optimize(f, variables, x0=x0, maxiter=10, verbose=1,
                                 report_file=report_file,
                                 restore_file=save_file,
-                                restore_models_only=True)
+                                restore_points_only=True)
             self.assertEqual(res1.y, res3.y)
             self.assertTrue(res1.y >= res2.y)
             self.assertTrue(res2.y >= res4.y)
