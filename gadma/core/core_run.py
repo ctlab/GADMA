@@ -472,8 +472,8 @@ class CoreRun(object):
                 x_transform = (None, None)
                 if self.settings.generate_x_transform:
                     x_transform = (ident_transform, ident_transform)
-                return (restore_files[0], None,
-                        self.settings.only_models, x_transform)
+                return iter([(restore_files[0], None,
+                        self.settings.only_models, x_transform)])
 
             some_file_not_valid = False
             for i in range(len(restore_files)):
