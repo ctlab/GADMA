@@ -442,8 +442,7 @@ class SettingsStorage(object):
                               "model is already set.")
 
         if (name in ['lower_bound', 'upper_bound'] and
-                    self.lower_bound is not None and
-                    self.upper_bound is not None):
+                self.lower_bound is not None and self.upper_bound is not None):
             for low, upp in zip(self.lower_bound, self.upper_bound):
                 if low > upp:
                     raise ValueError(f"Lower bound ({self.lower_bound}) "

@@ -5,6 +5,7 @@ import argparse
 from scipy import stats
 from .utils import abspath, check_file_existence
 
+
 def main():
     """
     Main function of script. Reads command-line arguments, reads saved table
@@ -31,7 +32,7 @@ def main():
         raise ValueError(f"Input file ({filename}) does not exist.")
     ext = filename.split('.')[-1]
     if ext == 'csv':
-        df = pd.read_csv(filename, index_col = 0)
+        df = pd.read_csv(filename, index_col=0)
     elif ext == 'pkl':
         df = pd.read_pickle(filename)
     else:
@@ -45,12 +46,12 @@ def main():
     means = np.mean(a, axis=0)
     stds = np.std(a, axis=0)
 
-    for m,s, x,par_name in zip(means, stds, a.T, df.columns):
-        l = m - 1.96 * s
-        u = m + 1.96 * s
+    for m, s, x, par_name in zip(means, stds, a.T, df.columns):
+        low = m - 1.96 * s
+        upp = m + 1.96 * s
         if args.log:
-            l = np.exp(l)
-            u = np.exp(u)
+            low = np.exp(low)
+            upp = np.exp(upp)
         k2, p = stats.normaltest(x)
         if p < 0.05:
             normtest_str = 'data looks '
@@ -62,7 +63,7 @@ def main():
             normtest_str = 'data does not look '
             if args.log:
                 normtest_str += 'log-normal (reject H0)'
-            else: 
+            else:
                 normtest_str += 'normal (reject H0)'
         normtest_str += f' p-value={p:.2e}'
         if args.tex:
@@ -71,4 +72,4 @@ def main():
         else:
             format_string = '%s:\t%.' + str(args.acc) + 'f\t%.' +\
                             str(args.acc) + 'f\t%s'
-        print(format_string % (par_name.strip(), l, u, normtest_str))
+        print(format_string % (par_name.strip(), low, upp, normtest_str))

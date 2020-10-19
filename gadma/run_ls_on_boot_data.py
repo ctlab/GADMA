@@ -3,11 +3,10 @@ import os
 import sys
 import numpy as np
 import gadma
-import pandas as pd
 import importlib
 import copy
 import multiprocessing as mp
-from importlib.machinery import SourceFileLoader 
+from importlib.machinery import SourceFileLoader
 
 
 def run_job(params):
@@ -18,7 +17,6 @@ def run_job(params):
                     initial best values, settings storage).
     """
     boot_fs_filename, boot_fs, p0, settings = params
-#    fs_filename, fs, p0, model_func, lower_bound, upper_bound, pts, opt_name, output = params
     np.random.seed()
     fs_filename = gadma.utils.abspath(boot_fs_filename)
     prefix = str(settings.local_optimizer) + '_' + boot_fs_filename
@@ -28,7 +26,7 @@ def run_job(params):
                             str(prefix) + "_params.npy")
     if os.path.isfile(res_file):
         return boot_fs_filename, np.load(res_file, allow_pickle=True)
- 
+
     kwargs = {'verbose': 1,
               'report_file': out_file}
 
@@ -54,6 +52,7 @@ def run_job(params):
     np.save(res_file, popt)
     return (boot_fs_filename, popt)
 
+
 def load_module(filename):
     """
     Loads module from file.
@@ -61,10 +60,12 @@ def load_module(filename):
     filename = gadma.utils.abspath(filename)
     name = "strange_name_of." +\
            os.path.basename(filename).replace('/', '_').rstrip('.py')
-    spec = importlib.util.spec_from_loader(name, SourceFileLoader(name, filename))
+    spec = importlib.util.spec_from_loader(name, SourceFileLoader(name,
+                                                                  filename))
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
 
 def load_parameters_from_python_file(filename):
     """
@@ -80,34 +81,34 @@ def load_parameters_from_python_file(filename):
         module = load_module(filename)
     except Exception as e:
         raise ValueError('File ' + filename + " is not valid python file." +
-                          str(e))
+                         str(e))
     try:
         settings.lower_bound = module.lower_bound
-    except:
+    except Exception as e:
         settings.lower_bound = None
 
     try:
         settings.upper_bound = module.upper_bound
-    except:
+    except Exception as e:
         settings.upper_bound = None
 
     try:
         p0 = module.popt
-    except:
+    except Exception as e:
         try:
             p0 = module.p0
-        except:
+        except Exception as e:
             p0 = None
     try:
         settings.pts = module.pts
-    except:
+    except Exception as e:
         settings.pts = None
     try:
         settings.parameter_identifiers = module.par_labels
-    except:
+    except Exception as e:
         try:
             settings.parameter_identifiers = module.param_labels
-        except:
+        except Exception as e:
             settings.parameter_identifiers = None
     return p0, settings
 
@@ -120,6 +121,7 @@ def main():
 
     All output is saved in output directory.
     """
+    import pandas as pd
     parser = argparse.ArgumentParser(
         "GADMA module for runs of local search on bootstrapped data. "
         "Is needed for calculating confidence intervals.\n")
@@ -173,7 +175,7 @@ def main():
     if args.params is not None:
         fresh_p0, fresh_settings = load_parameters_from_python_file(
             args.params)
- 
+
         for attr_name in loaded_attrs:
             if getattr(fresh_settings, attr_name) is not None:
                 settings.__setattr__(attr_name,
@@ -203,11 +205,21 @@ def main():
     settings.directory_with_bootstrap = args.boots
     all_boots = list(settings.read_bootstrap_data(True))
 
+    p_ids = settings.parameter_identifiers
+    p_ids.append('Theta')
+
+    print(f"{len(all_boots)} bootstrapped data found.")
+    print(f"Found initial parameters values: {p0}")
+    print(f"Parameters labels will be: {', '.join(p_ids)}")
+    print(f"Lower bound will be: {settings.lower_bound}")
+    print(f"Upper bound will be: {settings.upper_bound}")
+    print(f"Optimization to run: {settings.local_optimizer}")
+
 #    run_job((all_boots[0][0],all_boots[0][1], p0, settings))
 #    os._exit(1)
 
     pool = mp.Pool(processes=args.jobs)
-    try:    
+    try:
         result = []
         map_result = pool.map_async(run_job,
                                     [(fs_filename, fs, p0, settings)
@@ -219,7 +231,7 @@ def main():
                 break
             except mp.TimeoutError as ex:
                 pass
-            except Exception as e:    
+            except Exception as e:
                 pool.terminate()
                 raise e
         pool.close()
@@ -227,15 +239,14 @@ def main():
     except KeyboardInterrupt:
         pool.terminate()
         sys.exit(1)
-    
+
     fs_filenames = [x[0] for x in result]
     result = np.array([x[1] for x in result])
-    p_ids = settings.parameter_identifiers
-    p_ids.append('Theta')
     df = pd.DataFrame(data=result, index=fs_filenames, columns=p_ids)
     csv_path = os.path.join(output, 'result_table.csv')
     pkl_path = os.path.join(output, 'result_table.pkl')
     df.to_csv(csv_path)
     df.to_pickle(pkl_path)
     print(df)
-    print('DONE. Results are saved as csv file (' + csv_path + ') and as pandas dataframe (' + pkl_path + ').')
+    print("DONE. Results are saved as csv file (' + csv_path + ') and "
+          "as pandas dataframe (' + pkl_path + ').")
