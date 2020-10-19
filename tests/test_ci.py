@@ -28,7 +28,7 @@ class TestConfidenceIntervals(unittest.TestCase):
                         "-d", model_name, "-o", output_dir, "-p", params_file,
                         "-j", "4"]
             try:
-                for opt in ['optimize_lbfgs', 'log', 'powell']: #all_local_optimizers():
+                for opt in ['optimize_lbfgsb', 'log', 'powell']: #all_local_optimizers():
                     sys.argv.extend(["--opt", opt])
                     gadma.run_ls_on_boot_data.main()
                     gadma.run_ls_on_boot_data.main()
