@@ -69,6 +69,18 @@ def run_one_job(params):
 
     popt = np.array(popt)
     if pts is not None:
+        ll_old = sim_lib.Inference.ll_multinom(func_ex(p0, fs.sample_sizes, pts), fs)
+        ll_new = sim_lib.Inference.ll_multinom(func_ex(popt, fs.sample_sizes, pts), fs)
+    else:
+        ll_old = sim_lib.Inference.ll_multinom(func_ex(p0, fs.sample_sizes), fs)
+        ll_new = sim_lib.Inference.ll_multinom(func_ex(popt, fs.sample_sizes), fs)
+    if ll_new <= ll_old:
+        print(f"Optimization for boot file {fs_filename} does not find better"
+              "solution that initial. If this message is printed for a lot of "
+              "files try another optimization")
+        popt = np.array(p0)
+
+    if pts is not None:
         model_fs = func_ex(popt, fs.sample_sizes, pts)
     else:
         model_fs = func_ex(popt, fs.sample_sizes)
@@ -84,7 +96,6 @@ def get_params_names(dem_model_filename, func_name):
                 local_func_name = line.strip().split()[1].split('(')[0]
                 if local_func_name == func_name:
                     str_after_bracket = line.strip().split('(', 1)[1].strip()
-                    print str_after_bracket
                     if str_after_bracket.startswith('('):
                         return str_after_bracket[1:].split(')')[0].split(',')
 
@@ -155,7 +166,7 @@ def main():
     args.dem_model = support.check_file_existence(args.dem_model)
     try:
         file_with_model_func = imp.load_source('module', args.dem_model)
-    except Exception, e:
+    except Exception as e:
         support.error('File ' + args.dem_model + " is not valid python file.", error_instance=e)
     try:
         model_func = file_with_model_func.model_func
@@ -216,7 +227,7 @@ def main():
         if p > u:
             support.error("Upper bound is less than p0.")
     if par_labels is None or len(lower_bound) != len(par_labels):
-        par_labels = ['par_' + str(i) for i in xrange(len(lower_bound))]
+        par_labels = ['par_' + str(i) for i in range(len(lower_bound))]
     
     par_labels.append('Theta')
     print('Parameters labels will be: ' + ','.join(par_labels))
@@ -234,7 +245,7 @@ def main():
                 break
             except mp.TimeoutError as ex:
                 pass
-            except Exception, e:    
+            except Exception as e:    
                 pool.terminate()
                 support.error(str(e))
         pool.close()
@@ -250,5 +261,5 @@ def main():
     pkl_path = os.path.join(output, 'result_table.pkl')
     df.to_csv(csv_path)
     df.to_pickle(pkl_path)
-    print df
+    print(df)
     print('DONE. Results are saved as csv file (' + csv_path + ') and as pandas dataframe (' + pkl_path + ').')
