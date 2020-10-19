@@ -45,7 +45,6 @@ class TestModelStructure(unittest.TestCase):
         for structure in BASE_TEST_STRUCTURES:
             for create_migs, create_sels, create_dyns, sym_migs, fracs in\
                     list(itertools.product([False, True],repeat=5)):
-                create_sels = False
                 def model_generator(structure):
                     return StructureDemographicModel(structure,
                                                      np.array(structure) + 1,
@@ -58,6 +57,14 @@ class TestModelStructure(unittest.TestCase):
                 dm = model_generator(structure)
                 variables = dm.variables
                 x = [var.resample() for var in variables]
+
+                bad_structure = list(structure)
+                for i in range(len(bad_structure)):
+                    if bad_structure[i] == 1:
+                        continue
+                    bad_structure[i] -= 1
+                    self.assertRaises(ValueError, dm.increase_structure,
+                                      bad_structure)
 
                 check_ll = np.random.choice([True, False], p=[1/6, 5/6])
                 for engine in all_engines():
@@ -101,7 +108,11 @@ class TestModelStructure(unittest.TestCase):
                         if check_ll and random_int == i:
                             new_ll = engine.evaluate(new_X[0], *args)
                             self.assertTrue(np.allclose(ll_true, new_ll),
-                                            msg=f"{ll_true} != {new_ll} : " + msg)
+                                            msg=f"{ll_true} != {new_ll} : {msg}")
+
+                dm.final_structure = dm.get_structure()
+                self.assertRaises(ValueError, dm.increase_structure)
+
 
     def test_fails(self):
         bad_struct = [[0], [0, 1], [1, 0]]
@@ -147,3 +158,24 @@ class TestModelStructure(unittest.TestCase):
             model = build_model(init_str, final_str)
             self.assertRaises(ValueError, model.increase_structure, [1, 3])
             self.assertRaises(ValueError, model.increase_structure, [2, 2])
+
+    def test_transform(self):
+        for structure in TEST_STRUCTURES:
+            for base_migs, base_sels, base_dyns, base_symms, base_fracs in\
+                    list(itertools.product([False, True],repeat=5)):
+                dm = StructureDemographicModel(structure, structure,
+                                               have_migs=base_migs,
+                                               have_sels=base_sels,
+                                               have_dyns=base_dyns,
+                                               sym_migs=base_symms,
+                                               frac_split=base_fracs)
+                for new_migs, new_sels, new_dyns, new_symms, new_fracs in\
+                    list(itertools.product([False, True],repeat=5)):
+                    new = StructureDemographicModel(structure, structure,
+                                                    have_migs=new_migs,
+                                                    have_sels=new_sels,
+                                                    have_dyns=new_dyns,
+                                                    sym_migs=new_symms,
+                                                    frac_split=new_fracs)
+                    x = [var.resample() for var in new.variables]
+                    new_x = dm.transform_values_from_other_model(new, x)

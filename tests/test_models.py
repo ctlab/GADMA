@@ -1,6 +1,7 @@
 import unittest
 
 from gadma import *
+from gadma import ContinuousVariable
 
 from .test_data import YRI_CEU_DATA
 
@@ -61,6 +62,8 @@ class TestModels(unittest.TestCase):
                 variables = self.get_variables_for_gut_2009()[:-1] 
                 dm = CustomDemographicModel(func, variables)
                 dm.as_custom_string([var.resample() for var in dm.variables])
+                dm.as_custom_string({var.name: var.resample()
+                                     for var in dm.variables})
 
     @unittest.skipIf(DADI_NOT_AVAILABLE, "Dadi module is not installed")
     def test_dadi_1pop_0(self):
@@ -189,20 +192,28 @@ class TestModels(unittest.TestCase):
 #        n_par_after = dm.get_number_of_parameters(dic)
 #        self.assertEqual(n_par_sud_model, n_par_after + 1)
 
+        model = Model()
+        model.add_variables([nu1F, m, Tp, Dyn,
+                             SelectionVariable('sel'), FractionVariable('f')])
+        self.assertRaises(ValueError, model.fix_variable, var, 1)
+        model.string_repr([1 for _ in model.variables])
+
     def test_printing_and_translation(self):
         nu1F, nu2B, nu2F, m, Tp, T, Dyn = self.get_variables_for_gut_2009()
         f = FractionVariable('f')
         Dyn2 = DynamicVariable('SudDyn')
         sel = SelectionVariable('s')
+        dom = FractionVariable('dom')
 
         dm = EpochDemographicModel()
-        dm.add_epoch(Tp, [nu1F], dyn_args=[Dyn2], sel_args=[sel])
+        dm.add_epoch(Tp, [nu1F], dyn_args=[Dyn2],
+                     sel_args=[sel], dom_args=[dom])
         dm.add_split(0, [nu1F, Multiplication(f, nu2B)])
         dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', Dyn])
 
         dic = {'nu1F': 1.880, nu2B: 0.0724, 'f': 1.0, 'nu2F': 1.764,
                'm': 0.930, 'Tp':  0.363, 'T': 0.112, 'Dyn': 'Exp',
-               'SudDyn': 'Sud', 's': 0.1}
+               'SudDyn': 'Sud', 's': 0.1, 'dom': 0.5}
 
         data = SFSDataHolder(YRI_CEU_DATA)
         for engine in all_engines():
@@ -215,7 +226,17 @@ class TestModels(unittest.TestCase):
                 engine.set_data(data)
                 Nanc = engine.get_theta(dic, *args)
                 tr = dm.translate_units(dic, Nanc)
+                dm_copy = copy.deepcopy(dm)
+                dm_copy.add_variable(ContinuousVariable("some", [-1, 10]))
+                dic['some'] = 0
+                self.assertRaises(ValueError, dm.translate_units, dic, Nanc)
                 dm.as_custom_string(dic)
+
+        # test failures
+        event = Event()
+        self.assertRaises(NotImplementedError, event.as_custom_string)
+
+        self.assertRaises(ValueError, Epoch, sel_args=False, dom_args=True)
 
     def test_var_combinations(self):
         var1 = PopulationSizeVariable('nu1')
@@ -259,6 +280,10 @@ class TestModels(unittest.TestCase):
                                          f'nu1 {op_str} (f {op_str2} 5)')
 
                 self.assertRaises(AssertionError, cls, const, const)
+        # failures
+        bin_op = BinaryOperation(var1, var2)
+        self.assertRaises(NotImplementedError, bin_op.operation, 1, 2)
+        self.assertRaises(NotImplementedError, bin_op.operation_str)
 
     def _sfs_datasets(self):
         yield ("usual fs",

@@ -130,14 +130,18 @@ class TestRestore(unittest.TestCase):
     def test_restore_finished_run(self):
         finished_run_dir = os.path.join(DATA_PATH, 'my_example_run')
         params_file = 'params'
+        outdir = os.path.join(DATA_PATH, 'resume_dir')
+        if check_dir_existence(outdir):
+            shutil.rmtree(outdir)
         with open(params_file, 'w') as fl:
             fl.write("Linked SNP's: False")
-        sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
+        sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file,
+                    '--output', outdir]
         try:
             core.main()
         finally:
-            if check_dir_existence(finished_run_dir + '_resumed'):
-                shutil.rmtree(finished_run_dir + '_resumed')
+            if check_dir_existence(outdir):
+                shutil.rmtree(outdir)
             os.remove(params_file)
 
     def test_restore_models_from_finished_run(self):
@@ -147,7 +151,8 @@ class TestRestore(unittest.TestCase):
             fl.write("Stuck generation number: 2\n"
                      "Only models: True\n"
                      "Projections: [4,4]")
-        sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
+        sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file,
+                    '--only_models']
         try:
             core.main()
         finally:

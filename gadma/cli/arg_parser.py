@@ -129,6 +129,9 @@ def get_settings():
                              f"({args.resume})")
         settings_storage.resume_from = args.resume
 
+    if args.only_models:
+        settings_storage.only_models = True
+
     if settings_storage.resume_from is not None:
         old_params_file = os.path.join(settings_storage.resume_from,
                                        'params_file')
@@ -149,15 +152,13 @@ def get_settings():
                 resume_from_settings.output_directory += "_resumed"
             else:
                 resume_from_settings.output_directory = None
-            resume_from_settings.only_models = False
             settings_storage = copy.copy(resume_from_settings)
             settings_storage = settings_storage.update_from_file(args.params,
                                                                  args.extra)
+            settings_storage.resume_dir = resume_from_settings.output_directory
+            settings_storage.only_models = False
             if args.resume:
                 settings_storage.resume_from = args.resume
-
-    if args.only_models:
-        settings_storage.only_models = True
 
     if args.output is not None:
         if (settings_storage.output_directory is not None and
@@ -183,9 +184,8 @@ def get_settings():
             settings_storage.resume_from is None):
         raise AttributeError("Output directory is required. It could be set "
                              "by -o/--output option or via parameters file.")
-    if settings_storage.output_directory is None:
-        old_dir = settings_storage.resume_from_settings.output_directory
-        settings_storage.output_directory = old_dir + "_resumed"
+    assert settings_storage.output_directory is not None
+
     ensure_dir_existence(settings_storage.output_directory,
                          check_emptiness=True)
 

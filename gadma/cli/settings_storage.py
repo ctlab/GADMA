@@ -222,7 +222,14 @@ class SettingsStorage(object):
             attrs_list = bounds_lists
         if ((name in attrs_with_equal_len or name in bounds_lists) and
                 we_check):
+            if (name not in bounds_lists and
+                    hasattr(self, 'number_of_populations') and
+                    len(value) != self.number_of_populations):
+                raise ValueError(f"Length of {name} should be equal to "
+                                 f"{self.number_of_populations}.")
             for attr_name in attrs_list:
+                if attr_name == name:
+                    continue
                 attr_value = getattr(self, attr_name)
                 if attr_value is None:
                     continue
@@ -230,11 +237,6 @@ class SettingsStorage(object):
                     raise ValueError(f"Setting {name} ({value}) has different"
                                      f" length with another setting "
                                      f"{attr_name} ({attr_value}).")
-            if (name not in bounds_lists and
-                    hasattr(self, 'number_of_populations') and
-                    len(getattr(self, name)) != self.number_of_populations):
-                raise ValueError(f"Length of {name} should be equal to "
-                                 f"{self.number_of_populations}.")
         # 1.7 Population labels could be taken as one string
         if name == 'population_labels':
             if isinstance(value, str):
@@ -427,13 +429,13 @@ class SettingsStorage(object):
             model_func_value = getattr(module, func_name)
             self.__setattr__("model_func", model_func_value)
 
-        if name in bounds_attrs and self.custom_filename is None:
-            msg = f"Setting {name} is set before custom_filename is set."
-            if self.initial_structure is not None:
-                warnings.warn(msg + " It will be ignored as initial structure"
-                              " of model is set.")
-            else:
-                warnings.warn(msg)
+#        if name in bounds_attrs and self.custom_filename is None:
+#            msg = f"Setting {name} is set before custom_filename is set."
+#            if self.initial_structure is not None:
+#                warnings.warn(msg + " It will be ignored as initial structure"
+#                              " of model is set.")
+#            else:
+#                warnings.warn(msg)
         # 3.11 Check for structure or custom filename and ignore some options
         if (name in ['initial_structure', 'final_structure'] and
                 value is not None and self.custom_filename is not None):
@@ -441,9 +443,15 @@ class SettingsStorage(object):
                 warnings.warn(f"Setting {name} will be ignored as the custom "
                               "model is already set.")
 
-        if (name in ['lower_bound', 'upper_bound'] and
-                self.lower_bound is not None and self.upper_bound is not None):
-            for low, upp in zip(self.lower_bound, self.upper_bound):
+        if ((name == 'lower_bound' and self.upper_bound is not None) or
+                (name == 'upper_bound' and self.lower_bound is not None)):
+            if name == 'lower_bound':
+                lower_bound = value
+                upper_bound = self.upper_bound
+            else:
+                lower_bound = self.lower_bound
+                upper_bound = value
+            for low, upp in zip(lower_bound, upper_bound):
                 if low > upp:
                     raise ValueError(f"Lower bound ({self.lower_bound}) "
                                      f"should be less than upper bound "

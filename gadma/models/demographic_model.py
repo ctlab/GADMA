@@ -30,17 +30,6 @@ class DemographicModel(Model):
         self.linear_constrain = linear_constrain
         super(DemographicModel, self).__init__(raise_excep=False)
 
-    def get_value(self, item):
-        """
-        Returns value of the item if it is variable, otherwise returns item
-        as it is.
-
-        :param item: object to get its value.
-        """
-        if isinstance(item, Variable):
-            return super(DemographicModel, self).get_value(item)
-        return item
-
     def get_number_of_parameters(self, values):
         """
         Returns number of parameters of the model.
@@ -56,7 +45,7 @@ class DemographicModel(Model):
         :param values: Values of the demographic model.
         """
         if isinstance(values, dict):
-            values = [val for var, val in self.var2value(values).keys()]
+            values = [val for var, val in self.var2value(values).items()]
         return variables_values_repr(self.variables, values)
 
     def translate_units(self, values, Nanc, Tg=1):

@@ -369,9 +369,17 @@ class StructureDemographicModel(EpochDemographicModel):
                 n_split = int(var.name[1:])
                 ind_before_split = sum(self.get_structure()[:n_split]) - 1
                 nu1_before_split_name = "nu%d%d" % (ind_before_split, n_split)
-                nu1_after_split_name = "nu%d%d_1" % (ind_before_split + 1,
+                nu1_after_split_name = "nu%d%d_1" % (ind_before_split,
                                                      n_split)
-                fraction = nu1_after_split_name / nu1_before_split_name
+                if n_split == 1 and self.get_structure()[0] == 1:
+                    size_before_split_name = 1.0
+                    size_after_split_time = other_varname2value["nu_1"]
+                else:
+                    size_before_split_name = other_varname2value[
+                        nu1_after_split_name]
+                    size_after_split_time = other_varname2value[
+                        nu1_before_split_name]
+                fraction = size_after_split_time / size_before_split_name
                 fraction = max(fraction, var.domain[0])
                 fraction = min(fraction, var.domain[1])
                 var2value[var] = fraction

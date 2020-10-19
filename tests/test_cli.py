@@ -7,6 +7,7 @@ import shutil
 
 from gadma.cli.arg_parser import ArgParser, get_settings
 from gadma.cli import SettingsStorage
+from gadma.cli import settings as default_settings
 from gadma import *
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
@@ -18,6 +19,8 @@ class TestCLI(unittest.TestCase):
         parser.format_help()
 
         old_argv = copy.copy(sys.argv)
+        created_params_file = os.path.join(DATA_PATH, "created_params")
+
         try:
             sys.argv = ['gadma', '--test']
             settings, _ = get_settings()
@@ -31,6 +34,11 @@ class TestCLI(unittest.TestCase):
             sys.argv = ['gadma', '-p', param_file, '-o', 'some_dir',
                         '-i', another_fs]
             settings, _ = get_settings()
+
+            sys.argv = ['gadma', '-p', param_file, '-o', 'some_dir',
+                        '-i', another_fs, '--only_models']
+            settings, _ = get_settings()
+
             self.assertEqual(settings.output_directory, abspath('some_dir'))
             self.assertEqual(settings.input_file, abspath(another_fs))
             sys.argv = ['gadma', '-p', param_file, '-o', 'tests',
@@ -54,8 +62,27 @@ class TestCLI(unittest.TestCase):
             sys.argv = ['gadma', '-p', param_file]
             self.assertRaises(AttributeError, get_settings)
 
+            dir_without_run = os.path.join(DATA_PATH, "YRI_CEU_test_boots")
+            dir_with_run = os.path.join(DATA_PATH, "my_example_run")
+            with open(created_params_file, 'w') as fl:
+                with open(os.path.join(DATA_PATH, "another_test_params")) as gl:
+                    for line in gl:
+                        fl.write(line)
+                fl.write(f"Resume from: {dir_without_run}")
+            sys.argv = ['gadma', '-p', created_params_file, '--resume',
+                        dir_with_run]
+            self.assertRaises(ValueError, get_settings)
+            sys.argv = ['gadma', '-p', created_params_file, '--only_models']
+            setting, _ = get_settings()
+            self.assertEqual(setting.resume_from, None)
+            self.assertEqual(setting.only_models, False)
         finally:
             sys.argv = old_argv
+
+    def test_generation_of_bounds_constrain(self):
+        params_file = os.path.join(DATA_PATH, 'params_file')
+        settings = SettingsStorage.from_file(params_file)
+        settings.get_model()
 
     def test_settings_storage(self):
         settings = SettingsStorage()
@@ -106,6 +133,7 @@ class TestCLI(unittest.TestCase):
                           'fractions', '-2, 0.3, 0.4')
         self.assertRaises(ValueError, settings.__setattr__,
                           'fractions', 2)
+        settings.fractions = default_settings.fractions
 
         # bools
         settings.linked_snp_s = False
@@ -117,21 +145,22 @@ class TestCLI(unittest.TestCase):
         settings.upper_bound = [1.4, 3, 5]
         self.assertRaises(ValueError, settings.__setattr__,
                           'upper_bound', [1.4, 3])
-        # self.assertRaises(ValueError, settings.__setattr__,
-        #                   'upper_bound', [0, 3, 5])
+        self.assertRaises(ValueError, settings.__setattr__,
+                          'upper_bound', [0, 3, 5])
         self.assertRaises(ValueError, settings.__setattr__,
                           'lower_bound', [0.3, 2])
-        # self.assertRaises(ValueError, settings.__setattr__,
-        #                   'lower_bound', [2, 3, 5])
+        self.assertRaises(ValueError, settings.__setattr__,
+                          'lower_bound', [2, 3, 5])
         settings.initial_structure = [1, 1]
         settings.final_structure = [3, 2]
         self.assertRaises(ValueError, settings.__setattr__,
                           'final_structure', [1, 3, 2])
+        self.assertRaises(ValueError, settings.__setattr__,
+                          'initial_structure', "1, some")
+        # number of populations
         settings.number_of_populations = 2
         self.assertRaises(ValueError, settings.__setattr__,
                           'number_of_populations', 3)
-
-
 
         # fractions
         settings.fractions = [0.5, 0.5, 0.5, 0.5]
@@ -156,6 +185,22 @@ class TestCLI(unittest.TestCase):
         settings.number_of_populations = 2
         self.assertRaises(ValueError, settings.__setattr__,
                           'initial_structure', [1])
+
+        # units of time on pictures and no time for generation TODO
+#        settings = SettingsStorage()
+#        self.assertRaises(ValueError, settings.__setattr__,
+#                          'units_of_time_in_drawing', "years")
+
+        # custom filename without model_func function
+        self.assertRaises(ValueError, settings.__setattr__,
+                          "custom_filename",
+                          os.path.join(DATA_PATH, "no_model_func.py"))
+
+        # intial_structure after custom file
+        settings.custom_filename = os.path.join(
+            DATA_PATH, "small_1pop_dem_model_moments.py")
+        settings.initial_structure = [1, 1]
+        settings.final_structure = [2, 1]
 
         # files and dirs
         self.assertRaises(ValueError, settings.__setattr__,
@@ -248,5 +293,17 @@ class TestCLI(unittest.TestCase):
         settings1.to_files(saved_params_file, saved_extra_params_file)
         settings2 = SettingsStorage.from_file(saved_params_file,
                                               saved_extra_params_file)
-
         self.assertEqual(settings1, settings2)
+
+        self.assertTrue(not settings1.__eq__(param_file))
+
+#        delattr(settings2, 'only_models')
+#        self.assertNotEqual(settings1, settings2)
+#        settings2 = SettingsStorage.from_file(saved_params_file,
+#                                              saved_extra_params_file)
+#        delattr(settings1, 'only_models')
+#        self.assertNotEqual(settings1, settings2)
+
+        settings1.lower_bound = np.array([0, 0, 0, 0])
+        settings1.pts = (10, 20, 30)
+        self.assertNotEqual(settings1, settings2)

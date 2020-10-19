@@ -215,30 +215,33 @@ def main():
     print(f"Upper bound will be: {settings.upper_bound}")
     print(f"Optimization to run: {settings.local_optimizer}")
 
-#    run_job((all_boots[0][0],all_boots[0][1], p0, settings))
-#    os._exit(1)
-
-    pool = mp.Pool(processes=args.jobs)
-    try:
+    if args.jobs == 1:
         result = []
-        map_result = pool.map_async(run_job,
-                                    [(fs_filename, fs, p0, settings)
-                                     for fs_filename, fs in all_boots],
-                                    callback=result.extend)
-        while True:
-            try:
-                map_result.get(timeout=1)
-                break
-            except mp.TimeoutError as ex:
-                pass
-            except Exception as e:
-                pool.terminate()
-                raise e
-        pool.close()
-        pool.join()
-    except KeyboardInterrupt:
-        pool.terminate()
-        sys.exit(1)
+        for fs_filename, fs in all_boots:
+            res = run_job((all_boots[0][0], all_boots[0][1], p0, settings))
+            result.append(res)
+    else:
+        pool = mp.Pool(processes=args.jobs)
+        try:
+            result = []
+            map_result = pool.map_async(run_job,
+                                        [(fs_filename, fs, p0, settings)
+                                         for fs_filename, fs in all_boots],
+                                        callback=result.extend)
+            while True:
+                try:
+                    map_result.get(timeout=1)
+                    break
+                except mp.TimeoutError as ex:
+                    pass
+                except Exception as e:
+                    pool.terminate()
+                    raise e
+            pool.close()
+            pool.join()
+        except KeyboardInterrupt:
+            pool.terminate()
+            sys.exit(1)
 
     fs_filenames = [x[0] for x in result]
     result = np.array([x[1] for x in result])
@@ -248,5 +251,5 @@ def main():
     df.to_csv(csv_path)
     df.to_pickle(pkl_path)
     print(df)
-    print("DONE. Results are saved as csv file (' + csv_path + ') and "
-          "as pandas dataframe (' + pkl_path + ').")
+    print(f"DONE. Results are saved as csv file ({csv_path}) and "
+          f"as pandas dataframe ({pkl_path}).")
