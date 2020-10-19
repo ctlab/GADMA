@@ -4,7 +4,7 @@ from ..utils import sort_by_other_list, ensure_dir_existence,\
 from ..utils import TimeVariable, PopulationSizeVariable, SelectionVariable,\
                     DynamicVariable
 from ..optimizers import GlobalOptimizerAndLocalOptimizer
-from ..utils import get_aic_score, get_claic_score, ident_transform
+from ..utils import get_aic_score, get_claic_score, ident_transform, bcolors
 from ..models import EpochDemographicModel, StructureDemographicModel
 from .draw_and_generate_code import draw_plots_to_file, generate_code_to_file
 from ..cli import SettingsStorage
@@ -301,14 +301,14 @@ class CoreRun(object):
             draw_plots_to_file(x, self.engine, self.settings,
                                save_plot_file, fig_title)
         except Exception as e:
-            print(f"{bcolors.FAIL}Run {index}: failed to draw model due to "
-                  f"the following exception: {e}{bcolors.ENDC}")
+            print(f"{bcolors.FAIL}Run {self.index}: failed to draw model due "
+                  f"to the following exception: {e}{bcolors.ENDC}")
         try:
             generate_code_to_file(x, self.engine,
                                   self.settings, save_code_file)
         except Exception as e:
-            print(f"{bcolors.FAIL}Run {index}: failed to generate code due to"
-                  f" the following exception: {e}{bcolors.ENDC}")
+            print(f"{bcolors.FAIL}Run {self.index}: failed to generate code "
+                  f"due to the following exception: {e}{bcolors.ENDC}")
 
     def draw_model_in_output_dir(self, x, y,
                                  best_by='log-likelihood', final=True):

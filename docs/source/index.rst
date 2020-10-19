@@ -12,13 +12,20 @@ GADMA is based on two open source packages: `dadi <https://bitbucket.org/gutenku
 
 In contrast, **GADMA is a command-line tool**. It presents a series of launches of the genetic algorithm and infers demographic history from the Allele Frequency Spectrum of multiple populations (up to three).
 
+Parameter file
+--------------
+
+A parameter file is a simple text file (created in a text editor, such as Notepad), which contains a list of parameters and variables with their assigned values. Create a parameter file that reflect your particular parameters. Hereinafter, as an example, the name of your parameter file will be defined as ``param_file``
+
 
 
 .. toctree::
    :maxdepth: 2
    :caption: User documentation
 
-   user_manual
+   user_manual/hands_on
+   user_manual/user_manual
+   user_manual/example_params_file
    faq
    getting_help
 
@@ -26,7 +33,7 @@ In contrast, **GADMA is a command-line tool**. It presents a series of launches 
 .. toctree::
    :maxdepth: 2
    :caption: Development documentation
-   
+
    api/gadma
 
 Indices and tables

@@ -440,6 +440,15 @@ class SettingsStorage(object):
             if self.lower_bound is not None and self.upper_bound is not None:
                 warnings.warn(f"Setting {name} will be ignored as the custom "
                               "model is already set.")
+
+        if (name in ['lower_bound', 'upper_bound'] and
+                    self.lower_bound is not None and
+                    self.upper_bound is not None):
+            for low, upp in zip(self.lower_bound, self.upper_bound):
+                if low > upp:
+                    raise ValueError(f"Lower bound ({self.lower_bound}) "
+                                     f"should be less than upper bound "
+                                     f"({self.upper_bound}) element-wise.")
         if setattr_at_the_end:
             super(SettingsStorage, self).__setattr__(name, value)
             # assert(self.__getattr__(name) == value)
@@ -599,6 +608,7 @@ class SettingsStorage(object):
         if self.directory_with_bootstrap is None:
             return
         if (not hasattr(self, '_inner_data') and
+                hasattr(self, 'data_holder') and
                 self.data_holder.filename is not None):
             self.read_data()
         dirname = self.directory_with_bootstrap
@@ -612,7 +622,10 @@ class SettingsStorage(object):
             filename_without_ext = '.'.join(filename.split('.')[:-1])
             if filename_without_ext in set_of_seen_files:
                 continue
-            data_holder = copy.deepcopy(self.data_holder)
+            if not hasattr(self, 'data_holder'):
+                data_holder = SFSDataHolder(None)
+            else:
+                data_holder = copy.deepcopy(self.data_holder)
             data_holder.filename = os.path.join(dirname, filename)
             try:
                 data = engine.read_data(data_holder)
@@ -624,7 +637,7 @@ class SettingsStorage(object):
                 pass
         self._bootstrap_data = all_boot
         if return_filenames:
-            return all_boot, filenames
+            return zip(filenames, all_boot)
         return all_boot
 
     @property
@@ -848,6 +861,8 @@ class SettingsStorage(object):
         kwargs = {}
         kwargs['args'] = self.get_engine_args()
         kwargs['verbose'] = self.verbose
+        if self.silence:
+            kwargs['verbose'] = 0
 #        kwargs['linear_constrain'] = self.get_linear_constrain()
         return kwargs
 

@@ -92,6 +92,11 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
         img1 = Image.open(save_file_model)
         img2 = Image.open(save_file_sfs)
 
+        if img2.size[1] < img1.size[1]:
+            img2 = img2.resize(
+                (int(img1.size[1] * img2.size[0] / img2.size[1]),
+                 img1.size[1]))
+
         width = img1.size[0] + img2.size[0]
         height = max(img1.size[1], img2.size[1])
 
@@ -121,6 +126,13 @@ def generate_code_to_file(x, engine, settings, filename):
     if pos == -1 or filename[pos:] != '.py':
         pos = len(filename)
     prefix = filename[:pos]
+
+    nref = engine.get_N_ancestral(x, *settings.get_engine_args())
+    gen_time = None
+    if settings.time_for_generation is not None:
+        gen_time = settings.time_for_generation *\
+                   settings.const_of_time_in_drawing
+    gen_time_units = settings.units_of_time_in_drawing
     # Generate code
     if isinstance(engine.model, EpochDemographicModel):
         engines = all_engines()
@@ -132,7 +144,8 @@ def generate_code_to_file(x, engine, settings, filename):
         other_engine.data_holder = copy.deepcopy(engine.data_holder)
         other_engine.set_model(engine.model)
         args = settings.get_engine_args(other_engine.id)
-        other_engine.generate_code(x, save_file, *args)
+        other_engine.generate_code(x, save_file, *args, nref, gen_time,
+                                   gen_time_units)
 
 
 def print_runs_summary(start_time, shared_dict, settings):

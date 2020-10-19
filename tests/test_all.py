@@ -11,7 +11,6 @@ import shutil
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
 
-
 def rmdir(dirname):
     if not os.path.exists(dirname):
         return

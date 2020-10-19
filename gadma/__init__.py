@@ -48,5 +48,7 @@ from .optimizers import *  # NOQA
 from .cli import *  # NOQA
 from .core import *  # NOQA
 from .Inference import *  # NOQA
+from .run_ls_on_boot_data import *  # NOQA
+from .get_confidence_intervals import *  # NOQA
 
 warnings.formatwarning = utils.warning_format

@@ -29,6 +29,8 @@ class TestVariables(unittest.TestCase):
             domain = variable.get_bounds()
             self.assertTrue(value >= domain[0])
             self.assertTrue(value <= domain[1])
+            self.assertRaises(ValueError, variable.__class__, variable.name,
+                              variable.domain[::-1])
         elif isinstance(variable, DiscreteVariable):
             pos_val = variable.get_possible_values()
             self.assertTrue(value in pos_val)

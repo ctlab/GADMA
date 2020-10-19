@@ -335,7 +335,7 @@ class TestCoreRun(unittest.TestCase):
         gadma.core.job(0, shared_dict, settings)
 
         settings.custom_filename = os.path.join(DATA_PATH,
-                                                "small_1pop_dem_model.py")
+                                                "small_1pop_dem_model_dadi.py")
         settings.directory_with_bootstrap = os.path.join(
             DATA_PATH, 'small_1_pop_bootstrap')
         settings.read_bootstrap_data()

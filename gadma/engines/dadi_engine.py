@@ -192,8 +192,11 @@ class DadiEngine(DadiOrMomentsEngine):
     def evaluate(self, values, pts):
         return super(DadiEngine, self).evaluate(values, pts)
 
-    def generate_code(self, values, filename, pts):
-        return super(DadiEngine, self).generate_code(values, filename, pts)
+    def generate_code(self, values, filename, pts,
+                      nanc=None, gen_time=None, gen_time_units=None):
+        return super(DadiEngine, self).generate_code(values, filename, pts,
+                                                     nanc, gen_time,
+                                                     gen_time_units)
 
 
 register_engine(DadiEngine)

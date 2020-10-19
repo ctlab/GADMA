@@ -166,14 +166,41 @@ def _print_moments_simulation():
     return ret_str
 
 
-def _print_moments_main(engine, values):
+def _print_model_plotting(engine, nanc, gen_time, gen_time_units):
+    ret_str = "\n\nplot_ns = [4 for _ in ns]  # small sizes for fast drawing\n"
+    ret_str += f"gen_mod = moments.ModelPlot.generate_model({FUNCTION_NAME},\n"
+    ret_str += "                                           p0, plot_ns)\n"
+
+    filename = 'model_from_GADMA.png'
+    pop_ids = list(engine.data_holder.population_labels)
+    draw_scale = nanc is not None
+    units = gen_time_units
+    if nanc is not None:
+        nanc = int(nanc)
+    if gen_time is None:
+        gen_time = 1.0
+    fig_title = "Demographic model from GADMA"
+    ret_str += f"moments.ModelPlot.plot_model(gen_mod,\n"
+    ret_str += f"                             save_file='{filename}',\n"
+    ret_str += f"                             fig_title='{fig_title}',\n"
+    ret_str += f"                             draw_scale={draw_scale},\n"
+    ret_str += f"                             pop_labels={pop_ids},\n"
+    ret_str += f"                             nref={nanc},\n"
+    ret_str += f"                             gen_time={gen_time},\n"
+    ret_str += f"                             gen_time_units='{units}',\n"
+    ret_str += f"                             reverse_timeline=True)"
+    return ret_str
+
+def _print_moments_main(engine, values, nanc, gen_time, gen_time_units):
     ret_str = _print_p0(values)
     ret_str += _print_moments_simulation()
-    ret_str += _print_main(engine, values, mode='moments')
+    ret_str += _print_main(engine, values, mode='moments', nanc=nanc)
+    ret_str += _print_model_plotting(engine, nanc, gen_time, gen_time_units)
     return ret_str
 
 
-def print_moments_code(engine, values, dt_fac, filename):
+def print_moments_code(engine, values, dt_fac, filename,
+                       nanc=None, gen_time=None, gen_time_units=None):
     """
     Generates code for `moments` to file. Code have function of demographic
     model that simulates AFS and main part where simulation takes place as well
@@ -183,6 +210,11 @@ def print_moments_code(engine, values, dt_fac, filename):
     :param values: Value of model parameters.
     :param dt_fac: Grid step for moments.
     :param filename: File to save generated code.
+    :param nanc: Size of ancestral population. Is used when other engine was
+                 used for inference.
+    :param gen_time: Time of one generation in units of ``gen_time_units``.
+    :param gen_time_units: Units of time. String.
+
     """
 
     ret_str = "import moments\nimport numpy as np\n\n"
@@ -193,7 +225,8 @@ def print_moments_code(engine, values, dt_fac, filename):
 
     values = [val for var, val in engine.model.var2value(values).items()
               if not isinstance(var, DiscreteVariable)]
-    ret_str += _print_moments_main(engine, values)
+    ret_str += _print_moments_main(engine, values, nanc,
+                                   gen_time, gen_time_units)
     if filename is None:
         return ret_str
     with open(filename, 'w') as f:

@@ -1,4 +1,3 @@
-from ..code_generator import id2printfunc
 from ..data import DataHolder
 from ..utils import Variable
 from ..models import BinaryOperation
@@ -201,7 +200,7 @@ class Engine(object):
 
         return self.evaluate(values, **options)
 
-    def generate_code(self, values, filename=None, *args):
+    def generate_code(self, values, filename=None):
         """
         Prints nice formated code in the format of engine to file or returns
         it as string if no file is set.
@@ -210,9 +209,4 @@ class Engine(object):
         :param filename: file to print code. If None then the string will
                          be returned.
         """
-        if self.data_holder is None:
-            raise AttributeError("Engine was initialized with inner "
-                                 "data. Need gadma.DataHolder for "
-                                 "generation of code.")
-        return id2printfunc[self.id](self, values,
-                                     *args, filename=filename)
+        raise NotImplementedError

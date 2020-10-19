@@ -4,6 +4,7 @@ from ..models import DemographicModel, StructureDemographicModel,\
 from ..utils import DynamicVariable, DiscreteVariable, cache_func
 from .. import SFSDataHolder
 from .. import dadi_available, moments_available
+from ..code_generator import id2printfunc
 
 import warnings
 import os
@@ -152,6 +153,9 @@ class DadiOrMomentsEngine(Engine):
                      positive.
         :type vmin: float
         """
+        from matplotlib import pyplot as plt
+        plt.clf()
+        plt.close()
         if vmin is not None:
             assert vmin > 0
         show = save_file is None
@@ -160,14 +164,14 @@ class DadiOrMomentsEngine(Engine):
         model = self.simulate(values, self.data.sample_sizes, grid_sizes)
         # Draw
         if n_pop == 1:
-            self.base_module.Plotting.plot_1d_comp_Poisson(model, self.data,
-                                                           show=show)
+            self.base_module.Plotting.plot_1d_comp_multinom(model, self.data)
+            if show:
+                plt.show()
         else:
-            func_name = f"plot_{n_pop}d_comp_Poisson"
+            func_name = f"plot_{n_pop}d_comp_multinom"
             plotting_func = getattr(self.base_module.Plotting, func_name)
             plotting_func(model, self.data, vmin=vmin, show=show)
-        if save_file is not None:
-            from matplotlib import pyplot as plt
+        if not show:
             plt.savefig(save_file)
             plt.close('all')
 
@@ -238,6 +242,24 @@ class DadiOrMomentsEngine(Engine):
         G = np.dot(J, H_inv)
 
         return np.trace(G)
+
+    def generate_code(self, values, filename, grid_sizes, nanc=None,
+                      gen_time=None, gen_time_units="years"):
+        """
+        Prints nice formated code in the format of engine to file or returns
+        it as string if no file is set.
+
+        :param values: values for the engine's model.
+        :param filename: file to print code. If None then the string will
+                         be returned.
+        """
+        if self.data_holder is None:
+            raise AttributeError("Engine was initialized with inner "
+                                 "data. Need gadma.DataHolder for "
+                                 "generation of code.")
+        return id2printfunc[self.id](self, values,
+                                     grid_sizes, filename, nanc, gen_time,
+                                     gen_time_units)
 
 
 # Those functions are common for dadi and moments engines.

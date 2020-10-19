@@ -13,4 +13,5 @@ API
    gadma.cli
    gadma.core
    gadma.utils
+   gadma.run_ls_on_boot_data
 

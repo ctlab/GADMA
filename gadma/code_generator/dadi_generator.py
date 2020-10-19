@@ -172,13 +172,16 @@ def _print_dadi_simulation():
     return ret_str
 
 
-def _print_main(engine, values, mode='dadi'):
+def _print_main(engine, values, mode='dadi', nanc=None):
     """
     Returns string for main part of generated code.
 
     :param engine: Engine that was used with data and model.
     :param values: best values of model parameters.
     :param mode: 'dadi' or 'moments'
+    :param nanc: Size of ancestral population. It could be known if inference
+                 was made by other engine and nanc from this engine will be
+                 different to optimal.
     """
     ret_str = f"ll_model = {mode}.Inference.ll_multinom(model, data)\n"
     ret_str += "print('Model log likelihood (LL(model, data)): "\
@@ -187,6 +190,10 @@ def _print_main(engine, values, mode='dadi'):
                "(model, data)\n"
 
     ret_str += "print('Optimal value of theta: {0}'.format(theta))\n"
+
+    if nanc is not None:
+        ret_str += f"Nanc = {nanc}  # {mode} was not used for inference\n"
+        return ret_str
 
     mu_is_val = engine.model.mu is not None
     data_holder_is_val = engine.data_holder is not None
@@ -203,19 +210,22 @@ def _print_main(engine, values, mode='dadi'):
             ret_str += f"L = {engine.data_holder.sequence_length}\n"
             ret_str += "Nanc = int(theta / (4 * mu * L))\n"
         ret_str += "print('Size of ancestral population: {0}'.format(Nanc))\n"
+    else:
+        ret_str += "Nanc = None\n"
     return ret_str
 
 
-def _print_dadi_main(engine, values):
+def _print_dadi_main(engine, values, nanc=None):
     ret_str = _print_p0(values)
     ret_str += _print_dadi_simulation()
-    ret_str += _print_main(engine, values, mode='dadi')
+    ret_str += _print_main(engine, values, mode='dadi', nanc=nanc)
     return ret_str
 
 
-def print_dadi_code(engine, values, pts, filename):
+def print_dadi_code(engine, values, pts, filename,
+                    nanc=None, gen_time=None, gen_time_units=None):
     """
-    Generates code for dadi to file. Code have function of demographic model
+    Generates code for `dadi` to file. Code have function of demographic model
     that simulates AFS and main part where simulation takes place as well as
     calculation of log-likelihood.
 
@@ -223,6 +233,12 @@ def print_dadi_code(engine, values, pts, filename):
     :param values: Value of model parameters.
     :param pts: Grid sizes for dadi.
     :param filename: File to save generated code.
+    :param nanc: Size of ancestral population. Is used when other engine was
+                 used for inference.
+    :param gen_time: Time of one generation in units of ``gen_time_units``.
+    :param gen_time_units: Units of time. String.
+
+    :note: the last two arguments are ignored as dadi could not draw models.
     """
     ret_str = "import dadi\nimport numpy as np\n\n"
     ret_str += _print_dadi_func(engine.model, values)
@@ -232,7 +248,7 @@ def print_dadi_code(engine, values, pts, filename):
 
     values = [val for var, val in engine.model.var2value(values).items()
               if not isinstance(var, DiscreteVariable)]
-    ret_str += _print_dadi_main(engine, values)
+    ret_str += _print_dadi_main(engine, values, nanc)
     if filename is None:
         return ret_str
     with open(filename, 'w') as f:

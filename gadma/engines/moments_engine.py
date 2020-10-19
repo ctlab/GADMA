@@ -176,7 +176,8 @@ class MomentsEngine(DadiOrMomentsEngine):
         :param nref: An ancestral population size. If None then parameters
                      will be drawn in genetic units.
         :type nref: int
-        :param gen_type: Time of one generation.
+        :param gen_type: Time of one generation. Should be in units of
+                         ``gen_time_units``.
         :type gen_type: float
         :param gen_time_units: Units of `gen_type`. For example, it
                                could be Years, Generations, Thousand Years and
@@ -233,9 +234,11 @@ class MomentsEngine(DadiOrMomentsEngine):
                 return None
             raise e
 
-    def generate_code(self, values, filename=None, dt_fac=default_dt_fac):
+    def generate_code(self, values, filename=None, dt_fac=default_dt_fac,
+                      nanc=None, gen_time=None, gen_time_units=None):
         return super(MomentsEngine, self).generate_code(values, filename,
-                                                        dt_fac)
+                                                        dt_fac, nanc, gen_time,
+                                                        gen_time_units)
 
 
 register_engine(MomentsEngine)

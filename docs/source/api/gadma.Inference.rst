@@ -1,3 +1,5 @@
+.. _gadma.Inference:
+
 Inference module
 ----------------------
 
