@@ -205,7 +205,7 @@ def main():
     settings.directory_with_bootstrap = args.boots
     all_boots = list(settings.read_bootstrap_data(True))
 
-    p_ids = settings.parameter_identifiers
+    p_ids = list(settings.parameter_identifiers)
     p_ids.append('Theta')
 
     print(f"{len(all_boots)} bootstrapped data found.")
