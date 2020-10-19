@@ -9,6 +9,7 @@ install:
  - ./install
  - pip install GPy
  - pip install GPyOpt
+ - pip install pandas
  - cat gadma/version.py
 script:
  - cat gadma/version.py
