@@ -116,7 +116,7 @@ No migrations: False
 #	or
 #	def model_func(params, ns) in case of moments
 #	Default: None
-Custom filename: test_data/small_1pop_dem_model_dadi.py
+Custom filename: tests/test_data/small_1pop_dem_model_dadi.py
 
 #	Now one should specify either bounds or identifications 
 #	of custom model's parameters. All values are in Nref units.
@@ -239,11 +239,11 @@ Number of processes: 1
 #
 #	Upper bound for split 1 (in case of 2 or 3 populations).
 #	Default: None
-Upper bound of first split: Null
+Upper bound of first split: 3000
 
 #	Upper bound for split 2 (in case of 3 populations).
 #	Default: None
-Upper bound of second split: Null
+Upper bound of second split: 1500
 
 
 #	One can resume from some other launch of GADMA by setting

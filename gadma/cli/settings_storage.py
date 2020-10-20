@@ -371,15 +371,12 @@ class SettingsStorage(object):
                                   " will be in generations.")  # TODO move
                 object.__setattr__(self, 'const_of_time_in_drawing', d[value])
             else:
-                print(d[self.units_of_time_in_drawing], value)
                 if d[self.units_of_time_in_drawing] != value:
                     found = False
                     for key, val in d.items():
                         if val == value:
                             self.__setattr__('units_of_time_in_drawing', key)
                             found = True
-                            print(key)
-                            print(self.units_of_time_in_drawing)
                             break
                     if not found:
                         warnings.warn("No such constant for time drawing. It "

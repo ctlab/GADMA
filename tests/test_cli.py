@@ -80,7 +80,7 @@ class TestCLI(unittest.TestCase):
             sys.argv = old_argv
 
     def test_generation_of_bounds_constrain(self):
-        params_file = os.path.join(DATA_PATH, 'params_file')
+        params_file = os.path.join(DATA_PATH, 'example_params_file')
         settings = SettingsStorage.from_file(params_file)
         settings.get_model()
 
