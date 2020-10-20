@@ -229,12 +229,14 @@ class TestModels(unittest.TestCase):
                 dm_copy = copy.deepcopy(dm)
                 dm_copy.add_variable(ContinuousVariable("some", [-1, 10]))
                 dic['some'] = 0
-                self.assertRaises(ValueError, dm.translate_units, dic, Nanc)
+                self.assertRaises(ValueError, dm_copy.translate_units,
+                                  dic, Nanc)
                 dm.as_custom_string(dic)
 
         # test failures
         event = Event()
-        self.assertRaises(NotImplementedError, event.as_custom_string)
+        x = [var.resample() for var in event.variables]
+        self.assertRaises(NotImplementedError, event.as_custom_string, x)
 
         self.assertRaises(ValueError, Epoch, sel_args=False, dom_args=True)
 

@@ -364,18 +364,22 @@ class SettingsStorage(object):
                 if value not in d:
                     raise ValueError(f"Setting {name} ({value}) must be one "
                                      f"of: {d.keys()}")
-                object.__setattr__(self, 'const_of_time_in_drawing', d[value])
                 if (value != 'generations' and
-                        not hasattr(self, 'time_for_generation')):
+                        self.time_for_generation is None):
+                    value = 'generations'
                     warnings.warn(f"There is no time for one generation, time"
                                   " will be in generations.")  # TODO move
+                object.__setattr__(self, 'const_of_time_in_drawing', d[value])
             else:
+                print(d[self.units_of_time_in_drawing], value)
                 if d[self.units_of_time_in_drawing] != value:
                     found = False
                     for key, val in d.items():
                         if val == value:
                             self.__setattr__('units_of_time_in_drawing', key)
                             found = True
+                            print(key)
+                            print(self.units_of_time_in_drawing)
                             break
                     if not found:
                         warnings.warn("No such constant for time drawing. It "
@@ -550,11 +554,11 @@ class SettingsStorage(object):
                 continue
             try:
                 other_value = getattr(other, attr_name)
-            except KeyError:
+            except AttributeError:
                 return False
             try:
                 self_value = getattr(self, attr_name)
-            except KeyError:
+            except AttributeError:
                 return False
 
             if callable(self_value) or callable(other_value):
@@ -566,7 +570,7 @@ class SettingsStorage(object):
                     return False
             elif (isinstance(self_value, tuple) or
                     isinstance(other_value, tuple)):
-                if not (self_value == other_value).all():
+                if not list(self_value) == list(other_value):
                     return False
             else:
                 if not self_value == other_value:

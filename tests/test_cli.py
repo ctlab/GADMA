@@ -187,9 +187,16 @@ class TestCLI(unittest.TestCase):
                           'initial_structure', [1])
 
         # units of time on pictures and no time for generation TODO
-#        settings = SettingsStorage()
-#        self.assertRaises(ValueError, settings.__setattr__,
-#                          'units_of_time_in_drawing', "years")
+        settings = SettingsStorage()
+        self.assertRaises(ValueError, settings.__setattr__,
+                          'units_of_time_in_drawing', "not_years")
+        settings.units_of_time_in_drawing = "years"
+        self.assertEqual(settings.units_of_time_in_drawing, "generations")
+
+        settings.time_for_generation = 1
+        unit = "thousand years"
+        settings.units_of_time_in_drawing = unit
+        self.assertEqual(settings.units_of_time_in_drawing, unit)
 
         # custom filename without model_func function
         self.assertRaises(ValueError, settings.__setattr__,
@@ -203,11 +210,12 @@ class TestCLI(unittest.TestCase):
         settings.final_structure = [2, 1]
 
         # files and dirs
+        settings = SettingsStorage()
         self.assertRaises(ValueError, settings.__setattr__,
                           'directory_with_bootstrap', 'not_existing_dir')
         self.assertRaises(ValueError, settings.__setattr__,
                           'input_file', 'not_existing_file')
-        settings.parameter_identifiers = 'nu, n, t, f, s'
+        settings.parameter_identifiers = 'nu, t, f, s'
         self.assertRaises(ValueError, settings.__setattr__,
                           'parameter_identifiers', 'e, t')
 
@@ -232,9 +240,10 @@ class TestCLI(unittest.TestCase):
             settings.engine = engine.id
 
         # units of time in drawing
+        settings.time_for_generation = 1.0
         settings.units_of_time_in_drawing = 'YeArs'
         self.assertRaises(ValueError, settings.__setattr__,
-                          'units_of_time_in_drawing', 'ctrange_value')
+                          'units_of_time_in_drawing', 'strange_value')
         settings.const_of_time_in_drawing = 0.01
         self.assertEqual(settings.units_of_time_in_drawing, 'thousand years')
         settings.const_of_time_in_drawing = 100
@@ -297,12 +306,14 @@ class TestCLI(unittest.TestCase):
 
         self.assertTrue(not settings1.__eq__(param_file))
 
-#        delattr(settings2, 'only_models')
-#        self.assertNotEqual(settings1, settings2)
-#        settings2 = SettingsStorage.from_file(saved_params_file,
-#                                              saved_extra_params_file)
-#        delattr(settings1, 'only_models')
-#        self.assertNotEqual(settings1, settings2)
+        super(SettingsStorage, settings2).__setattr__('new_attr', 1)
+        self.assertNotEqual(settings1, settings2)
+        settings2 = SettingsStorage.from_file(saved_params_file,
+                                              saved_extra_params_file)
+        super(SettingsStorage, settings1).__setattr__('new_attr', 1)
+        self.assertNotEqual(settings1, settings2)
+        settings1 = SettingsStorage.from_file(saved_params_file,
+                                              saved_extra_params_file)
 
         settings1.lower_bound = np.array([0, 0, 0, 0])
         settings1.pts = (10, 20, 30)

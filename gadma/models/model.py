@@ -111,6 +111,10 @@ class Model(object):
                 elif isinstance(key, Variable):
                     if key in self.variables:
                         ret_dict[key] = values[key]
+                    else:
+                        var = self.get_variable(key.name)
+                        if var is not None:
+                            ret_dict[var] = values[key]
         else:
             raise TypeError("Values are either not list nor dict.")
 

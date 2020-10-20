@@ -155,7 +155,6 @@ def get_settings():
             settings_storage = copy.copy(resume_from_settings)
             settings_storage = settings_storage.update_from_file(args.params,
                                                                  args.extra)
-            settings_storage.resume_dir = resume_from_settings.output_directory
             settings_storage.only_models = False
             if args.resume:
                 settings_storage.resume_from = args.resume
