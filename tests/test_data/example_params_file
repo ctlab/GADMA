@@ -116,7 +116,7 @@ No migrations: False
 #	or
 #	def model_func(params, ns) in case of moments
 #	Default: None
-Custom filename: tests/test_data/small_1pop_dem_model_dadi.py
+Custom filename: Null
 
 #	Now one should specify either bounds or identifications 
 #	of custom model's parameters. All values are in Nref units.
@@ -128,8 +128,8 @@ Custom filename: tests/test_data/small_1pop_dem_model_dadi.py
 #	s: 0 - 1
 #	This bounds will be taken automatically if identifications are set.
 #	Default: None
-Lower bound: [0.01, 0.01, 1e-15, 1e-15]
-Upper bound: [100.0, 100.0, 5.0, 5.0]
+Lower bound: Null
+Upper bound: Null
 #	An identifier list:
 #	T - time
 #	N - size of population
@@ -150,11 +150,11 @@ Parameter identifiers: [nuB, nuF, TB, TF]
 #
 #	Structure of initial model:
 #	Default: all is ones - 1 or 1,1 or 1,1,1
-Initial structure: Null
+Initial structure: 1
 
 #	Structure of final model:
 #	Default: equals to initial structure
-Final structure: Null
+Final structure: 2
 
 
 #!!!
