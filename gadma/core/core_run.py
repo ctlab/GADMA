@@ -516,7 +516,7 @@ class CoreRun(object):
                 restore_points_only = False
             else:
                 restore_points_only = only_models[i]
-            if not self.settings.generate_x_transform:
+            if not self.settings.generate_x_transform or restore_file is None:
                 gs_x_transform = None
                 ls_x_transform = None
             else:

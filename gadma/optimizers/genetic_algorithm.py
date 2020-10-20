@@ -592,7 +592,10 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         super(GeneticAlgorithm, self).save(info, save_file)
 
     def valid_restore_file(self, save_file):
-        info = self.load(save_file)
+        try:
+            info = self.load(save_file)
+        except Exception as e:
+            return False
         if not isinstance(info, tuple):
             return False
         if not len(info) == 9:

@@ -138,11 +138,13 @@ class TestRestore(unittest.TestCase):
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file,
                     '--output', outdir]
         try:
+            gadma.matplotlib_available = False
             core.main()
         finally:
             if check_dir_existence(outdir):
                 shutil.rmtree(outdir)
             os.remove(params_file)
+            gadma.matplotlib_available = True
 
     def test_restore_models_from_finished_run(self):
         finished_run_dir = os.path.join(DATA_PATH, 'my_example_run')
@@ -150,15 +152,19 @@ class TestRestore(unittest.TestCase):
         with open(params_file, 'w') as fl:
             fl.write("Stuck generation number: 2\n"
                      "Only models: True\n"
-                     "Projections: [4,4]")
+                     "Projections: [4,4]\n"
+                     "Theta0: 1\n"
+                     "Relative parameters: True")
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file,
                     '--only_models']
         try:
+            gadma.PIL_available = False
             core.main()
         finally:
             if check_dir_existence(finished_run_dir + '_resumed'):
                 shutil.rmtree(finished_run_dir + '_resumed')
             os.remove(params_file)
+            gadma.PIL_available = True
 
     def test_restore_with_different_options_1(self):
         finished_run_dir = os.path.join(DATA_PATH, 'my_example_run')
@@ -186,8 +192,13 @@ class TestRestore(unittest.TestCase):
                      "Projections: 4,4")
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
         try:
+            gadma.PIL_available = False
+            gadma.moments_available = False
             core.main()
         finally:
             if check_dir_existence(finished_run_dir + '_resumed'):
                 shutil.rmtree(finished_run_dir + '_resumed')
             os.remove(params_file)
+            gadma.PIL_available = True
+            gadma.moments_available = True
+

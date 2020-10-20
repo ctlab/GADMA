@@ -5,6 +5,7 @@ from gadma import *
 import gadma
 import dadi
 import scipy
+import shutil
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
 
@@ -344,6 +345,39 @@ class TestCoreRun(unittest.TestCase):
         shared_dict = gadma.shared_dict.SharedDictForCoreRun(
             multiprocessing=False)
         gadma.core.job(0, shared_dict, settings)
+
+    def test_core_run_restore(self):
+        old_run_out = os.path.join(DATA_PATH, "my_example_run")
+        sys.argv = ['gadma', "--resume", old_run_out]
+        settings, _ = get_settings()
+        settings.generate_x_transform = True
+        settings.final_structure = [3, 4]
+        shared_dict = SharedDictForCoreRun(False)
+
+        try:
+            # create fake files
+            new_folder_of_4_run = os.path.join(old_run_out, "4")
+            new_save_file = os.path.join(new_folder_of_4_run, "save_file")
+            new_save_file_1_1 = os.path.join(new_folder_of_4_run,
+                                             "save_file_1_1")
+            new_save_file_2_1 = os.path.join(new_folder_of_4_run,
+                                             "save_file_2_1")
+            if not check_dir_existence(new_folder_of_4_run):
+                os.mkdir(new_folder_of_4_run)
+            open(new_save_file, 'w').close()
+            open(new_save_file_2_1, 'w').close()
+            shutil.copyfile(os.path.join(old_run_out, "1", "save_file_1_1"),
+                            new_save_file_1_1)
+
+            # check options of core_run
+            for index in range(1, 5):
+                core_run = CoreRun(index, shared_dict, settings)
+                core_run.get_run_options()
+        finally:
+            if check_dir_existence(new_folder_of_4_run):
+                shutil.rmtree(new_folder_of_4_run)
+            if check_dir_existence(settings.output_directory):
+                shutil.rmtree(settings.output_directory)
 
 
 class TestLinearConstrains(unittest.TestCase):

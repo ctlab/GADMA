@@ -30,7 +30,7 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
     :note: print warnings if schematic model plot was not drawn.
     """
     if not matplotlib_available:
-        warnings.warn("Matplotlib is required to draw models.")
+        raise ValueError("Matplotlib is required to draw models.")
         return
     warnings.filterwarnings(
             'ignore', category=matplotlib.cbook.MatplotlibDeprecationWarning)
@@ -56,8 +56,8 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
     # 2 Draw schematic model plot
     # 2.0 Check that moments is available, it not we return
     if not moments_available:
-        warning.warn("Moments is required to draw schematic model plots.")
-        return
+        raise ValueError("Moments is required to draw schematic model plots.")
+
     # 2.1 Set file or buffer to save plot
     if PIL_available:
         save_file_model = io.BytesIO()
@@ -80,9 +80,7 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
     except Exception as e:
         save_file_sfs.seek(0)
         open(filename, 'wb').write(save_file_sfs.read())
-        warnings.warn(f"Schematic model plotting to {filename} file failed: "
-                      f"{str(e)}")
-        return
+        raise e
 
     # 3. Concatenate plots if PIL is available
     if PIL_available:
