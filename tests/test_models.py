@@ -239,7 +239,7 @@ class TestModels(unittest.TestCase):
         self.assertRaises(NotImplementedError, event.as_custom_string, x)
 
         self.assertRaises(ValueError, Epoch, T, [], [],
-                          sel_args=False, dom_args=True)
+                          sel_args=None, dom_args=[])
 
     def test_var_combinations(self):
         var1 = PopulationSizeVariable('nu1')
