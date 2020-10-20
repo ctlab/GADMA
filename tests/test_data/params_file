@@ -12,13 +12,13 @@
 #	If it is resumed from other directory and output directory 
 #	isn't set, GADMA will add '_resumed' for previous output 
 #	directory.
-Output directory: /home/katenos/Workspace/popgen/GADMA/tests/output_dir
+Output directory: tests/output_dir
 
 
 #!!!
 #	Input file can be sfs file (should end with .fs) or 
 #	file of SNP's in dadi format (should end with .txt).
-Input file: /home/katenos/Workspace/popgen/GADMA/tests/test_data/small_1pop.fs
+Input file: tests/test_data/small_1pop.fs
 
 #	'Population labels' is sequence of population names (the same
 #	names as in input file)
@@ -57,7 +57,7 @@ Linked SNP's: True
 #	the directory with bootstrapped data. 
 #	Bootstrap should be done over the regions of genome.
 #	Default: None
-Directory with bootstrap: /home/katenos/Workspace/popgen/GADMA/tests/test_data/small_1_pop_bootstrap
+Directory with bootstrap: tests/test_data/small_1_pop_bootstrap
 
 
 #!!!
@@ -116,7 +116,7 @@ No migrations: False
 #	or
 #	def model_func(params, ns) in case of moments
 #	Default: None
-Custom filename: /home/katenos/Workspace/popgen/GADMA/tests/test_data/small_1pop_dem_model_dadi.py
+Custom filename: test_data/small_1pop_dem_model_dadi.py
 
 #	Now one should specify either bounds or identifications 
 #	of custom model's parameters. All values are in Nref units.
