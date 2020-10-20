@@ -238,7 +238,8 @@ class TestModels(unittest.TestCase):
         x = [var.resample() for var in event.variables]
         self.assertRaises(NotImplementedError, event.as_custom_string, x)
 
-        self.assertRaises(ValueError, Epoch, sel_args=False, dom_args=True)
+        self.assertRaises(ValueError, Epoch, T, [], [],
+                          sel_args=False, dom_args=True)
 
     def test_var_combinations(self):
         var1 = PopulationSizeVariable('nu1')
