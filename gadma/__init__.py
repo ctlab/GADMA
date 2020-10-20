@@ -51,4 +51,5 @@ from .Inference import *  # NOQA
 from .run_ls_on_boot_data import *  # NOQA
 from .get_confidence_intervals import *  # NOQA
 
+warnings.simplefilter('always', UserWarning)
 warnings.formatwarning = utils.warning_format
