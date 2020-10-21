@@ -392,12 +392,17 @@ class TestLinearConstrains(unittest.TestCase):
              [-1, 0, 1]]
         lb = [None, None, -0.5]
         ub = [1.5, 4, None]
-        constrain = LinearConstrain(A, lb, ub)
+        constrain = LinearConstrain(np.zeros_like(A),
+                                    np.zeros_like(lb), np.zeros_like(ub))
+        constrain.A = A
+        constrain.lb = lb
+        constrain.ub = ub
         self.assertTrue(np.allclose(constrain.A, np.array(A)))
         self.assertTrue(np.allclose(constrain.lb,
                                     np.array([-np.inf, -np.inf, -0.5])))
         self.assertTrue(np.allclose(constrain.ub,
                                     np.array([1.5, 4, np.inf])))
+        constrain.__str__()
         x0 = [0, 0.5, 2]
         maxiter = 10
         for opt in all_local_optimizers():

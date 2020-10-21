@@ -391,29 +391,34 @@ class SettingsStorage(object):
             if name in ['min_n', 'min_t'] and value <= 0:
                 raise ValueError(f"Lower bound {name} should be greater "
                                  "than 0.")
-            if name == 'min_n':
-                PopulationSizeVariable.default_domain[0] = value
-            elif name == 'max_n':
-                PopulationSizeVariable.default_domain[1] = value
-            elif name == 'min_t':
-                TimeVariable.default_domain[0] = value
-            elif name == 'max_t':
-                TimeVariable.default_domain[1] = value
-            elif name == 'min_m':
-                MigrationVariable.default_domain[0] = value
-            elif name == 'max_m':
-                MigrationVariable.default_domain[1] = value
+            domain_changed = True
+            if name.endswith('n'):
+                cls = PopulationSizeVariable
+            elif name.endswith('t'):
+                cls = TimeVariable
+            elif name.endswith('m'):
+                cls = MigrationVariable
             else:
                 raise AttributeError("Check for supported variables")
-            if name.endswith('n'):
-                warnings.warn(f"Domain of PopulationSizeVariable changed to "
-                              f"{PopulationSizeVariable.default_domain}")
-            if name.endswith('t'):
-                warnings.warn(f"Domain of TimeVariable changed to "
-                              f"{TimeVariable.default_domain}")
-            if name.endswith('m'):
-                warnings.warn(f"Domain of MigrationVariable changed to "
-                              f"{MigrationVariable.default_domain}")
+
+            old_domain = np.array(cls.default_domain)
+
+            if name.startswith('min'):
+                cls.default_domain[0] = value
+            elif name.startswith('max'):
+                cls.default_domain[1] = value
+
+            domain_changed = np.any(old_domain != np.array(cls.default_domain))
+            if domain_changed:
+                if name.endswith('n'):
+                    warnings.warn(f"Domain of PopulationSizeVariable changed "
+                                  f"to {cls.default_domain}")
+                if name.endswith('t'):
+                    warnings.warn(f"Domain of TimeVariable changed to "
+                                  f"{cls.default_domain}")
+                if name.endswith('m'):
+                    warnings.warn(f"Domain of MigrationVariable changed to "
+                                  f"{cls.default_domain}")
 
         # 3.10 If we set custom filename with model we should check it is
         # valid python code

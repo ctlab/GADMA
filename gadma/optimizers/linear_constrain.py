@@ -87,10 +87,14 @@ class LinearConstrain(object):
 
     @lb.setter
     def lb(self, new_value):
+        new_value = np.nan_to_num(np.array(new_value, dtype=np.float),
+                                  nan=-np.inf)
         self.constrain.lb = new_value
 
     @ub.setter
     def ub(self, new_value):
+        new_value = np.nan_to_num(np.array(new_value, dtype=np.float),
+                                  nan=np.inf)
         self.constrain.ub = new_value
 
     @A.setter
