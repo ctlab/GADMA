@@ -79,7 +79,8 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
                                          gen_time, gen_time_units)
     except Exception as e:
         save_file_sfs.seek(0)
-        open(filename, 'wb').write(save_file_sfs.read())
+        with open(filename, 'wb') as fl:
+            fl.write(save_file_sfs.read())
         raise e
 
     # 3. Concatenate plots if PIL is available

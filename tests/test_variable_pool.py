@@ -3,7 +3,7 @@ import unittest
 from gadma import *
 
 import numpy as np
-
+import pickle
 
 class TestVariablePool(unittest.TestCase):
     def test_init(self):
@@ -84,3 +84,18 @@ class TestVariablePool(unittest.TestCase):
         self.assertTrue(pool2[0] is not v)
         self.assertTrue(pool2[1] is not n)
         self.assertTrue(pool2[2] is not t)
+
+    def test_pickling(self):
+        v = Variable("var1", '', '', '')
+        n = PopulationSizeVariable("nu")
+        t = TimeVariable("t")
+
+        pool = VariablePool([v, n, t])
+        out_file = "pickle_file"
+        with open(out_file, 'wb') as fl:
+            pickle.dump(pool, fl)
+
+        with open(out_file, 'rb') as fl:
+            pool = pickle.load(fl)
+        pool.names
+        os.remove(out_file)

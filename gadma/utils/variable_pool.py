@@ -14,6 +14,12 @@ class VariablePool(list):
             for item in lst:
                 self.append(item)
 
+    def fix_pickling(self):
+        if not hasattr(self, 'names'):
+            self.names = set()
+            for item in self:
+                self.names.append(item.name)
+
     def check_type(self, item):
         """
         Raises ValueError if ``item`` is not Variable.
@@ -25,6 +31,7 @@ class VariablePool(list):
         """
         Append new ``item`` to pool.
         """
+        self.fix_pickling()
         self.check_type(item)
         if item.name not in self.names:
             self.names.add(item.name)
@@ -41,6 +48,7 @@ class VariablePool(list):
             self.append(item)
 
     def __setitem__(self, key, item):
+        self.fix_pickling()
         if isinstance(key, slice):
             remove_names = []
             for value in self[key]:
@@ -66,6 +74,7 @@ class VariablePool(list):
                             f"the same name ({key}).")
 
     def __delitem__(self, key):
+        self.fix_pickling()
         if isinstance(key, slice):
             for value in self[key]:
                 self.names.remove(value.name)
