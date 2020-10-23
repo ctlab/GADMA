@@ -70,7 +70,8 @@ class SharedDict(object):
             process_dict = OrderedDict()
 
         if group in process_dict:
-            old_model = self.get_best_model_in_group(process, group)
+            old_model = self.get_best_model_for_process_in_group(process,
+                                                                 group)
             old_value = self.get_value(old_model, key)
         if (group not in process_dict or
                 np.allclose(new_value, old_value) or new_value > old_value):
@@ -138,7 +139,7 @@ class SharedDict(object):
             models = sorted(models, key=lambda x: key(x[1]), reverse=True)
         return models
 
-    def get_best_model_in_group(self, process, group, key=None):
+    def get_best_model_in_group(self, group, key=None):
         """
         Returns best model for group.
         """
@@ -148,6 +149,17 @@ class SharedDict(object):
         if len(models) == 0:
             return None
         return models[0][1]
+
+    def get_best_model_for_process_in_group(self, process, group, key=None):
+        """
+        Returns best model for process, group.
+        """
+        if key is None:
+            key = self.default_key(group)
+        models = self.get_models_for_process_in_group(process, group, key)
+        if len(models) == 0:
+            return None
+        return models[0]
 
     def get_available_groups(self):
         """
@@ -242,7 +254,7 @@ class SharedDictForCoreRun(SharedDict):
             process, group, model)
         return r
 
-    def get_models_for_group(self, group, key=None, align_y_dict=False):
+    def get_models_in_group(self, group, key=None, align_y_dict=False):
         """
         Returns models for specified group.
 

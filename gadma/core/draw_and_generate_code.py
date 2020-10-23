@@ -165,7 +165,7 @@ def print_runs_summary(start_time, shared_dict, settings):
     if len(metric_names) == 0:
         print("No models yet")
     for best_by in metric_names:
-        models = shared_dict.get_models_for_group(best_by, align_y_dict=True)
+        models = shared_dict.get_models_in_group(best_by, align_y_dict=True)
         local_metrics = models[0][1][2].keys()
         sorted_models = models
         metrics = local_metrics

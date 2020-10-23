@@ -163,6 +163,7 @@ class CoreRun(object):
             self.y_best = y
             updated = self.shared_dict.update_best_model_for_process(
                 self.index, best_by, self.engine, x, y_dict)
+            assert updated
             prefix = (self.settings.LOCAL_OUTPUT_DIR_PREFIX +
                       self.settings.LONG_NAME_2_SHORT.get(best_by, best_by))
             save_code_file = os.path.join(self.output_dir,
