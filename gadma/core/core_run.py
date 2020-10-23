@@ -548,6 +548,8 @@ class CoreRun(object):
         `settings`.
         """
         print(f'Run launch number {self.index}\n', end='')
+        if self.index in self.shared_dict.dict:
+            del self.shared_dict.dict[self.index]
         if self.settings.initial_structure is None:
             result = self.run_without_increase(initial_kwargs)
         else:

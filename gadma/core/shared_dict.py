@@ -73,7 +73,7 @@ class SharedDict(object):
             old_model = self.get_best_model_for_process_in_group(process,
                                                                  group)
             old_value = self.get_value(old_model, key)
-        if (group not in process_dict or
+        if (group not in process_dict or old_value is None or
                 np.allclose(new_value, old_value) or new_value > old_value):
             process_dict[group] = copy.deepcopy(model)
             self.dict[process] = process_dict

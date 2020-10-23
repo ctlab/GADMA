@@ -56,4 +56,6 @@ warnings.filterwarnings(action='ignore', category=UserWarning,
                         module='matplotlib')
 warnings.filterwarnings(action='ignore', category=UserWarning,
                         module='moments')
+warnings.filterwarnings(action='ignore', category=UserWarning,
+                        module='dadi')
 warnings.formatwarning = utils.warning_format
