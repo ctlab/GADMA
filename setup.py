@@ -7,11 +7,11 @@
 ############################################################################
 
 try:
-    from setuptools import setup
+    from setuptools import setup, find_packages
 except ImportError:
     from ez_setup import use_setuptools
     use_setuptools()
-    from setuptools import setup
+    from setuptools import setup, find_packages
 
 
 import os, sys
@@ -40,6 +40,9 @@ with open(os.path.join('gadma', 'version.py'), 'w') as f:
 with open('README.md') as f:
     DESCRIPTION = f.read()
 
+requirements = ['numpy>=1.2.0', 'scipy>=0.6.0', 'matplotlib>=0.98.1',
+                'Pillow>=4.2.1', 'Cython', 'mpmath', 'nlopt', 'ruamel.yaml',
+                'dadi']
 
 setup(
     name=NAME,
@@ -58,26 +61,16 @@ setup(
         'Programming Language :: Python :: 3',
         'Topic :: Software Development',
     ],
-    packages=['gadma',
-              'gadma.data',
-              'gadma.engines',
-              'gadma.models',
-              'gadma.utils',
-              'gadma.cli',
-              'gadma.core',
-              'gadma.optimizers',
-              'gadma.code_generator'],
-#    python_requires='>=2.5.*, <=2.7.*',
+    packages=find_packages(exclude=['examples', 'tests']),
     include_package_data=True,
     package_data={
         'gadma.cli': ['*.py',  'params_template', 'extra_params_template', 'test_settings']
     },
     data_files=[('fs_examples', [os.path.join('fs_examples', 'test.fs')]), ("", ["LICENSE"])],
-    install_requires=['numpy>=1.2.0', 'scipy>=0.6.0'],
+    install_requires=requirements,
     entry_points={
         'console_scripts': ['gadma = gadma.core:main',
             'gadma-run_ls_on_boot_data = gadma.run_ls_on_boot_data:main',
             'gadma-get_confidence_intervals = gadma.get_confidence_intervals:main']
     },
-#    zip_safe=False
 )
