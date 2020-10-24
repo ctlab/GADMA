@@ -4,7 +4,7 @@ Custom demographic model for our example.
 import numpy
 import dadi
 
-def prior_onegrow_mig(params, ns, pts):
+def model_func(params, ns, pts):
     """
     Model with growth, split, bottleneck in pop2, exp recovery, migration
 

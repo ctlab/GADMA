@@ -7,19 +7,19 @@
 ############################################################################
 
 try:
-    from setuptools import setup
+    from setuptools import setup, find_packages
 except ImportError:
     from ez_setup import use_setuptools
     use_setuptools()
-    from setuptools import setup
+    from setuptools import setup, find_packages
 
 
 import os, sys
 
 
 NAME = 'gadma'
-VERSION = '1.0.1'
-SUPPORTED_PYTHON_VERSIONS = ['2.5', '2.6', '2.7', '3.6', '3.7']
+VERSION = '2.0.0'
+SUPPORTED_PYTHON_VERSIONS = ['3.6', '3.7']
 
 
 # Check python version
@@ -32,13 +32,17 @@ if sys.version[0:3] not in SUPPORTED_PYTHON_VERSIONS:
 
 # Create a simple version.py module; less trouble than hard-coding the version
 with open(os.path.join('gadma', 'version.py'), 'w') as f:
-    f.write('__version__ = version = %r' % VERSION)
+    f.write('__version__ = %r\nversion = __version__\n' % VERSION)
+    f.write('\n# This is a new line that ends the file.\n')
 
 
 # Load up the description from README.rst
 with open('README.md') as f:
     DESCRIPTION = f.read()
 
+requirements = ['numpy>=1.2.0', 'scipy>=0.6.0', 'matplotlib>=0.98.1',
+                'Pillow>=4.2.1', 'Cython', 'mpmath', 'nlopt', 'ruamel.yaml',
+                'dadi']
 
 setup(
     name=NAME,
@@ -54,21 +58,19 @@ setup(
         'Natural Language :: English',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
         'Topic :: Software Development',
     ],
-    packages=['gadma'],
-    python_requires='>=2.5.*, <=2.7.*',
+    packages=find_packages(exclude=['examples', 'tests']),
     include_package_data=True,
     package_data={
-        'gadma': ['*.py',  'params_template', 'extra_params_template']
+        'gadma.cli': ['*.py',  'params_template', 'extra_params_template', 'test_settings']
     },
     data_files=[('fs_examples', [os.path.join('fs_examples', 'test.fs')]), ("", ["LICENSE"])],
-    install_requires=['numpy>=1.2.0', 'scipy>=0.6.0'],
+    install_requires=requirements,
     entry_points={
         'console_scripts': ['gadma = gadma.core:main',
             'gadma-run_ls_on_boot_data = gadma.run_ls_on_boot_data:main',
             'gadma-get_confidence_intervals = gadma.get_confidence_intervals:main']
     },
-    zip_safe=False
 )

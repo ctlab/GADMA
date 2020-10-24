@@ -1,0 +1,17 @@
+Projections : 6
+Directory with bootstrap: tests/test_data/small_1_pop_bootstrap
+Linked SNP's : True
+Engine : moments
+Pts : 5, 10, 15
+Custom filename : tests/test_data/small_1pop_dem_model_moments.py
+Draw models every N iteration : 10
+Print models' code every N iteration : 10
+Local optimizer: None
+Eps: 1
+Stuck generation number: 10
+Number of repeats : 1
+Number of processes: 1
+
+
+
+

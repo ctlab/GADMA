@@ -1,162 +1,168 @@
-#!/usr/bin/env python3
-
-############################################################################
-# Copyright (c) 2020 Noskova Ekaterina
-# All Rights Reserved
-# See the LICENSE file for details
-############################################################################
-
 import argparse
-import os, sys
-import signal
+import os
+import sys
 import numpy as np
-from gadma import options
-from gadma import support
 import gadma
-import pandas as pd
-import imp
-
-def worker_init():
-    """Graceful way to interrupt all processes by Ctrl+C."""
-    # ignore the SIGINT in sub process
-    def sig_int(signal_num, frame):
-        pass
-
-    signal.signal(signal.SIGINT, sig_int)
+import importlib
 import copy
+import multiprocessing as mp
+from importlib.machinery import SourceFileLoader
 
-def run_one_job(params):
-    fs_filename, fs, p0, model_func, lower_bound, upper_bound, pts, opt_name, output = params
+
+def run_job(params):
+    """
+    Run one local search optimization on one bootstrapped data.
+
+    :param params: Tuple of (filename with spectrum, loaded spectrum,
+                    initial best values, settings storage).
+    """
+    boot_fs_filename, boot_fs, p0, settings = params
     np.random.seed()
-    fs_filename = os.path.basename(os.path.normpath(fs_filename))
-    prefix = opt_name + '_' + fs_filename
-    out_file = os.path.join(output, "opt_" + str(prefix) + ".out")
-    res_file = os.path.join(output, str(prefix) + "_params.npy")
+    fs_filename = gadma.utils.abspath(boot_fs_filename)
+    prefix = str(settings.local_optimizer) + '_' + boot_fs_filename
+    out_file = os.path.join(settings.output_directory,
+                            "opt_" + str(prefix) + ".out")
+    res_file = os.path.join(settings.output_directory,
+                            str(prefix) + "_params.npy")
     if os.path.isfile(res_file):
-        return fs_filename, np.load(res_file)
- 
-    kwargs = {'p0': p0,
-        'data': fs,
-        'lower_bound': lower_bound,
-        'upper_bound': upper_bound,
-        'verbose': 1,
-        'output_file': out_file}
+        return boot_fs_filename, np.load(res_file, allow_pickle=True)
 
+    kwargs = {'verbose': 1,
+              'report_file': out_file}
 
-    if pts is not None:
-        import dadi as sim_lib
-        func_ex = sim_lib.Numerics.make_extrap_log_func(model_func)
-        if opt_name != 'powell':
-            kwargs['pts'] = pts
-    else:
-        import moments as sim_lib
-        func_ex = model_func
+    custom_model = settings.get_model()
 
-    kwargs['model_func'] = func_ex
+    grid_size = settings.get_engine_args()
 
-    if opt_name == 'powell' and pts is not None:
-        import moments as sim_lib
-        def my_func(*args, **kwargs):
-            kwargs['pts'] = pts
-            return func_ex(*args, **kwargs)
-        kwargs['model_func'] = my_func
-        popt = moments.Inference.optimize_powell(**kwargs)
-    else:
-        if opt_name == 'powell':
-            popt = sim_lib.Inference.optimize_powell(**kwargs)
-        elif opt_name == 'log':
-            popt = sim_lib.Inference.optimize_log(**kwargs)
+    engine = gadma.get_engine(settings.engine)
+    engine.set_data(boot_fs)
+    engine.set_model(custom_model)
 
-    popt = np.array(popt)
-    if pts is not None:
-        ll_old = sim_lib.Inference.ll_multinom(func_ex(p0, fs.sample_sizes, pts), fs)
-        ll_new = sim_lib.Inference.ll_multinom(func_ex(popt, fs.sample_sizes, pts), fs)
-    else:
-        ll_old = sim_lib.Inference.ll_multinom(func_ex(p0, fs.sample_sizes), fs)
-        ll_new = sim_lib.Inference.ll_multinom(func_ex(popt, fs.sample_sizes), fs)
-    if ll_new <= ll_old:
-        print(f"Optimization for boot file {fs_filename} does not find better"
-              "solution that initial. If this message is printed for a lot of "
-              "files try another optimization")
-        popt = np.array(p0)
+    f = engine.evaluate
 
-    if pts is not None:
-        model_fs = func_ex(popt, fs.sample_sizes, pts)
-    else:
-        model_fs = func_ex(popt, fs.sample_sizes)
-    theta = sim_lib.Inference.optimal_sfs_scaling(model_fs, fs)
+    optimizer = gadma.get_local_optimizer(settings.local_optimizer)
+    optimizer.maximize = True
+
+    result = optimizer.optimize(f, custom_model.variables, x0=p0,
+                                args=grid_size, **kwargs)
+    popt = result.x
+    theta = engine.get_theta(popt, *grid_size)
+
     popt = np.append(popt, theta)
     np.save(res_file, popt)
-    return  fs_filename, popt
+    return (boot_fs_filename, popt)
 
-def get_params_names(dem_model_filename, func_name):
-    with open (dem_model_filename) as f:
-        for line in f:
-            if line.strip().startswith('def'):
-                local_func_name = line.strip().split()[1].split('(')[0]
-                if local_func_name == func_name:
-                    str_after_bracket = line.strip().split('(', 1)[1].strip()
-                    if str_after_bracket.startswith('('):
-                        return str_after_bracket[1:].split(')')[0].split(',')
 
-def load_parameters_from_python_file(filename, as_module=False):
-    if not as_module:
-        f = support.check_file_existence(filename)
-        try:
-            module = imp.load_source('module', f)
-        except Exception as e:
-            support.error('File ' + filename + " is not valid python file.", error_instance=e)
-    else:
-        module = filename
+def load_module(filename):
+    """
+    Loads module from file.
+    """
+    filename = gadma.utils.abspath(filename)
+    name = "strange_name_of." +\
+           os.path.basename(filename).replace('/', '_').rstrip('.py')
+    spec = importlib.util.spec_from_loader(name, SourceFileLoader(name,
+                                                                  filename))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def load_parameters_from_python_file(filename):
+    """
+    Loads ``lower_bound``, ``upper_bound``, ``p0`` or ``popt`` and ``pts`` from
+    valid python file if they are there.
+
+    :returns: tuple(p0, settings)
+    """
+    settings = gadma.SettingsStorage()
+    if filename is None:
+        return None, settings
+>>>>>>> devel
     try:
-        lower_bound = module.lower_bound
-    except:
-        lower_bound = None
+        module = load_module(filename)
+    except Exception as e:
+        raise ValueError('File ' + filename + " is not valid python file." +
+                         str(e))
+    try:
+        settings.lower_bound = module.lower_bound
+    except Exception as e:
+        settings.lower_bound = None
 
     try:
-        upper_bound = module.upper_bound
-    except:
-        upper_bound = None
+        settings.upper_bound = module.upper_bound
+    except Exception as e:
+        settings.upper_bound = None
 
     try:
         p0 = module.popt
-    except:
+    except Exception as e:
         try:
             p0 = module.p0
-        except:
+        except Exception as e:
             p0 = None
     try:
-        pts = module.pts
-    except:
-        pts = None
+        settings.pts = module.pts
+    except Exception as e:
+        settings.pts = None
     try:
-        par_labels = module.par_labels
-    except:
+        settings.parameter_identifiers = module.par_labels
+    except Exception as e:
         try:
-            par_labels = module.param_labels
-        except:
-            par_labels = None
-    return lower_bound, upper_bound, p0, par_labels, pts 
+            settings.parameter_identifiers = module.param_labels
+        except Exception as e:
+            settings.parameter_identifiers = None
+    return p0, settings
 
 
 def main():
-    parser = argparse.ArgumentParser('GADMA module for runs of local search on bootstrapped data. Is needed for calculating confidence intervals.')
-    parser.add_argument(
-        '-b', '--boots', metavar="<dir>", required=True, help='Directory where bootstrapped data is located.')
-    parser.add_argument(
-        '-d', '--dem_model', metavar="<filename>", required=True, help='File with demographic model. Should contain `model_func` or `generated_model` function. One can put there several extra parameters and they will be taken automatically, otherwise one will need to enter them manually. Such parameters are:\n\t1) p0 (or popt) - initial parameters values\n\t2) lower_bound - list of lower bounds for parameters values\n\t4) upper_bound - list of upper bounds for parameters values\n\t5) par_labels/param_labels - list of string names for parameters 6) pts - pts for dadi (if there is no pts then moments will be run automatically).')
-    parser.add_argument(
-        '-o', '--output', metavar="<dir>", required=True, help='Output directory.')
-    parser.add_argument(
-        '-j', '--jobs', metavar="N", type=int, default=1, help='Number of threads for parallel run.')
+    """
+    Base function of script parse command-line arguments, loads all
+    bootstrapped data and runs local search optimization for each data in
+    parallel.
 
-    parser.add_argument(
-        '--opt', metavar="log/powell", type=str, default='log', help='Local search algorithm, by now it can be:\n\t1) `log` - Inference.optimize_log\n\t2) `powell` - Inference.optimize_powell.')
-    parser.add_argument(
-        '-p', '--params', metavar="<filename>", type=str, default=None, help='Filename with parameters, should be valid python file. Parameters are presented in -d/--dem_model option description upper.')
+    All output is saved in output directory.
+    """
+    import pandas as pd
+    parser = argparse.ArgumentParser(
+        "GADMA module for runs of local search on bootstrapped data. "
+        "Is needed for calculating confidence intervals.\n")
+    parser.add_argument('-b', '--boots', metavar="<dir>", required=True,
+                        help='Directory where bootstrapped data is located.')
+    parser.add_argument('-d', '--dem_model', metavar="<filename>",
+                        required=True,
+                        help="File with demographic model. Should contain "
+                             "`model_func` or `generated_model` function. One "
+                             "can put there several extra parameters and they "
+                             "will be taken automatically, otherwise one will "
+                             "need to enter them manually. Such parameters "
+                             "are:\n"
+                             "\t1) p0 (or popt) - initial parameters values\n"
+                             "\t2) lower_bound - list of lower bounds for "
+                             "parameters values\n"
+                             "\t3) upper_bound - list of pper bounds for "
+                             "parameters values\n"
+                             "\t4) par_labels/param_labels - list of string "
+                             "names for parameters 6) pts - pts for dadi "
+                             "(if there is no pts then moments will be run "
+                             "automatically).")
+    parser.add_argument('-o', '--output', metavar="<dir>", required=True,
+                        help='Output directory.')
+    parser.add_argument('-j', '--jobs', metavar="N", type=int, default=1,
+                        help='Number of threads for parallel run.')
+
+    parser.add_argument('--opt', metavar="log/powell", type=str, default='log',
+                        help="Local search algorithm, by now it can be:\n"
+                             "\t1) `log` - Inference.optimize_log\n"
+                             "\t2) `powell` - Inference.optimize_powell.")
+    parser.add_argument('-p', '--params', metavar="<filename>", type=str,
+                        default=None,
+                        help="Filename with parameters, should be valid "
+                             "python file. Parameters are presented in "
+                             "-d/--dem_model option description upper.")
 
     args = parser.parse_args()
 
+<<<<<<< HEAD
     output = support.ensure_dir_existence(args.output, False)
     all_boot = gadma.Inference.load_bootstrap_data_from_dir(args.boots, return_filenames=True)
     
@@ -182,24 +188,39 @@ def main():
     lower_bound, upper_bound, p0, new_par_labels, pts = load_parameters_from_python_file(file_with_model_func, as_module=True)
     if new_par_labels is not None:
         par_labels = new_par_labels
+=======
+    p0, settings = load_parameters_from_python_file(args.dem_model)
+    settings.output_directory = args.output
+    if args.opt == 'log':
+        settings.local_optimizer = 'optimize_log'
+    elif args.opt == 'powell':
+        settings.local_optimizer = 'optimize_log_powell'
+    else:
+        settings.local_optimizer = args.opt
+>>>>>>> devel
 
+    loaded_attrs = ['parameter_identifiers', 'pts',
+                    'lower_bound', 'upper_bound']
     if args.params is not None:
-        new_lower_bound, new_upper_bound, new_p0, new_par_labels, new_pts = load_parameters_from_python_file(args.params)
-        if new_lower_bound is not None:
-            lower_bound = new_lower_bound
-        if new_upper_bound is not None:
-            upper_bound = new_upper_bound
-        if new_p0 is not None:
-            p0 = new_p0
-        if new_par_labels is not None:
-            par_labels = new_par_labels
-        if new_pts is not None:
-            pts = new_pts
-    if p0 is not None:
-        print('Found initial parameters values: ' + str(p0))
-    if par_labels is not None:
-        print('Found parameters labels (+ `Theta` will be at the end): ' + str(par_labels))
+        fresh_p0, fresh_settings = load_parameters_from_python_file(
+            args.params)
+
+        for attr_name in loaded_attrs:
+            if getattr(fresh_settings, attr_name) is not None:
+                settings.__setattr__(attr_name,
+                                     getattr(fresh_settings, attr_name))
+        if fresh_p0 is not None:
+            p0 = fresh_p0
+
+    settings.custom_filename = args.dem_model
+    settings.get_model()
+
+    for attr_name in loaded_attrs:
+        if attr_name != 'pts' and getattr(settings, attr_name) is None:
+            raise ValueError(f"Parameter `{attr_name}` is missed both in "
+                             f"demographic model and params files")
     if p0 is None:
+<<<<<<< HEAD
         print("Could not detect p0/popt in files. Please enter:")
         p0 = support.check_comma_sep_list(raw_input(), is_int=False, is_float=True)
     if lower_bound is None:
@@ -254,12 +275,66 @@ def main():
         pool.terminate()
         sys.exit(1)
     
+=======
+        raise ValueError(f"Parameter `p0` (or `popt`) is missed both in "
+                         "demographic model and params files")
+
+    if settings.pts is None:
+        settings.engine = 'moments'
+    else:
+        settings.engine = 'dadi'
+    print(f"Chosen engine: {settings.engine}")
+
+    output = gadma.utils.ensure_dir_existence(args.output)
+
+    settings.directory_with_bootstrap = args.boots
+    all_boots = list(settings.read_bootstrap_data(True))
+
+    p_ids = list(settings.parameter_identifiers)
+    p_ids.append('Theta')
+
+    print(f"{len(all_boots)} bootstrapped data found.")
+    print(f"Found initial parameters values: {p0}")
+    print(f"Parameters labels will be: {', '.join(p_ids)}")
+    print(f"Lower bound will be: {settings.lower_bound}")
+    print(f"Upper bound will be: {settings.upper_bound}")
+    print(f"Optimization to run: {settings.local_optimizer}")
+
+    if args.jobs == 1:
+        result = []
+        for fs_filename, fs in all_boots:
+            res = run_job((all_boots[0][0], all_boots[0][1], p0, settings))
+            result.append(res)
+    else:
+        pool = mp.Pool(processes=args.jobs)
+        try:
+            result = []
+            map_result = pool.map_async(run_job,
+                                        [(fs_filename, fs, p0, settings)
+                                         for fs_filename, fs in all_boots],
+                                        callback=result.extend)
+            while True:
+                try:
+                    map_result.get(timeout=1)
+                    break
+                except mp.TimeoutError as ex:
+                    pass
+                except Exception as e:
+                    pool.terminate()
+                    raise e
+            pool.close()
+            pool.join()
+        except KeyboardInterrupt:
+            pool.terminate()
+            sys.exit(1)
+
     fs_filenames = [x[0] for x in result]
     result = np.array([x[1] for x in result])
-    df = pd.DataFrame(data=result, index=fs_filenames, columns=par_labels)
+    df = pd.DataFrame(data=result, index=fs_filenames, columns=p_ids)
     csv_path = os.path.join(output, 'result_table.csv')
     pkl_path = os.path.join(output, 'result_table.pkl')
     df.to_csv(csv_path)
     df.to_pickle(pkl_path)
     print(df)
-    print('DONE. Results are saved as csv file (' + csv_path + ') and as pandas dataframe (' + pkl_path + ').')
+    print(f"DONE. Results are saved as csv file ({csv_path}) and "
+          f"as pandas dataframe ({pkl_path}).")

@@ -18,7 +18,7 @@ pts_l = [40,50,60]
 # mostly as examples. We could use one of those.
 func = dadi.Demographics2D.split_mig
 # Instead, we'll work with our custom model
-func = demographic_models.prior_onegrow_mig
+func = demographic_models.model_func
 
 # Now let's optimize parameters for this model.
 

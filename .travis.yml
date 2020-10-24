@@ -1,0 +1,20 @@
+language: python
+python:
+ - "3.6"
+dist: bionic
+install:
+ - pip install coverage
+ - pip install codecov
+ - pip install pycodestyle
+ - ./install
+ - pip install GPy
+ - pip install GPyOpt
+ - pip install pandas
+ - cat gadma/version.py
+script:
+ - cat gadma/version.py
+ - pycodestyle gadma
+ - nosetests -vs tests --with-coverage --cover-package gadma     --cover-branches --cover-erase --cover-xml --cover-inclusive tests
+ - python3 -m codecov
+after_success:
+ - bash <(curl -s https://codecov.io/bash)
