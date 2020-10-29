@@ -6,16 +6,7 @@ install:
  - pip install coverage
  - pip install codecov
  - pip install pycodestyle
- - pip install numpy
- - pip install scipy
- - pip install matplotlib
- - pip install Pillow
- - pip install mpmath
- - pip install dadi
- - git clone https://bitbucket.org/simongravel/moments.git
- - cd moments
- - python3 setup.py install
- - cd ..
+ - ./install
  - pip install GPy
  - pip install GPyOpt
  - pip install pandas
