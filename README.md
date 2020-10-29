@@ -1,5 +1,7 @@
 # GADMA ![](http://jb.gg/badges/research-flat-square.svg)
 
+[![Docs](https://readthedocs.org/projects/gadma/badge/?version=latest)](https://gadma.readthedocs.io/en/latest/?badge=latest) [![Build Status](https://travis-ci.com/ctlab/GADMA.svg?branch=master)](https://travis-ci.com/ctlab/GADMA) [![codecov](https://codecov.io/gh/ctlab/GADMA/branch/master/graph/badge.svg?token=F303UDEWDJ)](undefined)
+
 Welcome to GADMA!
 
 GADMA implements methods for automatic inferring joint demographic history of multiple populations from the genetic data.
