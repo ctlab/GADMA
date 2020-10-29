@@ -18,7 +18,7 @@ import os, sys
 
 
 NAME = 'gadma'
-VERSION = '2.0.3'
+VERSION = '2.0.0'
 SUPPORTED_PYTHON_VERSIONS = ['3.6', '3.7']
 
 
