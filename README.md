@@ -2,7 +2,7 @@
 
 [![Docs](https://readthedocs.org/projects/gadma/badge/?version=latest)](https://gadma.readthedocs.io/en/latest/?badge=latest) [![Build Status](https://travis-ci.com/ctlab/GADMA.svg?branch=master)](https://travis-ci.com/ctlab/GADMA) [![codecov](https://codecov.io/gh/ctlab/GADMA/branch/master/graph/badge.svg?token=F303UDEWDJ)](undefined)
 
-Welcome to GADMA!
+Welcome to GADMA v2!
 
 GADMA implements methods for automatic inferring joint demographic history of multiple populations from the genetic data.
 
@@ -11,6 +11,8 @@ GADMA is based on two open source packages: the ∂a∂i developed by Ryan Guten
 In contrast, GADMA is a command-line tool. It presents a series of launches of the genetic algorithm and infer demographic history from Allele Frequency Spectrum of multiple populations (up to three).
 
 GADMA is implemented by Ekaterina Noskova (ekaterina.e.noskova@gmail.com)
+
+**GADMA is now of version 2!**
 
 ### Documentation
 
