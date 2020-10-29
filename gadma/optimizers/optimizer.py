@@ -32,14 +32,20 @@ class Optimizer(object):
     """
     def __init__(self, log_transform=False, maximize=False):
         self.log_transform = log_transform
-        if self.log_transform:
+        self.maximize = maximize
+
+    @property
+    def log_transform(self):
+        return self._log_trasform
+
+    @log_transform.setter
+    def log_transform(self, log_transform):
+        if log_transform:
             self.transform = logarithm_transform
             self.inv_transform = exponent_transform
         else:
             self.transform = ident_transform
             self.inv_transform = ident_transform
-
-        self.maximize = maximize
 
     @property
     def sign(self):

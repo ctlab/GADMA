@@ -77,7 +77,6 @@ def load_parameters_from_python_file(filename):
     settings = gadma.SettingsStorage()
     if filename is None:
         return None, settings
->>>>>>> devel
     try:
         module = load_module(filename)
     except Exception as e:
@@ -162,33 +161,6 @@ def main():
 
     args = parser.parse_args()
 
-<<<<<<< HEAD
-    output = support.ensure_dir_existence(args.output, False)
-    all_boot = gadma.Inference.load_bootstrap_data_from_dir(args.boots, return_filenames=True)
-    
-    print(str(len(all_boot)) + ' bootstrapped data found.')
-
-    #extract model_func, we cannot put it to function as multiprocessing need pickleable functions
-    args.dem_model = support.check_file_existence(args.dem_model)
-    try:
-        file_with_model_func = imp.load_source('module', args.dem_model)
-    except Exception as e:
-        support.error('File ' + args.dem_model + " is not valid python file.", error_instance=e)
-    try:
-        model_func = file_with_model_func.model_func
-        name = 'model_func'
-    except:
-        try:
-            model_func = file_with_model_func.generated_model
-            name = 'generated_model'
-        except:
-            support.error(
-                "File " + dem_model_filename + ' does not contain function named `model_func` or `generated_model`.')
-    par_labels = get_params_names(args.dem_model, name)
-    lower_bound, upper_bound, p0, new_par_labels, pts = load_parameters_from_python_file(file_with_model_func, as_module=True)
-    if new_par_labels is not None:
-        par_labels = new_par_labels
-=======
     p0, settings = load_parameters_from_python_file(args.dem_model)
     settings.output_directory = args.output
     if args.opt == 'log':
@@ -197,7 +169,6 @@ def main():
         settings.local_optimizer = 'optimize_log_powell'
     else:
         settings.local_optimizer = args.opt
->>>>>>> devel
 
     loaded_attrs = ['parameter_identifiers', 'pts',
                     'lower_bound', 'upper_bound']
@@ -220,62 +191,6 @@ def main():
             raise ValueError(f"Parameter `{attr_name}` is missed both in "
                              f"demographic model and params files")
     if p0 is None:
-<<<<<<< HEAD
-        print("Could not detect p0/popt in files. Please enter:")
-        p0 = support.check_comma_sep_list(raw_input(), is_int=False, is_float=True)
-    if lower_bound is None:
-        print("Could not detect lower_bound in files. Please enter:")
-        lower_bound = support.check_comma_sep_list(raw_input(), is_int=False, is_float=True)
-    if upper_bound is None:
-        print("Could not detect upper_bound in files. Please enter:")
-        upper_bound = support.check_comma_sep_list(raw_input(), is_int=False, is_float=True)
-
-    if pts is None:
-        print("Cannot detect `pts` parameter. Moments will be run.")
-    
-    if len(lower_bound) != len(upper_bound):
-        support.error("Lengths of upper and lower bound must be the same.")
-    
-    if par_labels is not None and len(par_labels) != len(lower_bound):
-        support.error("Lengths of `par_labels` and lower/upper_bound must be the same.")
-
-    if len(p0) != len(lower_bound):
-        support.error("Lengths of initial values (p0) and lower/upper_bound must be the same.")
-
-    for l, p, u in zip(lower_bound, p0, upper_bound):
-        if l > p:
-            support.error("Lower bound is greater than p0.")
-        if p > u:
-            support.error("Upper bound is less than p0.")
-    if par_labels is None or len(lower_bound) != len(par_labels):
-        par_labels = ['par_' + str(i) for i in range(len(lower_bound))]
-    
-    par_labels.append('Theta')
-    print('Parameters labels will be: ' + ','.join(par_labels))
-
-    import multiprocessing as mp
-
-    #run_one_job((all_boot[0][0],all_boot[0][1], p0, model_func, lower_bound, upper_bound, pts, args.opt, output))
-    pool = mp.Pool(processes=args.jobs, initializer=worker_init)
-    try:    
-        result = []
-        map_result = pool.map_async(run_one_job, [(fs_filename, fs, p0, model_func, lower_bound, upper_bound, pts, args.opt, output) for fs_filename, fs in all_boot], callback=result.extend)
-        while True:
-            try:
-                map_result.get(timeout=1)
-                break
-            except mp.TimeoutError as ex:
-                pass
-            except Exception as e:    
-                pool.terminate()
-                support.error(str(e))
-        pool.close()
-        pool.join()
-    except KeyboardInterrupt:
-        pool.terminate()
-        sys.exit(1)
-    
-=======
         raise ValueError(f"Parameter `p0` (or `popt`) is missed both in "
                          "demographic model and params files")
 
