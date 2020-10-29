@@ -23,9 +23,11 @@ A parameter file is a simple text file (created in a text editor, such as Notepa
    :maxdepth: 2
    :caption: User documentation
 
+   user_manual/installation
    user_manual/hands_on
    user_manual/user_manual
    user_manual/example_params_file
+   examples/examples
    faq
    getting_help
 

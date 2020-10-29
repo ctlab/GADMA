@@ -816,7 +816,10 @@ class SettingsStorage(object):
         # bo = get_global_optimizer("Bayesian_optimization")
         # bo.log_transform = True
         # bo.maximize = True
-        # return bo
+#        bo = get_global_optimizer("BOTorch")
+#        bo.log_transform = True
+#        bo.maximize = True
+#        return bo
         ga = get_global_optimizer("Genetic_algorithm")
         ga.gen_size = self.size_of_generation
         ga.n_elitism = self.n_elitism

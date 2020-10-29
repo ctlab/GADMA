@@ -40,8 +40,8 @@ with open(os.path.join('gadma', 'version.py'), 'w') as f:
 with open('README.md') as f:
     DESCRIPTION = f.read()
 
-requirements = ['numpy>=1.2.0', 'scipy>=0.6.0', 'matplotlib>=0.98.1',
-                'Pillow>=4.2.1', 'Cython', 'mpmath', 'nlopt', 'ruamel.yaml',
+requirements = ['numpy', 'scipy', 'matplotlib',
+                'Pillow', 'Cython', 'mpmath', 'nlopt', 'ruamel.yaml',
                 'dadi']
 
 setup(
@@ -49,12 +49,13 @@ setup(
     version=VERSION,
     author='Ekaterina Noskova',
     author_email='ekaterina.e.noskova@gmail.com',
-    url='https://bitbucket.org/noscode/gadma/src/master/',
+    url='https://github.com/ctlab/GADMA',
     description='Genetic Algorithm for Demographic Inference',
     long_description=DESCRIPTION,
+    long_description_content_type='text/markdown',
     classifiers=[
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: GNU GPL License',
+        'License :: OSI Approved :: GNU General Public License (GPL)',
         'Natural Language :: English',
         'Operating System :: OS Independent',
         'Programming Language :: Python',

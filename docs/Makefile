@@ -1,6 +1,13 @@
 # Minimal makefile for Sphinx documentation
 #
 
+# <noscode>
+#cd source/examples/
+#jupyter-nbconvert --to rst --output moments_YRI_CEU_optimize_ga ../../../examples/optimize_ga_for_YRI_CEU/YRI_CEU_with_optimize_ga_and_moments.ipynb --output-dir  .
+#jupyter-nbconvert --to rst --output dadi_YRI_CEU_optimize_ga ../../../examples/optimize_ga_for_YRI_CEU/YRI_CEU_with_optimize_ga_and_dadi.ipynb --output-dir  .
+#cd ../..
+# </noscode>
+
 # You can set these variables from the command line, and also
 # from the environment for the first two.
 SPHINXOPTS    ?=
