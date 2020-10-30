@@ -47,6 +47,20 @@ class SharedDict(object):
             return model
         return key(model)
 
+
+    def _put_new_model_for_process(self, process, group, model, key=None):
+        if key is None:
+            key = self.default_key(group)
+        new_value = self.get_value(model, key)
+
+        copy_dict = dict(self.dict)
+        try:
+            process_dict = OrderedDict(copy_dict[process])
+        except KeyError:
+            process_dict = OrderedDict()
+        process_dict[group] = copy.deepcopy(model)
+        self.dict[process] = process_dict
+
     def update_best_model_for_process(self, process, group, model, key=None):
         """
         Updates best model for process. Models are compared by the value of
@@ -74,9 +88,8 @@ class SharedDict(object):
                                                                  group)
             old_value = self.get_value(old_model, key)
         if (group not in process_dict or old_value is None or
-                np.allclose(new_value, old_value) or new_value > old_value):
-            process_dict[group] = copy.deepcopy(model)
-            self.dict[process] = process_dict
+                np.allclose(new_value, old_value) or new_value >= old_value):
+            self._put_new_model_for_process(process, group, model, key)
             return True
         return False
 
@@ -240,6 +253,14 @@ class SharedDictForCoreRun(SharedDict):
         if ff is None:
             return ff
         return sign * ff
+
+    def _put_new_model_for_process(self, process, group, model, key=None):
+        if isinstance(model, tuple):
+            engine, x, y = model
+        model = self.construct_model(group, engine, x, y)
+        r = super(SharedDictForCoreRun, self)._put_new_model_for_process(
+            process, group, model)
+        return r
 
     def update_best_model_for_process(self, process, group, engine, x, y):
         # print(x)
