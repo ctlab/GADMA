@@ -93,7 +93,8 @@ class SettingsStorage(object):
         missed_attrs = ['engine', 'local_optimizer', '_inner_data',
                         '_bootstrap_data', 'X_init', 'Y_init', 'model_func',
                         'get_engine_args', 'units_of_time_in_drawing',
-                        'data_holder', 'resume_from_settings']
+                        'data_holder', 'resume_from_settings',
+                        'dadi_available', 'moments_available']
 
         super_hasattr = True
         setattr_at_the_end = True

@@ -102,6 +102,8 @@ Time to print summary: 1
 
 
 #	Other parameters of run without description:
+dadi_available: true
+moments_available: true
 mutation_rate: null
 n_elitism: 2
 outgroup: null
