@@ -68,7 +68,7 @@ setup(
     package_data={
         'gadma.cli': ['*.py',  'params_template', 'extra_params_template', 'test_settings']
     },
-    data_files=[('fs_examples', [os.path.join('fs_examples', 'test.fs')]), ("", ["LICENSE"])],
+    data_files=[["gadma", ["gadma/test.fs"]], ("", ["LICENSE"])],
     install_requires=requirements,
     entry_points={
         'console_scripts': ['gadma = gadma.core:main',
