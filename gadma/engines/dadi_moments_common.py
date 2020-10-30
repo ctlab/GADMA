@@ -411,8 +411,10 @@ def _read_data_snp_type(module, data_holder):
     if data_holder.population_labels is not None:
         population_labels = data_holder.population_labels
     sfs = module.Spectrum.from_data_dict(dd, population_labels,
-                                         size, has_outgroup)
-    sfs = _change_outgroup(sfs, data_holder.outgroup)
+                                         projections=size,
+                                         polarized=has_outgroup)
+    if has_outgroup != data_holder.outgroup:
+        sfs = _change_outgroup(sfs, data_holder.outgroup)
     return sfs
 
 

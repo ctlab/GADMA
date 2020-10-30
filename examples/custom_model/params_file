@@ -1,0 +1,35 @@
+# Set data first
+Input file: 2pop_e_gillettii_all_snp.fs
+
+# Some additional settings for data but we do not use them here:
+#
+# Population labels: WY, CO  # we could change order of populations
+# Projections: 10, 10  # downsamples AFS
+# Outgroup: False  # indicates if there is outgroup in data
+
+
+# Output folder. It should be empty.
+Output directory: gadma_result
+
+
+# Set engine for simulations. We use default moments.
+Engine: moments
+
+
+# Now set our custom demographic model from file.
+# There should be function model_func in file with model.
+Custom filename: demographic_model.py
+
+# We could set optional settings about parameter labels,
+# lower and upper bounds. But GADMA can extract it from provided
+# file with model. If it fail then error will be printed and one
+# should set at least parameter labels here.
+#
+# Parameter labels: nuW, nuC, T, m12, m21
+# Lower bound: 1e-2, 1e-2, 1e-15, 0, 0
+# Upper bound: 100, 100, 5, 10, 10
+
+
+# How many repeates to run and how many processes to use.
+Number of repeats: 2
+Number of processes: 2

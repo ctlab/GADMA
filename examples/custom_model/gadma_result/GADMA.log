@@ -1,0 +1,53 @@
+[92m--Successful arguments parsing--[0m
+
+Data reading
+Number of populations: 2
+Projections: [12 12]
+Population labels: ['WY', 'CO']
+Outgroup: False
+[92m--Successful data reading--[0m
+
+Parameters of launch are saved in output directory: /home/katenos/Workspace/popgen/GADMA/examples/custom_model/gadma_result/params_file
+All output is saved in output directory: /home/katenos/Workspace/popgen/GADMA/examples/custom_model/gadma_result/GADMA.log
+[94m--Start pipeline--[0m
+Run launch number 1
+Run launch number 2
+
+[000:01:00]
+All best by log-likelihood models
+Number	log-likelihood	Model
+Run 1	-286.68	(nuW=1.30539,	nuC=0.22743,	T=0.16273,	m12=0.62013,	m21=0)	c	(theta =  1333.14)
+Run 2	-337.37	(nuW=1.62871,	nuC=0.24435,	T=1.24862,	m12=0.73595,	m21=1.4779)	m	(theta =  962.87)
+
+You can find picture and python code of best model in the output directory.
+
+Finish genetic algorithm number 2
+
+[000:02:00]
+All best by log-likelihood models
+Number	log-likelihood	Model
+Run 1	-282.81	(nuW=1.2634,	nuC=0.18067,	T=0.12439,	m12=0.27997,	m21=0.00e+00)	m	(theta =  1380.39)
+Run 2	-337.22	(nuW=3.65368,	nuC=0.57561,	T=4.98909,	m12=0.33304,	m21=0.61661)	(theta =  421.42)
+
+You can find picture and python code of best model in the output directory.
+
+Finish genetic algorithm number 1
+
+[000:02:30]
+All best by log-likelihood models
+Number	log-likelihood	Model
+Run 1	-282.81	(nuW=1.2634,	nuC=0.18067,	T=0.12439,	m12=0.27997,	m21=0.00e+00)	m	(theta =  1380.39)
+Run 2	-337.22	(nuW=3.65368,	nuC=0.57561,	T=4.98909,	m12=0.33304,	m21=0.61661)	(theta =  421.42)
+
+You can find picture and python code of best model in the output directory.
+
+
+--Finish pipeline--
+
+
+You didn't specify theta at the beginning. If you want change it and rescale parameters, please see tutorial.
+
+Thank you for using GADMA!
+
+In case of any questions or problems, please contact: ekaterina.e.noskova@gmail.com
+

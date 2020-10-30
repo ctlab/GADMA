@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+pip3 install numpy
+pip3 install scipy
+pip3 install matplotlib
+pip3 install Pillow
+pip3 install ruamel.yaml
+pip3 install mpmath
+pip3 install dadi
+git clone https://bitbucket.org/simongravel/moments.git
+cd moments
+python3 setup.py install
+cd ..
+python3 setup.py install

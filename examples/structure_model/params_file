@@ -1,0 +1,37 @@
+# Set data first
+Input file: dadi_2pops_CVLN_CVLS_snps.txt
+# As we have SNP's file format we need to set the following settings:
+Population labels: CVLN, CVLS
+Projections: 10, 10  # we downsample AFS for fast example 30, 18 original sizes
+Outgroup: False
+
+
+# Output folder. It should be empty.
+Output directory: gadma_result
+
+
+# Set engine for simulations. We use default moments
+Engine: moments
+# But we specify grid size for dadi for its usage in generated code
+Pts: 30, 40, 50
+
+
+# Now set structures
+Initial structure: 1,1
+Final structure: 2,1
+
+# We could specify some additional properties of our model
+# We want asymmetric migrations
+Symmetric migrations: False
+# If True then any population splits into two new in some fraction.
+# If False then two new populations after split have its own initial
+# sizes. We choose the last option.
+Split fractions: False
+
+
+# No output in stdout
+Silence: True
+
+# How many repeates to run and how many processes to use.
+Number of repeats: 2
+Number of processes: 2

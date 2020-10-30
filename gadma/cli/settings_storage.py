@@ -877,8 +877,6 @@ class SettingsStorage(object):
         kwargs = {}
         kwargs['args'] = self.get_engine_args()
         kwargs['verbose'] = self.verbose
-        if self.silence:
-            kwargs['verbose'] = 0
 #        kwargs['linear_constrain'] = self.get_linear_constrain()
         return kwargs
 
