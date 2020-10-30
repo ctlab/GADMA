@@ -1,5 +1,6 @@
 from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable,\
                     DynamicVariable, FractionVariable
+from .. import moments_available, dadi_available
 
 # Main options. Output and input.
 output_directory = None
@@ -20,7 +21,10 @@ time_for_generation = None
 # multinom = None
 only_sudden = False
 pts = None
-engine = 'moments'
+if moments_available:
+    engine = 'moments'
+elif dadi_available:
+    engine = 'dadi'
 relative_parameters = False
 no_migrations = False
 symmetric_migrations = False
