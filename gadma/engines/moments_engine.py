@@ -20,7 +20,7 @@ class MomentsEngine(DadiOrMomentsEngine):
     id = 'moments'  #:
     if moments_available:
         import moments as base_module
-        inner_data_type = base_module.Spectrum  #:  
+        inner_data_type = base_module.Spectrum  #:
     supported_data = [SFSDataHolder]  # , VCFDataHolder]  #:
     default_dt_fac = 0.01  #:
 
@@ -240,6 +240,7 @@ class MomentsEngine(DadiOrMomentsEngine):
         return super(MomentsEngine, self).generate_code(values, filename,
                                                         dt_fac, nanc, gen_time,
                                                         gen_time_units)
+
 
 if moments_available:
     register_engine(MomentsEngine)
