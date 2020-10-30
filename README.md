@@ -31,3 +31,9 @@ Full documentation including installation instructions, usage, examples and API 
 Please don't be afraid to contact me for different problems and offers via email ekaterina.e.noskova@gmail.com. I will be glad to answer all questions. 
 
 Also you are always welcome to [create an issue](https://github.com/ctlab/GADMA/issues) on GitHub page of GADMA project with your question.
+
+## Citation
+
+If you use GADMA in your research please cite:
+
+Ekaterina Noskova, Vladimir Ulyantsev, Klaus-Peter Koepfli, Stephen J O’Brien, Pavel Dobrynin, GADMA: Genetic algorithm for inferring demographic history of multiple populations from allele frequency spectrum data, *GigaScience*, Volume 9, Issue 3, March 2020, giaa005, <https://doi.org/10.1093/gigascience/giaa005>

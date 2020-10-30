@@ -1,0 +1,258 @@
+#	It is parameters file for GADMA software.
+
+#	Lines started from # are ignored.
+#	Also comments at the end of a line are ignored too.
+#	Every line contains: Identificator of parameter : value.
+
+#!!! 	means pay attention to this parameter, they are basical.
+
+#!!!
+#	Output directory to write all GADMA out.
+#	One need to set it to not existing or empty directory.
+#	If it is resumed from other directory and output directory 
+#	isn't set, GADMA will add '_resumed' for previous output 
+#	directory.
+Output directory: /home/katenos/Workspace/popgen/GADMA/examples/changing_theta/gadma_result
+
+
+#!!!
+#	Input file can be sfs file (should end with .fs) or 
+#	file of SNP's in dadi format (should end with .txt).
+Input file: /home/katenos/Workspace/popgen/GADMA/examples/changing_theta/YRI_CEU.fs
+
+#	'Population labels' is sequence of population names (the same
+#	names as in input file)
+#	If .fs file is in old format then it would rename population 
+#	labels that are absent.
+#	It is necessary to put them in order from most ancient to less. 
+#	(In case of more than two populations)
+#	It is important, because the last of formed populations take
+#	part in next split.
+#	For example, if we have YRI - African population,
+#	CEU - European population and CHB - Chineese populaion,
+#	then we can write YRI, CEU, CHB or YRI, CHB, CEU 
+#	(YRI must be at the first place)
+#	Default: from input file
+Population labels: [Pop 1, Pop 2]
+
+#	Also one can project your spectrum to less size.
+#	For example, we have 80 individuals in each of three 
+#	populations, then spectrum will be 81x81x81 and one can 
+#	project it to 21x21x21 by set 'Projections' parameter 
+#	to 20, 20, 20.
+#	Default: from input file
+Projections: [20, 20]
+
+#!!!
+#	Are SNP's linked or unlinked?
+#	If they are linked, then Composite Likelihood Akaike
+#	Information Criterion (CLAIC) will be used to compare models.
+#	If they are unlinked, then usual Akaike Information Criterion 
+#	(AIC) will be used.
+#	Default: True
+Linked SNP's: True
+
+#!!!
+#	If SNP's are linked in order to calculate CLAIC, please, set
+#	the directory with bootstrapped data. 
+#	Bootstrap should be done over the regions of genome.
+#	Default: None
+Directory with bootstrap: Null
+
+
+#!!!
+#	Now all main parameters:
+#
+#	Use moments or dadi
+#	Default: moments
+Engine: moments
+
+#	If you choose to use dadi, please set pts parameter - number
+#	of points in grid. Otherwise this pts would be used in dadi's code.
+#	Default: Let n = max number of individuals in one population, 
+#	then pts = n, n+10, n+20
+Pts: [20, 30, 40]
+
+#!!!
+#	Print parameters of model in units of N_ref = N_A.
+#	N_A will be placed in brackets at the end of string.
+#	Default: False
+Relative parameters: False
+
+#	Total mutation flux - theta.
+#	It is equal to:
+#	theta = 4 * μ * L
+#	where μ - mutation rate per site per generation and 
+#	L - effective sequenced length, which accounts for losses 
+#	in alignment and missed calls.
+#	Note: one should estimate μ based on generation time.
+#	Default: 1.0
+Theta0: Null
+
+#	Time (years) for one generation. Can be float. 
+#	Is important for drawing models. If one don't want to draw, 
+#	one can pass it.
+#	Default: 1.0
+Time for generation: Null
+
+#	Use sudden changes of population sizes only. Decreases 
+#	the number of parameters.
+#	Default: False
+Only sudden: False
+
+#	Disable migrations in demographic models.
+#	Default: False
+No migrations: False
+
+
+#!!!
+#	One should choose the demographic history to infer.
+#	It can be custom or setted up with structure.
+
+# 1. Using a custom demographic model.
+#	Please, specify file with function named 'model_func' in it. 
+#	So file should contain:
+#	def model_func(params, ns, pts) in case of dadi
+#	or
+#	def model_func(params, ns) in case of moments
+#	Default: None
+Custom filename: Null
+
+#	Now one should specify either bounds or identifications 
+#	of custom model's parameters. All values are in Nref units.
+#	Lower and upper bounds - lists of numbers.
+#	List of usual bounds:
+#	N: 1e-2 - 100
+#	T: 0 - 5
+#	m: 0 - 10
+#	s: 0 - 1
+#	This bounds will be taken automatically if identifications are set.
+#	Default: None
+Lower bound: Null
+Upper bound: Null
+#	An identifier list:
+#	T - time
+#	N - size of population
+#	m - migration
+#	s - split event,  proportion in which population size
+#	is divided to form two new populations.
+#	Default: None
+Parameter identifiers: Null
+
+# 2. Structure is for not custom models!
+#	Structure of model for one population - number of time periods 
+#	(e.g. 5).
+#	Structure of model for two populations - number of time periods
+#	before split of ancestral population and after it (e.g. 2,2).
+#	Structure of model for three populations - number of time periods
+#	before first split, between first and second splits and after 
+#	second split (e.g. 2,1,2).
+#
+#	Structure of initial model:
+#	Default: all is ones - 1 or 1,1 or 1,1,1
+Initial structure: &id001 [2, 1]
+
+#	Structure of final model:
+#	Default: equals to initial structure
+Final structure: *id001
+
+
+#!!!
+#	Local optimization.
+#
+#	Choice of local optimization, that is launched after 
+#	each genetic algorithm.
+#	Choices:
+#
+#	*	optimize (BFGS method)
+#	
+#	*	optimiza_log (BFGS method)
+#	
+#	*	optimize_powell (Powell’s conjugate direction method)
+#	(Note: is implemented in moments: one need to have moments 
+#	installed.)
+#
+#	(If optimizations are often hitting the parameter bounds, 
+#	try using these methods:)
+#	*	optimize_lbfgsb
+#	*	optimize_log_lbfgsb 
+#	(Note that it is probably best to start with the vanilla BFGS 
+#	methods, because the L-BFGS-B methods will always try parameter
+#	values at the bounds during the search. 
+#	This can dramatically slow model fitting.)
+#
+#	*	optimize_log_fmin (simplex (a.k.a. amoeba) method)
+#	
+#	*	hill_climbing
+#	
+#	Default: optimize_powell
+Local optimizer: BFGS_log
+
+
+
+#	Parameters of pipeline
+#
+#	One can automatically draw models every N iteration. 
+#	If 0 then never.
+#	Pictures are saved in GA's directory in picture folder.
+#	Default: 0
+Draw models every N iteration: 0
+
+#	One can automatically generate dadi and moments code for models.
+#	If 0 then only current best model will be printed in GA's 
+#	working directory.
+#	Also result model will be saved there. 
+#	If specified (not 0) then every N iteration model will be saved
+#	in python code folder.
+#	Default: 0
+Print models' code every N iteration: 0
+
+#	One can choose time units in models' plots: years or thousand 
+#	years (kya, KYA). If time for one generation isn't specified 
+#	then time is in genetic units.
+#	Default: years
+Units of time in drawing: generations
+
+#	No std output.
+#	Default: False
+Silence: True
+
+#	How many times launch GADMA with this parameters.
+#	Default: 1
+Number of repeats: 1
+
+#	How many processes to use for this repeats.
+#	Note that one repeat isn't parallelized, so increasing number
+#	of processes doesn't effect on time of one repeat.
+#	It is desirable that the number of repeats is a multiple of 
+#	the number of processes.
+#	Default: 1
+Number of processes: 1
+
+
+
+#	It is possible to limit time of splits.
+#	Split 1 is the most ancient split.
+#	!Note that time is in genetic units (2 * time for 1 generation):
+#	e.g. we want to limit by 150 kya, time for one generation is 
+#	25 years, then bound will be 150000 / (2*25) = 3000.
+#
+#	Upper bound for split 1 (in case of 2 or 3 populations).
+#	Default: None
+Upper bound of first split: Null
+
+#	Upper bound for split 2 (in case of 3 populations).
+#	Default: None
+Upper bound of second split: Null
+
+
+#	One can resume from some other launch of GADMA by setting
+#	output directory of it to 'Resume from' parameter.
+#	You can set again new parameters of resumed launch.
+Resume from: Null
+#
+#	If you want to take only models from previous run set this 
+#	flag.  Then iterations of GA will start from 0 and values of
+#	mutation rate and strength will be initial.
+#	Default: None
+Only models: False

@@ -158,7 +158,16 @@ class CoreRun(object):
             y_dict = y
 
         sign = self.global_optimizer.sign
-        if self.x_best is None or sign * self.y_best > sign * y:
+        equal_x = False
+        if self.x_best is not None:
+            equal_x = list(self.x_best) == list(x)
+            x_has_w = hasattr(x, 'weights')
+            x_best_has_w = hasattr(self.x_best, 'weights')
+            if x_has_w != x_best_has_w:
+                equal_x = False
+            elif x_has_w and x.metadata != self.x_best.metadata:
+                equal_x = False
+        if self.x_best is None or sign * self.y_best > sign * y or not equal_x:
             self.x_best = x
             self.y_best = y
             updated = self.shared_dict.update_best_model_for_process(

@@ -40,6 +40,7 @@ class Optimizer(object):
 
     @log_transform.setter
     def log_transform(self, log_transform):
+        self._log_trasform = log_transform
         if log_transform:
             self.transform = logarithm_transform
             self.inv_transform = exponent_transform
