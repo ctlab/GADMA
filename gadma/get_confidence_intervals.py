@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 import sys
 import argparse
 from scipy import stats
@@ -11,6 +10,7 @@ def main():
     Main function of script. Reads command-line arguments, reads saved table
     and calculate confidence intervals from it.
     """
+    import pandas as pd
     parser = argparse.ArgumentParser("GADMA module for calculating confidence "
                                      "intervals from the result table of local"
                                      " search runs on bootstrapped data.")
