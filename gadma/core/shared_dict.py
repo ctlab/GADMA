@@ -47,7 +47,6 @@ class SharedDict(object):
             return model
         return key(model)
 
-
     def _put_new_model_for_process(self, process, group, model, key=None):
         if key is None:
             key = self.default_key(group)
