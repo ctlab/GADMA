@@ -124,7 +124,7 @@ class SettingsStorage(object):
         if name == 'population_labels' or name == 'parameter_identifiers':
             if isinstance(value, str):
                 if len(value.split(',')) == 1:
-                    value = [value]
+                    value = [value.strip()]
                     self.__setattr__(name, value)
                     return
 
@@ -240,7 +240,7 @@ class SettingsStorage(object):
         # 1.7 Population labels could be taken as one string
         if name == 'population_labels':
             if isinstance(value, str):
-                value = value.split(',')
+                value = [x.strip() for x in value.split(',')]
                 self.__setattr__(name, value)
 
         # 1.8.0 expand path of files:
@@ -265,7 +265,7 @@ class SettingsStorage(object):
         if name == "parameter_identifiers" and value is not None:
             # print(name, value)
             if isinstance(value, str):
-                value = [x for x in value.split(",")]
+                value = [x.strip() for x in value.split(",")]
             value = [x.strip() for x in value]
             for val in value:
                 if val.lower()[0] not in settings.P_IDS:
