@@ -2,7 +2,7 @@ from . import Engine, register_engine, get_engine
 from .dadi_moments_common import DadiOrMomentsEngine
 from ..models import DemographicModel, CustomDemographicModel, Epoch, Split
 from ..utils import DynamicVariable
-from .. import SFSDataHolder
+from .. import SFSDataHolder, dadi_available
 
 
 class DadiEngine(DadiOrMomentsEngine):
@@ -199,4 +199,5 @@ class DadiEngine(DadiOrMomentsEngine):
                                                      gen_time_units)
 
 
-register_engine(DadiEngine)
+if dadi_available:
+    register_engine(DadiEngine)
