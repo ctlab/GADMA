@@ -1,0 +1,102 @@
+#	It is extra parameters file for GADMA software.
+
+#	Lines started from # are ignored.
+#	Also comments at the end of a line are ignored too.
+#	Every line contains: Identificator of parameter : value.
+#	If you want to change some default parameters, you need to 
+#	remove # at the begining of line and change corresponding 
+#	parameter.
+
+
+#	Lower and upper bounds on N - sizes of populations, 
+#	T - time of time periods, M - migration rates.
+#	All bounds are relative to N_A: N is in N_A units, 
+#	T in 2 * N_A units and M in 1 / (2 * N_A).
+#	Default:	min_N = 0.01, max_N = 100.0, min_T = 0.0, 
+#				max_T = 5.0, min_M = 0.0, max_M = 10.0
+min_N : 
+max_N : 
+min_T : 
+max_T : 
+min_M : 
+max_M : 
+
+
+#	Parameters for Genetic Algorithm.
+#
+#	Size of population of demographic models in GA:
+#	Default: 10
+Size of generation : 
+
+#	Fractions of current models, mutated models and crossed models 
+#	to be taken to new population.
+#	Sum of fractions should be <= 1, the remaining fraction is 
+#	fraction of random models.
+#	Default: 0.2,0.3,0.3
+Fractions : 
+
+#	Mutation strength - fraction of parameters in model to mutate 
+#	during global mutation process of model.
+#	Number of parameters to mutate is sampled from binomial 
+#	distribution, so we need to set mean.
+#	Default: 0.2
+Mean mutation strength : 
+#
+#	Mutation strength can be adaptive: if mutation is good, 
+#	i.e. has the best fitness function (log likelihood),
+#	then mutation strength is increased multiplying by const 
+#	otherwise it decreases dividing by (1/4)^const.
+#	When const is 1.0 it is not adaptive.
+#	Default: 1.0
+Const for mutation strength : 
+
+#	Mutation rate - fraction of any parameter to change during
+#	its mutation.
+#	Mutation rate is sampled from truncated normal distribution, 
+#	so we need mean (std can be specified in extra params).
+#	Default 0.2
+Mean mutation rate : 
+#
+#	Mutation rate also can be adaptive as mutation strength.
+#	Default: 1.02
+Const for mutation rate : 
+
+#	Genetic algorithm stops when it couldn't improve model by
+#	more that epsilon in logLL
+#	Default: 1e-2
+Eps : 
+#	
+#	and it happens during N iterations:
+#	Default: 100
+Stuck generation number : 
+
+
+
+#	Parameters for output of optimizations algorithms
+
+#	If > 0, print optimization status every <verbose> steps.
+#	Default: 1
+Verbose : 
+
+#	Parameter for drawn sfs plots. vmin - minimum value plotted for sfs.
+#	Default: 1 or None if all values of fs are <= 1.0
+Vmin : 
+
+
+#	Options of mutation, crossing and random generating.
+
+#	To get random model we sample number between bounds (min_N, 
+#	max_N, min_T, etc.) and then scale them with 
+#	optimal_sfs_scaling. We can choose N_A random between min_N 
+#	and max_N or we can always take it as 1.0.
+#	Default: True
+Random N_A : 
+
+
+
+#	Options of printing summary information about repeats 
+#	in parent process.
+#	How often print all best by likelihood and by BIC models.
+#	Default: 1 (minute)
+Time to print summary : 
+

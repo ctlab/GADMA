@@ -1,45 +1,14 @@
 #!/usr/bin/env bash
-
-if [ -d "py2" ]; then
-	python2 -m pip install -r requirements.txt 
-else
-	python3 -m pip install -r requirements.txt
-fi
-
-if [ -d "dadi" ]; then
-	cd dadi
-	git pull
-else
-	git clone https://bitbucket.org/gutenkunstlab/dadi
-	cd dadi
-fi
-
-if [ -d "py2" ]; then
-	python2 setup.py install 
-else
-	python3 setup.py install
-fi
-
+pip3 install numpy
+pip3 install scipy
+pip3 install matplotlib
+pip3 install Pillow
+pip3 install ruamel.yaml
+pip3 install mpmath
+pip3 install dadi
+pip3 install Cython
+git clone https://bitbucket.org/simongravel/moments.git
+cd moments
+python3 setup.py install
 cd ..
-
-if [ -d "moments" ]; then
-	cd moments
-	git pull
-else
-	git clone https://bitbucket.org/simongravel/moments
-	cd moments
-fi
-
-if [ -d "py2" ]; then
-	python2 setup.py install 
-else
-	python3 setup.py install
-fi
-
-cd ..
-
-if [ -d "py2" ]; then
-	python2 setup.py install 
-else
-	python3 setup.py install
-fi
+python3 setup.py install

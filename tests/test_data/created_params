@@ -1,0 +1,21 @@
+Input file : tests/test_data/small_1pop.fs
+Output directory: tests/output_dir
+Projections : 6
+Directory with bootstrap: tests/test_data/small_1_pop_bootstrap
+Linked SNP's : True
+Engine : dadi
+Pts : 5, 10, 15
+Custom filename : tests/test_data/small_1pop_dem_model_dadi.py
+Draw models every N iteration : 10
+Print models' code every N iteration : 10
+Relative parameters: True
+Local optimizer: None
+Eps: 1
+Stuck generation number: 5
+Number of repeats : 1
+Number of processes: 1
+
+
+
+
+Resume from: /home/katenos/Workspace/popgen/GADMA/tests/test_data/YRI_CEU_test_boots

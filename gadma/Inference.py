@@ -1,250 +1,256 @@
-#!/usr/bin/env python3
-
-############################################################################
-# Copyright (c) 2018 Noskova Ekaterina
-# All Rights Reserved
-# See the LICENSE file for details
-############################################################################
-
-
-import os,sys
-
-from . import support
-from . genetic_algorithm import GA
-from . import options
-from . demographic_model import Demographic_model
-
+from . import moments, dadi, moments_available, dadi_available
+from .cli import SettingsStorage
+from .optimizers import GlobalOptimizerAndLocalOptimizer
+from .data import SFSDataHolder
+from .engines import get_engine
+from . import utils
+import warnings
 import numpy as np
-import math
-import random
-import copy
-
-try:
-    import dadi as sim_sfs_lib
-    import moments as sim_sfs_lib
-except ImportError:
-    try:
-        import moments as sim_sfs_lib
-    except ImportError:
-        try:
-            import dadi as sim_sfs_lib
-        except ImportError:
-            support.error("None of the dadi or the moments are installed")
 
 
-def load_bootstrap_data_from_dir(dirname,  projections=None, pop_ids=None, return_filenames=False):
-    from gadma.support import READ_ALLOWED_EXTENSIONS
-    all_boot = []
-    set_of_seen_files = set()
-    for filename in os.listdir(dirname):
-        extention = '.' + filename.split('.')[-1]
-        filename_without_ext = '.'.join(filename.split('.')[:-1])
-        if extention in READ_ALLOWED_EXTENSIONS.keys():
-            if filename_without_ext in set_of_seen_files:
-                continue
-            filename = os.path.join(dirname, filename)
-            fs, _1, _2 = support.load_spectrum(filename, projections, pop_ids)
-            if return_filenames:
-                all_boot.append([filename, fs])
-            else:
-                all_boot.append(fs)
-            set_of_seen_files.add(filename_without_ext)
-            
-    return all_boot
-
-
-def get_claic_component(func_ex, all_boot, p0, data, pts=None, eps=1e-2):
-    '''
-    if pts is None, then moments is used.
-    Some help:
-    moments.Godambe.get_hess(func, p0, eps, args=())
-    moments.Godambe.get_grad(func, p0, eps, args=())
-    '''
-    from dadi import Godambe
-    if pts is None:
-        import moments
-        func_ex_ = func_ex
-    else:
-        import dadi as sim_lib
-        import moments
-        def func_ex_(p, ns):
-            return func_ex(p, ns, pts)
-
-    ns = data.sample_sizes
-
-    # Cache evaluations of the frequency spectrum inside our hessian/J 
-    # evaluation function
-    cache = {}
-    def func(params, data):
-        key = (tuple(params), tuple(ns))
-        if key not in cache:
-            cache[key] = func_ex_(params, ns)
-        fs = cache[key]
-        return moments.Inference.ll(fs, data)
-        
-    H = - Godambe.get_hess(func, p0, eps, args=[data])
-    H_inv = np.linalg.inv(H)
-
-    J = np.zeros((len(p0), len(p0)))
-    for ii, boot in enumerate(all_boot):
-        boot = moments.Spectrum(boot)
-        grad_temp = Godambe.get_grad(func, p0, eps, args=[boot])
-
-        J_temp = np.outer(grad_temp, grad_temp)
-        J += J_temp
-        
-    J = J/len(all_boot)
-
-    # G = J*H^-1
-    G = np.dot(J, H_inv)
-
-    return np.trace(G)
-
-
-def get_claic_score(func_ex, all_boot, p0, data, pts=None, eps=1e-2):
-    '''
-    if pts is None, then moments is used.
-    '''
-    ns = data.sample_sizes
-    if pts is None:
-        import moments
-        model = func_ex(p0, ns)
-        ll_model = moments.Inference.ll_multinom(model, data)
-    else:
-        import dadi
-        model = func_ex(p0, ns, pts)
-        ll_model = dadi.Inference.ll_multinom(model, data)
-    return 2 * get_claic_component(func_ex, all_boot, p0, data, pts=pts, eps=eps) - 2 * ll_model
-
-
-def get_95_confidence_intervals(func_ex, p0, data, pts=None, log=False, multinom=True, eps=1e-2):
-    '''
-    if pts is None, then moments is used.
-    '''
-    ns = data.sample_sizes
-    if pts is None:
-        import moments as sim_lib
-        stds = sim_lib.Godambe.FIM_uncert(func_ex, p0, data, log=log, multinom=multinom, eps=eps)
-    else:
-        import dadi as sim_lib
-        stds = FIM_uncert(func_ex, pts, p0, data, log=log, multinom=multinom, eps=eps)
-    return np.array([[7000* (m - 1.96 * s), 7000 * (m + 1.96 * s)] for m,s in zip(p0, stds)])
-
-
-def optimize_ga(number_of_params, data, model_func, pts=None, lower_bound=None, upper_bound=None, p0=None,
-                 multinom=True, p_ids = None, mutation_strength=0.2, const_for_mut_strength=1.1, mutation_rate=0.2, const_for_mut_rate=1.2,
-                 epsilon=1e-2, stop_iter=100, size_of_generation_in_ga=10, frac_of_old_models=0.2, frac_of_mutated_models=0.3, 
-                 frac_of_crossed_models=0.3, optimization_name='optimize_log'):
+def load_data_from_dir(dirname, engine, projections=None,
+                       population_labels=None, outgroup=None):
     """
-    Find optimized params to fit model to data using Genetic Algorithm.
-    
-    Note: dadi and moments are choosing from value of pts argument!
-    If pts is None then moments will be used.
+    Load data of SFS type from the directory. Data is considered to be
+    very consistent: for example, it could be bootstrap of one dataset. All
+    data should have the same projections, pop labels and so on.
 
-    This optimization method is method for global search. It starts from 
-    random parameters and improve them to get best.
-
-    number_of_params :  Number of parameters to find.
-
-    data :              Spectrum with data.
-    
-    model_func :        Function to evaluate model spectrum. Should take arguments
-                        parameters, (n1,n2...) (and pts in case of dadi!).
-    
-    pts :               Number of grid points for dadi. If you use moments, 
-                        don't set it or set to None.
-    
-    lower_bound :       Lower bound on parameter values. If not None, must be of
-                        length equal to number_of_params.
-
-    upper_bound :       Upper bound on parameter values. If not None, must be of
-                        length equal to number_of_params.
-
-    p0 :                Initial parameters. You can start from some known parameters.
-                        However it is not proper global search.
-
-    multinom :          If True, do a multinomial fit where model is optimially scaled to
-                        data at each step. If False, assume theta is a parameter and do
-                        no scaling.
-
-    p_ids :             is list of special symbols, that define parameters as N, m, T or s.
-                        N - size of population, (in Nref units)
-                        m - migration rate, (in 1/Nref units)
-                        T - time,  (in Nref units)
-                        s - split ratio. (in 1 units)
-
-    mutation_strength :     Mean fraction of parameters to mutate during global mutation
-                            process.
-
-    const_for_mut_strength: Const for adaptive mutation strength. Must be between 1 and 2.
-
-    mutation_rate :         Mean rate to change the parameter during its mutation.
-
-    const_for_mut_rate :    Const for adaptive mutation rate. Must be between 1 and 2.
-
-    epsilon :               Const for model's log likelihood compare.
-                            Model is better if its log likelihood is greater than 
-                            log likelihood of another model by epsilon.
-
-    stop_iter :             Number of iterations for GA stopping: GA stops when 
-                            it can't improve model during max_iter iterations.
-
-    size_of_generation_in_ga: Number of models in one generation of GA.
-
-    frac_of_old_models :    Fraction of models from previous ga generation that are taken 
-                            to new generation.
-
-    frac_of_mutated_models: Fraction of mutated models in new generation.
-
-    frac_of_crossed_models: Fraction of crossed models in new generation.
-    
-    optimization_name:      Name of local optimization that will be run after genetic 
-                            algorithm. By default, it is 'optimize_log'. If None then no
-                            local optimization is run.
+    :param dirname: Path to the directory with data.
+    :param engine: Engine id for data loading. Could be one of the following:
+                   - dadi
+                   - moments
+    :param projections: Sample size of data. If None it will be chosen
+                        automatically.
+    :param population_labels: Labels of populations in the data.
+    :param outgroup: If True then there is outgroup represented in files. Then
+                     unfolded SFS will be loaded if SFS is needed.
     """
-    
-    params = options.Options_storage()
-    params.number_of_params = number_of_params
-    params.input_data = data
-    params.ns = np.array(data.shape) - 1 
-    params.model_func = model_func
-    params.dadi_pts = pts
-    params.moments_scenario = pts is None
-    params.lower_bound = lower_bound
-    params.upper_bound = upper_bound
-    params.multinom = multinom or p_ids is None
-    params.optimize_name = optimization_name
-    
-    #create normalize funcs
-    if p_ids is None:
-        params.normalize_funcs = None
-        params.p_ids = None
-    else:
-        params.p_ids = [x.lower()[0] for x in p_ids]
-        params.normalize_funcs = []
-        for i in range(number_of_params):
-            id_v = p_ids[i][0].lower()
-            if id_v == 'n' or id_v == 't':
-                params.normalize_funcs.append(lambda x, y: x * y)
-            elif id_v == 'm':
-                params.normalize_funcs.append(lambda x, y: x / y)
-            else:
-                params.normalize_funcs.append(lambda x, y: x)
-    
-    params.mutation_strength = mutation_strength
-    params.const_for_mut_strength = const_for_mut_strength
-    params.mutation_rate = mutation_rate
-    params.const_for_mut_rate = const_for_mut_rate
-    params.epsilon = epsilon
-    params.stop_iter = stop_iter
-    params.size_of_generation = size_of_generation_in_ga
-    params.frac_of_old_models = frac_of_old_models
-    params.frac_of_mutated_models = frac_of_mutated_models
-    params.frac_of_crossed_models = frac_of_crossed_models
+    settings = SettingsStorage()
+    settings.directory_with_bootstrap = dirname
+    settings.engine = engine
+    settings.data_holder = SFSDataHolder(None,
+                                         projections=projections,
+                                         outgroup=outgroup,
+                                         population_labels=population_labels)
+    return settings.read_bootstrap_data()
 
-    params.final_check()
-    
-    ga_instance = GA(params, one_initial_model=Demographic_model(params, initial_vector=p0))
-    best_model = ga_instance.run()
-    return best_model.params
 
+def get_claic_score(func_ex, all_boot, p0, data, engine=None, args=(),
+                    eps=1e-2, pts=None):
+    r"""
+    Returns CLAIC score for demographic model with specified value of `eps`.
+
+    :param func_ex: Custom function to evaluate demographic model.
+                    Usually it is model_func function from generated code of
+                    GADMA. It is run by calling func_ex(p, ns, *args), where
+                    p is values of parameters and ns - sample sizes.
+    :param all_boot: List of bootstrapped data for CLAIC evaluation.
+    :param p0: Values of parameters for ``func_ex`` demographic model.
+    :param data: Original data for CLAIC evaluation. It is data that was used
+                 for demographic inference.
+    :param engine: Engine id for likelihood evaluations. Could be one of the
+                   following:
+                   - dadi
+                   - moments
+    :param args: Arguments of ``func_ex`` function.
+    :param eps: Step size for Hessian and gradient calculations. Usually is
+                between 1e-5 and 1e-2. The smaller eps is the more accurate
+                CLAIC value is.
+    :param pts: Deprecated parameter from GADMA version 1. If is set then
+                warning is printed.
+
+    returns: None if failed to get CLAIC due to singular matrix of Hessian.\
+             Could be solved by increasing value of ``eps``.
+
+    note: There differencies between GADMA v1 and GADMA v2, there is some\
+          backward compatibility, but sometimes errors could be raised.
+    """
+    # The following code exists because of backward compatibility with first
+    # version of GADMA, where parameters were:
+    warning_msg = ("It looks like get_claic_score function is used from GADMA "
+                   " of version 1.")
+    if pts is not None and engine is None:
+        engine = 'dadi'
+        warnings.warn(warning_msg + " Deprecated argument pts is used - dadi "
+                      "engine is chosen.")
+    if (engine is None or
+            (isinstance(engine, (list, np.ndarray)) and len(engine) == 3)):
+        if engine is not None:
+            pts = engine
+        engine = 'moments'
+        if pts is not None:
+            engine = 'dadi'
+        warnings.warn(warning_msg + " The 5th argument (engine in GADMA v2 vs"
+                      " pts in GADMA v1) argument is not specified (None). If"
+                      " some other error will happen next then please specify"
+                      f" engine. Engine: {engine}, pts: {pts}, eps: {eps}")
+
+    if not isinstance(args, tuple) and isinstance(args, float):
+        eps = args
+        args = ()
+    # End of backward compatibility of versions.
+
+    settings = SettingsStorage()
+    settings.engine = engine
+    if len(args) > 0:
+        func_ex = utils.fix_args(func_ex, args)
+    settings.model_func = func_ex
+    engine_obj = get_engine(engine)
+    engine_obj.set_data(data)
+    engine_obj.set_model(settings.get_model())
+    if pts is not None:
+        settings.pts = pts
+    return utils.get_claic_score(engine_obj, p0, all_boot,
+                                 settings.get_engine_args())
+
+
+def optimize_ga(data, model_func, engine, args=(),
+                lower_bound=None, upper_bound=None, p_ids=None,
+                X_init=None, Y_init=None, num_init=50,
+                gen_size=10, mut_strength=0.2, const_mut_strength=1.1,
+                mut_rate=0.2, const_mut_rate=1.2, eps=1e-2, n_stuck_gen=100,
+                n_elitism=2, p_mutation=0.3, p_crossover=0.3, p_random=0.2,
+                ga_maxiter=None, ga_maxeval=None,
+                local_optimizer='BFGS_log', ls_maxiter=None, ls_maxeval=None,
+                verbose=1, callback=None,
+                save_file=None, eval_file=None, report_file=None):
+    r"""
+    Runs genetic algorithm optimizer in order to find best values of
+    parameters for ``model_func`` demographic model from ``data``.
+
+    :param data: Data for demographic inference.
+    :param model_func: Function to use for demographic inference that
+                       simulates SFS to compare it with ``data`` with
+                       log-likelihood. Is called by model_func(p, ns, *args),
+                       where p is values of parameters, ns - sample size and
+                       args - other arguments.
+    :param engine: Engine id for demographic inference. Could be one of the
+                   following:
+                   - 'dadi'
+                   - 'moments'
+    :param args: Arguments for ``model_func`` function. It is `pts` for
+                 `dadi` engine and could be `dt_fac` (or nothing) for
+                 `moments` engine.
+    :param lower_bound: Lower bound for each demographic parameter.
+    :type lower_bound: list
+    :param upper_bound: Upper bound for each demographic parameter.
+    :type upper_bound: list
+    :param p_ids: Parameter identifiers for demographic parameters. Each
+                  identifier should start with one of the following letters:
+                  - n or N for size of populations;
+                  - t or T for time;
+                  - m or M for migration rates;
+                  - s or S for fractional parameters (between 0 and 1).
+
+                  For example valid identifiers are:
+                  ['nu1F', 'nu2B', 'nu2F', 'm', 'Tp', 'T']
+    :type p_ids: list
+    :param X_init: list of initial example parameters. GA will be initialized
+                   by those values. It could be used for combinations of
+                   optimizations or for restart.
+    :type X_init: list of lists
+    :param Y_init: value of log-likelihood for values in X_init.
+    :type Y_init: list
+    :param num_init: Number of initial points to start Genetic algorithm.
+    :type num_init: int
+    :param gen_size: Size of generation of genetic algorithm. That is number
+                     of individuals/solutions on each step of GA.
+    :type gen_size: int
+    :param mut_strength: Mean fraction of parameters for mutation in GA.
+    :type mut_strength: float
+    :param const_mut_strength: Const to change ``mut_strength`` during
+                               GA according to one-fifth rule.
+    :type const_mut_strength: float
+    :param mut_rate: Mean rate of mutation in GA.
+    :type mut_rate: float
+    :param const_mut_rate: Const to change ``mut_rate`` during GA.
+    :type const_mut_rate: float
+    :param eps: const for model's log likelihood compare.
+                Model is better if its log likelihood is greater than
+                log likelihood of another model by epsilon.
+    :type eps: float
+    :param n_stuck_gen: Number of iterations for GA stopping: GA stops when
+                        it can't improve model during n_stuck_gen generations.
+    :type n_stuck_gen: int
+    :param n_elitism: Number of best models from previous generation in GA
+                      that will be taken to new iteration.
+    :type n_elitism: int
+    :param p_mutation: probability of mutation in one generation of GA.
+    :type p_mutation: float
+    :param p_crossover: probability of crossover in one generation of GA.
+    :type p_crossover: float
+    :param p_random: Probability of random generated individual in one
+                     generation of GA.
+    :type p_random: float
+    :param ga_maxiter: Maximum number of generations in GA.
+    :type ga_maxiter: int
+    :param ga_maxeval: Maximum number of function evaluations in GA.
+    :type ga_maxeval: int
+    :param local_optimizer: Local optimizer name to run for best solution of
+                            GA. Could be None or one of:
+                            * 'BFGS'
+                            * 'BFGS_log'
+                            * 'L-BFGS-B'
+                            * 'L-BFGS-B_log'
+                            * 'Powell'
+                            * 'Powell_log'
+                            * 'Nelder-Mead'
+                            * 'Nelder-Mead_log'
+    :type local_optimizer: str
+    :param ls_maxiter: Maximum number of iterations in local optimization.
+    :type ls_maxiter: int
+    :param ls_maxeval: Maximum number of function evaluations in local
+                       optimization.
+    :type ls_maxeval: int
+    :param verbose: Verbose of output.
+    :type verbose: int
+    :param callback: callback to call during optimizations. (callback(x, y))
+    :param save_file: File for save GA's state on current generation.
+    :type save_file: str
+    :param eval_file: File to save all evaluations during GA and local
+                      optimization.
+    :param report_file: File to write reports of GA and local optimization.
+    """
+    settings = SettingsStorage()
+    settings._inner_data = data
+    settings.model_func = model_func
+    settings.engine = engine
+    settings.get_engine_args = args
+    settings.lower_bound = lower_bound
+    settings.upper_bound = upper_bound
+    settings.parameter_identifiers = p_ids
+    settings.size_of_generation = gen_size
+    settings.mean_mutation_rate = mut_rate
+    settings.const_for_mutation_rate = const_mut_rate
+    settings.mean_mutation_strength = mut_strength
+    settings.const_for_mutation_strength = const_mut_strength
+    settings.eps = eps
+    settings.stuck_generation_number = n_stuck_gen
+    settings.n_elitism = n_elitism
+    settings.p_mutation = p_mutation
+    settings.p_crossover = p_crossover
+    settings.p_random = p_random
+    settings.local_optimizer = local_optimizer
+
+    # We could use CoreRun here but instead we will launch everything manually
+    engine = get_engine(engine)
+    model = settings.get_model()
+    engine.set_model(model)
+    engine.set_data(data)
+
+    f = engine.evaluate
+    variables = model.variables
+
+    global_optimizer = settings.get_global_optimizer()
+    local_optimizer = settings.get_local_optimizer()
+
+    opt = GlobalOptimizerAndLocalOptimizer(global_optimizer,
+                                           local_optimizer)
+    result = opt.optimize(f, variables, args=args, global_num_init=num_init,
+                          X_init=X_init, Y_init=Y_init, local_options={},
+                          global_maxiter=ga_maxiter, local_maxiter=ls_maxiter,
+                          global_maxeval=ga_maxeval, local_maxeval=ls_maxeval,
+                          verbose=verbose, callback=callback,
+                          eval_file=eval_file, report_file=report_file,
+                          save_file=save_file)
+    return result
