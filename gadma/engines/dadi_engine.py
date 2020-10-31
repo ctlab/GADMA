@@ -18,9 +18,10 @@ class DadiEngine(DadiOrMomentsEngine):
     """
 
     id = 'dadi'  #:
-    import dadi as base_module
+    if dadi_available:
+        import dadi as base_module
+        inner_data_type = base_module.Spectrum  #:
     supported_data = [SFSDataHolder]  #:
-    inner_data_type = base_module.Spectrum  #:
 
     @staticmethod
     def _get_kwargs(event, var2value):
