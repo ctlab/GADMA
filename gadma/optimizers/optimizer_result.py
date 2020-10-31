@@ -1,4 +1,4 @@
-import scipy
+from scipy import optimize
 import numpy as np
 import copy
 from .. import GPyOpt
@@ -49,7 +49,7 @@ class OptimizerResult(object):
 
     @staticmethod
     def from_SciPy_OptimizeResult(
-            scipy_result: scipy.optimize.OptimizeResult):
+            scipy_result: optimize.OptimizeResult):
         """
         Create OptimizerResult from instance of SciPy.optimize.OptimizeResult.
         Please, note that some attributes will be empty.
