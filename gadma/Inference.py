@@ -42,7 +42,7 @@ def get_claic_score(func_ex, all_boot, p0, data, engine=None, args=(),
 
     :param func_ex: Custom function to evaluate demographic model.
                     Usually it is model_func function from generated code of
-                    GADMA. It is run by calling func_ex(p, ns, *args), where
+                    GADMA. It is run by calling func_ex(p, ns, \*args), where
                     p is values of parameters and ns - sample sizes.
     :param all_boot: List of bootstrapped data for CLAIC evaluation.
     :param p0: Values of parameters for ``func_ex`` demographic model.
@@ -121,7 +121,7 @@ def optimize_ga(data, model_func, engine, args=(),
     :param data: Data for demographic inference.
     :param model_func: Function to use for demographic inference that
                        simulates SFS to compare it with ``data`` with
-                       log-likelihood. Is called by model_func(p, ns, *args),
+                       log-likelihood. Is called by model_func(p, ns, \*args),
                        where p is values of parameters, ns - sample size and
                        args - other arguments.
     :param engine: Engine id for demographic inference. Could be one of the

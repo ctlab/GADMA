@@ -5,7 +5,7 @@ GADMA uses either ``dadi`` or ``moments`` to simulate expected AFS from the demo
 
 ``moments`` library does not need ``Pts`` to be specified. To change moments to ``dadi`` engine, specify option in the parameters file:
 
-.. code-block::
+.. code-block:: none
 
    # param file
    ...
@@ -14,7 +14,7 @@ GADMA uses either ``dadi`` or ``moments`` to simulate expected AFS from the demo
 
 or to use ``dadi``:
 
-.. code-block::
+.. code-block:: none
 
    # param file
    ...

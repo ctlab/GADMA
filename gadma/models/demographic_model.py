@@ -74,7 +74,7 @@ class EpochDemographicModel(DemographicModel):
     Class for demographic model of epoch type.
     This type is common for :py:mod:`dadi` and :py:mod:`moments`.
 
-    See :class:`gadma.models.DemographicModel` for constructor docs.
+    See :class:`gadma.models.demographic_model.DemographicModel` for constructor docs.
     """
     def __init__(self, gen_time=None, theta0=None, mu=None,
                  linear_constrain=None):

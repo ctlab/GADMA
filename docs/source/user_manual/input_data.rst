@@ -22,7 +22,7 @@ Input file can be specified to GADMA in two ways:
 
 2) Use a parameter ``Input file`` in the parameter file:
 
-   .. code-block::
+   .. code-block:: none
 
       # param_file
 
@@ -32,7 +32,7 @@ Input file can be specified to GADMA in two ways:
 
 Extra information about input AFS can also be put in the parameter file. For example, AFS can be projected to a smaller size with ``Projections`` option, populations can be named or their order can be changed with ``Population labels`` option. Option ``Outgroup`` tells neither data has outgroup or not, if ``Outgroup`` is ``False`` then spectrum will be folded. If parameter file does not contain some options, they are automatically pulled out from the input file. Also length of sequence could be set by ``Sequence length`` option, it could be used along with ``Mutation rate`` instead ``Theta0``.
 
-.. code-block::
+.. code-block:: none
 
    # param_file
 
@@ -67,7 +67,7 @@ Actually, CLAIC is modification of usual Akaike Information Criterion (AIC), but
 
 It is possible to inform GADMA about linkage of SNP's and unlock the usage of AIC:
 
-.. code-block::
+.. code-block:: none
 
    # param_file
 
@@ -77,7 +77,7 @@ It is possible to inform GADMA about linkage of SNP's and unlock the usage of AI
 
 If SNP's are linked and CLAIC should be evaluated (by default it is not), then the bootstrapped data should be set. In order to receive reliable correct bootstrapped data, the bootstrap should be performed on the original SNP data over the unlinked regions of genome. For example, in case of exome data one could make it over genes. Then when bootstrap is done, it is required to set the directory with it in the parameters file for CLAIC evaluation:
 
-.. code-block::
+.. code-block:: none
 
    # param_file
 
@@ -117,7 +117,7 @@ SNP data format
 
 Example of SNP file format:
 
-.. code-block::
+.. code-block:: none
 
    Human Chimp Allele1 YRI  CEU  Allele2 YRI CEU Gene  Position
    ACG   ATG   C       29   24   T       1   0   abcb1 289

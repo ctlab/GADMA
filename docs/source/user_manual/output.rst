@@ -13,7 +13,7 @@ GADMA puts all files to the directory that user set through ``-o/--output`` comm
 
 or through ``Output directory`` option in the parameter file:
 
-.. code-block::
+.. code-block:: none
 
     # param_file
     ...
@@ -25,7 +25,7 @@ Stdout and log file
 
 GADMA prints its progress about every minute in stdout and in ``output_dir/GADMA.log`` file:
 
-.. code-block::
+.. code-block:: none
 
     [hhh:mm:ss]
     All best logLL models:
@@ -70,7 +70,7 @@ Model is printed as sequence of time intervals and splits that are represented i
 
     * First period (``NAnc`` --- size of ancestry population):
 
-        .. code-block::
+        .. code-block:: none
     
             [Nanc = VALUE]
 
@@ -78,13 +78,13 @@ Model is printed as sequence of time intervals and splits that are represented i
 
         - If split divide population ``X``  of size ``NU`` into two new populations by fraction ``s1``:
 
-            .. code-block::
+            .. code-block:: none
         
                 [ X pop split   VALUE (s1) [VALUE_1(s1*NU), VALUE_2((1-s1)*NU)]
             
         - If split divide population ``X``  of size ``NU`` into two new populations without any fraction parameter (Setting ``Split fractions`` is ``False``):
 
-            .. code-block::
+            .. code-block:: none
         
                 [ X pop split [VALUE_1(NU_1), VALUE_2(NU_2)]
 
@@ -92,13 +92,13 @@ Model is printed as sequence of time intervals and splits that are represented i
 
         - If there is one population:
         
-            .. code-block::
+            .. code-block:: none
         
                 [ T_VALUE (t), [ NU_VALUE (nu) ], [D_VALUE (dyn)] ]
 
         - If there are two populations:
         
-            .. code-block::
+            .. code-block:: none
         
                 [ T_VALUE (t), [ NU1_VALUE (nu1), NU2_VALUE (nu2)], [[None, M12_VALUE(m12)], [M21_VALUE (m21), None]], [D1_VALUE (dyn1), D2_VALUE (dyn2)]]}
 
@@ -119,7 +119,7 @@ Also at the end of the string that corresponds to the model there is an informat
 
 **Example of the demographic model for two populations**:
 
-.. code-block::
+.. code-block:: none
 
     [Nanc =  7214] [ [ 7211(t1), [17004(nu11)], [Lin(dyn11)] ],	[ 1 pop split   99.85% (s1) [16978.164(s1*nu11), 25.836((1-s1)*nu11)] ],	[ 1365(t2), [12570(nu21), 8922(nu22)], [[0, 6.45e-05(m2_12)], [5.98e-05(m2_21), 0]], [Sud(dyn21), Lin(dyn22)] ] ]	(theta =  2739.60)
 
@@ -136,7 +136,7 @@ When genetic algorithm finishes GADMA saves picture and python code of received 
 
 When all GA's are executed, the codes are saved in the root directory.
 
-.. code-block::
+.. code-block:: none
 
     - <output_dir>
         	- 1

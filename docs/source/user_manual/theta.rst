@@ -5,7 +5,7 @@ Theta0
 
 The alternative way to set ``Theta0`` is to specify both mutation rate and length of the sequence in parameters file instead. Then ``Theta0`` will be calculated automatcally.
 
-.. code-block::
+.. code-block:: none
 
     # param file
     ...
@@ -34,7 +34,7 @@ If ``mu`` is the neutral mutation rate per site per generation and ``L`` is the 
 Changing Theta0
 --------------------
 
-If GADMA was launched with one ``Theta0`` and now one wants to use another or if it was launched with default ``Theta0 = 1``and now one has estimated its real value, model's parameters can be simply scaled:
+If GADMA was launched with one ``Theta0`` and now one wants to use another or if it was launched with default ``Theta0 = 1`` and now one has estimated its real value, model's parameters can be simply scaled:
 
 Let  ``a`` = ``Theta0_NEW`` / ``Theta0_OLD``,
 
@@ -53,6 +53,7 @@ Examples of different values of generation time and its influence on ``mu`` and 
 
 +------------------+---------------------------+---------------------------+----------------------------+---------------------+
 | FS filename      | Gen. time                 | ``mu``                    |  ``L``                     | ``Theta0``          |
+|                  |                           |                           |                            |                     |
 |                  | (years)                   | (per site per gen.)       | (base pair)                | (per chr. per gen.) |
 +==================+===========================+===========================+============================+=====================+
 | YRI\_CEU\_CHB.fs | 25                        | 2.35 \* 10^{-8}           | 4.04 \* 10^6               | 0.37976             |
@@ -67,7 +68,6 @@ Examples of different values of generation time and its influence on ``mu`` and 
 | YRI\_CEU\_CHB.fs | 24                        | 1.2 \* 10^(-8)            | 4.04 \* 10^6               | 0.19392             |
 |                  | (Lapierre et al., 2017)   | (Jouganous et al., 2017)  | (Gutenkunst et al., 2009)  |                     |
 +------------------+---------------------------+---------------------------+----------------------------+---------------------+
-
 
 In Gutenkunst et al. 2009 generation time for human populations was equal to ``25`` years and mutation rate ``mu`` was estimated as ``2.35 * 10^(-8)``. If one wants to change time for one generation to ``24`` years, one needs to scale ``mu``: ``mu`` / 25 \* 24 = 2.26 \* 10^(-8).
 

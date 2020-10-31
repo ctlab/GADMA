@@ -25,7 +25,7 @@ Time on the demographic model's plot can be drawn in units of years,  thousand y
 
 But, of course, it is possible to tell GADMA which units are preferable. For example, if one wants time to be in thousands of years on the pictures, as it is a big value in years:
 
-.. code-block::
+.. code-block:: none
 
     # param_file
     ...

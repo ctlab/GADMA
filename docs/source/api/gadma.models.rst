@@ -47,6 +47,7 @@ Base class DemographicModel
 *******************************
 
 .. automodule:: gadma.models.demographic_model
+   :noindex:
    :members: DemographicModel
    :undoc-members:
    :show-inheritance:

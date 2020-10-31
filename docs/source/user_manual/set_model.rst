@@ -23,7 +23,7 @@ In GADMA the size of population can be changed due to one of three dynamics: sud
 
 In order to infer a demographic model with sudden changes of populations sizes only, option ``Only sudden`` in the parameters file should be set to ``True``:
 
-.. code-block::
+.. code-block:: none
 
    # param_file
    ...
@@ -59,7 +59,7 @@ Initial structure
 
 To specify the structure of the inferred model one should set ``Initial structure`` in the parameter file:
 
-.. code-block::
+.. code-block:: none
 
     # param_file
     ...
@@ -68,7 +68,7 @@ To specify the structure of the inferred model one should set ``Initial structur
 
 or
 
-.. code-block::
+.. code-block:: none
 
     # param_file
     ...
@@ -77,7 +77,7 @@ or
 
 or
 
-..code-block::
+.. code-block:: none
 
     # param_file
     ...
@@ -91,7 +91,7 @@ Final structure
 
 It is also possible to start with a simpler structure in order to get to a more complex one. To do so one should specify option ``Final structure`` in the parameter file. For example:
 
-.. code-block::
+.. code-block:: none
 
     # param_file
     Input file : some_2d_fs.fs

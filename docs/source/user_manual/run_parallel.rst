@@ -3,7 +3,7 @@ Repeats and parallel computing
 
 By default, GADMA runs optimization that uses Genetic algorithm once. However, it is recommended to run optimization several times and choose the best model among the resieved ones. Option ``Number of repeats`` in the parameter file tells GADMA how many times an optimization should be executed. Moreover, there is another option ``Number of processes`` that allows GADMA to run all the processes in parallel. 
 
-.. code-block::
+.. code-block:: none
 
     # param_file
     ...
