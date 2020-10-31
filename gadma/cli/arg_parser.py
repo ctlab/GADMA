@@ -1,5 +1,4 @@
 import tempfile
-from ..version import __version__
 from .settings_storage import HOME_DIR
 from . import SettingsStorage
 from ..core import SUPPORT_STRING
@@ -18,6 +17,7 @@ def version():
     '''
     Returns string with current version.
     '''
+    from ..version import __version__
     return "GADMA version " + str(
         __version__
     ) + "\tby Ekaterina Noskova (ekaterina.e.noskova@gmail.com)" + "\n"
