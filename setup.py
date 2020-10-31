@@ -18,7 +18,8 @@ import os, sys
 
 
 NAME = 'gadma'
-VERSION = '2.0.0rc1'
+
+VERSION = '2.0.0rc5'
 SUPPORTED_PYTHON_VERSIONS = ['3.6', '3.7']
 
 
@@ -67,7 +68,7 @@ setup(
     package_data={
         'gadma.cli': ['*.py',  'params_template', 'extra_params_template', 'test_settings']
     },
-    data_files=[('fs_examples', [os.path.join('fs_examples', 'test.fs')]), ("", ["LICENSE"])],
+    data_files=[["gadma", ["gadma/test.fs"]], ("", ["LICENSE"])],
     install_requires=requirements,
     entry_points={
         'console_scripts': ['gadma = gadma.core:main',

@@ -18,7 +18,7 @@ Output directory: my_example_run
 #!!!
 #	Input file can be sfs file (should end with .fs) or 
 #	file of SNP's in dadi format (should end with .txt).
-Input file: fs_examples/YRI_CEU.fs
+Input file: examples/changing_theta/YRI_CEU.fs
 
 #	'Population labels' is sequence of population names (the same
 #	names as in input file)

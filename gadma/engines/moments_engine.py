@@ -2,7 +2,7 @@ from . import Engine, register_engine
 from .dadi_moments_common import DadiOrMomentsEngine
 from ..models import DemographicModel, CustomDemographicModel, Epoch, Split
 from ..utils import DynamicVariable
-from .. import SFSDataHolder, VCFDataHolder
+from .. import SFSDataHolder, VCFDataHolder, moments_available
 import numpy as np
 
 
@@ -18,9 +18,10 @@ class MomentsEngine(DadiOrMomentsEngine):
     """
 
     id = 'moments'  #:
-    import moments as base_module
+    if moments_available:
+        import moments as base_module
+        inner_data_type = base_module.Spectrum  #:
     supported_data = [SFSDataHolder]  # , VCFDataHolder]  #:
-    inner_data_type = base_module.Spectrum  #:
     default_dt_fac = 0.01  #:
 
     @staticmethod
@@ -241,4 +242,5 @@ class MomentsEngine(DadiOrMomentsEngine):
                                                         gen_time_units)
 
 
-register_engine(MomentsEngine)
+if moments_available:
+    register_engine(MomentsEngine)
