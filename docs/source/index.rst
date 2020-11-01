@@ -37,6 +37,7 @@ A parameter file is a simple text file (created in a text editor, such as Notepa
    :caption: Development documentation
 
    api/gadma
+   api_examples/api_examples
 
 Indices and tables
 ==================
