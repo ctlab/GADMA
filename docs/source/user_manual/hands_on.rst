@@ -4,7 +4,7 @@ Hands on
 Test case
 -----------
 
-GADMA has a test case for a simple demographic model for one population: just a constant size of $10000$ individuals in population. To run a test case:
+GADMA has a test case for a simple demographic model for one population: just a constant size of 10,000 individuals in the population. To run this test case:
 
 .. code-block:: console
 
@@ -13,7 +13,7 @@ GADMA has a test case for a simple demographic model for one population: just a 
 Example 2
 ------------
 
-Suppose we have SNP data for two populations. Data is in dadi's SNP file format in the ``snp_data.txt``. Suppose we want to get all output in some ``gadma_output`` directory:
+Suppose that we have SNP data for two populations. Data is in dadi's SNP file format in the ``snp_data.txt``. Suppose we want to get all output in directory called ``gadma_output``:
 
 
 .. code-block:: console
@@ -24,7 +24,7 @@ Suppose we have SNP data for two populations. Data is in dadi's SNP file format 
 Example 3
 -----------
 
-We didn't specify AFS size or labels for populations, they are taken automatically from the input file. We can see a parameter file of our run in the ``gadma_output/param_file``.
+We did not specify AFS size or labels for populations, they are taken automatically from the input file. We can see a parameter file of our run in the ``gadma_output/param_file``.
 
 
 .. code-block:: none
@@ -36,14 +36,14 @@ We didn't specify AFS size or labels for populations, they are taken automatical
    ...
 
 
-But we know that spectrum should be ``20 x 20``! To specify size of AFS we need to create a parameter file and set ``Projections``:
+But we know that the spectrum should be ``20 x 20`` matrix! To specify the size of AFS we need to create a parameter file and set ``Projections``:
 
 .. code-block:: none
 
    # param_file
    Projections : 20, 20
 
-Order of populations can be changed as:
+The order of populations can be changed as:
 
 .. code-block:: none
 
@@ -51,9 +51,9 @@ Order of populations can be changed as:
    Projections : 20,20
    Population labels : pop_name_2, pop_name_1
 
-If we want to rename populations, we should change names on ``snp_data.txt`` file.
+If we want to rename populations, we should change names in the ``snp_data.txt`` file.
 
-Now assume we want to get the simplest demographic model as fast as we can. We will tell GADMA that we need no other dynamics of population sizes except sudden (constant) population size change and that we want to use *moments* library.
+Now assume we want to get the simplest demographic model as fast as we can. We will tell GADMA that we need no other dynamics of population sizes except sudden (constant) population size change and that we want to use the *moments* library.
 
 .. code-block:: none
 
@@ -64,7 +64,7 @@ Now assume we want to get the simplest demographic model as fast as we can. We w
    Engine : moments
 
 
-To run GADMA we need to specify ``-p/--params`` command-line option in cmd:
+To run GADMA we need to specify the ``-p/--params`` command-line option in the command line:
 
 .. code-block:: console
 
@@ -73,7 +73,7 @@ To run GADMA we need to specify ``-p/--params`` command-line option in cmd:
 Example 4
 -----------
 
-Consider some AFS file ``fs_data.fs``. There is a spectrum for three populations: YRI, CEU, CHB. However axes are mixed up: CHB, YRI, CEU. To run GADMA we should order them from most ancient to most recent:
+Consider some AFS file ``fs_data.fs``. There is a spectrum for three populations: YRI, CEU, CHB. However, the axes are mixed up: CHB, YRI, CEU. To run GADMA we should reorder them from most ancient to most recent:
 
 .. code-block:: none
 
@@ -81,7 +81,7 @@ Consider some AFS file ``fs_data.fs``. There is a spectrum for three populations
    Population labels : YRI, CEU, CHB
 
 
-We want to allow exponential growth (it is the default behaviour) and have some extra changes in size of the ancient population. To do so we should specify ``Initial structure``. It is list of three numbers: first - number of time intervals before first split (we want here 2); second - number of time periods between first and second split events (at least 1); third - number of time periods after second split.
+We want to allow exponential growth (it is the default behaviour) and have some extra changes in the size of the ancient population. To do so we should specify ``Initial structure``. It is a list of three numbers: (1) the number of time intervals before the first split (we want here 2); (2) the number of time periods between the first and the second split events (at least 1); and (3) the number of time periods after the  second split.
 
 .. code-block:: none
 
@@ -115,13 +115,13 @@ We have our GADMA launch interrupted for some reasons. We want to resume it:
 
    $ gadma --resume gadma_output
 
-where ``gadma_output`` is output directory of previous run. We can find resumed run in ``gadma_output_resumed``
+The directory ``gadma_output`` is the output directory of the previous run. We can find the resumed run in ``gadma_output_resumed``
 
 
 Example 6
 -------------
 
-Our launch was finished, we used dadi with a default grid size which GADMA determines automatically if it is not specified by user. We found out that it would be better to find some models using greater number of grid points in dadi scheme, but we want to take final models from previous run:
+Our launch was finished, and we used ``dadi`` with a default grid size which GADMA determines automatically if it is not specified by the user. We found out that it would be better to find some models using greater number of grid points in dadi scheme, but we want to take final models from the previous run:
 
 .. code-block:: none
 
@@ -164,7 +164,7 @@ We can add a custom model using a parameter ``Custom filename`` in the parameter
    # param_file
    Custom filename : YRI_CEU_demographic_model.py
 
-Our custom file need to contain a function with a fixed name ``model_func``. For example:
+Our custom file needs to contain a function with a fixed name ``model_func``. For example:
 
 .. code-block:: python
 
@@ -225,7 +225,7 @@ If the custom function has first line line ``par1, par2, ... = params`` then opt
 Example YRI, CEU
 -------------------
 
-GADMA has an example of the parameter file ``example_params``. To run GADMA with this parameters one should just run from the GADMA's home directory:
+GADMA has an example of the parameter file ``example_params``. To run GADMA with this parameters one should just run from GADMA's home directory:
 
 .. code-block:: console
 

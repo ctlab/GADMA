@@ -13,7 +13,7 @@ def model_func(params, ns, pts):
 	sfs = dadi.Spectrum.from_phi(phi, ns, [xx]*len(ns))
 	return sfs
 
-dd = dadi.Misc.make_data_dict('/home/katenos/Workspace/popgen/GADMA/examples/structure_model/dadi_2pops_CVLN_CVLS_snps.txt')
+dd = dadi.Misc.make_data_dict('dadi_2pops_CVLN_CVLS_snps.txt')
 data = dadi.Spectrum.from_data_dict(dd, ['CVLN', 'CVLS'], [10, 10], polarized=False)
 pts = [30, 40, 50]
 ns = data.sample_sizes

@@ -1,7 +1,7 @@
 Inference
 ===========
 
-GADMA's inference could be run both from command-line and from python directly.
+GADMA's inference could be run both from command-line and from Python directly.
 
 Command-line
 --------------

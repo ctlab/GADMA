@@ -6,16 +6,16 @@
 Welcome to GADMA's documentation!
 =================================
 
-GADMA implements methods for automatic inferring the joint demographic history of multiple populations from genetic data.
+GADMA implements methods for automatic inference of the joint demographic history of multiple populations from genetic data.
 
 GADMA is based on two open source packages: `dadi <https://bitbucket.org/gutenkunstlab/dadi/>`_ developed by Ryan Gutenkunst and `moments <https://bitbucket.org/simongravel/moments/>`_ developed by Simon Gravel.
 
-In contrast, **GADMA is a command-line tool**. It presents a series of launches of the genetic algorithm and infers demographic history from the Allele Frequency Spectrum of multiple populations (up to three).
+In contrast to these packages, **GADMA is a command-line tool**. It presents a series of launches of the genetic algorithm and infers demographic history from the Allele Frequency Spectrum of multiple populations (up to three).
 
 Parameter file
 --------------
 
-A parameter file is a simple text file (created in a text editor, such as Notepad), which contains a list of parameters and variables with their assigned values. Create a parameter file that reflect your particular parameters. Hereinafter, as an example, the name of your parameter file will be defined as ``param_file``
+A parameter file is a simple text file (created in a text editor, such as Notepad), which contains a list of parameters and variables with their assigned values. Create a parameter file that reflects your particular parameters. Hereinafter, as an example, the name of your parameter file will be defined as ``param_file``
 
 
 

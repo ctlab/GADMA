@@ -81,7 +81,6 @@ class CoreRun(object):
                                             self.REPORT_FILENAME)
             self.report_file = ensure_file_existence(self.report_file)
             self.save_file = os.path.join(self.output_dir, self.SAVE_FILENAME)
-            self.save_file = ensure_file_existence(self.save_file)
 
             # Tell optimizers about output files
             self.optimize_kwargs['eval_file'] = self.eval_file

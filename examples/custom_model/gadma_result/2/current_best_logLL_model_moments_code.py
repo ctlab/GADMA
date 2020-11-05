@@ -3,13 +3,13 @@ import numpy as np
 
 import importlib.util
 
-spec = importlib.util.spec_from_file_location('module', '/home/katenos/Workspace/popgen/GADMA/examples/custom_model/demographic_model.py')
+spec = importlib.util.spec_from_file_location('module', 'demographic_model.py')
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 model_func = module.model_func
 
 
-data = moments.Spectrum.from_file('/home/katenos/Workspace/popgen/GADMA/examples/custom_model/2pop_e_gillettii_all_snp.fs')
+data = moments.Spectrum.from_file('2pop_e_gillettii_all_snp.fs')
 ns = data.sample_sizes
 
 p0 = [3.6536796762530233, 0.5756088036977836, 4.989089047598161, 0.33304022766326563, 0.6166099034251886]

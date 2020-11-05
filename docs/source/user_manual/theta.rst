@@ -1,9 +1,11 @@
+.. _theta:
+
 Theta0
 ===========
 
 ``Theta0`` is equal to the expected number of mutations that occur in one chromosome in one generation in the infinite-sited model. GADMA can scale all values of demographic model parameters due to known value of ``Theta0``. However, it is not always possible to find it. There is a way to solve this problem: one can set ``Theta0`` to ``None`` or just not specify it at all, so GADMA will take it as ``1.0`` and after launch one can scale result values due to found ``Theta0``.
 
-The alternative way to set ``Theta0`` is to specify both mutation rate and length of the sequence in parameters file instead. Then ``Theta0`` will be calculated automatcally.
+The alternative way to set ``Theta0`` is to specify both mutation rate and length of the sequence in the parameters file instead. Then ``Theta0`` will be calculated automatically.
 
 .. code-block:: none
 
@@ -74,4 +76,4 @@ In Gutenkunst et al. 2009 generation time for human populations was equal to ``2
 In Jouganous et al. 2017 generation time was grater - ``29`` years and mutation rate was equal to ``1.44 \* 10^(-8)``. To change generation time to ``24``, one needs to change value of the mutation rate: ``muNEW`` = ``mu`` / 29 \* 24 = 1.2 \* 10^(-8). ``Theta0`` is calculated then by the formula above.
 
 .. note::
-    One can find FS files in ``fs\_examples`` directory.
+    There is another more practical :ref:`example<theta_example>` of changing theta after run.

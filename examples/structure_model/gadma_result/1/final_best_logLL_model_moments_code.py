@@ -13,7 +13,7 @@ def model_func(params, ns):
 	fs.integrate(tf=t2, Npop=lambda t: [nu1_func(t), nu2_func(t)], m=migs, dt_fac=0.01)
 	return fs
 
-dd = moments.Misc.make_data_dict('/home/katenos/Workspace/popgen/GADMA/examples/structure_model/dadi_2pops_CVLN_CVLS_snps.txt')
+dd = moments.Misc.make_data_dict('dadi_2pops_CVLN_CVLS_snps.txt')
 data = moments.Spectrum.from_data_dict(dd, ['CVLN', 'CVLS'], [10, 10], polarized=False)
 ns = data.sample_sizes
 

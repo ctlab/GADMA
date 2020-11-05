@@ -32,6 +32,6 @@ Split fractions: False
 # No output in stdout
 Silence: True
 
-# How many repeates to run and how many processes to use.
+# How many repeats to run and how many processes to use.
 Number of repeats: 2
 Number of processes: 2

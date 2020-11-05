@@ -153,8 +153,8 @@ def optimize_ga(data, model_func, engine, args=(),
     :type Y_init: list
     :param num_init: Number of initial points to start Genetic algorithm.
     :type num_init: int
-    :param gen_size: Size of generation of genetic algorithm. That is number
-                     of individuals/solutions on each step of GA.
+    :param gen_size: Size of generation of genetic algorithm. That is the
+                     number of individuals/solutions on each step of GA.
     :type gen_size: int
     :param mut_strength: Mean fraction of parameters for mutation in GA.
     :type mut_strength: float
@@ -166,20 +166,20 @@ def optimize_ga(data, model_func, engine, args=(),
     :param const_mut_rate: Const to change ``mut_rate`` during GA.
     :type const_mut_rate: float
     :param eps: const for model's log likelihood compare.
-                Model is better if its log likelihood is greater than
-                log likelihood of another model by epsilon.
+                Model is better if its log-likelihood is greater than the
+                log-likelihood of another model by epsilon.
     :type eps: float
     :param n_stuck_gen: Number of iterations for GA stopping: GA stops when
                         it can't improve model during n_stuck_gen generations.
     :type n_stuck_gen: int
-    :param n_elitism: Number of best models from previous generation in GA
-                      that will be taken to new iteration.
+    :param n_elitism: Number of best models from the previous generation in GA
+                      that will be taken to the new generation.
     :type n_elitism: int
     :param p_mutation: probability of mutation in one generation of GA.
     :type p_mutation: float
     :param p_crossover: probability of crossover in one generation of GA.
     :type p_crossover: float
-    :param p_random: Probability of random generated individual in one
+    :param p_random: Probability to generate an individual randomly in one
                      generation of GA.
     :type p_random: float
     :param ga_maxiter: Maximum number of generations in GA.
@@ -205,7 +205,7 @@ def optimize_ga(data, model_func, engine, args=(),
     :param verbose: Verbose of output.
     :type verbose: int
     :param callback: callback to call during optimizations. (callback(x, y))
-    :param save_file: File for save GA's state on current generation.
+    :param save_file: File for save GA state on current generation.
     :type save_file: str
     :param eval_file: File to save all evaluations during GA and local
                       optimization.

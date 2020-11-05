@@ -1,13 +1,13 @@
 Confidence intervals
 ======================
 
-GADMA contains special scripts for Confidence Intervals evaluation. To get CI one will need correctly bootstrapped data. If SNP's that were used for AFS are unlinked, then usual bootstrap over them should be performed. However, if they are linked then block bootstrap should be used. It is done over the unlinked regions of genome.
+GADMA contains special scripts for confidence intervals (CI) evaluation. To get CI one will need correctly bootstrapped data. If SNP's that were used for AFS are unlinked, then usual bootstrap over them should be performed. However, if they are linked then block bootstrap should be used. It is done over the unlinked regions of the genome.
 
-When bootstrapped data is ready, one should run two scripts ``gadma-run_ls_on_boot_data`` and ``gadma-get_confidence_intervals`` in order to get CI. One can find example `here <https://bitbucket.org/noscode/gadma_results/src/master/YRI_CEU/model_1/>`_.
+When bootstrapped data is ready, one should run two scripts ``gadma-run_ls_on_boot_data`` and ``gadma-get_confidence_intervals`` in order to get CI. One can find an example `here <https://bitbucket.org/noscode/gadma_results/src/master/YRI_CEU/model_1/>`_.
 
 Run local search on bootstrapped data
 ----------------------------------------
-First script ``gadma-run_ls_on_boot_data`` runs local search from known optimum for initial AFS (the one that GADMA found) for each AFS from bootstrap. The usage is following:
+The first script ``gadma-run_ls_on_boot_data`` runs local search from known optimum for initial AFS (the one that GADMA found) for each AFS from bootstrap. The usage is following:
 
 .. code-block:: console
 
@@ -51,12 +51,12 @@ First script ``gadma-run_ls_on_boot_data`` runs local search from known optimum 
                             Parameters are presented in -d/--dem_model
                             option description upper.
 
-After the run, there will be pandas table in output directory with two different extensions - ``result_table.pkl`` and ``result_table.csv``. It contains parameters for each bootstrap. At this point of time it is possible to change its units and add new parameters with additional manipulations in Python and then run ``gadma-get_confidence_intervals`` to get CI.
+After the run, there will be a pandas table ``result_table.pkl`` in the output directory  and its CSV version ``result_table.csv``. It contains parameters for each bootstrap. At this point of time it is possible to change its units and add new parameters with additional manipulations in Python and then run ``gadma-get_confidence_intervals`` to get CI.
 
 Get Confidence Intervals from table
 ------------------------------------
 
-After the ``gadma-run_ls_on_boot_data`` the result table will be in output directory. One can change its columns due to what parameters should be used for CI. For example, it is possible to translate units from genetic and add such parameter as size of ancestral population (N\_A). To do it user should write script.
+After the ``gadma-run_ls_on_boot_data`` the result table will be in the output directory. One can change its columns due to what parameters should be used for CI. For example, it is possible to translate units from genetic and add one more parameter: the size of the ancestral population (N\_A). To do it the user should write a script.
 
 To calculate confidence intervals:
 
@@ -78,4 +78,4 @@ To calculate confidence intervals:
       --log       If log then logarithm will be used to
                   calculate confidence intervals.
       --tex       Tex output.
-      --acc N     Accuracy of output (dafault: 5).
+      --acc N     Accuracy of output (default: 5).

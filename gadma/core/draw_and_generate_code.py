@@ -241,11 +241,11 @@ def print_runs_summary(start_time, shared_dict, settings):
             print(f"{bcolors.FAIL}Run {index}: failed to generate code due to"
                   f" the following exception: {e}{bcolors.ENDC}")
         if drawn and gener:
-            print("\nYou can find picture and python code of best model in "
-                  "the output directory.\n")
+            print("\nYou can find the picture and the Python code of the best "
+                  "model in the output directory.\n")
         elif drawn:
-            print("\nYou can find picture of best model in the output "
+            print("\nYou can find the picture of the best model in the output "
                   "directory.\n")
         elif gener:
-            print("\nYou can find python code of best model in the output "
-                  "directory.\n")
+            print("\nYou can find the Python code of the best model in the "
+                  "output directory.\n")

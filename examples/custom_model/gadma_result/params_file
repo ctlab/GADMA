@@ -12,13 +12,13 @@
 #	If it is resumed from other directory and output directory 
 #	isn't set, GADMA will add '_resumed' for previous output 
 #	directory.
-Output directory: /home/katenos/Workspace/popgen/GADMA/examples/custom_model/gadma_result
+Output directory: gadma_result
 
 
 #!!!
 #	Input file can be sfs file (should end with .fs) or 
 #	file of SNP's in dadi format (should end with .txt).
-Input file: /home/katenos/Workspace/popgen/GADMA/examples/custom_model/2pop_e_gillettii_all_snp.fs
+Input file: 2pop_e_gillettii_all_snp.fs
 
 #	'Population labels' is sequence of population names (the same
 #	names as in input file)

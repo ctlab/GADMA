@@ -115,7 +115,7 @@ Also at the end of the string that corresponds to the model there is an informat
 * 'f' - final model of genetic algorithm.
 
 .. note::
-    'm' is added as many times as model is mutated.
+    'm' is added as many times as the model is mutated.
 
 **Example of the demographic model for two populations**:
 
@@ -128,13 +128,13 @@ Also at the end of the string that corresponds to the model there is an informat
 Output directory content
 --------------------------
 
-For every repeat of Genetic algorithm GADMA creates a new folder in output directory with corresponding number.
+For every repeat of the genetic algorithm GADMA creates a new folder in the output directory with corresponding number.
 
-In every folder there is ``GADMA_GA.log``, where every iteration of algorithm is saved, folders ``pictures`` and ``code``. ``eval_file`` and ``save_file`` have information about evaluations and optimization.
+In every folder there is ``GADMA_GA.log``, where every iteration of the algorithm is saved, pictures and generated code of best models are saved in ``pictures`` and ``code`` directories of each run. ``eval_file`` and ``save_file`` have information about evaluations and optimization.
 
-When genetic algorithm finishes GADMA saves picture and python code of received model in the corresponding folder.
+When the genetic algorithm finishes GADMA saves pictures and python code of obtained model in the corresponding folder.
 
-When all GA's are executed, the codes are saved in the root directory.
+When all GA are executed, the codes are saved in the root directory.
 
 .. code-block:: none
 
@@ -174,9 +174,9 @@ When all GA's are executed, the codes are saved in the root directory.
 Generated code of models
 --------------------------
 
-By default, GADMA generates python code only for final models both for ``dadi`` and ``moments``. However, it can do it every ``N`` iteration of genetic algorithm. In this case option ``Print models code every N iteration`` should be set in the parameter file. GADMA saves files with code to the ``output_dir/<GA_number>/python_code`` directory. Both ``dadi`` and ``moments`` code are generated and saved in different folders there. 
+By default, GADMA generates Python code only for final models both for ``dadi`` and ``moments``. However, it can do it every ``N`` iteration of the genetic algorithm. In this case option ``Print models code every N iteration`` should be set in the parameter file. GADMA saves files with code to the ``output_dir/<GA_number>/python_code`` directory. Both ``dadi`` and ``moments`` code are generated and saved in different folders there. 
 
-Each code contains function of the model, which takes values of the parameters as input, and strings that load observed AFS, simulates expected AFS from the model's function and calculates log likelihood between two AFS'. The result log likelihood is printed to stdout. For the ``moments`` code picture is also drawn.
+Each code contains the function of the model, which takes values of the parameters as input, and strings that load observed AFS, simulates expected AFS from the model's function and calculates log-likelihood of two AFS'. The calculated log-likelihood is printed to stdout. For the ``moments`` code, a picture is also drawn.
 
 All code can be run in the following way:
 

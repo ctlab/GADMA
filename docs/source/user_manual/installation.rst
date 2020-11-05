@@ -4,7 +4,7 @@ Installation
 Dependencies
 -------------
 
-**Current version of GADMA (later than 2.0.0) supports Python3 only**. Older versions supported Python 2 as well but not any more.
+**The current version of GADMA (greater than 2.0.0) supports Python3 only**. [Older versions](https://github.com/ctlab/GADMA/releases/tag/1.0.2) supported Python 2 as well but not any more.
 
 GADMA requires the following dependencies:
 
@@ -17,27 +17,27 @@ GADMA requires the following dependencies:
 * Cython (for ``moments``)
 * mpmath (for ``moments``)
 
-To draw demographic models one should install the following:
+To draw demographic models one should also install the following packages:
 
 * matplotlib (>= 0.98.1)
 * Pillow (>= 4.2.1) - optional
 * ``moments`` (>= 1.0.0)
 
-To calculate Confidence Intervals:
+To calculate confidence intervals one should install:
 
 * pandas
 
 Installing the latest release
 ------------------------------
 
-The latest release of BoTorch is easily installed either via ``pip``:
+The latest release of GADMA is easily installed via ``pip``:
 
 .. code-block:: console
 
     $ pip install gadma
 
 .. warning::
-    Installation via ``pip`` will not install ``moments`` library. To install it one should run:
+    Installation via ``pip`` will not install the ``moments`` library. To install it one should run:
 
     .. code-block:: console
 
@@ -51,21 +51,21 @@ The latest release of BoTorch is easily installed either via ``pip``:
 Manual installation
 -----------------------------
 
-Some features are added to GADMA project but are not released yet. One can try to install GADMA directly from the repository.
+Some features are added to the GADMA project but are not released yet. One can install GADMA directly from the repository.
 
-First clone repository:
+First clone the repository:
 
     .. code-block:: console
 
         $ git clone https://github.com/ctlab/GADMA.git
         $ cd GADMA
 
-Dependencies could be installed with one of two modes.
+Dependencies could be installed either automatically or manually.
 
-Auto mode
-**********
+Automatic mode
+**************
 
-One could install everything with ``install`` script:
+One could install everything with the ``install`` script:
 
 .. code-block:: console
 
@@ -129,7 +129,7 @@ Install dependencies manually:
 Verifying installation
 -------------------------
 
-To verify the installation, run a test:
+To verify the installation, run:
 
 .. code-block:: console
 

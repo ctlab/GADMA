@@ -1,3 +1,5 @@
+.. _theta_example:
+
 Changing theta
 ==============
 

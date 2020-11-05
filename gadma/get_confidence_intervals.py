@@ -24,7 +24,7 @@ def main():
     parser.add_argument('--tex', required=False, action='store_true',
                         help="LaTex output.")
     parser.add_argument('--acc', required=False, metavar='N', type=int,
-                        default=5, help="Precision of an output (dafault: 5).")
+                        default=5, help="Precision of an output (default: 5).")
 
     args = parser.parse_args()
     filename = abspath(args.input_filename)

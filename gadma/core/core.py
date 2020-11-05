@@ -154,8 +154,10 @@ def main():
     if args.test:
         print('--Test passed correctly--')
     if settings_storage.theta0 is None:
+        href = "https://gadma.readthedocs.io/en/latest/user_manual/theta.html"
         print("\nYou didn't specify theta at the beginning. If you want "
-              "change it and rescale parameters, please see tutorial.\n")
+              "to change it and rescale parameters, please see the "
+              f"tutorial:\n{href}\n")
 #        if (params.resume_dir is not None and
 #                (params.initial_structure != params.final_structure).any()):
 #            print('\nYou have resumed from another launch. Please, check '

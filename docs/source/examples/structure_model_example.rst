@@ -1,8 +1,8 @@
 GADMA with structure model
 ==========================
 
-By default GADMA is run for demographic model with structure. Structure
-defines how detailed demographic model is and GADMA finds all possible
+By default GADMA is run for the demographic model with structure. Structure
+defines how detailed the demographic model is and GADMA finds all possible
 parameters for this model. Here we show how to set structure and use
 scheme with increasing structure which provides more stable runs.
 
@@ -14,7 +14,7 @@ scheme with increasing structure which provides more stable runs.
 Data
 ----
 
-This data was originally build in paper `Portik et al.
+This data was originally built in paper `Portik et al.
 2017 <https://onlinelibrary.wiley.com/doi/abs/10.1111/mec.14266>`__.
 
 We have two populations of Gaboon forest frog *Scotobleps gabonicus*:
@@ -22,7 +22,7 @@ We have two populations of Gaboon forest frog *Scotobleps gabonicus*:
 -  CVLN
 -  CVLS
 
-Folded AFS has size of 30x18. We have ``.txt`` file with SNP's in SNP's
+Folded AFS has a size of 30x18. We have ``.txt`` file with SNP's in SNP's
 dadi format:
 
 .. code:: bash
@@ -49,7 +49,7 @@ dadi format:
 Demographic model
 -----------------
 
-We want to build demographic model with two time intervals for ancestral
+We want to build the demographic model with two time intervals for ancestral
 population before split and one time interval after split and asymmetric
 migrations. So our ``Final structure`` should be (2, 1). We could use
 ``Initial structure`` of (1, 1) and then GADMA will first infer
@@ -103,7 +103,7 @@ To run GADMA we should set parameters file:
     # No output in stdout
     Silence: True
     
-    # How many repeates to run and how many processes to use.
+    # How many repeats to run and how many processes to use.
     Number of repeats: 2
     Number of processes: 2
 
@@ -143,9 +143,9 @@ Now let us look at the output directory. Short descriptions:
       final model and ``dadi``.
    -  ``eval_file`` - File with all evaluations.
    -  ``save_file_1_1`` - File with saved info about run for (1,1)
-      strcuture.
+      structure.
    -  ``save_file_2_1`` - File with saved info about run for (2,1)
-      strcuture.
+      structure.
 
 -  ``2`` - directory with output of second repeat.
 -  ``GADMA.log`` - the output of base run.
@@ -253,8 +253,8 @@ File best\_logLL\_model.png have picture of our best model:
 Run generated code with final model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We could run the code of final model to get its log-likelihood. GADMA in
-case of demographic model with structure generates code both for
+We could run the code of the final model to get its log-likelihood. In the
+case of demographic model with structure, GADMA generates code both for
 ``dadi`` and ``moments``. We used ``moments`` so let is rerun code of
 final model:
 
@@ -283,7 +283,7 @@ final model:
     	fs.integrate(tf=t2, Npop=lambda t: [nu1_func(t), nu2_func(t)], m=migs, dt_fac=0.01)
     	return fs
     
-    dd = moments.Misc.make_data_dict('/home/katenos/Workspace/popgen/GADMA/examples/structure_model/dadi_2pops_CVLN_CVLS_snps.txt')
+    dd = moments.Misc.make_data_dict('dadi_2pops_CVLN_CVLS_snps.txt')
     data = moments.Spectrum.from_data_dict(dd, ['CVLN', 'CVLS'], [10, 10], polarized=False)
     ns = data.sample_sizes
     
@@ -371,7 +371,7 @@ as it is another engine value of log-likelihood will be different.
     	sfs = dadi.Spectrum.from_phi(phi, ns, [xx]*len(ns))
     	return sfs
     
-    dd = dadi.Misc.make_data_dict('/home/katenos/Workspace/popgen/GADMA/examples/structure_model/dadi_2pops_CVLN_CVLS_snps.txt')
+    dd = dadi.Misc.make_data_dict('dadi_2pops_CVLN_CVLS_snps.txt')
     data = dadi.Spectrum.from_data_dict(dd, ['CVLN', 'CVLS'], [10, 10], polarized=False)
     pts = [30, 40, 50]
     ns = data.sample_sizes

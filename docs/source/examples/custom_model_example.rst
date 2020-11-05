@@ -1,14 +1,14 @@
 GADMA with custom model
 =======================
 
-GADMA could be run with detailed specified demographic model. Model
-should be provided as file with function ``model_func`` that describes
+GADMA could be run with a detailed specified demographic model. Model
+should be provided as a file with a function ``model_func`` that describes
 demographic history by engine itself. It should take values of
 parameters and other required arguments and return simulated data for
 demographic history with those parameters.
 
-For example, let us use ``moments`` as engine for demographic inference.
-We have data for two populations of Gillette buterfly from `McCoy et al.
+For example, let us use ``moments`` as the engine for demographic inference.
+We have data for two populations of Gillette butterfly from `McCoy et al.
 2013 <https://onlinelibrary.wiley.com/doi/10.1111/mec.12591>`__ and we
 want to estimate demographic history with population split, constant
 sizes of populations and asymmetric migrations.
@@ -27,7 +27,7 @@ We have two populations of checkerspot butterfly *Euphydryas gillettii*:
 -  WY - native population in Wyoming,
 -  CO - population from Colorado.
 
-Folded AFS was build from all SNP's and has size of 13x13.
+Folded AFS was built from all SNPs and has a size of 13x13.
 
 .. code:: ipython3
 
@@ -49,7 +49,7 @@ Folded AFS was build from all SNP's and has size of 13x13.
 Demographic model
 -----------------
 
-Demographic model was build according to the original paper: ancestral
+Demographic model was built according to the original paper: the ancestral
 population of constant size split into two populations of new constant
 sizes and there was asymmetric continuous migration between those
 populations.
@@ -130,7 +130,7 @@ To run GADMA with custom model one should set parameters file:
     
     
     # Now set our custom demographic model from file.
-    # There should be function model_func in file with model.
+    # There should be a function model_func in the file with the model.
     Custom filename: demographic_model.py
     
     # We could set optional settings about parameter labels,
@@ -143,7 +143,7 @@ To run GADMA with custom model one should set parameters file:
     # Upper bound: 100, 100, 5, 10, 10
     
     
-    # How many repeates to run and how many processes to use.
+    # How many repeats to run and how many processes to use.
     Number of repeats: 2
     Number of processes: 2
 
@@ -173,8 +173,8 @@ Now we could run GADMA:
     Outgroup: False
     [92m--Successful data reading--[0m
     
-    Parameters of launch are saved in output directory: /home/katenos/Workspace/popgen/GADMA/examples/custom_model/gadma_result/params_file
-    All output is saved in output directory: /home/katenos/Workspace/popgen/GADMA/examples/custom_model/gadma_result/GADMA.log
+    Parameters of launch are saved in output directory: gadma_result/params_file
+    All output is saved in output directory: gadma_result/GADMA.log
     [94m--Start pipeline--[0m
     Run launch number 1
     Run launch number 2
@@ -219,7 +219,7 @@ Now we could run GADMA:
     
 
 
-The run was fast because we have small size of data and low number of
+The run was fast because we have a small size of data and a low number of
 parameters. Also usually one should run a lot of repeats: we have 2 here
 (50 is better for example).
 
@@ -347,13 +347,13 @@ We could run the code of final model to get its log-likelihood.
     
     import importlib.util
     
-    spec = importlib.util.spec_from_file_location('module', '/home/katenos/Workspace/popgen/GADMA/examples/custom_model/demographic_model.py')
+    spec = importlib.util.spec_from_file_location('module', 'demographic_model.py')
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     model_func = module.model_func
     
     
-    data = moments.Spectrum.from_file('/home/katenos/Workspace/popgen/GADMA/examples/custom_model/2pop_e_gillettii_all_snp.fs')
+    data = moments.Spectrum.from_file('2pop_e_gillettii_all_snp.fs')
     ns = data.sample_sizes
     
     p0 = [1.2634029664716868, 0.18066683184484178, 0.12439006690470482, 0.2799706652520448, 0.0]

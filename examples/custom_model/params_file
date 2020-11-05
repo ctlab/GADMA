@@ -17,7 +17,7 @@ Engine: moments
 
 
 # Now set our custom demographic model from file.
-# There should be function model_func in file with model.
+# There should be a function model_func in the file with a model.
 Custom filename: demographic_model.py
 
 # We could set optional settings about parameter labels,
@@ -30,6 +30,6 @@ Custom filename: demographic_model.py
 # Upper bound: 100, 100, 5, 10, 10
 
 
-# How many repeates to run and how many processes to use.
+# How many repeats to run and how many processes to use.
 Number of repeats: 2
 Number of processes: 2

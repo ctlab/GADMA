@@ -30,7 +30,7 @@ Input file can be specified to GADMA in two ways:
       Input file : fs_file.fs 
       ...
 
-Extra information about input AFS can also be put in the parameter file. For example, AFS can be projected to a smaller size with ``Projections`` option, populations can be named or their order can be changed with ``Population labels`` option. Option ``Outgroup`` tells neither data has outgroup or not, if ``Outgroup`` is ``False`` then spectrum will be folded. If parameter file does not contain some options, they are automatically pulled out from the input file. Also length of sequence could be set by ``Sequence length`` option, it could be used along with ``Mutation rate`` instead ``Theta0``.
+Extra information about input AFS can also be put in the parameter file. For example, AFS can be projected to a smaller size with ``Projections`` option, populations can be named or their order can be changed with the ``Population labels`` option. Option ``Outgroup`` tells whether data has outgroup or not: if ``Outgroup`` is ``False`` then the spectrum will be folded. If the parameter file does not contain some options, they are automatically pulled out from the input file. Also length of sequence could be set by the ``Sequence length`` option, which could be used along with ``Mutation rate`` instead of ``Theta0``.
 
 .. code-block:: none
 
@@ -58,7 +58,7 @@ GADMA can be launched with a parameter file in the following way:
 
    $ gadma -p params_file -o out_dir
 
-Unlinked SNP's, AIC and CLAIC
+Unlinked SNPs, AIC and CLAIC
 -----------------------------
 
 By default, SNP's that were used to build AFS are considered to be linked. In this case it is possible to compare demographic models with different number of parameters by Composite Likelihood Akaike Information Criterion (CLAIC). This procedure can be necessary as a model with a large number of parameters will be better able to find parameter values corresponding to the observed data than a model with a smaller number of parameters, but at the same time it will correspond less to reality, for example, due to data errors. It is called overfitting and we do not want it to happen.
@@ -75,7 +75,7 @@ It is possible to inform GADMA about linkage of SNP's and unlock the usage of AI
    Linked SNP's : False
    ...
 
-If SNP's are linked and CLAIC should be evaluated (by default it is not), then the bootstrapped data should be set. In order to receive reliable correct bootstrapped data, the bootstrap should be performed on the original SNP data over the unlinked regions of genome. For example, in case of exome data one could make it over genes. Then when bootstrap is done, it is required to set the directory with it in the parameters file for CLAIC evaluation:
+If SNP's are linked and CLAIC should be evaluated (by default it is not), then the bootstrapped data should be set. In order to receive reliable correct bootstrapped data, the bootstrap should be performed on the original SNP data over the unlinked regions of the genome. For example, in case of exome data one could make it over genes. Then when bootstrap is done, it is required to set the directory with it in the parameters file for CLAIC evaluation:
 
 .. code-block:: none
 
@@ -103,11 +103,11 @@ To convert a VCF (.vcf) file into a SFS (.sfs) file use `easySFS <https://github
 Frequency spectrum file format
 ********************************
 
-Each file begins with any number of comment lines beginning with ``#``.
-The first non-comment line contains ``P`` integers giving the dimensions of the FS array, where ``P`` is the number of populations represented.
-For a FS representing data from ``4x4x2`` samples, this would be ``5x5x3``.
-(Each dimension is one larger than the number of samples, because the number of observations can range, for example, from 0 to 4 if there are 4 samples, for a total of 5 possibilities.)
-On the same line, the string ``folded`` or ``unfolded`` denoting whether or not the stored FS is folded.
+Each file begins with any number of comment lines starting with ``#``.
+The first non-comment line contains ``P`` integers giving the dimensions of the FS array, where ``P`` is the number of represented populations represented.
+For an FS representing data from ``4x4x2`` samples, this would be ``5x5x3``.
+(Each dimension is one larger than the number of samples because the number of observations can range, for example, from 0 to 4 if there are 4 samples, for a total of 5 possibilities.)
+On the same line, the string ``folded`` or ``unfolded`` denotes whether or not the stored FS is folded.
 
 The actual data is stored in a single line listing all the FS elements separated by spaces, in the order ``fs[0,0,0] fs[0,0,1] fs[0,0,2] ... fs[0,1,0] fs[0,1,1]...``.
 This is followed by a single line giving the elements of the mask in the same order as the data, with ``1`` indicating masked and ``0`` indicating unmasked.
@@ -115,7 +115,7 @@ This is followed by a single line giving the elements of the mask in the same or
 SNP data format
 ****************
 
-Example of SNP file format:
+Example of a file in the SNP format:
 
 .. code-block:: none
 
@@ -124,13 +124,13 @@ Example of SNP file format:
    CCT   CCT   C       29   23   G       3   2   abcb1 345
 
 
-The data file begins with any number of comment lines that being with ``#``.
+The data file begins with any number of comment lines that start with ``#``.
 The first parsed line is a column header line.
 Whitespace is used to separate entries within the table, so no spaces are allowed within any entry.
-Individual rows make be commented out using ``#``.
+Individual rows maybe commented out using ``#``.
 
 The first column contains the in-group reference sequence at that SNP, including the flanking bases.
-If the flanking bases are unknown, they can be denoted by ``-``.
+If the flanking bases are unknown, they can be denoted by a hyphen (``-``).
 The header label is arbitrary.
 
 The second column contains the aligned outgroup reference sequence at that SNP, including the flanking bases.
