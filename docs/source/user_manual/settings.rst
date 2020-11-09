@@ -30,6 +30,24 @@ To estimate symmetric migrations one should set ``Symmetric migrations`` to True
     Symmetric migrations: True
     ...
 
+Restrict some migrations
+-------------------------
+
+It is possible to restrict some number of migrations by setting the ``Migration masks`` option. It is a list of masks for each time interval after first split.
+
+For example, if there is model structure equal to (2, 1, 1) and one want to have all zero migrations except (a) migration from population 1 to population 2 between split of ancestral population and second split and (b) migration between population 1 and population 3 after second split. Then for first interval after split mask will be ``[[None, 0], [1, None]]`` (``m[i, j]`` corresponds to the migration from the population ``j`` to the population ``i``) and for next time interval right after the second split mask will be ``[[None, 0, 1], [0, None, 0], [1, 0, None]]``.
+
+.. code-block::
+
+    # params_file
+    Migration masks: [[[0, 0], [1, 0], [[0, 0, 1], [0, 0, 0], [1, 0, 0]]]
+
+.. note::
+    Option ``Migration masks`` is used only in case of demographic model with structure and ``Initial structure`` equal to ``Final structure``.
+
+.. note::
+    When option ``Migration masks`` is used together with ``Symmetric migration`` masks should be symmetrical. There is no such option to make some migrations symmetrical and other not.
+
 Split fractions
 ------------------
 

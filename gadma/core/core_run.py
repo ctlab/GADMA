@@ -470,9 +470,13 @@ class CoreRun(object):
                                       f"structure at the end of the name. "
                                       f"So it is ignored.")
                         continue
-                    restore_files.append(file_path)
                     strct_str = filename[len(self.SAVE_FILENAME)+1:]
-                    structures.append([int(x) for x in strct_str.split('_')])
+                    structure = [int(x) for x in strct_str.split('_')]
+                    if np.all(np.array(structure) >=
+                              np.array(self.settings.initial_structure)):
+                        restore_files.append(file_path)
+                        structures.append(structure)
+
             if self.settings.initial_structure is not None:
                 restore_files, structures = sort_by_other_list(
                     restore_files, structures, key=lambda x: sum(x))

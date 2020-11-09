@@ -332,8 +332,10 @@ class StdAndFileLogger(object):
     """
     Logger for printing output both in file and stdout.
     """
-    def __init__(self, log_filename, silent=False):
+    def __init__(self, log_filename, silent=False, stderr=False):
         self.terminal = sys.stdout
+        self.stderror = sys.stderr
+        self.use_stderr = stderr
         self.log_filename = log_filename
         self.silent = silent
         if not os.path.exists(self.log_filename):
@@ -341,8 +343,12 @@ class StdAndFileLogger(object):
 
     def write(self, message):
         if not self.silent:
-            self.terminal.write(message)
-            self.terminal.flush()
+            if self.use_stderr:
+                self.stderror.write(message)
+                self.stderror.flush()
+            else:
+                self.terminal.write(message)
+                self.terminal.flush()
         with open(self.log_filename, 'a') as fl:
             fl.write(message)
 

@@ -134,7 +134,8 @@ class TestRestore(unittest.TestCase):
         if check_dir_existence(outdir):
             shutil.rmtree(outdir)
         with open(params_file, 'w') as fl:
-            fl.write("Linked SNP's: False")
+            fl.write("Linked SNP's: False\n"
+                     "Silence: True")
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file,
                     '--output', outdir]
         try:
@@ -154,7 +155,8 @@ class TestRestore(unittest.TestCase):
                      "Only models: True\n"
                      "Projections: [4,4]\n"
                      "Theta0: 1\n"
-                     "Relative parameters: True")
+                     "Relative parameters: True\n"
+                     "Silence: True")
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file,
                     '--only_models']
         try:
@@ -174,7 +176,8 @@ class TestRestore(unittest.TestCase):
                      "Symmetric migrations: True\n"
                      "Only sudden: True\n"
                      "Split fractions: False\n"
-                     "Projections: 4,4")
+                     "Projections: 4,4\n"
+                     "Silence: True")
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
         try:
             core.main()
@@ -189,7 +192,8 @@ class TestRestore(unittest.TestCase):
         with open(params_file, 'w') as fl:
             fl.write("Stuck generation number: 2\n"
                      "Engine: dadi\n"
-                     "Projections: 4,4")
+                     "Projections: 4,4\n"
+                     "Silence: True")
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
         try:
             gadma.PIL_available = False
@@ -202,3 +206,99 @@ class TestRestore(unittest.TestCase):
             gadma.PIL_available = True
             gadma.moments_available = True
 
+    def test_restore_with_different_options_failure(self):
+        finished_run_dir = os.path.join(DATA_PATH, 'my_example_run')
+        params_file = 'params'
+        with open(params_file, 'w') as fl:
+            fl.write("Stuck generation number: 2\n"
+                     "Projections: 4,4\n"
+                     "Initial structure: 2, 1\n"
+                     "Silence: True")
+        sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
+        try:
+            gadma.PIL_available = False
+            gadma.moments_available = False
+            self.assertRaises(ValueError, core.main)
+        finally:
+            if check_dir_existence(finished_run_dir + '_resumed'):
+                shutil.rmtree(finished_run_dir + '_resumed')
+            os.remove(params_file)
+            gadma.PIL_available = True
+            gadma.moments_available = True
+
+    def test_restore_with_new_migration_masks(self):
+        finished_run_dir = os.path.join(DATA_PATH,
+                                        'my_example_run_one_structure')
+        params_file = 'params'
+        output_3 = "some_output"
+        with open(params_file, 'w') as fl:
+            fl.write("Stuck generation number: 2\n"
+                     "Projections: 4,4\n"
+                     "Migration masks: [[0, 1], [0, 0]]\n"
+                     "Silence: True")
+        sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
+
+        try:
+            core.main()
+
+            with open(params_file, 'w') as fl:
+                fl.write("Migration masks: None\n")
+            sys.argv = ['gadma', '--resume', finished_run_dir + "_resumed", 
+                        '-p', params_file]
+            core.main()
+
+            with open(params_file, 'w') as fl:
+                fl.write("Migration masks: [[0]]\n")
+            sys.argv = ['gadma', '--resume', finished_run_dir + "_resumed", 
+                        '-p', params_file, '-o', output_3]
+            self.assertRaises(ValueError, core.main)
+
+            if check_dir_existence(output_3):
+                shutil.rmtree(output_3)
+
+            with open(params_file, 'w') as fl:
+                fl.write("Symmetric migrations: True\n"
+                         "Migration masks: [[[0, 0], [1, 0]]]\n")
+            sys.argv = ['gadma', '--resume', finished_run_dir + "_resumed", 
+                        '-p', params_file, '-o', output_3]
+            self.assertRaises(ValueError, core.main)
+
+            if check_dir_existence(output_3):
+                shutil.rmtree(output_3)
+
+            with open(params_file, 'w') as fl:
+                fl.write("Migration masks: [[[0, 0, 0], [1, 0, 0]]]\n")
+            sys.argv = ['gadma', '--resume', finished_run_dir + "_resumed", 
+                        '-p', params_file, '-o', output_3]
+            self.assertRaises(ValueError, core.main)
+
+        finally:
+            if check_dir_existence(finished_run_dir + '_resumed'):
+                shutil.rmtree(finished_run_dir + '_resumed')
+            if check_dir_existence(finished_run_dir + '_resumed_resumed'):
+                shutil.rmtree(finished_run_dir + '_resumed_resumed')
+            if check_dir_existence(output_3):
+                shutil.rmtree(output_3)
+
+            os.remove(params_file)
+
+    def test_restore_failure_with_new_migration_masks(self):
+        finished_run_dir = os.path.join(DATA_PATH,
+                                        'my_example_run')
+        params_file = 'params'
+        with open(params_file, 'w') as fl:
+            fl.write("Stuck generation number: 2\n"
+                     "Projections: 4,4\n"
+                     "Migration masks: [[0, 1], [0, 0]]\n"
+                     "Silence: True")
+        sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
+        try:
+            gadma.PIL_available = False
+            gadma.moments_available = False
+            self.assertRaises(ValueError, core.main)
+        finally:
+            if check_dir_existence(finished_run_dir + '_resumed'):
+                shutil.rmtree(finished_run_dir + '_resumed')
+            os.remove(params_file)
+            gadma.PIL_available = True
+            gadma.moments_available = True

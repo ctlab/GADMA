@@ -8,10 +8,11 @@ from .demographic_model import EpochDemographicModel
 from collections import OrderedDict
 import copy
 import numpy as np
+import warnings
 
 
 class StructureDemographicModel(EpochDemographicModel):
-    """
+    r"""
     Special class for demographic model created by structure.
 
     :param initial_structure: List of ints with number of intervals
@@ -33,9 +34,24 @@ class StructureDemographicModel(EpochDemographicModel):
                        False then newly formed population has size as
                        an independent variable.
     :type frac_split: bool
+    :param migs_mask: List of matrices of 0 and 1 for each time interval (after
+                      first split) that defines what migrations this interval
+                      has. E.g. [[[0, 1],[0, 0]], [[0, 0], [0, 0]]] for
+                      structure (\*, 2) will allow migration from pop2 to pop1
+                      in the interval right after split. Note that structure
+                      should be fixed if migs_mask is set
+                      (:meth:`increase_structure` raises ValueError).
+    :type migs_mask: list
+    :param gen_time: Time in years of one generation.
+    :type gen_time: float
+    :param theta0: Mutation flux (4\*mu\*L).
+    :type theta0: float
+    :param mu: Mutation rate per base per generation.
+    :type mu: float
     """
     def __init__(self, initial_structure, final_structure,
                  have_migs, have_sels, have_dyns, sym_migs, frac_split,
+                 migs_mask=None,
                  gen_time=None, theta0=None, mu=None):
         super(StructureDemographicModel, self).__init__(gen_time, theta0, mu)
         if np.any(np.array(initial_structure) > np.array(final_structure)):
@@ -50,6 +66,49 @@ class StructureDemographicModel(EpochDemographicModel):
         self.have_dyns = have_dyns
         self.sym_migs = sym_migs
         self.frac_split = frac_split
+        self.migs_mask = migs_mask
+        # check that mask is correct
+        if len(self.initial_structure) == 1 and self.migs_mask is not None:
+            warnings.warn("Migration mask is used only when more than one "
+                          "population is observed")
+            self.migs_mask = None
+        if not self.have_migs:
+            if self.sym_migs:
+                warnings.warn("There is no migrations and option about "
+                              "symmetric migrations will be ignored")
+                self.sym_migs = False
+            if self.migs_mask is not None:
+                warnings.warn("There is no migrations and option about "
+                              "migrations masks will be ignored.")
+                self.migs_mask = None
+        if self.migs_mask is not None:
+            if not np.all(self.initial_structure == self.final_structure):
+                raise ValueError("Migration masks should be used for models "
+                                 f"with equal initial ({initial_structure}) "
+                                 f"and final ({final_structure}) structures.")
+
+            if len(self.migs_mask) != sum(self.initial_structure[1:]):
+                raise ValueError(f"Number of masks in migrations mask "
+                                 f"({len(self.migs_mask)}) should be equal to "
+                                 "the number of time intervals after first "
+                                 f"split ({sum(self.initial_structure[1:])}).")
+            for i, mask in enumerate(self.migs_mask):
+                # TODO work only for 3 populations
+                if i < self.initial_structure[1]:
+                    npop = 2
+                else:
+                    npop = 3
+                mask = np.array(mask)
+                if mask.shape != (npop, npop):
+                    raise ValueError(f"Mask number {i} should have size equal "
+                                     f"to {(npop, npop)} but it has "
+                                     f"{mask.shape}")
+                self.migs_mask[i] = np.array(mask)
+        if self.sym_migs and self.migs_mask is not None:
+            for i, mask in enumerate(self.migs_mask):
+                if not np.allclose(mask, mask.T):
+                    raise ValueError(f"For symmetric migrations masks should "
+                                     f"be symmetric. Mask number {i}:\n{mask}")
         self.from_structure(self.initial_structure)
 
     def from_structure(self, structure):
@@ -96,6 +155,10 @@ class StructureDemographicModel(EpochDemographicModel):
                 mig_vars = None
                 if self.have_migs and n_pop > 1:
                     mig_vars = np.zeros(shape=(n_pop, n_pop), dtype=object)
+                    mask = None
+                    if self.migs_mask is not None:
+                        mask = self.migs_mask[i_int - structure[0]]
+                        assert mask.shape == mig_vars.shape
                     for i in range(n_pop):
                         for j in range(n_pop):
                             if i == j:
@@ -104,6 +167,8 @@ class StructureDemographicModel(EpochDemographicModel):
                                 continue
                             var = MigrationVariable('m%d_%d%d' %
                                                     (i_int, i+1, j+1))
+                            if mask is not None and mask[i][j] == 0:
+                                var = 0
                             mig_vars[i][j] = var
                             if self.sym_migs:
                                 mig_vars[j][i] = var
@@ -166,6 +231,9 @@ class StructureDemographicModel(EpochDemographicModel):
                :class:`gadma.models.StructureDemographicModel`.\
                It probably will not work for any other class.
         """
+        if self.migs_mask is not None:
+            raise ValueError("Structure of the model could not be increased: "
+                             "there is a mask on migrations.")
         cur_structure = self.get_structure()
         diff = np.array(self.final_structure) - np.array(cur_structure)
         if np.any(diff < 0):
@@ -324,7 +392,11 @@ class StructureDemographicModel(EpochDemographicModel):
             if isinstance(var, MigrationVariable):
                 if self.have_migs == model.have_migs:
                     if self.sym_migs == model.sym_migs:
-                        var2value[var] = other_varname2value[var.name]
+                        # when we have some new masks name could be missed
+                        if var.name in other_varname2value:
+                            var2value[var] = other_varname2value[var.name]
+                        else:
+                            var2value[var] = 0
             elif isinstance(var, SelectionVariable):
                 if self.have_sels == model.have_sels:
                     var2value[var] = other_varname2value[var.name]
@@ -351,13 +423,13 @@ class StructureDemographicModel(EpochDemographicModel):
                     ij = var.name.split('_')[-1]
                     assert len(ij) == 2
                     sym_mig_name = var.name[:-2] + ij[::-1]
+                    mij_value = other_varname2value.get(var.name, 0)
+                    mji_value = other_varname2value.get(sym_mig_name, 0)
                     if self.sym_migs and not model.sym_migs:
-                        var2value[var] = ((other_varname2value[var.name] +
-                                           other_varname2value[sym_mig_name]) /
-                                          2)
+                        var2value[var] = (mij_value + mji_value) / 2
                     else:
-                        var2value[var] = other_varname2value[var.name]
-                        varname2value[sym_mig_name] = var2value[var]
+                        var2value[var] = mij_value
+                        varname2value[sym_mig_name] = mji_value
             elif isinstance(var, SelectionVariable):
                 assert self.have_sels and not model.have_sels
                 var2value[var] = 0

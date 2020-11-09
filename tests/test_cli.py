@@ -162,6 +162,20 @@ class TestCLI(unittest.TestCase):
         self.assertRaises(ValueError, settings.__setattr__,
                           'number_of_populations', 3)
 
+        # migration mask
+        settings.migration_masks = [[0, 0], [1, 0]]
+        self.assertRaises(ValueError, settings.__setattr__,
+                          'migration_masks', [[[0, "some"], [1, 0]]])
+        self.assertRaises(ValueError, settings.__setattr__,
+                          'migration_masks', "some")
+        self.assertRaises(ValueError, settings.__setattr__,
+                          'migration_masks', [[[0], [1, 0]]])
+        self.assertRaises(ValueError, settings.__setattr__,
+                          'migration_masks', [1, 0])
+        self.assertRaises(ValueError, settings.__setattr__,
+                          'migration_masks', [[1]])
+
+
         # fractions
         settings.fractions = [0.5, 0.5, 0.5, 0.5]
         self.assertRaises(ValueError, settings.__setattr__,
@@ -318,3 +332,30 @@ class TestCLI(unittest.TestCase):
         settings1.lower_bound = np.array([0, 0, 0, 0])
         settings1.pts = (10, 20, 30)
         self.assertNotEqual(settings1, settings2)
+
+    def test_migration_masks_failure(self):
+        options = [
+            ["Custom filename: demographic_model_moments_YRI_CEU.py\n",
+             "Migration masks: [[0, 1], [1, 0]]\n"],
+            ["Initial structure: 1, 1\n",
+             "Final structure: 2, 1\n",
+             "Migration masks: [[0, 1], [1, 0]]\n"]]
+        output = "test_migration_masks_failure"
+        params_file = 'params'
+        for opts in options:
+            with open(params_file, 'w') as fl:
+                fl.write("Input file: YRI_CEU.fs\n"
+                         f"Output directory: {output}\n")
+                for line in opts:
+                    fl.write(line)
+            sys.argv = ['gadma', '-p', params_file]
+            try:
+                gadma.PIL_available = False
+                gadma.moments_available = False
+                self.assertRaises(ValueError, core.main)
+            finally:
+                if check_dir_existence(output):
+                    shutil.rmtree(output)
+                os.remove(params_file)
+                gadma.PIL_available = True
+                gadma.moments_available = True

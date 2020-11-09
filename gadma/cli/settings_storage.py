@@ -82,7 +82,7 @@ class SettingsStorage(object):
                                 'population_labels', 'projections']
         special_attrs = ['const_for_mutation_strength',
                          'const_for_mutation_rate', 'vmin',
-                         'parameter_identifiers']
+                         'parameter_identifiers', 'migration_masks']
         exist_file_attrs = ['input_file', 'custom_filename']
         exist_dir_attrs = ['directory_with_bootstrap', 'resume_from']
         empty_dir_attrs = ['output_directory']
@@ -463,6 +463,38 @@ class SettingsStorage(object):
                     raise ValueError(f"Lower bound ({self.lower_bound}) "
                                      f"should be less than upper bound "
                                      f"({self.upper_bound}) element-wise.")
+
+        # 3.12 Check migration masks
+        if name == 'migration_masks' and value is not None:
+            if np.array(value).shape == (2, 2):
+                value = [value]
+            transformed_value = []
+            for i, mask in enumerate(value):
+                new_mask = []
+                if not isinstance(mask, list):
+                    raise ValueError("Migration masks option should be set to "
+                                     "a list with lists (masks).")
+                message = "Masks should consist of 0 and 1"\
+                          f" only. Mask number {i}: {mask}"
+                mask_size = None
+                for line in mask:
+                    if not isinstance(line, list):
+                        raise ValueError("Each mask in Migration masks should "
+                                         f"be a list. Mask number {i}: {mask}")
+                    if mask_size is None:
+                        mask_size = len(line)
+                    if mask_size != len(line):
+                        raise ValueError("Each mask in Migration masks should "
+                                         "be a 2x2 or 3x3 list. Mask number "
+                                         f"{i} has different lengths: {mask}")
+                    for el in line:
+                        if el not in [0, 1]:
+                            raise ValueError("Masks should consist of 0 and 1"
+                                             f" only. Mask number {i}: {mask}")
+                    new_mask.append(list(line))
+                transformed_value.append(new_mask)
+            value = transformed_value
+
         if setattr_at_the_end:
             super(SettingsStorage, self).__setattr__(name, value)
             # assert(self.__getattr__(name) == value)
@@ -934,10 +966,12 @@ class SettingsStorage(object):
             create_dyns = not self.only_sudden
             sym_migs = self.symmetric_migrations
             split_f = self.split_fractions
+            migs_mask = self.migration_masks
             model = StructureDemographicModel(self.initial_structure,
                                               self.final_structure,
                                               create_migs, create_sels,
                                               create_dyns, sym_migs, split_f,
+                                              migs_mask,
                                               gen_time, theta0, mut_rate)
             constrain = self.get_linear_constrain_for_model(model)
             model.linear_constrain = constrain
