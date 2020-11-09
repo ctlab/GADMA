@@ -179,13 +179,12 @@ def print_runs_summary(start_time, shared_dict, settings):
             theta = engine.get_theta(x, *settings.get_engine_args())
             Nanc = engine.get_N_ancestral_from_theta(theta)
             addit_str = f"(theta = {theta: .2f})"
-            if Nanc is not None:
-                Nanc = int(Nanc)
+            if Nanc is not None or Nanc == 0:
                 if settings.relative_parameters:
-                    addit_str += f" (Nanc = {Nanc: d})"
+                    addit_str += f" (Nanc = {int(Nanc)})"
                     model_str = engine.model.as_custom_string(x)
                 else:
-                    model_str = f" [Nanc = {Nanc: d}] "
+                    model_str = f" [Nanc = {int(Nanc)}] "
 #                    Tg = settings.time_for_generation or 1.0
                     x_translated = engine.model.translate_units(x, Nanc)
                     model_str += engine.model.as_custom_string(x_translated)
