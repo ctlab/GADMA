@@ -40,7 +40,7 @@ Fractions: [0.2, 0.3, 0.3]
 #	Number of parameters to mutate is sampled from binomial 
 #	distribution, so we need to set mean.
 #	Default: 0.2
-Mean mutation strength: 0.2
+Mean mutation strength: 0.3
 #
 #	Mutation strength can be adaptive: if mutation is good, 
 #	i.e. has the best fitness function (log likelihood),
@@ -48,27 +48,27 @@ Mean mutation strength: 0.2
 #	otherwise it decreases dividing by (1/4)^const.
 #	When const is 1.0 it is not adaptive.
 #	Default: 1.0
-Const for mutation strength: 1.01
+Const for mutation strength: 1.05
 
 #	Mutation rate - fraction of any parameter to change during
 #	its mutation.
 #	Mutation rate is sampled from truncated normal distribution, 
 #	so we need mean (std can be specified in extra params).
 #	Default 0.2
-Mean mutation rate: 0.2
+Mean mutation rate: 0.1
 #
 #	Mutation rate also can be adaptive as mutation strength.
 #	Default: 1.02
-Const for mutation rate: 1.02
+Const for mutation rate: 1.01
 
 #	Genetic algorithm stops when it couldn't improve model by
 #	more that epsilon in logLL
 #	Default: 1e-2
-Eps: 1
+Eps: 0.01
 #	
 #	and it happens during N iterations:
 #	Default: 100
-Stuck generation number: 5
+Stuck generation number: 50
 
 
 
@@ -90,7 +90,7 @@ Vmin: 1
 #	optimal_sfs_scaling. We can choose N_A random between min_N 
 #	and max_N or we can always take it as 1.0.
 #	Default: True
-Random N_A: True
+Random N_A: true
 
 
 
@@ -102,14 +102,11 @@ Time to print summary: 1
 
 
 #	Other parameters of run without description:
-dadi_available: true
-moments_available: true
 mutation_rate: null
 n_elitism: 2
-outgroup: null
+outgroup: true
 p_crossover: 0.3
 p_mutation: 0.3
 p_random: 0.2
 sequence_length: null
-split_fractions: true
 symmetric_migrations: false

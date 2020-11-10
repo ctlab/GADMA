@@ -67,7 +67,7 @@ def main():
     saved_stdout = sys.stdout
     saved_stderr = sys.stderr
     sys.stdout = StdAndFileLogger(log_file, settings_storage.silence)
-    sys.stderr = StdAndFileLogger(log_file)
+    sys.stderr = StdAndFileLogger(log_file, stderr=True)
 
     print(f"{bcolors.OKGREEN}--Successful arguments parsing--{bcolors.ENDC}")
 

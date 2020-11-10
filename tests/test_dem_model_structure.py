@@ -1,6 +1,8 @@
 import unittest
 from gadma import *
 import itertools
+import copy
+import numpy as np
 
 TEST_STRUCTURES = [(1,), (2,),
                    (1,1), (2,1), (1,2),
@@ -8,7 +10,32 @@ TEST_STRUCTURES = [(1,), (2,),
 
 BASE_TEST_STRUCTURES = [(2,), (2,1), (1, 1, 1)]
 
+import warnings
+warnings.filterwarnings(action='ignore', category=UserWarning,
+                        module='.*\.structure_demographic_model', lineno=77)
+warnings.filterwarnings(action='ignore', category=UserWarning,
+                        module='.*\.structure_demographic_model', lineno=81)
+
 class TestModelStructure(unittest.TestCase):
+    def _generate_mig_mask(self, structure, sym_migs):
+        masks = []
+        for npop, nint in enumerate(structure[1:]):
+            npop += 2
+            for _ in range(nint):
+                mask = []
+                for i in range(npop):
+                    mask.append([])
+                    for j in range(npop):
+                        if i == j:
+                            mask[-1].append(0)
+                            continue
+                        if sym_migs and j < i:
+                            mask[-1].append(mask[j][i])
+                            continue
+                        mask[-1].append(np.random.choice([0, 1]))
+                masks.append(mask)
+        return masks
+
     def test_initialization(self):
         for structure in TEST_STRUCTURES:
             for create_migs, create_sels, create_dyns, sym_migs, fracs in\
@@ -41,10 +68,69 @@ class TestModelStructure(unittest.TestCase):
                       f"sym_migs ({sym_migs}), fracs ({fracs}) {dm.variables}"
                 self.assertEqual(len(dm.variables), n_par, msg=msg)
 
+                if len(structure) > 1:
+                    masks = self._generate_mig_mask(structure, sym_migs)
+                    dm = StructureDemographicModel(structure, structure,
+                                                   have_migs=create_migs,
+                                                   have_sels=create_sels,
+                                                   have_dyns=create_dyns,
+                                                   sym_migs=sym_migs,
+                                                   migs_mask=masks,
+                                                   frac_split=fracs)
+                    if sym_migs and create_migs:
+                        masks[0][0][1] = 1
+                        masks[0][1][0] = 0
+                        self.assertRaises(
+                            ValueError, StructureDemographicModel, structure, 
+                            structure, have_migs=create_migs,
+                            have_sels=create_sels, have_dyns=create_dyns,
+                            sym_migs=sym_migs, migs_mask=masks,
+                            frac_split=fracs)
+
+    def test_migration_masks_failures(self):
+        for structure in TEST_STRUCTURES:
+            if len(structure) < 2:
+                dm = StructureDemographicModel(structure, structure,
+                                               have_migs=True,
+                                               have_sels=True,
+                                               have_dyns=True,
+                                               sym_migs=False,
+                                               migs_mask=[],
+                                               frac_split=True)
+                self.assertEqual(dm.migs_mask, None)
+                continue
+            final_structure = list(structure)
+            final_structure[np.random.choice(range(len(final_structure)))] += 1
+
+            masks = self._generate_mig_mask(structure, True)
+            self.assertRaises(
+                ValueError, StructureDemographicModel,
+                structure, final_structure, have_migs=True,
+                have_sels=True, have_dyns=True,
+                sym_migs=False, migs_mask=masks, frac_split=True)
+
+            masks = self._generate_mig_mask(structure, False)
+            masks[-1] = np.zeros(shape=(5, 5))
+            self.assertRaises(
+                ValueError, StructureDemographicModel,
+                structure, final_structure, have_migs=True,
+                have_sels=True, have_dyns=True,
+                sym_migs=False, migs_mask=masks, frac_split=True)
+
+            masks = self._generate_mig_mask(structure, False)
+            masks = masks[:-1]
+            self.assertRaises(
+                ValueError, StructureDemographicModel,
+                structure, final_structure, have_migs=True,
+                have_sels=True, have_dyns=True,
+                sym_migs=False, migs_mask=masks, frac_split=True)
+
     def test_likelihood_after_increase(self):
         for structure in BASE_TEST_STRUCTURES:
             for create_migs, create_sels, create_dyns, sym_migs, fracs in\
                     list(itertools.product([False, True],repeat=5)):
+                if not create_migs:
+                    sym_migs = False
                 def model_generator(structure):
                     return StructureDemographicModel(structure,
                                                      np.array(structure) + 1,
@@ -163,19 +249,32 @@ class TestModelStructure(unittest.TestCase):
         for structure in TEST_STRUCTURES:
             for base_migs, base_sels, base_dyns, base_symms, base_fracs in\
                     list(itertools.product([False, True],repeat=5)):
-                dm = StructureDemographicModel(structure, structure,
-                                               have_migs=base_migs,
-                                               have_sels=base_sels,
-                                               have_dyns=base_dyns,
-                                               sym_migs=base_symms,
-                                               frac_split=base_fracs)
-                for new_migs, new_sels, new_dyns, new_symms, new_fracs in\
-                    list(itertools.product([False, True],repeat=5)):
-                    new = StructureDemographicModel(structure, structure,
-                                                    have_migs=new_migs,
-                                                    have_sels=new_sels,
-                                                    have_dyns=new_dyns,
-                                                    sym_migs=new_symms,
-                                                    frac_split=new_fracs)
-                    x = [var.resample() for var in new.variables]
-                    new_x = dm.transform_values_from_other_model(new, x)
+                base_mig_masks = [None, self._generate_mig_mask(structure,
+                                                                base_symms)]
+                if len(structure) == 1 or not base_migs:
+                    base_mig_masks = [None]
+                for mask in base_mig_masks:
+                    dm = StructureDemographicModel(structure, structure,
+                                                   have_migs=base_migs,
+                                                   have_sels=base_sels,
+                                                   have_dyns=base_dyns,
+                                                   sym_migs=base_symms,
+                                                   migs_mask=mask,
+                                                   frac_split=base_fracs)
+                    for new_migs, new_sels, new_dyns, new_symms, new_fracs in\
+                        list(itertools.product([False, True],repeat=5)):
+                        new_mig_masks = [None, self._generate_mig_mask(
+                            structure, new_symms)]
+                        if len(structure) == 1 or not new_migs:
+                            new_mig_masks = [None]
+                        for new_mask in new_mig_masks:
+                            new = StructureDemographicModel(structure,
+                                                            structure,
+                                                            have_migs=new_migs,
+                                                            have_sels=new_sels,
+                                                            have_dyns=new_dyns,
+                                                            sym_migs=new_symms,
+                                                            migs_mask=new_mask,
+                                                            frac_split=new_fracs)
+                            x = [var.resample() for var in new.variables]
+                            new_x = dm.transform_values_from_other_model(new, x)
