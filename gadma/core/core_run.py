@@ -1,8 +1,9 @@
 from ..engines import get_engine, all_engines
 from ..utils import sort_by_other_list, ensure_dir_existence,\
-                    ensure_file_existence
+                    ensure_file_existence, check_file_existence,\
+                    check_dir_existence
 from ..utils import TimeVariable, PopulationSizeVariable, SelectionVariable,\
-                    DynamicVariable
+                    DynamicVariable, WeightedMetaArray
 from ..optimizers import GlobalOptimizerAndLocalOptimizer
 from ..utils import get_aic_score, get_claic_score, ident_transform, bcolors
 from ..models import EpochDemographicModel, StructureDemographicModel
@@ -73,6 +74,8 @@ class CoreRun(object):
             if self.settings.resume_from is not None:
                 self.resume_dir = os.path.join(settings.resume_from,
                                                str(self.index))
+                if not check_dir_existence(self.resume_dir):
+                    self.resume_dir = None
 
             self.output_dir = ensure_dir_existence(self.output_dir)
             self.eval_file = os.path.join(self.output_dir, self.EVAL_FILENAME)
@@ -512,6 +515,8 @@ class CoreRun(object):
             old_params = os.path.join(self.settings.resume_from, 'params_file')
             old_extra = os.path.join(self.settings.resume_from,
                                      'extra_params_file')
+            if not check_file_existence(old_extra):
+                old_extra = None
             old_settings = SettingsStorage.from_file(old_params, old_extra)
             old_init_model = old_settings.get_model()
         for i in range(final_sum - initial_sum + 1 +
@@ -565,6 +570,10 @@ class CoreRun(object):
             result = self.run_without_increase(initial_kwargs)
         else:
             result = self.run_with_increase(initial_kwargs)
+        result.x = WeightedMetaArray(result.x)
+        result.x.metadata = 'f'
+        self.base_callback(result.x, result.y)
+        self.intermediate_callback(result.x, result.y)
         # draw final model in output dir
         self.draw_model_in_output_dir(result.x, result.y)
         print(f'Finish genetic algorithm number {self.index}\n', end='')

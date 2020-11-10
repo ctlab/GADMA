@@ -218,9 +218,8 @@ def get_settings():
                                  " masks are set.")
 
     if settings_storage.resume_from is not None:
-        old_settings = SettingsStorage.from_file(
-            os.path.join(settings_storage.resume_from, 'params_file'),
-            os.path.join(settings_storage.resume_from, 'extra_params_file'))
+        old_settings = SettingsStorage.from_file(old_params_file,
+                                                 old_extra_file)
         # check what have changed and can we deal with it
         if not settings_storage == old_settings:
             data_settings = ['input_file', 'projections', 'population_labels',
@@ -284,10 +283,9 @@ def get_settings():
                         new_shape = np.array(new_mask).shape
                         if old_shape != new_shape:
                             raise ValueError("Sizes of masks are different.")
-                        if (settings_storage.symmetric_migrations and
-                                not old_settings.symmetric_migrations):
+                        if settings_storage.symmetric_migrations:
                             mask = np.array(new_mask)
-                            if not np.isclose(mask, mask.T):
+                            if not np.allclose(mask, mask.T):
                                 raise ValueError("Migration masks should be "
                                                  "symmetrical as migrations "
                                                  "are set to be symmetrical. "
@@ -301,10 +299,12 @@ def get_settings():
                                     continue
                                 if old_mask[i][j] == new_mask[i][j]:
                                     continue
-                                change = f"old_mask[i][j] -> new_mask[i][j]"
+                                change = f"{old_mask[i][j]} -> "\
+                                         f"{new_mask[i][j]}"
                                 warnings.warn(
                                     f"Migration mask number {i_mask} is "
-                                    f"changed on position ({i}, {j}: {change}")
+                                    f"changed on position ({i}, {j}): "
+                                    f"{change}")
                                 settings_storage.generate_x_transform = True
 
     else:

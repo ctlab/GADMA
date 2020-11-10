@@ -30,7 +30,8 @@ def _print_moments_func(model, values, dt_fac):
 
     var2value = model.var2value(values)  # OrderedDict
 
-    f_vars = [x for x in var2value if not isinstance(x, DiscreteVariable)]
+    f_vars = [x for x in model.variables
+              if not isinstance(x, DiscreteVariable)]
     ret_str = f"def {FUNCTION_NAME}(params, ns):\n"
     ret_str += "\t%s = params\n" % ", ".join([x.name for x in f_vars])
     ret_str += "\tsts = moments.LinearSystem_1D.steady_state_1D"\
@@ -224,7 +225,8 @@ def print_moments_code(engine, values, dt_fac, filename,
     ret_str += _print_moments_load_data(engine.data_holder)
     ret_str += "ns = data.sample_sizes\n\n"
 
-    values = [val for var, val in engine.model.var2value(values).items()
+    var2value = engine.model.var2value(values)
+    values = [var2value[var] for var in engine.model.variables
               if not isinstance(var, DiscreteVariable)]
     ret_str += _print_moments_main(engine, values, nanc,
                                    gen_time, gen_time_units)

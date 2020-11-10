@@ -5,6 +5,8 @@ import numpy as np
 from gadma import *
 import warnings # we ignore warning of unclosed files in dadi
 
+warnings.filterwarnings(action='ignore', category=UserWarning,
+                        module='.*\.dadi_moments_common', lineno=284)
 try:
     import dadi
     DADI_NOT_AVAILABLE = False
@@ -26,6 +28,7 @@ except ImportError:
 # Test data
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
 YRI_CEU_DATA = os.path.join(DATA_PATH, "YRI_CEU.fs")
+YRI_CEU_NO_LABELS_DATA = os.path.join(DATA_PATH, "YRI_CEU_old.fs")
 YRI_CEU_F_DATA = os.path.join(DATA_PATH, "YRI_CEU_folded.fs")
 SNP_DATA = os.path.join(DATA_PATH, "data.txt")
 DAMAGED_SNP_DATA = os.path.join(DATA_PATH, "damaged_data.txt")
@@ -37,25 +40,30 @@ POPMAP = os.path.join(DATA_PATH, "popmap")
 class TestDataHolder(unittest.TestCase):
 
     def _check_data(self, data, pop_labels, outgroup, sample_sizes):
-        self.assertTrue(all(data.sample_sizes == sample_sizes))
-        self.assertEqual(data.pop_ids, pop_labels)
-        self.assertEqual(not data.folded, outgroup)
+        self.assertTrue(all(data.sample_sizes == sample_sizes),
+                        msg=f"{data.sample_sizes} != {sample_sizes}")
+        self.assertEqual(data.pop_ids, pop_labels,
+                         msg=f"{data.pop_ids} != {pop_labels}")
+        self.assertEqual(not data.folded, outgroup,
+                          msg=f"{not data.folded} != {outgroup}")
 
-    def _load_with_dadi(self, data, size, labels, outgroup):
+    def _load_with_dadi(self, data_file, size, labels, outgroup):
         warnings.filterwarnings(action="ignore", message="unclosed", 
                          category=ResourceWarning)
-        if data.split('.')[-1] == 'txt':
-            d = dadi.Misc.make_data_dict(data)
+        if data_file.split('.')[-1] == 'txt':
+            d = dadi.Misc.make_data_dict(data_file)
             data = dadi.Spectrum.from_data_dict(d, labels, size,
                                                 polarized=outgroup)
             return data
         data = dadi.Spectrum.from_file(YRI_CEU_DATA)
-        if labels == ["CEU", "YRI"]:
+        if labels == ["CEU", "YRI"] and data_file != YRI_CEU_NO_LABELS_DATA:
             data = np.transpose(data, [1,0])
             data.pop_ids = labels
+        if data_file == YRI_CEU_NO_LABELS_DATA:
+            data.pop_ids = labels
+        data = data.project(size)
         if not outgroup:
             data = data.fold()
-        data = data.project(size)
         return data
 
     def test_vcf_dataholder_init(self):
@@ -72,7 +80,7 @@ class TestDataHolder(unittest.TestCase):
         outgroup = [None, True, False]
         labels = [None, ["YRI", "CEU"], ["CEU", "YRI"]]
         seq_lens = [None, 1e6]
-        data = [YRI_CEU_DATA, SNP_DATA]
+        data = [YRI_CEU_DATA, YRI_CEU_NO_LABELS_DATA, SNP_DATA]
         for dat, siz, lab, seq, out in itertools.product(data, sizes, labels,
                                                          seq_lens, outgroup):
             with self.subTest(data=dat, size=siz, labels=lab,
@@ -81,8 +89,10 @@ class TestDataHolder(unittest.TestCase):
                                            population_labels=lab,
                                            sequence_length=seq)
                 data = get_engine(id).read_data(sfs_holder)
-                siz = siz or ((20,20) if (dat == YRI_CEU_DATA) else (24, 44))
-                lab = lab or ["YRI", "CEU"]
+                siz = siz or ((24,44) if (dat == SNP_DATA) else (20, 20))
+                lab = lab or (
+                    ["Pop 1", "Pop 2"] if dat == YRI_CEU_NO_LABELS_DATA
+                    else ["YRI", "CEU"])
                 out = True if out is None else out
                 self._check_data(data, lab, out, siz)
                 sfs = self._load_with_dadi(dat, siz, lab, out)

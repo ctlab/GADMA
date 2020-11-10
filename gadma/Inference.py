@@ -3,6 +3,7 @@ from .cli import SettingsStorage
 from .optimizers import GlobalOptimizerAndLocalOptimizer
 from .data import SFSDataHolder
 from .engines import get_engine
+from .utils import ContinuousVariable
 from . import utils
 import warnings
 import numpy as np
@@ -98,6 +99,10 @@ def get_claic_score(func_ex, all_boot, p0, data, engine=None, args=(),
     engine_obj = get_engine(engine)
     engine_obj.set_data(data)
     engine_obj.set_model(settings.get_model())
+    variables = list()
+    for i, x in enumerate(p0):
+        variables.append(ContinuousVariable(f"var_{i}", domain=[x - 1, x + 1]))
+    engine_obj.model.variables = variables
     if pts is not None:
         settings.pts = pts
     return utils.get_claic_score(engine_obj, p0, all_boot,

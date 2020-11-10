@@ -10,7 +10,8 @@ from ..optimizers import LinearConstrain
 from ..utils import ensure_dir_existence, ensure_file_existence,\
                     check_dir_existence, check_file_existence, abspath,\
                     custom_generator
-from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable
+from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable,\
+                    ContinuousVariable
 
 import warnings
 import importlib.util
@@ -59,14 +60,15 @@ class SettingsStorage(object):
                      'print_models_code_every_n_iteration', 'n_elitism',
                      'draw_models_every_n_iteration', 'size_of_generation',
                      'number_of_repeats', 'number_of_processes',
-                     'number_of_populations', 'time_to_print_summary']
+                     'number_of_populations']
         float_attrs = ['theta0', 'time_for_generation', 'eps',
                        'const_of_time_in_drawing', 'vmin', 'min_n', 'max_n',
                        'min_t', 'max_t', 'min_m', 'max_m',
                        'upper_bound_of_first_split',
                        'upper_bound_of_second_split',
                        'const_for_mutation_strength',
-                       'const_for_mutation_rate', 'mutation_rate']
+                       'const_for_mutation_rate', 'mutation_rate',
+                       'time_to_print_summary']
         probs_attrs = ['mean_mutation_strength', 'mean_mutation_rate',
                        'p_mutation', 'p_crossover', 'p_random']
         bool_attrs = ['outgroup', 'linked_snp_s', 'only_sudden',
@@ -131,6 +133,10 @@ class SettingsStorage(object):
 
         if isinstance(value, str) and value.lower() == 'none':
             value = None
+        # get rid of numpy as yaml could not serialize it
+        if isinstance(value, np.ndarray):
+            value = value.tolist()
+
         # 0. If attribute is equal to the same from setting storage
         # then we let it go any way. It is because of None's in settings
         we_check = True
@@ -140,7 +146,7 @@ class SettingsStorage(object):
             default_value = getattr(settings, name)
             if (isinstance(value, np.ndarray) or
                     isinstance(default_value, np.ndarray)):
-                if (default_value == value).all():
+                if (np.array(default_value) == np.array(value)).all():
                     we_check = False
             else:
                 if default_value == value:
@@ -156,6 +162,8 @@ class SettingsStorage(object):
         # 1. Base checks
         # 1.1 Check is int (positive)
         if name in int_attrs and we_check:
+            if isinstance(value, float) and value.is_integer():
+                value = int(value)
             if (not isinstance(value, numbers.Integral) or
                     isinstance(value, bool)):
                 raise ValueError(f"Setting {name} ({value}) must be integer.")
@@ -434,6 +442,8 @@ class SettingsStorage(object):
                 raise ValueError("There is no such function `model_func` in "
                                  f" file {value}.")
             model_func_value = getattr(module, func_name)
+            if not callable(model_func_value):
+                raise ValueError(f"Function {func_name} should be callable.")
             self.__setattr__("model_func", model_func_value)
 
 #        if name in bounds_attrs and self.custom_filename is None:
@@ -443,6 +453,7 @@ class SettingsStorage(object):
 #                              " of model is set.")
 #            else:
 #                warnings.warn(msg)
+
         # 3.11 Check for structure or custom filename and ignore some options
         if (name in ['initial_structure', 'final_structure'] and
                 value is not None and self.custom_filename is not None):
@@ -548,11 +559,7 @@ class SettingsStorage(object):
                                            "parameter_identifiers", p_ids)
 #                        print(f"Found parameter identifiers in file: {p_ids}")
                         return p_ids
-                    except ValueError:  # wrong list
-                        pass
-                    except IndexError:
-                        pass
-                    except StopIteration:  # no function
+                    except IndexError:  # two commas will create x = "" (x[0])
                         pass
                     except KeyError:  # not in P_IDS
                         pass
@@ -605,7 +612,10 @@ class SettingsStorage(object):
                     return False
             elif (isinstance(self_value, tuple) or
                     isinstance(other_value, tuple)):
-                if not list(self_value) == list(other_value):
+                try:
+                    if not list(self_value) == list(other_value):
+                        return False
+                except TypeError:
                     return False
             else:
                 if not self_value == other_value:
@@ -782,9 +792,6 @@ class SettingsStorage(object):
                 attr_name = attr_name.replace("'", '_')
                 attr_name = attr_name.replace("__", "_")
                 value = getattr(self, attr_name)
-                # get rid of numpy as yaml could not serialize it
-                if isinstance(value, np.ndarray):
-                    value = value.tolist()
                 if (isinstance(value, numbers.Integral) and
                         not isinstance(value, bool)):
                     value = int(value)
@@ -1003,3 +1010,6 @@ class SettingsStorage(object):
         elif self.custom_filename is None and self.model_func is not None:
             return CustomDemographicModel(self.model_func, None,
                                           gen_time, theta0, mut_rate)
+        else:
+            raise ValueError("Some settings are missed so no model is "
+                             "generated")

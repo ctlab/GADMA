@@ -184,7 +184,10 @@ def main():
             p0 = fresh_p0
 
     settings.custom_filename = args.dem_model
-    settings.get_model()
+    try:
+        settings.get_model()
+    except ValueError:
+        pass  # Means that some parameters are missed
 
     for attr_name in loaded_attrs:
         if attr_name != 'pts' and getattr(settings, attr_name) is None:

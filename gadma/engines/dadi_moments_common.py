@@ -275,13 +275,13 @@ def _check_missing_population_labels(sfs, default_pop_labels=None,
     """
     if sfs.pop_ids is None:
         if default_pop_labels is not None:
-            warnings.warn("Spectrum file %s is in an old format - without"
-                          " population labels, so they will be taken from"
-                          " corresponding parameter: %s."
-                          % (filename, ', '.join(default_pop_labels)))
             sfs.pop_ids = default_pop_labels
         else:
             sfs.pop_ids = ['Pop %d' % (i+1) for i in range(sfs.ndim)]
+        warnings.warn("Spectrum file %s is in an old format - without"
+                      " population labels, so they will be taken from the"
+                      " corresponding parameter: %s."
+                      % (filename, ', '.join(sfs.pop_ids)))
     return sfs
 
 

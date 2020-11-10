@@ -1,7 +1,8 @@
 from . import Engine, register_engine
 from .dadi_moments_common import DadiOrMomentsEngine
-from ..models import DemographicModel, CustomDemographicModel, Epoch, Split
-from ..utils import DynamicVariable
+from ..models import DemographicModel, CustomDemographicModel, Epoch, Split,\
+                     BinaryOperation
+from ..utils import DynamicVariable, Variable
 from .. import SFSDataHolder, VCFDataHolder, moments_available
 import numpy as np
 
@@ -70,10 +71,12 @@ class MomentsEngine(DadiOrMomentsEngine):
         :param ns: sample sizes of simulated SFS
         :param dt_fac: step size for numerical solution
         """
-        if isinstance(self.model, CustomDemographicModel):
-            return self.model.function(values, ns)
-
         var2value = self.model.var2value(values)
+
+        if isinstance(self.model, CustomDemographicModel):
+            values_list = [var2value[var] for var in self.model.variables]
+            return self.model.function(values_list, ns)
+
         moments = self.base_module
 
         sts = moments.LinearSystem_1D.steady_state_1D(np.sum(ns))

@@ -6,6 +6,10 @@ import gadma
 import dadi
 import scipy
 import shutil
+import warnings
+
+warnings.filterwarnings(action='ignore', category=UserWarning,
+                        module='.*\.optimizer', lineno=139)
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
 

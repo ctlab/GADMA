@@ -1,7 +1,8 @@
 from . import Engine, register_engine, get_engine
 from .dadi_moments_common import DadiOrMomentsEngine
-from ..models import DemographicModel, CustomDemographicModel, Epoch, Split
-from ..utils import DynamicVariable
+from ..models import DemographicModel, CustomDemographicModel, Epoch, Split,\
+                     BinaryOperation
+from ..utils import DynamicVariable, Variable
 from .. import SFSDataHolder, dadi_available
 
 
@@ -81,10 +82,12 @@ class DadiEngine(DadiOrMomentsEngine):
         :param ns: sample sizes of simulated SFS
         :param pts: grid points for numerical solution
         """
-        if isinstance(self.model, CustomDemographicModel):
-            return self.model.function(values, ns, pts)
-
         var2value = self.model.var2value(values)
+
+        if isinstance(self.model, CustomDemographicModel):
+            values_list = [var2value[var] for var in self.model.variables]
+            return self.model.function(values_list, ns, pts)
+
         dadi = self.base_module
 
         xx = dadi.Numerics.default_grid(pts)
