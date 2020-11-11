@@ -383,12 +383,17 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         # Start selection procedure
         if selection_type == 'roulette_wheel':
             Y_gen = np.array(Y_gen)
-            is_not_inf = np.logical_not(np.isinf(Y_gen))
-            p = Y_gen / np.sum(Y_gen[is_not_inf])
-            p[np.isinf(p)] = 1
-            # We need to reverse probs as we have minimization problem
-            p = 1 - p
-            p /= np.sum(p)
+            if (np.all(Y_gen == Y_gen[0]) or
+                    not (np.all(Y_gen < 0) or np.all(Y_gen > 0))):
+                p = [1 / len(Y_gen) for _ in Y_gen]
+            else:
+                is_not_inf = np.logical_not(np.isinf(Y_gen))
+                p = Y_gen / np.sum(Y_gen[is_not_inf])
+                p[np.isinf(p)] = 1  # will be inversed to 0
+                p[np.isnan(p)] = 1  # will be inversed to 0
+                # We need to reverse probs as we have minimization problem
+                p = 1 - p
+                p /= np.sum(p)
         elif selection_type == 'rank':
             n = len(X_gen)
             p = np.arange(1, n+1) / (n * (n - 1))

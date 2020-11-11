@@ -28,6 +28,19 @@ class TestGeneticAlg(unittest.TestCase):
         self.assertTrue(np.all(diff), msg=f"Arrays are not equal at some"
                                           f" index except {ind}. " + msg)
 
+    def test_selection(self):
+        ga = get_global_optimizer("Genetic_algorithm")
+        ga.maximize = True
+        n_size = 100
+        Y_gen = [-np.inf for _ in range(n_size)]
+
+        def f(x):
+            return -np.inf
+        variables = [ContinuousVariable("var1", domain=[0, 1])]
+
+        X_gen = [[variables[0].resample()] for _ in range(n_size)]
+        ga.selection(f, variables, X_gen, Y_gen=Y_gen)
+
     def test_initialization(self):
         get_global_optimizer('Genetic_algorithm')
 
