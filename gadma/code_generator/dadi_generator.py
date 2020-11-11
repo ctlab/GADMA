@@ -26,7 +26,8 @@ def _print_dadi_func(model, values):
 
     var2value = model.var2value(values)  # OrderedDict
 
-    f_vars = [x for x in var2value if not isinstance(x, DiscreteVariable)]
+    f_vars = [x for x in model.variables
+              if not isinstance(x, DiscreteVariable)]
     ret_str = f"def {FUNCTION_NAME}(params, ns, pts):\n"
     ret_str += "\t%s = params\n" % ", ".join([x.name for x in f_vars])
     ret_str += "\txx = dadi.Numerics.default_grid(pts)\n"\
@@ -246,7 +247,8 @@ def print_dadi_code(engine, values, pts, filename,
     ret_str += _print_dadi_load_data(engine.data_holder)
     ret_str += "pts = %s\nns = data.sample_sizes\n\n" % str(pts)
 
-    values = [val for var, val in engine.model.var2value(values).items()
+    var2value = engine.model.var2value(values)
+    values = [var2value[var] for var in engine.model.variables
               if not isinstance(var, DiscreteVariable)]
     ret_str += _print_dadi_main(engine, values, nanc)
     if filename is None:

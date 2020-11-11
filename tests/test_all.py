@@ -175,6 +175,9 @@ class TestRestore(unittest.TestCase):
             fl.write("Stuck generation number: 2\n"
                      "Symmetric migrations: True\n"
                      "Only sudden: True\n"
+                     "Theta0: None\n"
+                     "Mutation rate: 1.25e-8\n"
+                     "Sequence length: 4.04e6\n"
                      "Split fractions: False\n"
                      "Projections: 4,4\n"
                      "Silence: True")
@@ -239,10 +242,17 @@ class TestRestore(unittest.TestCase):
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
 
         try:
+            settings, _ = get_settings()
             core.main()
 
+            # call corerun for cover case when there is o extra file in resume
+            shared_dict = SharedDictForCoreRun(multiprocessing=False)
+            core_run = CoreRun(0, shared_dict, settings)
+            core_run.get_run_options()
+
             with open(params_file, 'w') as fl:
-                fl.write("Migration masks: None\n")
+                fl.write("Migration masks: None\n"
+                         "time_to_print_summary: 0.016\n")
             sys.argv = ['gadma', '--resume', finished_run_dir + "_resumed", 
                         '-p', params_file]
             core.main()
@@ -261,7 +271,7 @@ class TestRestore(unittest.TestCase):
                          "Migration masks: [[[0, 0], [1, 0]]]\n")
             sys.argv = ['gadma', '--resume', finished_run_dir + "_resumed", 
                         '-p', params_file, '-o', output_3]
-            self.assertRaises(ValueError, core.main)
+            self.assertRaises(ValueError, get_settings)
 
             if check_dir_existence(output_3):
                 shutil.rmtree(output_3)
@@ -270,7 +280,7 @@ class TestRestore(unittest.TestCase):
                 fl.write("Migration masks: [[[0, 0, 0], [1, 0, 0]]]\n")
             sys.argv = ['gadma', '--resume', finished_run_dir + "_resumed", 
                         '-p', params_file, '-o', output_3]
-            self.assertRaises(ValueError, core.main)
+            self.assertRaises(ValueError, get_settings)
 
         finally:
             if check_dir_existence(finished_run_dir + '_resumed'):

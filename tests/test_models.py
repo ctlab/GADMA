@@ -14,6 +14,7 @@ except ImportError:
 import numpy as np
 import os
 import operator as op
+import sys
 
 EXAMPLE_FOLDER = os.path.join(os.path.dirname(__file__), "test_data")
 
@@ -306,7 +307,9 @@ class TestModels(unittest.TestCase):
     def test_code_generation(self):
         nu1 = PopulationSizeVariable('nu1')
         nu2 = PopulationSizeVariable('nu2')
+        nu3 = PopulationSizeVariable('nu3')
         t = TimeVariable('t1')
+        t2 = TimeVariable('t2')
         m = MigrationVariable('m')
         s = SelectionVariable('s')
         d1 = DynamicVariable('d1')
@@ -314,6 +317,7 @@ class TestModels(unittest.TestCase):
         f = FractionVariable('f')
         h = FractionVariable('h')
         fxnu1 = Multiplication(f, nu1)
+        tf = Multiplication(f, t)
 
         model1 = EpochDemographicModel()
         model1.add_epoch(t, [nu1])
@@ -333,19 +337,31 @@ class TestModels(unittest.TestCase):
         model3 = EpochDemographicModel()
         model3.add_epoch(t, [nu1])
         model3.add_split(0, [nu1, nu2])
-        model3.add_epoch(t, [nu2, fxnu1], [[0, m], [0, 0]], [d1, d2],
+        model3.add_epoch(tf, [nu2, fxnu1], [[0, m], [0, 0]], [d1, d2],
                          [0, s],  [0.1, 0.8])
         model3.add_split(1, [nu2, nu1])
-        model3.add_epoch(t, [nu1, nu2, nu1], None, None,
+        model3.add_epoch(t, [nu1, nu2, nu1], None, [d1, 'Sud', 'Sud'],
                          [s, 0, s], [h, 0.5, 0])
 
-
-        values = {nu1: 2, nu2: 0.5, t: 0.3,
+        values = {nu1: 2, nu2: 0.5, nu3: 0.5, t: 0.3, t2: 0.5,
                   m: 0.1, s: 0.1, d1: 'Exp', d2: 'Lin', f: 0.5, h: 0.3}
 
-        for ind, model in enumerate([model1, model2, model3]):
-            for description, data in self._sfs_datasets():
-                for engine in all_engines():
+        for engine in all_engines():
+            customfile = os.path.join(
+                EXAMPLE_FOLDER, f"demographic_model_{engine.id}_3pops.py")
+
+            spec = importlib.util.spec_from_file_location(
+                f"module_{engine.id}", customfile)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            sys.modules[f'module_{engine.id}'] = module
+            func = module.model_func
+            variables = [nu1, nu2, nu3, m, t, t2]
+
+            model4 = CustomDemographicModel(func, variables)
+
+            for ind, model in enumerate([model1, model2, model3, model4]):
+                for description, data in self._sfs_datasets():
                     msg = f"for model {ind + 1} and {description} data and "\
                           f"{engine.id} engine"
                     if engine.id == 'dadi':
@@ -359,8 +375,8 @@ class TestModels(unittest.TestCase):
 
                     true_ll = engine.set_and_evaluate(values, model,
                                                       data, options)
-
                     cmd = engine.generate_code(values, None, *args)
+
                     d = {}
                     exec(cmd, d)
 

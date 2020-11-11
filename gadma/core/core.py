@@ -120,7 +120,7 @@ def main():
     check_time = time.time()
     time_diff = 60 * settings_storage.time_to_print_summary
     time_bias = 0
-    get_time = 10
+    get_time = min(10, time_diff)
     while True:
         time.sleep(get_time - time_bias)
         time_bias = 0

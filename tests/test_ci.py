@@ -48,7 +48,6 @@ class TestConfidenceIntervals(unittest.TestCase):
                         "-d", no_ids_model_name, "-o", output_dir]
             self.assertRaises(ValueError, gadma.run_ls_on_boot_data.main)
 
-
     def test_run_ci_evaluation(self):
         for engine in all_engines():
             output_dir = os.path.join(DATA_DIR, f"run_ls_out_{engine.id}")

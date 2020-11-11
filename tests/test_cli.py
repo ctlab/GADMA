@@ -62,6 +62,11 @@ class TestCLI(unittest.TestCase):
             sys.argv = ['gadma', '-p', param_file]
             self.assertRaises(AttributeError, get_settings)
 
+            param_file = os.path.join(DATA_PATH,
+                                      'another_test_params_bad3')
+            sys.argv = ['gadma', '-p', param_file]
+            self.assertRaises(AttributeError, get_settings)
+
             dir_without_run = os.path.join(DATA_PATH, "YRI_CEU_test_boots")
             dir_with_run = os.path.join(DATA_PATH, "my_example_run")
             with open(created_params_file, 'w') as fl:
@@ -223,6 +228,12 @@ class TestCLI(unittest.TestCase):
         settings.initial_structure = [1, 1]
         settings.final_structure = [2, 1]
 
+        # custom file with not callable model_func
+        path = os.path.join(DATA_PATH,
+                            'small_1pop_dem_model_without_function.py')
+        self.assertRaises(ValueError, settings.__setattr__,
+                          'custom_filename', path)
+
         # files and dirs
         settings = SettingsStorage()
         self.assertRaises(ValueError, settings.__setattr__,
@@ -280,6 +291,22 @@ class TestCLI(unittest.TestCase):
         settings.max_m = 5
         self.assertTrue((MigrationVariable('v').domain == [0, 5]).all())
 
+        # get model with parameters when there is no pop ids
+        settings = SettingsStorage()
+        settings.custom_filename = os.path.join(
+            DATA_PATH, "small_1pop_dem_model_no_ids.py")
+        self.assertRaises(ValueError, settings.get_model)
+        settings.lower_bound = [1e-2, 1e-2, 1e-15, 1e-15]
+        settings.upper_bound = [100, 100, 5, 5]
+        dm = settings.get_model()
+        settings = SettingsStorage()
+        settings.custom_filename = os.path.join(
+            DATA_PATH, "small_1pop_dem_model_no_ids_2.py")
+        self.assertRaises(ValueError, settings.get_model)
+        settings.lower_bound = [1e-2, 1e-2, 1e-15, 1e-15]
+        settings.upper_bound = [100, 100, 5, 5]
+        dm = settings.get_model()
+
         # get initial structure when number of populations is known
         settings = SettingsStorage()
         self.assertEqual(settings.initial_structure, None)
@@ -313,6 +340,7 @@ class TestCLI(unittest.TestCase):
         saved_extra_params_file = os.path.join(DATA_PATH, 'extra_params_file')
 
         settings1 = SettingsStorage.from_file(param_file)
+        settings1.pts = None
         settings1.to_files(saved_params_file, saved_extra_params_file)
         settings2 = SettingsStorage.from_file(saved_params_file,
                                               saved_extra_params_file)
@@ -332,6 +360,20 @@ class TestCLI(unittest.TestCase):
         settings1.lower_bound = np.array([0, 0, 0, 0])
         settings1.pts = (10, 20, 30)
         self.assertNotEqual(settings1, settings2)
+
+        settings1 = SettingsStorage.from_file(saved_params_file,
+                                              saved_extra_params_file)
+        settings2 = copy.deepcopy(settings1)
+        settings1.pts = (10, 20, 30)
+        settings2.pts = (5, 10, 20)
+        self.assertNotEqual(settings1, settings2)
+
+        settings1.fractions = np.array([0.3, 0.1, 0.1])
+        gadma.settings.fractions = np.array(gadma.settings.fractions)
+        self.assertTrue(isinstance(gadma.settings.fractions, np.ndarray))
+        settings1.fractions = np.array(gadma.settings.fractions)
+        self.assertTrue(isinstance(settings1.fractions, list))
+        gadma.settings.fractions = settings1.fractions
 
     def test_migration_masks_failure(self):
         options = [
@@ -359,3 +401,10 @@ class TestCLI(unittest.TestCase):
                 os.remove(params_file)
                 gadma.PIL_available = True
                 gadma.moments_available = True
+
+    def test_logging_to_stderr(self):
+        saved_stderr = sys.stderr
+        sys.stderr = StdAndFileLogger("log_file", stderr=True)
+        sys.stderr.write("Something in stderr")
+        sys.stderr = saved_stderr
+        os.remove("log_file")
