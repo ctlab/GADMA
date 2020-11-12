@@ -28,19 +28,6 @@ class TestGeneticAlg(unittest.TestCase):
         self.assertTrue(np.all(diff), msg=f"Arrays are not equal at some"
                                           f" index except {ind}. " + msg)
 
-    def test_selection(self):
-        ga = get_global_optimizer("Genetic_algorithm")
-        ga.maximize = True
-        n_size = 100
-        Y_gen = [-np.inf for _ in range(n_size)]
-
-        def f(x):
-            return -np.inf
-        variables = [ContinuousVariable("var1", domain=[0, 1])]
-
-        X_gen = [[variables[0].resample()] for _ in range(n_size)]
-        ga.selection(f, variables, X_gen, Y_gen=Y_gen)
-
     def test_initialization(self):
         get_global_optimizer('Genetic_algorithm')
 
@@ -86,9 +73,14 @@ class TestGeneticAlg(unittest.TestCase):
                                           domain=[2, 3, 'Ex']))
         variables[0].domain = [90, 100]
         x_list = [var.resample() for var in variables]
+        x_list[1] = 1e-20
         x_arr = WeightedMetaArray(x_list)
         x_arr.__str__()
 
+        x_mut = x_arr
+        while x_mut[1] != 0:
+            x_mut = ga.mutation_by_ind(x_arr, variables, 1,
+                                    mutation_type='gaussian')
         for ind in range(n_var):
             for mut_type in mut_types:
                 with self.subTest(mut_type=mut_type,
@@ -172,6 +164,8 @@ class TestGeneticAlg(unittest.TestCase):
     def test_selection(self):
         def f(x):
             return np.sum(x)
+        def f_inf(x):
+            return np.inf
 
         sel_types = ['roulette_wheel', 'rank']
         ga = get_global_optimizer('Genetic_algorithm')
@@ -186,6 +180,10 @@ class TestGeneticAlg(unittest.TestCase):
             X_gen_new, Y_gen_new = ga.selection(f, variables, X_gen,
                                                 selection_type=sel_type)
             X_gen_new, Y_gen_new = ga.selection(f, variables, X_gen,
+                                                selection_type=sel_type)
+            X_gen_new, Y_gen_new = ga.selection(f_inf, variables, X_gen,
+                                                selection_type=sel_type)
+            X_gen_new, Y_gen_new = ga.selection(f_inf, variables, X_gen,
                                                 selection_type=sel_type,
                                                 selection_random=True)
         # fails

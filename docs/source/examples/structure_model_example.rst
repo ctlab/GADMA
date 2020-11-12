@@ -1,3 +1,5 @@
+.. _structure_model_example:
+
 GADMA with structure model
 ==========================
 

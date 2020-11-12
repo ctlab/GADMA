@@ -30,6 +30,7 @@ A parameter file is a simple text file (created in a text editor, such as Notepa
    examples/examples
    faq
    getting_help
+   changelogs
 
 
 .. toctree::

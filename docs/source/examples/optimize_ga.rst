@@ -1,3 +1,5 @@
+.. _optimize_ga_example:
+
 Function gadma.optimize_ga
 ===========================
 
