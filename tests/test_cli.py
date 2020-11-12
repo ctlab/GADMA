@@ -9,6 +9,7 @@ from gadma.cli.arg_parser import ArgParser, get_settings
 from gadma.cli import SettingsStorage
 from gadma.cli import settings as default_settings
 from gadma import *
+from gadma.core.shared_dict import SharedDict, SharedDictForCoreRun
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
 
@@ -408,3 +409,24 @@ class TestCLI(unittest.TestCase):
         sys.stderr.write("Something in stderr")
         sys.stderr = saved_stderr
         os.remove("log_file")
+
+    # TODO move to core tests
+    def test_shared_dict(self):
+        d = SharedDict()
+        self.assertTrue(d.default_key(1) is None)
+        self.assertEqual(d.get_value(10, None), 10)
+
+        d.get_models_for_process_in_group("process", "group")
+        d.get_best_model_in_group("group")
+        d.get_best_model_for_process_in_group("process", "group")
+        d.add_model_for_process("process", "group", "model")
+        d.get_best_model_in_group("group", key=lambda x: 1)
+
+        d = SharedDictForCoreRun()
+        d.update_best_model_for_process(1, 'log-likelihood', 'engine',
+                                        [1, 2, 3], {'log-likelihood': -10})
+        d.update_best_model_for_process(2, 'log-likelihood', 'engine',
+                                        [2, 3, 4],
+                                        {'log-likelihood': -10, 'AIC': 100})
+        d.get_models_in_group('log-likelihood', align_y_dict=True)
+        d.get_models_in_group('log-likelihood', align_y_dict=False)

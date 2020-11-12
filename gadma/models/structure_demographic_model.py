@@ -236,7 +236,7 @@ class StructureDemographicModel(EpochDemographicModel):
                              "there is a mask on migrations.")
         cur_structure = self.get_structure()
         diff = np.array(self.final_structure) - np.array(cur_structure)
-        if np.any(diff < 0):
+        if np.all(diff <= 0):
             raise ValueError(f"Demographic model has its final structure "
                              f"({list(self.final_structure)}). It is not "
                              f"possible to increase it")

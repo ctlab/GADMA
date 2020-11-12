@@ -39,3 +39,18 @@ class TestUtils(unittest.TestCase):
 
         x = [0, 0, 2]
         self.assertTrue(0 in choose_by_weight(x, None, 2))
+
+    def test_cache_info(self):
+        info = CacheInfo()
+        str(info)
+
+    def test_weighted_meta_array(self):
+        x = WeightedMetaArray([1, 2])
+
+        X = [x]
+        X.append([1, 2])
+        list_with_weights_for_pickle(X)
+
+        del x.metadata
+        x.__str__()
+        x.__repr__()

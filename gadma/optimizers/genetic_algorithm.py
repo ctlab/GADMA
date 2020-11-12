@@ -541,7 +541,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                `Y_gen` and `y_best` must be already multiplied by -1 if we\
                have maximization instead of minimization.
         """
-        if report_file:
+        if report_file is not None:
             stream = open(report_file, 'a')
         else:
             stream = sys.stdout
@@ -549,14 +549,14 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         print("Current generation of solutions:", file=stream)
         print("N", "Value of fitness function", "Solution",
               file=stream, sep='\t')
-        if report_file:
+        if report_file is not None:
             stream.close()
         for i, (x, y) in enumerate(zip(X_gen, Y_gen)):
             # Use parent's report write function
             super(GeneticAlgorithm, self).write_report(i, variables, x,
                                                        f'{y: 5f}',
                                                        report_file)
-        if report_file:
+        if report_file is not None:
             stream = open(report_file, 'a')
 
         if self.one_fifth_rule:
@@ -569,18 +569,18 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         print("\n--Best solution by value of fitness function--", file=stream)
         print("Value of fitness:", y_best, file=stream)
         print("Solution:", file=stream, end='')
-        if report_file:
+        if report_file is not None:
             stream.close()
         super(GeneticAlgorithm, self).write_report('', variables, x_best,
                                                    '', report_file)
-        if report_file:
+        if report_file is not None:
             stream = open(report_file, 'a')
 
         if mean_time is not None:
             print(f"\nMean time:\t{mean_time:.3f} sec.\n", file=stream)
         print("\n", file=stream)
 
-        if report_file:
+        if report_file is not None:
             stream.close()
 
     def save(self, n_gen, n_eval, n_impr_gen, X_gen, Y_gen, X_total, Y_total,
@@ -600,10 +600,6 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         try:
             info = self.load(save_file)
         except Exception as e:
-            return False
-        if not isinstance(info, tuple):
-            return False
-        if not len(info) == 9:
             return False
         if (not isinstance(info[0], int) or not isinstance(info[1], int) or
                 not isinstance(info[2], int)):

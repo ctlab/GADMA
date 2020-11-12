@@ -5,8 +5,13 @@ import gadma
 from gadma import *
 import itertools
 import shutil
+import warnings
+warnings.filterwarnings(action='ignore', category=UserWarning,
+                        module='.*\.stats', lineno=21604)
+
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "test_data")
+
 
 class TestConfidenceIntervals(unittest.TestCase):
     def test_run_boots(self):

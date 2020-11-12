@@ -5,7 +5,7 @@ import sys
 import os
 
 from ..utils import Variable, ContinuousVariable
-from ..utils import fix_args, cache_func, nan_fval_to_inf, WeightedMetaArray
+from ..utils import fix_args, cache_func, WeightedMetaArray
 from ..utils import ensure_file_existence, check_file_existence,\
                     variables_values_repr
 from ..utils import logarithm_transform, exponent_transform, ident_transform
@@ -140,6 +140,8 @@ class Optimizer(object):
                                   f"IT: {x}, {x_tr}")
                     return self.sign * np.inf
         y = f(x_tr, *args)
+        if y is None or np.isnan(y):
+            return self.sign * np.inf
         return self.sign * y
 
     def prepare_f_for_opt(self, f, args=(), cache=True):
@@ -157,7 +159,7 @@ class Optimizer(object):
         assert isinstance(cache, bool)
         # Fix args
         f_wrapped = fix_args(f, *args)
-        f_wrapped = nan_fval_to_inf(f_wrapped)
+#        f_wrapped = nan_fval_to_inf(f_wrapped)
         if cache:
             f_wrapped = cache_func(f_wrapped)
         return f_wrapped

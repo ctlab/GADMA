@@ -99,3 +99,8 @@ class TestVariablePool(unittest.TestCase):
             pool = pickle.load(fl)
         pool.names
         os.remove(out_file)
+
+        del pool.names
+        self.assertRaises(AttributeError, pool.__getattribute__, "name")
+        pool.fix_pickling()
+        self.assertEqual(pool.names, set(["var1", "nu", "t"]))
