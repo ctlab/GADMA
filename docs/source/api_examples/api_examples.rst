@@ -1,3 +1,5 @@
+.. _api_examples:
+
 API examples
 ==============
 

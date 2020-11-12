@@ -32,7 +32,7 @@ CHANGED_IDENTIFIERS = {"use_moments_or_dadi": "engine",
                        "lower_bounds": "lower_bound",
                        "upper_bounds": "upper_bound"}
 
-DEPRECATED_IDENTIFIERS = ["multinom", "verbose", "flush_delay",
+DEPRECATED_IDENTIFIERS = ["multinom", "flush_delay",
                           "epsilon_for_ls", "gtol", "maxiter",
                           "multinomial_mutation", "multinomial_crossing",
                           "distribution", "std",

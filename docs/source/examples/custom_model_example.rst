@@ -1,3 +1,5 @@
+.. _custom_model_example:
+
 GADMA with custom model
 =======================
 
