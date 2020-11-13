@@ -6,9 +6,9 @@ name: CI
 # events but only for the master branch
 on:
   push:
-    branches: [ master ]
+    branches: master
   pull_request:
-    branches: [ master ]
+    branches: master
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -36,15 +36,15 @@ jobs:
           pip install GPy
           pip install GPyOpt
           pip install pandas
-          
+
       - name: Install GADMA
         run: |
           ./install
           cat gadma/version.py
-          
+
       - name: Check code style
         run: pycodestyle gadma
-        
+
       - name: Run tests and codecov
         run: |
           nosetests -vs tests --with-coverage --cover-package gadma     --cover-branches --cover-erase --cover-xml --cover-inclusive tests
