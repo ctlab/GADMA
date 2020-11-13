@@ -10,24 +10,18 @@ on:
   pull_request:
     branches: master
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   build:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
       - name: Set up Python 3.
         uses: actions/setup-python@v2
         with:
-          python-version: '3.x
+          python-version: '3.x'
 
-      - name: Install dependencies
+      - name: Install dependencies.
         run: |
           pip install coverage
           pip install codecov
@@ -36,15 +30,15 @@ jobs:
           pip install GPyOpt
           pip install pandas
 
-      - name: Install GADMA
+      - name: Install GADMA.
         run: |
           ./install
           cat gadma/version.py
 
-      - name: Check code style
+      - name: Check code style.
         run: pycodestyle gadma
 
-      - name: Run tests and codecov
+      - name: Run tests and codecov.
         run: |
           nosetests -vs tests --with-coverage --cover-package gadma     --cover-branches --cover-erase --cover-xml --cover-inclusive tests
           python3 -m codecov
