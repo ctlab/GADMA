@@ -2,6 +2,9 @@ import unittest
 from gadma import *
 
 
+DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
+
+
 class TestEngines(unittest.TestCase):
     def test_existence(self):
         self.assertTrue(len(list(all_engines())) > 0)
@@ -11,6 +14,25 @@ class TestEngines(unittest.TestCase):
                 options['pts'] = [10, 20, 30]
             with self.assertRaises(ValueError):
                 engine.evaluate([], **options)
+
+        self.assertRaises(ValueError, register_engine,
+                          get_engine("dadi"))
+        self.assertRaises(ValueError, get_engine, "some_strange_name")
+
+        engine = Engine()
+        self.assertRaises(NotImplementedError, engine.read_data, "some")
+        self.assertRaises(NotImplementedError, engine.evaluate, [])
+        self.assertRaises(NotImplementedError, engine.generate_code, [])
+
+        dadi_engine = get_engine('dadi')
+        model = Model()
+        self.assertRaises(ValueError, dadi_engine.set_model, model)
+        self.assertRaises(ValueError,
+                          dadi_engine.set_and_evaluate, [], None, None)
+
+        model = EpochDemographicModel()
+        self.assertRaises(ValueError,
+                          dadi_engine.set_and_evaluate, [], model, None)
 
     def model_3pop_dadi(self, ns, pts):
         import dadi
@@ -154,3 +176,24 @@ class TestEngines(unittest.TestCase):
         eng_ll = engine.evaluate(vals, dt_fac)
         self.assertTrue(np.allclose(eng_ll, ll),
                         msg=f"{eng_ll} != {ll}")
+
+    def test_upper_bounds_on_split_time(self):
+        import dadi
+        settings = SettingsStorage()
+        settings.initial_structure = [2, 1, 1]
+        settings.upper_bound_of_first_split = 100
+        settings.upper_bound_of_second_split = 50
+
+        data = dadi.Spectrum.from_file(os.path.join(DATA_PATH, "3d_sfs.fs"))
+        engine = get_engine("moments")
+        engine.set_data(data)
+        engine.set_model(settings.get_model())
+
+        self.assertRaises(AttributeError, engine.generate_code, [], "filename")
+
+        values = [var.resample() for var in engine.model.variables]
+        engine.get_theta(values)
+
+        engine.model.linear_constrain.lb = [51, -1]
+        engine.set_model(engine.model)
+        self.assertRaises(ValueError, engine.get_theta, values)

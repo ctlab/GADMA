@@ -255,10 +255,14 @@ class EpochDemographicModel(DemographicModel):
         var2value = self.var2value(np.zeros(len(self.variables)))
         n_sp = 0
         b = 0
+        total_n_split = 0
+        for event in self.events:
+            if isinstance(event, Split):
+                total_n_split += 1
         for event in reversed(self.events):
             if isinstance(event, Split):
                 n_sp += 1
-                if n_sp == n_split:
+                if n_sp == total_n_split - n_split + 1:
                     return list(var2value.values()), b
             else:
                 time_arg = event.time_arg

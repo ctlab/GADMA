@@ -615,7 +615,7 @@ class SettingsStorage(object):
                 try:
                     if not list(self_value) == list(other_value):
                         return False
-                except TypeError:
+                except TypeError as e:
                     return False
             else:
                 if not self_value == other_value:

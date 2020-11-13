@@ -165,17 +165,17 @@ def cache_func(f):
 #     return cache_wrapper
 
 
-def nan_fval_to_inf(f):
-    """
-    Wrappes function to return infinity instead nan.
-    """
-    @wraps(f)
-    def nan_fval_to_inf_wrapper(x):
-        y = f(x)
-        if y is None or np.isnan(y):
-            return np.inf
-        return y
-    return nan_fval_to_inf_wrapper
+# def nan_fval_to_inf(f):
+#     """
+#     Wrappes function to return infinity instead nan.
+#     """
+#     @wraps(f)
+#     def nan_fval_to_inf_wrapper(x):
+#         y = f(x)
+#         if y is None or np.isnan(y):
+#             return np.inf
+#         return y
+#     return nan_fval_to_inf_wrapper
 
 
 def eval_wrapper(f, eval_file=None):

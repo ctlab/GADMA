@@ -119,8 +119,66 @@ class TestBaseOptClass(unittest.TestCase):
         self.check_class(ConstrainedOptimizer)
         self.check_class(UnconstrainedOptimizer)
 
+    def test_evaluate_with_none_and_not_implemented_erros(self):
+        def f(x):
+            return None
+        opt = Optimizer()
+        opt.maximize = True
+        self.assertEqual(opt.evaluate(f, []), -np.inf)
+
+        self.assertRaises(NotImplementedError, opt.valid_restore_file, 'file')
+        self.assertRaises(NotImplementedError, opt.optimize, f, [])
+        opt.write_report(0, [], [], 10, report_file=None)
+
 
 class TestLocalOpt(TestBaseOptClass):
+    def test_not_implemented_error(self):
+        opt = LocalOptimizer()
+        self.assertRaises(NotImplementedError, opt.optimize, 'f', 'vars', 'x0')
+
+    def test_valid_restore_file(self):
+        opt = get_local_optimizer("None")
+        output_file = os.path.join(DATA_PATH, "save_file")
+        try:
+            self.assertEqual(opt.valid_restore_file(output_file), False)
+
+            with open(output_file, 'wb') as f:
+                pickle.dump([1, 2, 3], f)
+            self.assertEqual(opt.valid_restore_file(output_file), False)
+
+            with open(output_file, 'wb') as f:
+                pickle.dump((1, 2, 3), f)
+            self.assertEqual(opt.valid_restore_file(output_file), False)
+        finally:
+            os.remove(output_file)
+
+        opt = get_local_optimizer("BFGS")
+        try:
+            self.assertEqual(opt.valid_restore_file(output_file), False)
+
+            with open(output_file, 'wb') as f:
+                pickle.dump([1, 2, 3], f)
+            self.assertEqual(opt.valid_restore_file(output_file), False)
+
+            with open(output_file, 'wb') as f:
+                pickle.dump((1, 2, 3), f)
+            self.assertEqual(opt.valid_restore_file(output_file), False)
+
+            with open(output_file, 'wb') as f:
+                pickle.dump((1, 2, 3.5, 4, 5), f)
+            self.assertEqual(opt.valid_restore_file(output_file), False)
+
+            with open(output_file, 'wb') as f:
+                pickle.dump((1, 2, 3, 4, 5), f)
+            self.assertEqual(opt.valid_restore_file(output_file), False)
+
+            with open(output_file, 'wb') as f:
+                pickle.dump((1, 2, 3, 4, True), f)
+            self.assertEqual(opt.valid_restore_file(output_file), True)
+
+        finally:
+            os.remove(output_file)
+
     def test_registered_local_optimizers_fails(self):
         self.assertRaises(ValueError, get_local_optimizer, 'some strange_id')
         ex_id = 'BFGS_log'
@@ -142,6 +200,11 @@ class TestLocalOpt(TestBaseOptClass):
 
         for optim in all_local_optimizers():
             self.assertEqual(optim.evaluate(f, optim.transform(x)), y)
+
+        self.assertRaises(ValueError, ScipyOptimizer, "strange_name")
+        ScipyOptimizer.scipy_methods = ['method']
+        opt = ScipyOptimizer('method')
+        self.assertRaises(NotImplementedError, opt.get_addit_scipy_kwargs, '')
 
     def test_optimization_run(self):
         var1 = ContinuousVariable('var1', domain=[0, 1])
@@ -324,6 +387,36 @@ class TestLocalOpt(TestBaseOptClass):
             self.run_example(engine.id, get_1pop_sim_example_2,
                              will_collapse=True)
 
+    def test_combinations_misses(self):
+        ls_opt = get_local_optimizer("BFGS")
+        ls_opt.maximize = False
+        gs_opt = get_global_optimizer("Genetic_algorithm")
+        gs_opt.maximize = True
+
+        self.assertRaises(ValueError, GlobalOptimizerAndLocalOptimizer,
+                          gs_opt, ls_opt)
+
+        ls_opt.maximize = True
+        # remove ids
+        gs_opt = GlobalOptimizer()
+        ls_opt = ManuallyConstrOptimizer(ScipyUnconstrOptimizer('BFGS'))
+        self.assertRaises(AttributeError, gs_opt.__getattribute__, 'id')
+        self.assertRaises(AttributeError, ls_opt.__getattribute__, 'id')
+
+        opt = GlobalOptimizerAndLocalOptimizer(gs_opt, ls_opt)
+        self.assertTrue(hasattr(opt.global_optimizer, 'id'))
+        self.assertTrue(hasattr(opt.local_optimizer, 'id'))
+
+        def f(x):
+            return np.sum(x)
+
+        gs_opt = get_global_optimizer("Genetic_algorithm")
+        opt = GlobalOptimizerAndLocalOptimizer(gs_opt, ls_opt)
+        variables = [ContinuousVariable(f"var{i}", domain=[0, 1])
+                     for i in [1, 2]]
+
+        opt.optimize(f, variables, verbose=0)
+
 #    def test_2pop_example_1(self):
 #        for engine in all_engines():
 #            self.run_example(engine.id, get_2pop_sim_example_1)
@@ -420,3 +513,18 @@ class TestLinearConstrains(unittest.TestCase):
                 continue
             opt.optimize(f, variables, linear_constrain=constrain,
                          maxiter=maxiter)
+
+
+class TestGlobalOptimizer(unittest.TestCase):
+    def test_global_opt(self):
+        def f(x):
+            return np.sum(x)
+
+        variables = [ContinuousVariable("v", domain=[0, 1])]
+        X = [[variables[0].resample()] for _ in range(10)]
+        ga = get_global_optimizer("Genetic_algorithm")
+        ga.initial_design(f, variables, 10,
+                          X_init=X, Y_init=None)
+
+        opt = GlobalOptimizer()
+        self.assertRaises(NotImplementedError, opt.optimize, f, variables, 10)

@@ -18,7 +18,7 @@ class VariablePool(list):
         if not hasattr(self, 'names'):
             self.names = set()
             for item in self:
-                self.names.append(item.name)
+                self.names.add(item.name)
 
     def check_type(self, item):
         """

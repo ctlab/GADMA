@@ -6,6 +6,7 @@ from .test_optimizers import get_1pop_sim_example_2, get_2pop_sim_example_1
 from .test_data import YRI_CEU_DATA
 import gadma
 import importlib
+import pickle
 
 EXAMPLE_FOLDER = os.path.join(os.path.dirname(__file__), "test_data")
 EXAMPLE_DATA = os.path.join(EXAMPLE_FOLDER, "YRI_CEU.fs")
@@ -30,6 +31,9 @@ class TestGeneticAlg(unittest.TestCase):
 
     def test_initialization(self):
         get_global_optimizer('Genetic_algorithm')
+
+        self.assertRaises(ValueError, GeneticAlgorithm,
+                          random_type='custom', custom_rand_gen=None)
 
     def test_random(self):
         random_types = ['uniform', 'resample', 'custom']
@@ -190,6 +194,17 @@ class TestGeneticAlg(unittest.TestCase):
         self.assertRaises(ValueError, ga.selection, f,
                           variables, X_gen, selection_type='bad_type')
 
+    def test_opt_without_report_file(self):
+        def f(x):
+            return np.sum(x)
+        n_var = 5
+        variables = []
+        for i in range(n_var):
+            variables.append(ContinuousVariable('var%d' % i, domain=[0,1]))
+        x = [[var.resample() for var in variables] for _ in range(20)]
+        ga = get_global_optimizer("Genetic_algorithm")
+        ga.write_report(0, variables, [[]], [10], [], 10,
+                        0.1, report_file=None)
 
     def run_example(self, engine_id, example_func, not_bayesopt=False):
         args = ()
@@ -278,6 +293,57 @@ class TestGeneticAlg(unittest.TestCase):
     def test_run_gadma_test(self):
         sys.argv = ['gadma', '--test']
         gadma.core.main()
+
+    def test_missed_lines(self):
+        ga = get_global_optimizer("Genetic_algorithm")
+        ga.cur_mut_rate = 0.1
+        ga._sample_mut_rate(mode='uniform')
+
+        # check_x
+        variables = [ContinuousVariable('v', domain=[0, 1])]
+        self.assertRaises(ValueError, ga.check_x,
+                          variables, [-1], raises=True)
+        variables = [DiscreteVariable('v', domain=[1, 2])]
+        self.assertRaises(ValueError, ga.check_x,
+                          variables, [1.5])
+
+        # is_stopped with impr_gen=None
+        ga.is_stopped(10, 1)
+
+    def test_restore_file(self):
+        ga = get_global_optimizer("Genetic_algorithm")
+        output_file = os.path.join(EXAMPLE_FOLDER, "save_file")
+        try:
+            with open(output_file, 'wb') as f:
+                pickle.dump([1, 2, 3], f)
+            self.assertEqual(ga.valid_restore_file(output_file), False)
+
+            with open(output_file, 'wb') as f:
+                pickle.dump((1, 2, 3), f)
+            self.assertEqual(ga.valid_restore_file(output_file), False)
+
+            with open(output_file, 'wb') as f:
+                pickle.dump((1, 2.5, 3, 4, 5, 6, 7, 8, 9), f)
+            self.assertEqual(ga.valid_restore_file(output_file), False)
+
+            with open(output_file, 'wb') as f:
+                pickle.dump((1, 2, 3, 4, 5, 6, 7, 8, 9), f)
+            self.assertEqual(ga.valid_restore_file(output_file), False)
+
+            with open(output_file, 'wb') as f:
+                pickle.dump((1, 2, 3, [4], [5], 6, 7, 8, 9), f)
+            self.assertEqual(ga.valid_restore_file(output_file), False)
+
+            with open(output_file, 'wb') as f:
+                pickle.dump((1, 2, 3, [4], [5], [6], [7], "8", "9"), f)
+            self.assertEqual(ga.valid_restore_file(output_file), False)
+
+            with open(output_file, 'wb') as f:
+                pickle.dump((1, 2, 3, [4], [5], [6], [7], 8.5, 9.5), f)
+            self.assertEqual(ga.valid_restore_file(output_file), True)
+
+        finally:
+            os.remove(output_file)
 
 
 class TestInference(unittest.TestCase):

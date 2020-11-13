@@ -46,6 +46,10 @@ class TestModelStructure(unittest.TestCase):
                                                have_dyns=create_dyns,
                                                sym_migs=sym_migs,
                                                frac_split=fracs)
+                self.assertRaises(ValueError, dm.increase_structure)
+                struct = dm.get_structure()
+                struct[np.random.choice(range(len(struct)))] += 2
+                self.assertRaises(ValueError, dm.increase_structure, struct)
                 # for splits variables
                 n_par = (1 + int(not fracs)) * (len(structure) - 1)
                 for i, str_val in enumerate(structure):
@@ -77,6 +81,7 @@ class TestModelStructure(unittest.TestCase):
                                                    sym_migs=sym_migs,
                                                    migs_mask=masks,
                                                    frac_split=fracs)
+                    self.assertRaises(ValueError, dm.increase_structure)
                     if sym_migs and create_migs:
                         masks[0][0][1] = 1
                         masks[0][1][0] = 0
@@ -113,7 +118,7 @@ class TestModelStructure(unittest.TestCase):
             masks[-1] = np.zeros(shape=(5, 5))
             self.assertRaises(
                 ValueError, StructureDemographicModel,
-                structure, final_structure, have_migs=True,
+                structure, structure, have_migs=True,
                 have_sels=True, have_dyns=True,
                 sym_migs=False, migs_mask=masks, frac_split=True)
 
@@ -121,7 +126,7 @@ class TestModelStructure(unittest.TestCase):
             masks = masks[:-1]
             self.assertRaises(
                 ValueError, StructureDemographicModel,
-                structure, final_structure, have_migs=True,
+                structure, structure, have_migs=True,
                 have_sels=True, have_dyns=True,
                 sym_migs=False, migs_mask=masks, frac_split=True)
 
@@ -278,3 +283,9 @@ class TestModelStructure(unittest.TestCase):
                                                             frac_split=new_fracs)
                             x = [var.resample() for var in new.variables]
                             new_x = dm.transform_values_from_other_model(new, x)
+                            new.add_variable(TimeVariable("t_some"))
+                            new_x.append(3)
+                            self.assertRaises(
+                                ValueError,
+                                new.transform_values_from_other_model,
+                                dm, new_x)

@@ -95,6 +95,7 @@ class TestRestore(unittest.TestCase):
         sys.argv = ['gadma', '-p', param_file, '-o', base_out_dir]
         settings, _ = get_settings()
         settings.linked_snp_s = False
+        settings.silence = True
         out_dir = 'some_not_existed_dir'
         shared_dict = gadma.shared_dict.SharedDictForCoreRun(multiprocessing=False)
         if os.path.exists(out_dir):

@@ -151,7 +151,7 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                                   before run of local optimizer.
         :type local_x_transform: bool
         """
-        if report_file:
+        if report_file is not None:
             stream = open(report_file, 'a')
         else:
             stream = sys.stdout
@@ -174,7 +174,7 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                                                        restore_file,
                                                        restore_points_only,
                                                        global_x_transform)
-        if report_file:
+        if report_file is not None:
             stream = open(report_file, 'a')
         else:
             stream = sys.stdout
@@ -197,7 +197,7 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             print(f"--Start local optimization {self.local_optimizer.id}--",
                   file=stream)
 
-        if report_file:
+        if report_file is not None:
             stream.close()
 
         # Run local optimizer
