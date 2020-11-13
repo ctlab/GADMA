@@ -27,7 +27,6 @@ jobs:
         with:
           python-version: '3.x
 
-      # Runs a set of commands using the runners shell
       - name: Install dependencies
         run: |
           pip install coverage
