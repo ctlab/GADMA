@@ -29,6 +29,7 @@ jobs:
           pip install GPy
           pip install GPyOpt
           pip install pandas
+          pip install nose
 
       - name: Install GADMA.
         run: |
