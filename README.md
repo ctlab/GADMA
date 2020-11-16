@@ -1,6 +1,6 @@
 # GADMA ![](http://jb.gg/badges/research-flat-square.svg)
 
-[![Docs](https://readthedocs.org/projects/gadma/badge/?version=latest)](https://gadma.readthedocs.io/en/latest/?badge=latest) [![Build status](https://github.com/ctlab/GADMA/workflows/build/badge.svg)](https://github.com/ctlab/GADMA/workflows/build/badge.svg) [![codecov](https://codecov.io/gh/ctlab/GADMA/branch/master/graph/badge.svg?token=F303UDEWDJ)](https://codecov.io/gh/ctlab/GADMA)
+[![Docs](https://readthedocs.org/projects/gadma/badge/?version=latest)](https://gadma.readthedocs.io/en/latest/?badge=latest) [![Build status](https://github.com/ctlab/GADMA/workflows/build/badge.svg)](https://github.com/ctlab/GADMA/actions) [![codecov](https://codecov.io/gh/ctlab/GADMA/branch/master/graph/badge.svg?token=F303UDEWDJ)](https://codecov.io/gh/ctlab/GADMA)
 
 Welcome to GADMA v2!
 
