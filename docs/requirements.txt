@@ -3,3 +3,4 @@ scipy
 ruamel.yaml
 ipykernel
 nbsphinx
+nbsphinx_link
