@@ -6,5 +6,5 @@ Function gadma.optimize_ga
 .. toctree::
    :maxdepth: 1
 
-   dadi_YRI_CEU_optimize_ga
-   moments_YRI_CEU_optimize_ga
+   YRI_CEU_with_optimize_ga_and_dadi
+   YRI_CEU_with_optimize_ga_and_moments
