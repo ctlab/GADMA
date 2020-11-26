@@ -76,4 +76,4 @@ In Gutenkunst et al. 2009 generation time for human populations was equal to ``2
 In Jouganous et al. 2017 generation time was grater - ``29`` years and mutation rate was equal to ``1.44 \* 10^(-8)``. To change generation time to ``24``, one needs to change value of the mutation rate: ``muNEW`` = ``mu`` / 29 \* 24 = 1.2 \* 10^(-8). ``Theta0`` is calculated then by the formula above.
 
 .. note::
-    There is another more practical :ref:`example<theta_example>` of changing theta after run.
+    There is another more practical `example <https://gadma.readthedocs.io/en/latest/examples/changing_theta_example.html>`_ of changing theta after run.

@@ -95,10 +95,10 @@ GADMA prints the following warning if some of deprecated options are set in para
 
 **New examples**
 
-    - :ref:`GADMA run with structure model<structure_model_example>`,
-    - :ref:`GADMA run with custom model<custom_model_example>`,
-    - :ref:`Usage of function gadma.optimize_ga<optimize_ga_example>`,
-    - :ref:`Changing theta after GADMA run<theta_example>`.
+    - `GADMA run with structure model <https://gadma.readthedocs.io/en/latest/examples/structure_model_example.html>`_,
+    - `GADMA run with custom model <https://gadma.readthedocs.io/en/latest/examples/custom_model_example.html>`_,
+    - `Usage of function gadma.optimize_ga <https://gadma.readthedocs.io/en/latest/examples/optimize_ga_example.html>`_,
+    - `Changing theta after GADMA run <https://gadma.readthedocs.io/en/latest/examples/changing_theta_example.html>`_.
 
 **API**
 
