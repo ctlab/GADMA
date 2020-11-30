@@ -94,7 +94,7 @@ def _is_fs_via_dadi(data_holder):
     try:
         data = dadi.Spectrum.from_file(data_holder.filename)
         return data
-    except Exception as e:
+    except Exception:
         return None
 
 

@@ -20,7 +20,7 @@ import os, sys
 NAME = 'gadma'
 
 VERSION = '2.0.0rc5'
-SUPPORTED_PYTHON_VERSIONS = ['3.6', '3.7']
+SUPPORTED_PYTHON_VERSIONS = ['3.6', '3.7', '3.8']
 
 
 # Check python version

@@ -1,9 +1,8 @@
-from . import Engine, register_engine
+from . import register_engine
 from .dadi_moments_common import DadiOrMomentsEngine
-from ..models import DemographicModel, CustomDemographicModel, Epoch, Split,\
-                     BinaryOperation
-from ..utils import DynamicVariable, Variable
-from .. import SFSDataHolder, VCFDataHolder, moments_available
+from ..models import CustomDemographicModel, Epoch, Split
+from ..utils import DynamicVariable
+from .. import SFSDataHolder, moments_available
 import numpy as np
 
 
@@ -218,7 +217,6 @@ class MomentsEngine(DadiOrMomentsEngine):
         :param values: Values of demographic model parameters.
         :param ns: sample sizes of the simulated SFS.
         """
-        moments = self.base_module
         model = self._inner_func(values, ns, dt_fac)
         return model
 

@@ -1,0 +1,28 @@
+name: lint
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.6
+
+      - name: Install dependencies
+        run: |
+          pip install pycodestyle
+          pip install flake8
+          python setup.py build
+
+      - name: Check code style.
+        run: pycodestyle gadma
+
+      - name: flake8
+        run: flake8 --exit-zero ./gadma

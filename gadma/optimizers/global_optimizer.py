@@ -1,8 +1,6 @@
-from .optimizer import Optimizer, ConstrainedOptimizer
+from .optimizer import Optimizer
 from ..utils import ContinuousVariable
 
-import copy
-import scipy
 import numpy as np
 
 

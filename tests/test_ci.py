@@ -1,6 +1,7 @@
 import unittest
 import gadma
 import sys
+import os
 import gadma
 from gadma import *
 import itertools

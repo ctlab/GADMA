@@ -1,11 +1,5 @@
-from ..utils import Variable, PopulationSizeVariable, TimeVariable
-from ..utils import VariablePool, variables_values_repr
-from ..utils import MigrationVariable, DynamicVariable, SelectionVariable
+from ..utils import VariablePool
 from .demographic_model import DemographicModel
-from collections import OrderedDict
-import copy
-import numpy as np
-import importlib.util
 
 
 class CustomDemographicModel(DemographicModel):

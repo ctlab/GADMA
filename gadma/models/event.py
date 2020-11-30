@@ -1,7 +1,7 @@
 import numpy as np
 
 from . import Model
-from ..utils import Variable, FractionVariable, float_repr
+from ..utils import Variable, FractionVariable
 import copy
 
 
@@ -133,7 +133,6 @@ class Epoch(Event):
         if self.sel_args is not None:
             sels_repr = [help_f(arg) for arg in self.sel_args]
             if self.dom_args is not None:
-                dom_repr = [help_f(arg) for arg in self.dom_args]
                 together = [f'{x}({y})' for x, y in zip(self.sel_args,
                                                         self.dom_args)]
                 sels_repr = f"[{', '.join(together)}]"

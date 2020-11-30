@@ -5,8 +5,12 @@ from .test_optimizers import get_func, get_1pop_sim_example_1
 from .test_optimizers import get_1pop_sim_example_2, get_2pop_sim_example_1
 from .test_data import YRI_CEU_DATA
 import gadma
+from gadma.utils import custom_generator, WeightedMetaArray
+from gadma.optimizers import GeneticAlgorithm, register_global_optimizer
 import importlib
 import pickle
+import os
+import sys
 
 EXAMPLE_FOLDER = os.path.join(os.path.dirname(__file__), "test_data")
 EXAMPLE_DATA = os.path.join(EXAMPLE_FOLDER, "YRI_CEU.fs")

@@ -1,13 +1,12 @@
 from . import Optimizer, ConstrainedOptimizer, UnconstrainedOptimizer
 from .optimizer_result import OptimizerResult
-from ..utils import eval_wrapper, ensure_file_existence, fix_args, cache_func
+from ..utils import eval_wrapper, ensure_file_existence, fix_args
 
 import warnings
 import copy
 import numpy as np
 import scipy
 from functools import partial, wraps
-import pickle
 
 _registered_local_optimizers = {}
 
@@ -112,7 +111,7 @@ class NoneOptimizer(LocalOptimizer):
     def valid_restore_file(self, save_file):
         try:
             info = self.load(save_file)
-        except Exception as e:
+        except Exception:
             return False
         if not isinstance(info, tuple):
             return False
@@ -132,7 +131,7 @@ class NoneOptimizer(LocalOptimizer):
         if restore_file is not None and self.valid_restore_file(restore_file):
             x0, y = self.load(restore_file)
             if restore_x_transform is not None:
-                x0 = restore_x_transform(x)
+                x0 = restore_x_transform(x0)
                 y = None
         if restore_file is None or restore_points_only or y is None:
             y = finally_wrapped_f(x0)
@@ -190,7 +189,7 @@ class ScipyOptimizer(LocalOptimizer):
     def valid_restore_file(self, save_file):
         try:
             info = self.load(save_file)
-        except Exception as e:
+        except Exception:
             return False
         if not isinstance(info, tuple):
             return False
@@ -490,7 +489,6 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
         if isinstance(self.optimizer, UnconstrainedOptimizer):
             for var in vars_in_opt:
                 var.domain = np.array([-np.inf, np.inf])
-        args_in_opt = (bounds, args)
         # Fix args in function f and cache it.
         # TODO: not intuitive solution, think more about it.
         # Fix args

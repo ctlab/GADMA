@@ -1,5 +1,4 @@
 from ..utils import check_file_existence, ensure_file_existence
-import functools
 
 
 class DataHolder(object):

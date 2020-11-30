@@ -2,15 +2,13 @@ import operator as op
 from functools import partial, wraps
 import numpy as np
 import copy
-import pickle
 import sys
-import time
 
 import logging
 from .optimizer import ConstrainedOptimizer
 from .global_optimizer import GlobalOptimizer, register_global_optimizer
 from .optimizer_result import OptimizerResult
-from ..utils import sort_by_other_list, choose_by_weight, eval_wrapper
+from ..utils import eval_wrapper
 from ..utils import ensure_file_existence, fix_args
 
 from .. import GPyOpt
@@ -126,6 +124,7 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         print('*************************************************************',
               file=stream)
         print('Current optimum: %0.3f' % y_best, file=stream)
+        print(f'On parameters: {x_best}')
         print('*************************************************************',
               file=stream)
 

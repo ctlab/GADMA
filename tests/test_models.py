@@ -2,8 +2,13 @@ import unittest
 
 from gadma import *
 from gadma import ContinuousVariable
+from gadma.models import *
+from gadma.models.variables_combinations import BinaryOperation
+from gadma.engines import DadiEngine
 
 from .test_data import YRI_CEU_DATA
+import importlib
+import copy
 
 try:
     import dadi

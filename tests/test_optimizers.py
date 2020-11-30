@@ -2,11 +2,21 @@ import unittest
 
 from .test_data import YRI_CEU_DATA
 from gadma import *
+from gadma.optimizers import *
+from gadma.engines import *
+from gadma.models import *
+from gadma.cli.arg_parser import test_args
+from gadma.core import SharedDictForCoreRun
+
 import gadma
 import dadi
 import scipy
 import shutil
 import warnings
+import os
+import sys
+import numpy as np
+import pickle
 
 warnings.filterwarnings(action='ignore', category=UserWarning,
                         module='.*\.optimizer', lineno=139)
@@ -431,7 +441,7 @@ class TestCoreRun(unittest.TestCase):
         settings.verbose = 10
         shared_dict = gadma.shared_dict.SharedDictForCoreRun(
             multiprocessing=False)
-        gadma.core.job(0, shared_dict, settings)
+        gadma.core.core.job(0, shared_dict, settings)
 
         settings.custom_filename = os.path.join(DATA_PATH,
                                                 "small_1pop_dem_model_dadi.py")
@@ -445,7 +455,7 @@ class TestCoreRun(unittest.TestCase):
         settings.local_maxiter = 1
         shared_dict = gadma.shared_dict.SharedDictForCoreRun(
             multiprocessing=False)
-        gadma.core.job(0, shared_dict, settings)
+        gadma.core.core.job(0, shared_dict, settings)
 
     def test_core_run_restore(self):
         old_run_out = os.path.join(DATA_PATH, "my_example_run")

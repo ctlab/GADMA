@@ -4,7 +4,6 @@ import sys
 import numpy as np
 import gadma
 import importlib
-import copy
 import multiprocessing as mp
 from importlib.machinery import SourceFileLoader
 
@@ -18,7 +17,6 @@ def run_job(params):
     """
     boot_fs_filename, boot_fs, p0, settings = params
     np.random.seed()
-    fs_filename = gadma.utils.abspath(boot_fs_filename)
     prefix = str(settings.local_optimizer) + '_' + boot_fs_filename
     out_file = os.path.join(settings.output_directory,
                             "opt_" + str(prefix) + ".out")
@@ -84,31 +82,31 @@ def load_parameters_from_python_file(filename):
                          str(e))
     try:
         settings.lower_bound = module.lower_bound
-    except Exception as e:
+    except Exception:
         settings.lower_bound = None
 
     try:
         settings.upper_bound = module.upper_bound
-    except Exception as e:
+    except Exception:
         settings.upper_bound = None
 
     try:
         p0 = module.popt
-    except Exception as e:
+    except Exception:
         try:
             p0 = module.p0
-        except Exception as e:
+        except Exception:
             p0 = None
     try:
         settings.pts = module.pts
-    except Exception as e:
+    except Exception:
         settings.pts = None
     try:
         settings.parameter_identifiers = module.par_labels
-    except Exception as e:
+    except Exception:
         try:
             settings.parameter_identifiers = module.param_labels
-        except Exception as e:
+        except Exception:
             settings.parameter_identifiers = None
     return p0, settings
 
@@ -235,7 +233,7 @@ def main():
                 try:
                     map_result.get(timeout=1)
                     break
-                except mp.TimeoutError as ex:
+                except mp.TimeoutError:
                     pass
                 except Exception as e:
                     pool.terminate()

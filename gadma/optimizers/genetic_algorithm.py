@@ -10,7 +10,6 @@ from ..utils import list_with_weights_for_pickle,\
 from functools import partial
 import numpy as np
 import copy
-import pickle
 import sys
 import time
 
@@ -599,7 +598,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
     def valid_restore_file(self, save_file):
         try:
             info = self.load(save_file)
-        except Exception as e:
+        except Exception:
             return False
         if (not isinstance(info[0], int) or not isinstance(info[1], int) or
                 not isinstance(info[2], int)):

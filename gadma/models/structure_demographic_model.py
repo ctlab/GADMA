@@ -1,11 +1,9 @@
 from ..utils import Variable, PopulationSizeVariable, TimeVariable
-from ..utils import VariablePool
 from ..utils import MigrationVariable, DynamicVariable, SelectionVariable,\
                     FractionVariable
-from . import Model, Epoch, Split
+from . import Epoch, Split
 from .variables_combinations import Multiplication, Subtraction
 from .demographic_model import EpochDemographicModel
-from collections import OrderedDict
 import copy
 import numpy as np
 import warnings

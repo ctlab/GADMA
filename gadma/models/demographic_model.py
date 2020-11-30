@@ -1,8 +1,6 @@
-from ..utils import Variable, PopulationSizeVariable, TimeVariable
+from ..utils import Variable, TimeVariable
 from ..utils import VariablePool, variables_values_repr
-from ..utils import MigrationVariable, DynamicVariable, SelectionVariable
 from . import Model, Epoch, Split
-from collections import OrderedDict
 import copy
 import numpy as np
 

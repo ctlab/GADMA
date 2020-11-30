@@ -1,0 +1,74 @@
+# This is a basic workflow to help you get started with Actions
+
+name: build
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: master
+  pull_request:
+    branches: master
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-18.04, windows-2019, macos-10.15]
+        python-version: [3.6, 3.8]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python 3.
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies for tests.
+        run: |
+          pip3 install coverage
+          pip3 install codecov
+          pip3 install pycodestyle
+          pip3 install GPy
+          pip3 install GPyOpt
+          pip3 install pandas
+          pip3 install ruamel.yaml
+          pip3 install pytest
+          pip3 install pytest-cov
+
+      - name: Install GADMA and its dependencies (Linux and MacOS).
+        run: |
+          ./install
+        if: matrix.os != 'windows-2019'
+
+      - name: Install GADMA and its dependencies (Windows).
+        run: |
+          pip install numpy
+          pip install scipy
+          pip install matplotlib
+          pip install Pillow
+          pip install ruamel.yaml
+          pip install mpmath
+          pip install dadi
+          pip install Cython
+          git clone https://bitbucket.org/simongravel/moments.git
+          cd moments
+          python setup.py install
+          cd ..
+          python setup.py install
+        if: matrix.os == 'windows-2019'
+
+      - name: Run tests and codecov.
+        run: |
+          python -m pytest --cov=gadma --cov-report=xml -v tests
+        
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.xml
+          flags: unittests
+        if: matrix.os == 'ubuntu-18.04' && matrix.python-version == '3.6'
+

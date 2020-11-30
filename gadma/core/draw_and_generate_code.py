@@ -1,16 +1,14 @@
-from .. import matplotlib, moments, dadi, Image
+from .. import matplotlib, Image
 from .. import matplotlib_available, PIL_available, moments_available
-from ..models import EpochDemographicModel, Split
-from ..engines import get_engine, all_engines
-from ..utils import bcolors, WeightedMetaArray
+from ..models import EpochDemographicModel
+from ..engines import all_engines
+from ..utils import bcolors
 
 import warnings
 import os
-import warnings
 import io
 from datetime import datetime
 import copy
-import numpy as np
 
 
 def draw_plots_to_file(x, engine, settings, filename, fig_title):

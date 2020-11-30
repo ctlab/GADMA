@@ -3,11 +3,14 @@ import unittest
 from .test_data import YRI_CEU_DATA
 from gadma import *
 import gadma
-from gadma import *
+from gadma.core import SharedDictForCoreRun
+from gadma.utils import StdAndFileLogger
 import dadi
 import copy
 import pickle
 import shutil
+import os
+import sys
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
 

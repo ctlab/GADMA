@@ -2,8 +2,7 @@ from ..engines import get_engine, all_engines
 from ..utils import sort_by_other_list, ensure_dir_existence,\
                     ensure_file_existence, check_file_existence,\
                     check_dir_existence
-from ..utils import TimeVariable, PopulationSizeVariable, SelectionVariable,\
-                    DynamicVariable, WeightedMetaArray
+from ..utils import WeightedMetaArray
 from ..optimizers import GlobalOptimizerAndLocalOptimizer
 from ..utils import get_aic_score, get_claic_score, ident_transform, bcolors
 from ..models import EpochDemographicModel, StructureDemographicModel
@@ -11,7 +10,7 @@ from .draw_and_generate_code import draw_plots_to_file, generate_code_to_file
 from ..cli import SettingsStorage
 import os
 import numpy as np
-from collections import defaultdict, OrderedDict
+from collections import OrderedDict
 import copy
 import warnings
 from functools import partial
@@ -174,7 +173,7 @@ class CoreRun(object):
         if self.x_best is None or sign * self.y_best > sign * y or not equal_x:
             self.x_best = x
             self.y_best = y
-            updated = self.shared_dict._put_new_model_for_process(
+            self.shared_dict._put_new_model_for_process(
                 self.index, best_by, (self.engine, x, y_dict))
             prefix = (self.settings.LOCAL_OUTPUT_DIR_PREFIX +
                       self.settings.LONG_NAME_2_SHORT.get(best_by, best_by))
@@ -183,7 +182,7 @@ class CoreRun(object):
             try:
                 generate_code_to_file(x, self.engine,
                                       self.settings, save_code_file)
-            except Exception as e:
+            except Exception:
                 pass
 
     def draw_iter_callback(self, x, y):
@@ -252,11 +251,11 @@ class CoreRun(object):
         self.base_callback(x, y)
         try:
             self.draw_iter_callback(x, y)
-        except Exception as e:
+        except Exception:
             pass
         try:
             self.code_iter_callback(x, y)
-        except Exception as e:
+        except Exception:
             pass
 
     def intermediate_callback(self, x, y):
@@ -347,12 +346,12 @@ class CoreRun(object):
         try:
             generate_code_to_file(x, self.engine,
                                   self.settings, save_code_file)
-        except Exception as e:
+        except Exception:
             pass
         try:
             draw_plots_to_file(x, self.engine, self.settings,
                                save_plot_file, fig_title)
-        except Exception as e:
+        except Exception:
             pass
 
     def get_save_file(self):
@@ -416,7 +415,7 @@ class CoreRun(object):
 
         restore_file, struct, only_models, x_transform = next(options)
         if struct is not None and struct != self.model.get_structure():
-            warnings.warn(f"Initial structure ({init_struct}) with saved file "
+            warnings.warn(f"Initial structure ({struct}) with saved file "
                           f"of optimization from restored dir looks different "
                           f"to current ({self.settings.initial_structure}). "
                           f"It will be restored.")

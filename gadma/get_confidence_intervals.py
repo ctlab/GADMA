@@ -1,5 +1,4 @@
 import numpy as np
-import sys
 import argparse
 from scipy import stats
 from .utils import abspath, check_file_existence

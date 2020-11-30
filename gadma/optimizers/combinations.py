@@ -1,7 +1,6 @@
 import sys
 from functools import wraps
 import numpy as np
-import copy
 
 from .global_optimizer import GlobalOptimizer
 from .optimizer import ConstrainedOptimizer

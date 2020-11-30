@@ -7,12 +7,9 @@ from ..engines import get_engine, MomentsEngine
 from ..models import StructureDemographicModel, CustomDemographicModel
 from ..optimizers import get_local_optimizer, get_global_optimizer
 from ..optimizers import LinearConstrain
-from ..utils import ensure_dir_existence, ensure_file_existence,\
-                    check_dir_existence, check_file_existence, abspath,\
-                    custom_generator
+from ..utils import check_dir_existence, check_file_existence, abspath
 from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable,\
                     ContinuousVariable
-
 import warnings
 import importlib.util
 import sys
@@ -310,10 +307,10 @@ class SettingsStorage(object):
                 setattr(self.data_holder, name, value)
         # 3.3 For engine we need check it exists
         elif name == 'engine':
-            engine_obj = get_engine(value)
+            get_engine(value)
         # 3.4 For local_optimizer we need check it existence
         elif name == 'local_optimizer':
-            optimizer_obj = get_local_optimizer(value)
+            get_local_optimizer(value)
         # 3.5 If we change engine or pts, we should check for warning if pts
         # would be ignored
         elif name in ['engine', 'pts']:
@@ -342,7 +339,7 @@ class SettingsStorage(object):
                     raise ValueError("Length of fractions ({value}) must be "
                                      "equal to 3 (old,mut,cros) or 4 "
                                      "(old,mut,cros,rand). Got length of "
-                                     f"{len(values)}")
+                                     f"{len(value)}")
                 if len(fractions) == 3:
                     if sum(value) > 1:
                         raise ValueError('Sum of fractions (when 3 fractions'
@@ -486,8 +483,6 @@ class SettingsStorage(object):
                 if not isinstance(mask, list):
                     raise ValueError("Migration masks option should be set to "
                                      "a list with lists (masks).")
-                message = "Masks should consist of 0 and 1"\
-                          f" only. Mask number {i}: {mask}"
                 mask_size = None
                 for line in mask:
                     if not isinstance(line, list):
@@ -575,7 +570,6 @@ class SettingsStorage(object):
                             bound.append(domain[0])
                         else:
                             bound.append(domain[1])
-                    value = bound
                     return bound
             if hasattr(settings, name):
                 return getattr(settings, name)
@@ -616,7 +610,7 @@ class SettingsStorage(object):
                 try:
                     if not list(self_value) == list(other_value):
                         return False
-                except TypeError as e:
+                except TypeError:
                     return False
             else:
                 if not self_value == other_value:
@@ -675,7 +669,6 @@ class SettingsStorage(object):
         set_of_seen_files = set()
         filenames = []
         for filename in os.listdir(dirname):
-            extention = '.' + filename.split('.')[-1]
             filename_without_ext = '.'.join(filename.split('.')[:-1])
             if filename_without_ext in set_of_seen_files:
                 continue

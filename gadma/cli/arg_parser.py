@@ -81,8 +81,6 @@ def get_settings():
 
     :returns: tuple of parsed arguments and settings storage.
     '''
-    usage = str(sys.argv[0]) + " -p <params_file>"
-
     # Create arguments parser
     parser = ArgParser(add_help=False)
     parser.add_argument('-p', '--params', metavar="<params_file>",
