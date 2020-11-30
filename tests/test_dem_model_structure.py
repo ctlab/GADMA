@@ -161,8 +161,8 @@ class TestModelStructure(unittest.TestCase):
                 for engine in all_engines():
                     engine.set_model(dm)
                     if engine.id == 'dadi':
-                        sizes = [10 for _ in range(len(structure))]
-                        args = ([5, 10, 15],)  # pts
+                        sizes = [8 for _ in range(len(structure))]
+                        args = ([4, 6, 8],)  # pts
                     else:
                         sizes = [4 for _ in range(len(structure))]
                         args = ()

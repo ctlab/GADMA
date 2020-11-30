@@ -367,7 +367,7 @@ class TestModels(unittest.TestCase):
                     msg = f"for model {ind + 1} and {description} data and "\
                           f"{engine.id} engine"
                     if engine.id == 'dadi':
-                        options = {'pts': [5, 10, 15]}
+                        options = {'pts': [4, 6, 8]}
                         args = (options['pts'],)
                     else:
                         options = {}

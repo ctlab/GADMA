@@ -312,7 +312,7 @@ class TestLocalOpt(TestBaseOptClass):
         dic = {'nu1F': 2.0, 'nu2B': 0.1, 'nu2F': 2, 'm': 1,
                'Tp':  0.2, 'T': 0.2}
 
-        proj = (10, 10)
+        proj = (4, 4)
         data = SFSDataHolder(YRI_CEU_DATA, projections=proj)
         d = DadiEngine(model=dm, data=data)
         values = [dic[var.name] for var in dm.variables]
@@ -331,7 +331,8 @@ class TestLocalOpt(TestBaseOptClass):
             with self.subTest(optimizer=opt.id):
                 res = opt.optimize(f, dm.variables, num_init=10,
                                    args=args, maxeval=25, maxiter=5)
-        for opt in all_local_optimizers():
+        for opt_name in ["BFGS", "L-BFGS-B"]: #all_local_optimizers():
+            opt = get_local_optimizer(opt_name)
             with self.subTest(local_optimizer=opt.id):
                 res = opt.optimize(f, dm.variables, x0=values,
                                    args=args, maxiter=2)
@@ -439,6 +440,9 @@ class TestCoreRun(unittest.TestCase):
         settings.read_bootstrap_data()
         settings.linked_snp_s = True
         settings.relative_parameters = True
+        settings.pts = [4, 6, 8]
+        settings.global_maxiter = 4
+        settings.local_maxiter = 1
         shared_dict = gadma.shared_dict.SharedDictForCoreRun(
             multiprocessing=False)
         gadma.core.job(0, shared_dict, settings)

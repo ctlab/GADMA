@@ -60,7 +60,8 @@ class SettingsStorage(object):
                      'print_models_code_every_n_iteration', 'n_elitism',
                      'draw_models_every_n_iteration', 'size_of_generation',
                      'number_of_repeats', 'number_of_processes',
-                     'number_of_populations']
+                     'number_of_populations', 'global_maxiter',
+                     'local_maxiter']
         float_attrs = ['theta0', 'time_for_generation', 'eps',
                        'const_of_time_in_drawing', 'vmin', 'min_n', 'max_n',
                        'min_t', 'max_t', 'min_m', 'max_m',
