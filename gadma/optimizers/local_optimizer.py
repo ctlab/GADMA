@@ -1,6 +1,6 @@
 from . import Optimizer, ConstrainedOptimizer, UnconstrainedOptimizer
 from .optimizer_result import OptimizerResult
-from ..utils import eval_wrapper, ensure_file_existence, fix_args
+from ..utils import eval_wrapper, ensure_file_existence, fix_args, cache_func
 
 import warnings
 import copy
@@ -299,9 +299,10 @@ class ScipyOptimizer(LocalOptimizer):
         # Fix args in function f and cache it.
         # TODO: not intuitive solution, think more about it.
         # Fix args (cache we did at the end)
-        prepared_f = self.prepare_f_for_opt(f, args, cache=True)
+        prepared_f = self.prepare_f_for_opt(f, args, cache=False)
         # Wrap for automatic evaluation log
         wrapped_f = eval_wrapper(prepared_f, eval_file)
+        wrapped_f = cache_func(wrapped_f)
         # Wrap for writing report
         finally_wrapped_f = self.wrap_for_report(wrapped_f, variables,
                                                  verbose, report_file)
@@ -375,14 +376,22 @@ class ScipyOptimizer(LocalOptimizer):
                                           callback=callback, **addit_kw)
         # Construct OptimizerResult object to return
         result = OptimizerResult.from_SciPy_OptimizeResult(res_obj)
+
+        # check if our initial point was good
+        y_on_x0 = f_in_opt(x0_in_opt)
+        if callback is not None:
+            callback(x0_in_opt, y_on_x0)
+        if y_on_x0 <= result.y:
+            result.x = x0_in_opt
+            result.y = y_on_x0
         result.x = self.inv_transform(result.x)
         result.y = self.sign * result.y
 
-        result.X = [np.array(_x) for _x, _ in prepared_f.cache_info.all_calls]
+        result.X = [np.array(_x) for _x, _ in wrapped_f.cache_info.all_calls]
         result.Y = [self.sign * _y
-                    for _, _y in prepared_f.cache_info.all_calls]
+                    for _, _y in wrapped_f.cache_info.all_calls]
 
-        result.n_eval = prepared_f.cache_info.misses
+        result.n_eval = wrapped_f.cache_info.misses
 #        print(str(prepared_f.cache_info))
 
         self.save(result.x, result.y, result.n_iter, result.n_eval,
@@ -461,10 +470,14 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
         self.optimizer.maximize = new_value
 
     def evaluate_inner(self, f, x, bounds, args=()):
+        # Returns 'true' values of function.
         for val, domain in zip(x, bounds):
             if val < domain[0] or val > domain[1]:
+                # we have translate inf to 'true' value
                 return self.sign * self.out_of_bounds
         y = f(self.inv_transform(x), *args)
+        if y is None or np.isnan(y):
+            return self.sign * np.inf
         return y
 
     def prepare_callback(self, callback):
@@ -497,9 +510,9 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
         # x in function as there can be extra logarithm.
         wrapped_f = eval_wrapper(prepared_f, eval_file)
         # The same with report_file
-        finally_wrapped_f = self.wrap_for_report(wrapped_f, variables,
-                                                 verbose, report_file)
-        f_in_opt = partial(self.evaluate_inner, finally_wrapped_f)
+        f_in_opt = partial(self.evaluate_inner, wrapped_f)
+        f_in_opt = self.wrap_for_report(f_in_opt, variables,
+                                        verbose, report_file)
 #        f_in_opt = fix_args(f_in_opt, (linear_constrain,))
 
         if callback is not None:

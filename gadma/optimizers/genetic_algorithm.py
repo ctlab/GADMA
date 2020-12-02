@@ -754,7 +754,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         n_eval = n_eval_init + prepared_f.cache_info.misses
         x_best = X_gen_cor[0]
         y_best = Y_gen_cor[0]
-        assert restored or n_eval > 0
+#        assert restored or n_eval > 0
 
         # Write report about 0 generation
         # we save and report in units of function f that we have got.

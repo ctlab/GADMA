@@ -11,6 +11,7 @@ import importlib
 import pickle
 import os
 import sys
+import timeit
 
 EXAMPLE_FOLDER = os.path.join(os.path.dirname(__file__), "test_data")
 EXAMPLE_DATA = os.path.join(EXAMPLE_FOLDER, "YRI_CEU.fs")
@@ -369,15 +370,35 @@ class TestInference(unittest.TestCase):
 
                 data = engine.base_module.Spectrum.from_file(EXAMPLE_DATA)
 
+                num_init = 10
                 p_ids = ['n', 'n', 'n', 'm', 't', 't']
+                variables = gadma.cli.get_variables(parameter_identifiers=p_ids,
+                                                    lower_bound=None,
+                                                    upper_bound=None)
+                X_init = [[var.resample() for var in variables]
+                          for _ in range(num_init)]
+                Y_init = list()
+                def f():
+                    for x in X_init:
+                        if engine.id == 'dadi':
+                            numerics = engine.base_module.Numerics
+                            func_ex = numerics.make_extrap_log_func(func)
+                        else:
+                            func_ex = func
+                        model = func_ex(x, data.sample_sizes, *args)
+                        y = engine.base_module.Inference.ll_multinom(data,
+                                                                     model)
+                        Y_init.append(y)
+                time = 2 * timeit.timeit(f, number=1) / num_init
                 optimize_ga(data, func, engine.id, args=args,
-                    p_ids = p_ids, num_init=2, gen_size=2,
-                    ga_maxiter=1, ls_maxiter=1,
+                    p_ids = p_ids, maxtime_per_eval=0.1,
+                    num_init=num_init, X_init=X_init, Y_init=Y_init,
+                    gen_size=10, ga_maxiter=5, ls_maxiter=1,
                     verbose=1, callback=None,
                     save_file='save_file', eval_file='eval_file',
                     report_file='report_file')
 
-    def test_inference_funcs(self):
+    def test_inference_claic_funcs(self):
         dirname = os.path.join(EXAMPLE_FOLDER, 'YRI_CEU_test_boots')
         for engine in all_engines():
             projections = (4, 4)

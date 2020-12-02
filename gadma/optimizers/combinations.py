@@ -184,6 +184,7 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
         # Transform best x to local optimizer as x0 and functions for local
         x_best = np.array(global_result.x)
+        y_best = global_result.y
         is_not_discrete = self._get_filter(variables)
         x0 = x_best[is_not_discrete]
 
@@ -217,9 +218,9 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                   f"LOCAL OPTIMIZATION: {local_result.message}"
         status = local_result.status
 
-        y_best = local_result.y
-        x_best = global_result.x
-        x_best[is_not_discrete] = local_result.x
+        if not np.isinf(local_result.y):
+            y_best = local_result.y
+            x_best[is_not_discrete] = local_result.x
         ga_maximize = self.global_optimizer.maximize
         X_out, Y_out = sort_by_other_list(global_result.X_out,
                                           global_result.Y_out,

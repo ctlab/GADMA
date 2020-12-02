@@ -5,6 +5,7 @@ import sys
 import os
 import tempfile
 import pickle
+from multiprocessing import Process, Queue
 
 
 def logarithm_transform(x):
@@ -212,6 +213,27 @@ def eval_wrapper(f, eval_file=None):
                       time_end - time_start, file=fl, sep='\t')
         return y
     return eval_wrapper_f
+
+
+def timeout(f, time):
+    def run_f_and_save_result(queue, *args, **kwargs):
+        result = f(*args, **kwargs)
+        queue.put(result)
+
+    @wraps(f)
+    def timeout_wrapper(*args, **kwargs):
+        q = Queue()
+        p = Process(target=run_f_and_save_result, name=f.__name__,
+                    args=(q, *args), kwargs=kwargs)
+        p.start()
+        p.join(time)
+        if p.is_alive():
+            p.terminate()
+            p.join()
+        if q.empty():
+            return None
+        return q.get()
+    return timeout_wrapper
 
 
 class WeightedMetaArray(np.ndarray):

@@ -138,7 +138,7 @@ local_maxiter = None
 # Additional constants
 P_IDS = {'n': PopulationSizeVariable, 't': TimeVariable,
          'm': MigrationVariable, 'd': DynamicVariable, 's': FractionVariable,
-         'f': FractionVariable}
+         'f': FractionVariable, 'p': FractionVariable}
 LONG_NAME_2_SHORT = {"log-likelihood": "logLL",
                      "aic score": "aic",
                      "claic score": "claic"}

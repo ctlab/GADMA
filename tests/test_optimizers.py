@@ -132,9 +132,17 @@ class TestBaseOptClass(unittest.TestCase):
     def test_evaluate_with_none_and_not_implemented_erros(self):
         def f(x):
             return None
+        def g(x):
+            return 10
         opt = Optimizer()
         opt.maximize = True
-        self.assertEqual(opt.evaluate(f, []), -np.inf)
+        self.assertEqual(opt.evaluate(f, []), np.inf)
+        opt.maximize = False
+        self.assertEqual(opt.evaluate(f, []), np.inf)
+        opt.maximize = True
+        self.assertEqual(opt.evaluate(g, []), -10)
+        opt.maximize = False
+        self.assertEqual(opt.evaluate(g, []), 10)
 
         self.assertRaises(NotImplementedError, opt.valid_restore_file, 'file')
         self.assertRaises(NotImplementedError, opt.optimize, f, [])
