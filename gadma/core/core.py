@@ -5,18 +5,12 @@ from .draw_and_generate_code import print_runs_summary
 from .core_run import CoreRun
 from .shared_dict import SharedDictForCoreRun
 
-from functools import partial
-import numpy as np
 import os
 import sys
 
 from datetime import datetime
-import operator
 import multiprocessing
-import signal
-from multiprocessing import Manager, Pool
-import math
-import warnings
+from multiprocessing import Pool
 import time
 import traceback
 
@@ -73,7 +67,7 @@ def main():
 
     # Data reading
     print("\nData reading")
-    data = settings_storage.read_data()
+    settings_storage.read_data()
     print(f"Number of populations: {settings_storage.number_of_populations}")
     print(f"Projections: {settings_storage.projections}")
     print(f"Population labels: {settings_storage.population_labels}")
@@ -82,7 +76,7 @@ def main():
 
     if settings_storage.directory_with_bootstrap is not None:
         print("\nBootstrap data reading")
-        boot_data = settings_storage.read_bootstrap_data()
+        settings_storage.read_bootstrap_data()
         print(f"Number of files found: "
               f"{len(settings_storage.bootstrap_data)}")
         print(f"{bcolors.OKGREEN}--Successful bootstrap data reading--"
@@ -128,9 +122,9 @@ def main():
         for r in results:
             try:
                 r.get(0)
-            except multiprocessing.TimeoutError as e:
+            except multiprocessing.TimeoutError:
                 all_finished = False
-            except Exception as e:
+            except Exception:
                 pool.terminate()
                 print(f"{bcolors.FAIL}Main run failed due to following "
                       f"exception:{bcolors.ENDC}", file=sys.stderr)

@@ -1,5 +1,5 @@
-from ..utils import WeightedMetaArray
-from ..engines import get_engine
+from ..utils import WeightedMetaArray, is_pickleable
+from ..engines import Engine
 import copy
 from multiprocessing import Manager
 from functools import partial
@@ -50,8 +50,6 @@ class SharedDict(object):
     def _put_new_model_for_process(self, process, group, model, key=None):
         if key is None:
             key = self.default_key(group)
-        new_value = self.get_value(model, key)
-
         copy_dict = dict(self.dict)
         try:
             process_dict = OrderedDict(copy_dict[process])
@@ -216,9 +214,14 @@ class SharedDictForCoreRun(SharedDict):
         :param engine: Engine with dem. model and data.
         :param x: Values of dem. model parameters.
         :param y: Value of fitness defined by `group`.
+
+        :note: Model from engine could be lost if it is unpickleable
         """
         if not isinstance(y, dict):
             y = OrderedDict({group: y})
+        if isinstance(engine, Engine) and not is_pickleable(engine.model):
+            engine = copy.deepcopy(engine)
+            super(Engine, engine).__setattr__("model", None)
         # print(type(x), x)
         if isinstance(x, WeightedMetaArray):
             return (engine, (x, x.metadata), y)
@@ -250,7 +253,7 @@ class SharedDictForCoreRun(SharedDict):
         else:
             ff = y[group]
         if ff is None:
-            return ff
+            return sign * np.inf
         return sign * ff
 
     def _put_new_model_for_process(self, process, group, model, key=None):

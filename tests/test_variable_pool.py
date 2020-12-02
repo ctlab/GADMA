@@ -4,6 +4,8 @@ from gadma import *
 
 import numpy as np
 import pickle
+import os
+import copy
 
 class TestVariablePool(unittest.TestCase):
     def test_init(self):

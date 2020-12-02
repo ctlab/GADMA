@@ -5,9 +5,11 @@ import numpy as np
 import copy
 import shutil
 
+import gadma
 from gadma.cli.arg_parser import ArgParser, get_settings
 from gadma.cli import SettingsStorage
 from gadma.cli import settings as default_settings
+from gadma.utils import StdAndFileLogger
 from gadma import *
 from gadma.core.shared_dict import SharedDict, SharedDictForCoreRun
 

@@ -1,1 +1,1 @@
-from .data import DataHolder, SFSDataHolder, VCFDataHolder
+from .data import DataHolder, SFSDataHolder, VCFDataHolder  # NOQA

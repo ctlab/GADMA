@@ -1,5 +1,9 @@
 import unittest
 from gadma import *
+from gadma.engines import register_engine, Engine
+from gadma.models import Model
+import os
+import numpy as np
 
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")

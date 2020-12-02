@@ -1,6 +1,7 @@
 import unittest
 import gadma
 import sys
+import os
 import gadma
 from gadma import *
 import itertools
@@ -31,13 +32,13 @@ class TestConfidenceIntervals(unittest.TestCase):
             with open(params_file, 'w') as f:
                 f.write(f"p0 = {p0}\n")
                 if engine.id == 'dadi':
-                    f.write(f"pts = [5, 10, 15]")
+                    f.write(f"pts = [4, 6, 8]")
                     jobs = 4
             sys.argv = ["gadma-run_ls_on_boot_data",  "-b", dir_boot,
                         "-d", model_name, "-o", output_dir, "-p", params_file,
                         "-j", str(jobs)]
             try:
-                for opt in ['optimize_lbfgsb', 'log', 'powell']: #all_local_optimizers():
+                for opt in ['optimize_lbfgsb', 'log']: #all_local_optimizers():
                     sys.argv.extend(["--opt", opt])
                     gadma.run_ls_on_boot_data.main()
                     gadma.run_ls_on_boot_data.main()

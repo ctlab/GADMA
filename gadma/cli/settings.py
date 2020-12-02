@@ -132,6 +132,9 @@ X_init = None
 Y_init = None
 mutation_rate = None
 
+global_maxiter = None
+local_maxiter = None
+
 # Additional constants
 P_IDS = {'n': PopulationSizeVariable, 't': TimeVariable,
          'm': MigrationVariable, 'd': DynamicVariable, 's': FractionVariable,

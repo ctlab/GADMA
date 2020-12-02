@@ -5,8 +5,12 @@ from .test_optimizers import get_func, get_1pop_sim_example_1
 from .test_optimizers import get_1pop_sim_example_2, get_2pop_sim_example_1
 from .test_data import YRI_CEU_DATA
 import gadma
+from gadma.utils import custom_generator, WeightedMetaArray
+from gadma.optimizers import GeneticAlgorithm, register_global_optimizer
 import importlib
 import pickle
+import os
+import sys
 
 EXAMPLE_FOLDER = os.path.join(os.path.dirname(__file__), "test_data")
 EXAMPLE_DATA = os.path.join(EXAMPLE_FOLDER, "YRI_CEU.fs")
@@ -209,7 +213,7 @@ class TestGeneticAlg(unittest.TestCase):
     def run_example(self, engine_id, example_func, not_bayesopt=False):
         args = ()
         if engine_id == 'dadi':
-            args = ([40,50,60],)
+            args = ([4,6,8],)
         f, variables = example_func(engine_id, args)
 
         report_file = 'report_file'
@@ -223,7 +227,7 @@ class TestGeneticAlg(unittest.TestCase):
                 open(report_file, 'w').close()
                 open(eval_file, 'w').close()
                 res = opt.optimize(f, variables, args=args,
-                                   num_init=5, maxeval=20, maxiter=10,
+                                   num_init=2, maxeval=10, maxiter=4,
                                    report_file=report_file, verbose=1,
                                    save_file=save_file, eval_file=eval_file)
                 self.assertEqual(res.y, f(res.x, *args))
@@ -233,7 +237,7 @@ class TestGeneticAlg(unittest.TestCase):
                 with open(eval_file) as fl:
                     for line in fl:
                         int_lines += 1
-                self.assertTrue(int_lines <= 20)
+                self.assertTrue(int_lines <= 10)
 
     def test_1pop_example_1(self):
         for engine in all_engines():
@@ -351,7 +355,7 @@ class TestInference(unittest.TestCase):
         for engine in all_engines():
             with self.subTest(engine=engine.id):
                 if engine.id == "dadi":
-                    args = ([5, 10, 15],)
+                    args = ([4, 6, 8],)
                 else:
                     args = ()
                 filename = f"demographic_model_{engine.id}_YRI_CEU.py"
@@ -376,9 +380,12 @@ class TestInference(unittest.TestCase):
     def test_inference_funcs(self):
         dirname = os.path.join(EXAMPLE_FOLDER, 'YRI_CEU_test_boots')
         for engine in all_engines():
+            projections = (4, 4)
             data = engine.read_data(SFSDataHolder(os.path.join(EXAMPLE_FOLDER,
-                                                               'YRI_CEU.fs')))
-            boots = gadma.Inference.load_data_from_dir(dirname, engine.id)
+                                                               'YRI_CEU.fs'),
+                                                  projections=projections))
+            boots = gadma.Inference.load_data_from_dir(dirname, engine.id,
+                                                       projections=projections)
 
             p0 = [1.881, 0.0710, 1.845, 0.911, 0.355, 0.111]
             filename = os.path.join(
@@ -389,7 +396,7 @@ class TestInference(unittest.TestCase):
             func = module.model_func
 
             if engine.id == 'dadi':
-                pts = [20, 30, 40]
+                pts = [4, 6, 8]
                 c1 = gadma.Inference.get_claic_score(func, boots, p0, data,
                                                      engine.id, pts=pts)
                 c2 = gadma.Inference.get_claic_score(func, boots, p0, data,
@@ -414,7 +421,7 @@ class TestInference(unittest.TestCase):
                 self.assertRaises(Exception, gadma.Inference.get_claic_score,
                                   func, boots, p0, data, None, 1e-2)
             elif engine.id == 'moments':
-                pts = [20, 30, 40]
+                pts = [4, 6, 8]
                 c1 = gadma.Inference.get_claic_score(func, boots, p0, data,
                                                 engine.id, pts=pts)
                 c2 = gadma.Inference.get_claic_score(func, boots, p0, data,

@@ -16,9 +16,10 @@ def _print_dadi_func(model, values):
     """
     from ..engines import DadiEngine  # to avoid cross import
     if isinstance(model, CustomDemographicModel):
+        path_repr = repr(sys.modules[model.function.__module__].__file__)
         ret_str = "import importlib.util\n\n"
-        ret_str += "spec = importlib.util.spec_from_file_location('module',"\
-                   f" '{sys.modules[model.function.__module__].__file__}')\n"
+        ret_str += "spec = importlib.util.spec_from_file_location('module', "\
+                   f"{path_repr})\n"
         ret_str += "module = importlib.util.module_from_spec(spec)\n"
         ret_str += "spec.loader.exec_module(module)\n"
         ret_str += f"{FUNCTION_NAME} = module.model_func\n\n"
@@ -94,7 +95,7 @@ def _is_fs_via_dadi(data_holder):
     try:
         data = dadi.Spectrum.from_file(data_holder.filename)
         return data
-    except Exception as e:
+    except Exception:
         return None
 
 
@@ -109,7 +110,7 @@ def _print_load_data(data_holder, is_fs, mode='dadi'):
     ret_str = ""
     fname = data_holder.filename
     if is_fs is None:
-        ret_str += f"dd = {mode}.Misc.make_data_dict('{fname}')\n"
+        ret_str += f"dd = {mode}.Misc.make_data_dict({repr(fname)})\n"
         ret_str += f"data = {mode}.Spectrum.from_data_dict"
         if (data_holder.population_labels is None or
                 data_holder.projections is None or
@@ -122,7 +123,7 @@ def _print_load_data(data_holder, is_fs, mode='dadi'):
         ret_str += f"(dd, {lbls}, {size}, polarized={outg})\n"
     else:
         data = is_fs
-        ret_str += f"data = {mode}.Spectrum.from_file('{fname}')\n"
+        ret_str += f"data = {mode}.Spectrum.from_file({repr(fname)})\n"
         if (data_holder.projections is not None and
                 list(data.sample_sizes) != list(data_holder.projections)):
             size = data_holder.projections

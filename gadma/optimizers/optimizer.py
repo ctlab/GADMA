@@ -10,7 +10,6 @@ from ..utils import ensure_file_existence, check_file_existence,\
                     variables_values_repr
 from ..utils import logarithm_transform, exponent_transform, ident_transform
 import pickle
-import warnings
 
 
 class Optimizer(object):
@@ -136,8 +135,8 @@ class Optimizer(object):
             if not linear_constrain.fits(x_tr):
                 x_tr, success = linear_constrain.try_to_transform(x_tr)
                 if not success:
-                    warnings.warn(f"HERE IS A LITTLE PROBLEM. PLEASE CHECK "
-                                  f"IT: {x}, {x_tr}")
+                    # warnings.warn(f"HERE IS A LITTLE PROBLEM. PLEASE CHECK "
+                    #               f"IT: {x}, {x_tr}")
                     return self.sign * np.inf
         y = f(x_tr, *args)
         if y is None or np.isnan(y):

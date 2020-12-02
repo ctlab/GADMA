@@ -1,7 +1,7 @@
 from . import Engine
 from ..models import DemographicModel, StructureDemographicModel,\
-                     CustomDemographicModel, Epoch, Split
-from ..utils import DynamicVariable, DiscreteVariable, cache_func
+                     CustomDemographicModel
+from ..utils import DiscreteVariable, cache_func
 from .. import SFSDataHolder
 from .. import dadi_available, moments_available
 from ..code_generator import id2printfunc
@@ -381,7 +381,6 @@ def _read_data_sfs_type(module, data_holder):
     : type  data_holder: gadma.data.DataHolder
     """
     sfs = module.Spectrum.from_file(data_holder.filename)
-    ns = np.array(sfs.shape) - 1
 
     sfs = _check_missing_population_labels(sfs, data_holder.population_labels,
                                            data_holder.filename)

@@ -2,6 +2,7 @@ import unittest
 
 from gadma import *
 import gadma
+import numpy as np
 
 
 class TestVariables(unittest.TestCase):
@@ -60,7 +61,7 @@ class TestVariables(unittest.TestCase):
         self.assertRaises(Exception, DynamicVariable, 'd', domain=[5, 'Sud'])
         self.assertRaises(Exception, d.get_func_from_value, 100)
 
-        dyn = gadma.variables.Dynamic()
+        dyn = gadma.utils.variables.Dynamic()
         self.assertRaises(NotImplementedError, dyn._inner_func, 1, 2, 0.2)
         self.assertRaises(NotImplementedError, dyn.__str__)
 
@@ -73,8 +74,8 @@ class TestVariables(unittest.TestCase):
         y1 = 1
         y2 = 5
         t = 3
-        for cls in [gadma.variables.Exp, gadma.variables.Lin,
-                    gadma.variables.Sud]:
+        for cls in [gadma.utils.variables.Exp, gadma.utils.variables.Lin,
+                    gadma.utils.variables.Sud]:
             el = cls()
             print(el)
             func = el._inner_func(y1, y2, t)

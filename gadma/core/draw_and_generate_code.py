@@ -1,16 +1,14 @@
-from .. import matplotlib, moments, dadi, Image
+from .. import matplotlib, Image
 from .. import matplotlib_available, PIL_available, moments_available
-from ..models import EpochDemographicModel, Split
-from ..engines import get_engine, all_engines
-from ..utils import bcolors, WeightedMetaArray
+from ..models import EpochDemographicModel, CustomDemographicModel
+from ..engines import all_engines, Engine
+from ..utils import bcolors
 
 import warnings
 import os
-import warnings
 import io
 from datetime import datetime
 import copy
-import numpy as np
 
 
 def draw_plots_to_file(x, engine, settings, filename, fig_title):
@@ -175,6 +173,14 @@ def print_runs_summary(start_time, shared_dict, settings):
         for model in sorted_models:
             index, info = model
             engine, x, y_vals = info
+            # Check if engine has model, if not then it was unpickleable and
+            # we should restore it.
+            if engine.model is None:
+                default_model = settings.get_model()
+                assert (
+                    isinstance(default_model, CustomDemographicModel)
+                ), f"default model is instance of {default_model.__class__}"
+                super(Engine, engine).__setattr__("model", default_model)
             # Get theta and N ancestral
             theta = engine.get_theta(x, *settings.get_engine_args())
             Nanc = engine.get_N_ancestral_from_theta(theta)

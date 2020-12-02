@@ -1,6 +1,6 @@
 Input file : tests/test_data/small_1pop.fs
 Output directory: tests/output_dir
-Projections : 6
+Projections : 4
 Directory with bootstrap: tests/test_data/small_1_pop_bootstrap
 Linked SNP's : True
 Engine : dadi
@@ -14,7 +14,8 @@ Eps: 1
 Stuck generation number: 5
 Number of repeats : 1
 Number of processes: 1
-
+global_maxiter: 2
+local_maxiter: 1
 
 
 

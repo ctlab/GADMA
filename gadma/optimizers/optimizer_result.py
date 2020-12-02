@@ -1,7 +1,6 @@
 from scipy import optimize
 import numpy as np
 import copy
-from .. import GPyOpt
 
 
 class OptimizerResult(object):

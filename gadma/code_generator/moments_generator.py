@@ -16,13 +16,13 @@ def _print_moments_func(model, values, dt_fac):
     :type model: :class:`gadma.models.model.Model`
     :param values: List of values for parameters of model.
     """
-    import moments
     from ..engines import MomentsEngine  # to avoid cross import
 
     if isinstance(model, CustomDemographicModel):
+        path_repr = repr(sys.modules[model.function.__module__].__file__)
         ret_str = "import importlib.util\n\n"
-        ret_str += "spec = importlib.util.spec_from_file_location('module',"\
-                   f" '{sys.modules[model.function.__module__].__file__}')\n"
+        ret_str += "spec = importlib.util.spec_from_file_location('module', "\
+                   f"{path_repr})\n"
         ret_str += "module = importlib.util.module_from_spec(spec)\n"
         ret_str += "spec.loader.exec_module(module)\n"
         ret_str += f"{FUNCTION_NAME} = module.model_func\n\n"
@@ -81,7 +81,6 @@ def _print_moments_func(model, values, dt_fac):
             kwargs = {}
             for x, y in kwargs_with_vars.items():
                 if isinstance(y, np.ndarray):  # migration
-                    l_s = "m = np.array(["
                     rows = []
                     for i in range(y.shape[0]):
                         elems = []
@@ -153,7 +152,7 @@ def _is_fs_via_moments(data_holder):
     try:
         data = moments.Spectrum.from_file(data_holder.filename)
         return data
-    except Exception as e:
+    except Exception:
         return None
 
 

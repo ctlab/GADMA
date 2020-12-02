@@ -1,5 +1,8 @@
 import unittest
 from gadma import *
+from gadma.utils.utils import CacheInfo, WeightedMetaArray, logarithm_transform
+from gadma.utils.distributions import *
+from gadma.utils import *
 import numpy as np
 
 

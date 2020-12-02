@@ -1,8 +1,7 @@
-from . import Engine, register_engine, get_engine
+from . import register_engine, get_engine
 from .dadi_moments_common import DadiOrMomentsEngine
-from ..models import DemographicModel, CustomDemographicModel, Epoch, Split,\
-                     BinaryOperation
-from ..utils import DynamicVariable, Variable
+from ..models import CustomDemographicModel, Epoch, Split
+from ..utils import DynamicVariable
 from .. import SFSDataHolder, dadi_available
 
 

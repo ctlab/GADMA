@@ -7,12 +7,10 @@ from ..engines import get_engine, MomentsEngine
 from ..models import StructureDemographicModel, CustomDemographicModel
 from ..optimizers import get_local_optimizer, get_global_optimizer
 from ..optimizers import LinearConstrain
-from ..utils import ensure_dir_existence, ensure_file_existence,\
-                    check_dir_existence, check_file_existence, abspath,\
-                    custom_generator
+from ..utils import check_dir_existence, check_file_existence, abspath,\
+    module_name_from_path
 from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable,\
-                    ContinuousVariable
-
+    ContinuousVariable
 import warnings
 import importlib.util
 import sys
@@ -60,7 +58,8 @@ class SettingsStorage(object):
                      'print_models_code_every_n_iteration', 'n_elitism',
                      'draw_models_every_n_iteration', 'size_of_generation',
                      'number_of_repeats', 'number_of_processes',
-                     'number_of_populations']
+                     'number_of_populations', 'global_maxiter',
+                     'local_maxiter']
         float_attrs = ['theta0', 'time_for_generation', 'eps',
                        'const_of_time_in_drawing', 'vmin', 'min_n', 'max_n',
                        'min_t', 'max_t', 'min_m', 'max_m',
@@ -309,10 +308,10 @@ class SettingsStorage(object):
                 setattr(self.data_holder, name, value)
         # 3.3 For engine we need check it exists
         elif name == 'engine':
-            engine_obj = get_engine(value)
+            get_engine(value)
         # 3.4 For local_optimizer we need check it existence
         elif name == 'local_optimizer':
-            optimizer_obj = get_local_optimizer(value)
+            get_local_optimizer(value)
         # 3.5 If we change engine or pts, we should check for warning if pts
         # would be ignored
         elif name in ['engine', 'pts']:
@@ -341,7 +340,7 @@ class SettingsStorage(object):
                     raise ValueError("Length of fractions ({value}) must be "
                                      "equal to 3 (old,mut,cros) or 4 "
                                      "(old,mut,cros,rand). Got length of "
-                                     f"{len(values)}")
+                                     f"{len(value)}")
                 if len(fractions) == 3:
                     if sum(value) > 1:
                         raise ValueError('Sum of fractions (when 3 fractions'
@@ -432,10 +431,11 @@ class SettingsStorage(object):
         # 3.10 If we set custom filename with model we should check it is
         # valid python code
         if name == "custom_filename" and value is not None:
-            spec = importlib.util.spec_from_file_location("module", value)
+            module_name = module_name_from_path(value)
+            spec = importlib.util.spec_from_file_location(module_name, value)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
-            sys.modules['module'] = module
+#            sys.modules[module_name] = module
             if hasattr(module, "model_func"):
                 func_name = "model_func"
             else:
@@ -444,7 +444,6 @@ class SettingsStorage(object):
             model_func_value = getattr(module, func_name)
             if not callable(model_func_value):
                 raise ValueError(f"Function {func_name} should be callable.")
-            self.__setattr__("model_func", model_func_value)
 
 #        if name in bounds_attrs and self.custom_filename is None:
 #            msg = f"Setting {name} is set before custom_filename is set."
@@ -485,8 +484,6 @@ class SettingsStorage(object):
                 if not isinstance(mask, list):
                     raise ValueError("Migration masks option should be set to "
                                      "a list with lists (masks).")
-                message = "Masks should consist of 0 and 1"\
-                          f" only. Mask number {i}: {mask}"
                 mask_size = None
                 for line in mask:
                     if not isinstance(line, list):
@@ -574,7 +571,6 @@ class SettingsStorage(object):
                             bound.append(domain[0])
                         else:
                             bound.append(domain[1])
-                    value = bound
                     return bound
             if hasattr(settings, name):
                 return getattr(settings, name)
@@ -615,7 +611,7 @@ class SettingsStorage(object):
                 try:
                     if not list(self_value) == list(other_value):
                         return False
-                except TypeError as e:
+                except TypeError:
                     return False
             else:
                 if not self_value == other_value:
@@ -674,7 +670,6 @@ class SettingsStorage(object):
         set_of_seen_files = set()
         filenames = []
         for filename in os.listdir(dirname):
-            extention = '.' + filename.split('.')[-1]
             filename_without_ext = '.'.join(filename.split('.')[:-1])
             if filename_without_ext in set_of_seen_files:
                 continue
@@ -1005,8 +1000,17 @@ class SettingsStorage(object):
                                                            var_classes,
                                                            names):
                 variables.append(var_cls(name, domain=[low_bound, upp_bound]))
-            return CustomDemographicModel(self.model_func, variables,
+            if self.model_func is not None:
+                return CustomDemographicModel(self.model_func, variables,
+                                              gen_time, theta0, mut_rate)
+            module_name = module_name_from_path(self.custom_filename)
+            spec = importlib.util.spec_from_file_location(module_name,
+                                                          self.custom_filename)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            return CustomDemographicModel(module.model_func, variables,
                                           gen_time, theta0, mut_rate)
+
         elif self.custom_filename is None and self.model_func is not None:
             return CustomDemographicModel(self.model_func, None,
                                           gen_time, theta0, mut_rate)

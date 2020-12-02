@@ -3,11 +3,14 @@ import unittest
 from .test_data import YRI_CEU_DATA
 from gadma import *
 import gadma
-from gadma import *
+from gadma.core import SharedDictForCoreRun
+from gadma.utils import StdAndFileLogger
 import dadi
 import copy
 import pickle
 import shutil
+import os
+import sys
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
 
@@ -100,12 +103,14 @@ class TestRestore(unittest.TestCase):
         shared_dict = gadma.shared_dict.SharedDictForCoreRun(multiprocessing=False)
         if os.path.exists(out_dir):
             rmdir(out_dir)
-        for ls_opt in all_local_optimizers():
+        for ls_opt in ["None", "BFGS_log", "Powell"]: #all_local_optimizers():
             if os.path.exists(settings.output_directory):
                 rmdir(settings.output_directory)
             if os.path.exists(out_dir):
                 rmdir(out_dir)
-            settings.local_optimizer = ls_opt.id
+            settings.local_optimizer = ls_opt #.id
+            settings.local_maxiter = 1
+            settings.silence = True
             core_run = CoreRun(0, shared_dict, settings)
             res1 = core_run.run()
 
@@ -136,7 +141,9 @@ class TestRestore(unittest.TestCase):
             shutil.rmtree(outdir)
         with open(params_file, 'w') as fl:
             fl.write("Linked SNP's: False\n"
-                     "Silence: True")
+                     "Silence: True\n"
+                     "global_maxiter: 2\n"
+                     "local_maxiter: 1\n")
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file,
                     '--output', outdir]
         try:
@@ -157,7 +164,9 @@ class TestRestore(unittest.TestCase):
                      "Projections: [4,4]\n"
                      "Theta0: 1\n"
                      "Relative parameters: True\n"
-                     "Silence: True")
+                     "Silence: True\n"
+                     "global_maxiter: 2\n"
+                     "local_maxiter: 1\n")
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file,
                     '--only_models']
         try:
@@ -181,7 +190,9 @@ class TestRestore(unittest.TestCase):
                      "Sequence length: 4.04e6\n"
                      "Split fractions: False\n"
                      "Projections: 4,4\n"
-                     "Silence: True")
+                     "Silence: True\n"
+                     "global_maxiter: 2\n"
+                     "local_maxiter: 1\n")
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
         try:
             core.main()
@@ -197,7 +208,9 @@ class TestRestore(unittest.TestCase):
             fl.write("Stuck generation number: 2\n"
                      "Engine: dadi\n"
                      "Projections: 4,4\n"
-                     "Silence: True")
+                     "Silence: True\n"
+                     "global_maxiter: 2\n"
+                     "local_maxiter: 1\n")
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
         try:
             gadma.PIL_available = False
@@ -217,7 +230,9 @@ class TestRestore(unittest.TestCase):
             fl.write("Stuck generation number: 2\n"
                      "Projections: 4,4\n"
                      "Initial structure: 2, 1\n"
-                     "Silence: True")
+                     "Silence: True\n"
+                     "global_maxiter: 2\n"
+                     "local_maxiter: 1\n")
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
         try:
             gadma.PIL_available = False
@@ -239,7 +254,9 @@ class TestRestore(unittest.TestCase):
             fl.write("Stuck generation number: 2\n"
                      "Projections: 4,4\n"
                      "Migration masks: [[0, 1], [0, 0]]\n"
-                     "Silence: True")
+                     "Silence: True\n"
+                     "global_maxiter: 2\n"
+                     "local_maxiter: 1\n")
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
 
         try:
@@ -301,7 +318,9 @@ class TestRestore(unittest.TestCase):
             fl.write("Stuck generation number: 2\n"
                      "Projections: 4,4\n"
                      "Migration masks: [[0, 1], [0, 0]]\n"
-                     "Silence: True")
+                     "Silence: True\n"
+                     "global_maxiter: 2\n"
+                     "local_maxiter: 1\n")
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
         try:
             gadma.PIL_available = False
