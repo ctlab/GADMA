@@ -587,14 +587,14 @@ class SettingsStorage(object):
                         for x in p_ids:
                             settings.P_IDS[x[0].lower()]
                             if not x.isidentifier() or iskeyword(x):
-                                raise KeyError
+                                raise IndexError
                         object.__setattr__(self,
                                            "parameter_identifiers", p_ids)
 #                        print(f"Found parameter identifiers in file: {p_ids}")
                         return p_ids
                     except IndexError:  # two commas will create x = "" (x[0])
                         pass
-                    except KeyError:  # not in P_IDS or is not python ident.
+                    except KeyError:  # not in P_IDS
                         pass
             elif ((name == "lower_bound" or name == "upper_bound") and
                   (self.custom_filename is not None or

@@ -20,7 +20,7 @@ class DemographicModel(Model):
     """
     def __init__(self, gen_time=None, theta0=None, mu=None,
                  linear_constrain=None):
-        self.gen_time = None
+        self.gen_time = gen_time
         self.Nref = 1.0
         self.theta0 = theta0  # mutation flux = 4 * mu * length
         self.mu = mu  # mutation rate per base per generation
@@ -46,14 +46,16 @@ class DemographicModel(Model):
             values = [val for var, val in self.var2value(values).items()]
         return variables_values_repr(self.variables, values)
 
-    def translate_units(self, values, Nanc, Tg=1):
+    def translate_units(self, values, Nanc):
         """
         Translates values from genetic units to physical.
 
         :param values: Values of parameters.
         :param Nanc: Size of ancestral population.
-        :param Tg: Time per generation.
         """
+        Tg = self.gen_time
+        if Tg is None:
+            Tg = 1
         var2value = self.var2value(values)
         translated_values = list()
         for var, val in var2value.items():

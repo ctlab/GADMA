@@ -395,8 +395,8 @@ class TestInference(unittest.TestCase):
                     num_init=num_init, X_init=X_init, Y_init=Y_init,
                     gen_size=10, ga_maxiter=5, ls_maxiter=1,
                     verbose=1, callback=None,
-                    save_file='save_file', eval_file='eval_file',
-                    report_file='report_file')
+                    save_file='save_file', eval_file='eval_file',)
+#                    report_file='report_file')
 
     def test_inference_claic_funcs(self):
         dirname = os.path.join(EXAMPLE_FOLDER, 'YRI_CEU_test_boots')
