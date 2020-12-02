@@ -788,6 +788,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             # Check if we improve the result
             if self.sign * (y_best - Y_gen_cor[0]) >= self.eps:
                 n_impr_gen = n_gen
+            if self.sign * (y_best - Y_gen_cor[0]) > 0:
                 x_best = X_gen_cor[0]
                 y_best = Y_gen_cor[0]
 
