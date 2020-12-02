@@ -2,7 +2,7 @@ from .cli import SettingsStorage
 from .optimizers import GlobalOptimizerAndLocalOptimizer
 from .data import SFSDataHolder
 from .engines import get_engine
-from .utils import ContinuousVariable
+from .utils import ContinuousVariable, timeout
 from . import utils
 import warnings
 import numpy as np
@@ -110,7 +110,7 @@ def get_claic_score(func_ex, all_boot, p0, data, engine=None, args=(),
 
 def optimize_ga(data, model_func, engine, args=(),
                 lower_bound=None, upper_bound=None, p_ids=None,
-                X_init=None, Y_init=None, num_init=50,
+                X_init=None, Y_init=None, maxtime_per_eval=None, num_init=50,
                 gen_size=10, mut_strength=0.2, const_mut_strength=1.1,
                 mut_rate=0.2, const_mut_rate=1.2, eps=1e-2, n_stuck_gen=100,
                 n_elitism=2, p_mutation=0.3, p_crossover=0.3, p_random=0.2,
@@ -155,6 +155,8 @@ def optimize_ga(data, model_func, engine, args=(),
     :type X_init: list of lists
     :param Y_init: value of log-likelihood for values in X_init.
     :type Y_init: list
+    :param maxtime_per_eval: Maximum time per log-likelihood evaluation.
+    :type maxtime_per_eval: int
     :param num_init: Number of initial points to start Genetic algorithm.
     :type num_init: int
     :param gen_size: Size of generation of genetic algorithm. That is the
@@ -243,6 +245,8 @@ def optimize_ga(data, model_func, engine, args=(),
     engine.set_data(data)
 
     f = engine.evaluate
+    if maxtime_per_eval is not None:
+        f = timeout(f, maxtime_per_eval)
     variables = model.variables
 
     global_optimizer = settings.get_global_optimizer()

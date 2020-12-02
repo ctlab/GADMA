@@ -16,6 +16,7 @@ import importlib.util
 import sys
 import copy
 import numbers
+from keyword import iskeyword
 
 HOME_DIR = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 PARAM_TEMPLATE = os.path.join(HOME_DIR, "params_template")
@@ -37,6 +38,39 @@ DEPRECATED_IDENTIFIERS = ["multinom", "flush_delay",
                           "mean_mutation_rate_for_hc",
                           "const_for_mutation_rate_for_hc",
                           "stop_iteration_for_hc"]
+
+
+def get_variables(parameter_identifiers, lower_bound, upper_bound):
+    assert not (
+        parameter_identifiers is None and
+        lower_bound is None and
+        upper_bound is None
+    ), "Either par. identifiers nor lower + upper bounds should be set."
+    assert (
+        (lower_bound is None and upper_bound is None) or
+        (lower_bound is not None and upper_bound is not None)
+    ), "Both lower and upper bounds should be set or both equal to None. "\
+       f"{lower_bound} {upper_bound}"
+    var_classes = list()
+    if parameter_identifiers is not None:
+        for p_id in parameter_identifiers:
+            var_classes.append(settings.P_IDS[p_id[0].lower()])
+    else:
+        for _ in lower_bound:
+            var_classes.append(ContinuousVariable)
+    names = [f"var{i}" for i in range(len(var_classes))]
+    if parameter_identifiers is not None:
+        p_ids = parameter_identifiers
+        if len(set(p_ids)) == len(p_ids):
+            names = p_ids
+    variables = list()
+    for i, (var_cls, name) in enumerate(zip(var_classes, names)):
+        if lower_bound is not None:
+            variables.append(var_cls(name, domain=[lower_bound[i],
+                                                   upper_bound[i]]))
+        else:
+            variables.append(var_cls(name))
+    return variables
 
 
 class SettingsStorage(object):
@@ -552,13 +586,15 @@ class SettingsStorage(object):
                         p_ids = [x.strip() for x in p_ids]
                         for x in p_ids:
                             settings.P_IDS[x[0].lower()]
+                            if not x.isidentifier() or iskeyword(x):
+                                raise KeyError
                         object.__setattr__(self,
                                            "parameter_identifiers", p_ids)
 #                        print(f"Found parameter identifiers in file: {p_ids}")
                         return p_ids
                     except IndexError:  # two commas will create x = "" (x[0])
                         pass
-                    except KeyError:  # not in P_IDS
+                    except KeyError:  # not in P_IDS or is not python ident.
                         pass
             elif ((name == "lower_bound" or name == "upper_bound") and
                   (self.custom_filename is not None or
@@ -982,24 +1018,8 @@ class SettingsStorage(object):
                 self.model_func is not None) and
                 self.lower_bound is not None and
                 self.upper_bound is not None):
-            var_classes = list()
-            if self.parameter_identifiers is not None:
-                for p_id in self.parameter_identifiers:
-                    var_classes.append(settings.P_IDS[p_id[0].lower()])
-            else:
-                for _ in self.lower_bound:
-                    var_classes.append(ContinuousVariable)
-            names = [f"var{i}" for i in range(len(var_classes))]
-            if self.parameter_identifiers is not None:
-                p_ids = self.parameter_identifiers
-                if len(set(p_ids)) == len(p_ids):
-                    names = p_ids
-            variables = list()
-            for low_bound, upp_bound, var_cls, name in zip(self.lower_bound,
-                                                           self.upper_bound,
-                                                           var_classes,
-                                                           names):
-                variables.append(var_cls(name, domain=[low_bound, upp_bound]))
+            variables = get_variables(self.parameter_identifiers,
+                                      self.lower_bound, self.upper_bound)
             if self.model_func is not None:
                 return CustomDemographicModel(self.model_func, variables,
                                               gen_time, theta0, mut_rate)

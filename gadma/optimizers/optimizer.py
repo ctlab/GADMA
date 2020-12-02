@@ -107,9 +107,9 @@ class Optimizer(object):
         :param report_file: Filename to save report.
         """
         @wraps(f)
-        def wrapper(x):
+        def wrapper(x, *args, **kwargs):
             wrapper._counter += 1
-            y = f(x)
+            y = f(x, *args, **kwargs)
             if (verbose > 0) and (wrapper._counter % verbose == 0):
                 self.write_report(wrapper._counter, variables, x, y,
                                   report_file)
@@ -123,7 +123,8 @@ class Optimizer(object):
 
     def evaluate(self, f, x, args=(), linear_constrain=None):
         """
-        Evaluates function `f` on values `x`.
+        Evaluates function `f` on values `x` multiplied by sign
+        (-1 if maximize).
 
         :param f: Target function.
         :param x: Value of parameters of `f`.
@@ -137,10 +138,10 @@ class Optimizer(object):
                 if not success:
                     # warnings.warn(f"HERE IS A LITTLE PROBLEM. PLEASE CHECK "
                     #               f"IT: {x}, {x_tr}")
-                    return self.sign * np.inf
+                    return np.inf
         y = f(x_tr, *args)
         if y is None or np.isnan(y):
-            return self.sign * np.inf
+            return np.inf
         return self.sign * y
 
     def prepare_f_for_opt(self, f, args=(), cache=True):

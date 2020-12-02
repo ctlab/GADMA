@@ -7,9 +7,11 @@ import shutil
 
 import gadma
 from gadma.cli.arg_parser import ArgParser, get_settings
-from gadma.cli import SettingsStorage
+from gadma.cli import SettingsStorage, get_variables
 from gadma.cli import settings as default_settings
 from gadma.utils import StdAndFileLogger
+from gadma.utils import PopulationSizeVariable, MigrationVariable,\
+    TimeVariable, FractionVariable, ContinuousVariable
 from gadma import *
 from gadma.core.shared_dict import SharedDict, SharedDictForCoreRun
 
@@ -432,3 +434,41 @@ class TestCLI(unittest.TestCase):
                                         {'log-likelihood': -10, 'AIC': 100})
         d.get_models_in_group('log-likelihood', align_y_dict=True)
         d.get_models_in_group('log-likelihood', align_y_dict=False)
+
+    def test_get_variables_function(self):
+
+        def check(variables):
+            self.assertIsInstance(variables[0], PopulationSizeVariable)
+            self.assertIsInstance(variables[1], PopulationSizeVariable)
+            self.assertIsInstance(variables[2], PopulationSizeVariable)
+            self.assertIsInstance(variables[3], MigrationVariable)
+            self.assertIsInstance(variables[4], TimeVariable)
+            self.assertIsInstance(variables[5], FractionVariable)
+
+        p_ids = ['nu1', 'nu2', 'n', 'm', 't', 'p']
+        lower_bound = [1e-2, 1e-2, 1e-5, 0, 0, 0]
+        upper_bound = [10, 1, 3, 4, 6, 1]
+
+        variables = get_variables(p_ids, lower_bound, upper_bound)
+        check(variables)
+        for var, lb, ub in zip(variables, lower_bound, upper_bound):
+            self.assertEqual(var.domain[0], lb)
+            self.assertEqual(var.domain[1], ub)
+
+        variables = get_variables(p_ids, None, None)
+        check(variables)
+        for var in variables:
+            self.assertEqual(list(var.domain),
+                             list(var.__class__.default_domain))
+
+        variables = get_variables(None, lower_bound, upper_bound)
+        for var, lb, ub in zip(variables, lower_bound, upper_bound):
+            self.assertIsInstance(var, ContinuousVariable)
+            self.assertEqual(var.domain[0], lb)
+            self.assertEqual(var.domain[1], ub)
+
+        self.assertRaises(AssertionError, get_variables, None, None, None)
+        self.assertRaises(AssertionError, get_variables, p_ids,
+                          None, upper_bound)
+        self.assertRaises(AssertionError, get_variables, p_ids,
+                          lower_bound, None)
