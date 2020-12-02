@@ -3,6 +3,8 @@ import time
 import numpy as np
 import sys
 import os
+import tempfile
+import pickle
 
 
 def logarithm_transform(x):
@@ -324,6 +326,37 @@ def ensure_dir_existence(path_to_dir, check_emptiness=False):
         raise RuntimeError(f"Directory {path_to_dir} is not empty\nYou can "
                            f"write:  rm -rf {dirname}\t to remove directory.")
     return dirname
+
+
+def module_name_from_path(path):
+    """
+    Returns name for module that will be imported from given path.
+    """
+    # Remove \\ and : from windows path
+    module_name = path.strip().replace("\\", ".").replace(":", ".")
+    # Remove / from Linux path
+    module_name = module_name.replace("/", ".")
+    # Replace all .. with one . TODO replace all repeats with one dot.
+    module_name = module_name.replace("..", ".")
+    # Remove .py
+    module_name.rstrip(".py")
+    return module_name
+
+
+def is_pickleable(obj):
+    """
+    Returns True if obj could be dumped with pickle.
+    """
+    fd, path = tempfile.mkstemp()
+    try:
+        with os.fdopen(fd, 'wb') as tmp:
+            pickler = pickle.Pickler(tmp)
+            pickler.dump(obj)
+        return True
+    except pickle.PicklingError:
+        return False
+    finally:
+        os.remove(path)
 
 
 class StdAndFileLogger(object):

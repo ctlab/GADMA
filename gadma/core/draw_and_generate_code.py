@@ -1,7 +1,7 @@
 from .. import matplotlib, Image
 from .. import matplotlib_available, PIL_available, moments_available
-from ..models import EpochDemographicModel
-from ..engines import all_engines
+from ..models import EpochDemographicModel, CustomDemographicModel
+from ..engines import all_engines, Engine
 from ..utils import bcolors
 
 import warnings
@@ -173,6 +173,14 @@ def print_runs_summary(start_time, shared_dict, settings):
         for model in sorted_models:
             index, info = model
             engine, x, y_vals = info
+            # Check if engine has model, if not then it was unpickleable and
+            # we should restore it.
+            if engine.model is None:
+                default_model = settings.get_model()
+                assert (
+                    isinstance(default_model, CustomDemographicModel)
+                ), f"default model is instance of {default_model.__class__}"
+                super(Engine, engine).__setattr__("model", default_model)
             # Get theta and N ancestral
             theta = engine.get_theta(x, *settings.get_engine_args())
             Nanc = engine.get_N_ancestral_from_theta(theta)

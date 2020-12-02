@@ -19,9 +19,10 @@ def _print_moments_func(model, values, dt_fac):
     from ..engines import MomentsEngine  # to avoid cross import
 
     if isinstance(model, CustomDemographicModel):
+        path_repr = repr(sys.modules[model.function.__module__].__file__)
         ret_str = "import importlib.util\n\n"
-        ret_str += "spec = importlib.util.spec_from_file_location('module',"\
-                   f" '{sys.modules[model.function.__module__].__file__}')\n"
+        ret_str += "spec = importlib.util.spec_from_file_location('module', "\
+                   f"{path_repr})\n"
         ret_str += "module = importlib.util.module_from_spec(spec)\n"
         ret_str += "spec.loader.exec_module(module)\n"
         ret_str += f"{FUNCTION_NAME} = module.model_func\n\n"

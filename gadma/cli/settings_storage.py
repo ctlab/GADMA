@@ -7,9 +7,10 @@ from ..engines import get_engine, MomentsEngine
 from ..models import StructureDemographicModel, CustomDemographicModel
 from ..optimizers import get_local_optimizer, get_global_optimizer
 from ..optimizers import LinearConstrain
-from ..utils import check_dir_existence, check_file_existence, abspath
+from ..utils import check_dir_existence, check_file_existence, abspath,\
+    module_name_from_path
 from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable,\
-                    ContinuousVariable
+    ContinuousVariable
 import warnings
 import importlib.util
 import sys
@@ -430,10 +431,11 @@ class SettingsStorage(object):
         # 3.10 If we set custom filename with model we should check it is
         # valid python code
         if name == "custom_filename" and value is not None:
-            spec = importlib.util.spec_from_file_location("module", value)
+            module_name = module_name_from_path(value)
+            spec = importlib.util.spec_from_file_location(module_name, value)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
-            sys.modules['module'] = module
+#            sys.modules[module_name] = module
             if hasattr(module, "model_func"):
                 func_name = "model_func"
             else:
@@ -442,7 +444,6 @@ class SettingsStorage(object):
             model_func_value = getattr(module, func_name)
             if not callable(model_func_value):
                 raise ValueError(f"Function {func_name} should be callable.")
-            self.__setattr__("model_func", model_func_value)
 
 #        if name in bounds_attrs and self.custom_filename is None:
 #            msg = f"Setting {name} is set before custom_filename is set."
@@ -999,8 +1000,17 @@ class SettingsStorage(object):
                                                            var_classes,
                                                            names):
                 variables.append(var_cls(name, domain=[low_bound, upp_bound]))
-            return CustomDemographicModel(self.model_func, variables,
+            if self.model_func is not None:
+                return CustomDemographicModel(self.model_func, variables,
+                                              gen_time, theta0, mut_rate)
+            module_name = module_name_from_path(self.custom_filename)
+            spec = importlib.util.spec_from_file_location(module_name,
+                                                          self.custom_filename)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            return CustomDemographicModel(module.model_func, variables,
                                           gen_time, theta0, mut_rate)
+
         elif self.custom_filename is None and self.model_func is not None:
             return CustomDemographicModel(self.model_func, None,
                                           gen_time, theta0, mut_rate)

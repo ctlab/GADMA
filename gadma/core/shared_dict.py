@@ -1,4 +1,5 @@
-from ..utils import WeightedMetaArray
+from ..utils import WeightedMetaArray, is_pickleable
+from ..engines import Engine
 import copy
 from multiprocessing import Manager
 from functools import partial
@@ -213,9 +214,14 @@ class SharedDictForCoreRun(SharedDict):
         :param engine: Engine with dem. model and data.
         :param x: Values of dem. model parameters.
         :param y: Value of fitness defined by `group`.
+
+        :note: Model from engine could be lost if it is unpickleable
         """
         if not isinstance(y, dict):
             y = OrderedDict({group: y})
+        if isinstance(engine, Engine) and not is_pickleable(engine.model):
+            engine = copy.deepcopy(engine)
+            super(Engine, engine).__setattr__("model", None)
         # print(type(x), x)
         if isinstance(x, WeightedMetaArray):
             return (engine, (x, x.metadata), y)
