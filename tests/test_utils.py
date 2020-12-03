@@ -1,9 +1,17 @@
 import unittest
 from gadma import *
-from gadma.utils.utils import CacheInfo, WeightedMetaArray, logarithm_transform
+from gadma.utils.utils import CacheInfo, WeightedMetaArray,\
+    logarithm_transform, run_f_and_save_result_into_queue, timeout
 from gadma.utils.distributions import *
 from gadma.utils import *
 import numpy as np
+import multiprocessing
+import time
+
+
+def f_sleep_10(x):
+    time.sleep(10)
+    return x
 
 
 class TestUtils(unittest.TestCase):
@@ -46,6 +54,21 @@ class TestUtils(unittest.TestCase):
     def test_cache_info(self):
         info = CacheInfo()
         str(info)
+
+    def test_run_f_and_save_result_into_queue(self):
+        q = multiprocessing.Queue()
+        def f(x):
+            return x
+        run_f_and_save_result_into_queue(f, q, 10)
+        time.sleep(0.1)
+        self.assertFalse(q.empty())
+        self.assertEqual(q.get(), 10)
+
+    def test_timeout(self):
+        g = timeout(f_sleep_10, time=5)
+        self.assertEqual(g(0), None)
+        g = timeout(f_sleep_10, time=15)
+        self.assertEqual(g(0), 0)
 
     def test_weighted_meta_array(self):
         x = WeightedMetaArray([1, 2])

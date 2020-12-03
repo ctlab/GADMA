@@ -69,7 +69,7 @@ jobs:
 
       - name: Run tests and codecov.
         run: |
-          python -m pytest --timeout=180 --cov=gadma --cov-report=xml -v tests
+          python -m pytest --timeout=300 --cov=gadma --cov-report=xml -v tests
         
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1

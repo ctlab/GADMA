@@ -191,7 +191,6 @@ def print_runs_summary(start_time, shared_dict, settings):
                     model_str = engine.model.as_custom_string(x)
                 else:
                     model_str = f" [Nanc = {int(Nanc)}] "
-#                    Tg = settings.time_for_generation or 1.0
                     x_translated = engine.model.translate_units(x, Nanc)
                     model_str += engine.model.as_custom_string(x_translated)
             else:

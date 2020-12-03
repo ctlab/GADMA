@@ -5,7 +5,7 @@ import sys
 import os
 import tempfile
 import pickle
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, queues
 
 
 def logarithm_transform(x):
@@ -215,24 +215,34 @@ def eval_wrapper(f, eval_file=None):
     return eval_wrapper_f
 
 
+def run_f_and_save_result_into_queue(f, queue, *args, **kwargs):
+    """
+    Runs f with args and kwargs and save the result of run into queue.
+    """
+    result = f(*args, **kwargs)
+    queue.put(result)
+
+
 def timeout(f, time):
-    def run_f_and_save_result(queue, *args, **kwargs):
-        result = f(*args, **kwargs)
-        queue.put(result)
+    """
+    Wraps function so that its execution time has limit of `time` seconds.
+    The limitation is made via multiprocessing.Process.
+    """
 
     @wraps(f)
     def timeout_wrapper(*args, **kwargs):
         q = Queue()
-        p = Process(target=run_f_and_save_result, name=f.__name__,
-                    args=(q, *args), kwargs=kwargs)
+        p = Process(target=run_f_and_save_result_into_queue, name=f.__name__,
+                    args=(f, q, *args), kwargs=kwargs)
         p.start()
         p.join(time)
         if p.is_alive():
             p.terminate()
             p.join()
-        if q.empty():
+        try:
+            return q.get(timeout=0.1)
+        except queues.Empty:
             return None
-        return q.get()
     return timeout_wrapper
 
 
