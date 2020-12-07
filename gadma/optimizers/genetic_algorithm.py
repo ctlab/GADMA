@@ -624,7 +624,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                 list_with_weights_after_pickle(X_total), Y_total,
                 cur_rate, cur_strength)
 
-    def optimize(self, f, variables, args=(), num_init=50,
+    def optimize(self, f, variables, args=(), num_init=50, num_init_const=None,
                  X_init=None, Y_init=None,
                  linear_constrain=None, maxiter=None, maxeval=None,
                  verbose=0, callback=None, report_file=None, eval_file=None,
@@ -636,16 +636,48 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
 
         :param f: function to minimize/maximize. The usage must be the
                   following: f(x, \*args), where x is list of values.
-        :param variables: list of variables (instances of
-                          :class:`gadma.Variable` class) of the function.
+        :type f: funstion
+        :param variables: list of variables of the function.
+        :type variables: list of :class:`gadma.utils.Variable`
+        :param args: Additional arguments of function `f`.
+        :type args: tuple
+        :param num_init: Number of points in initial design.
+        :type num_init: int
+        :param num_init_const: If None then `num_init` is used. Otherwise
+                               number of points in initial design is equal to
+                               `num_init_const` \* len(`variables`).
         :param X_init: list of initial values.
+        :type X_init: list of vectors.
         :param Y_init: value of function `f` on initial values from `X_init`.
-        :param args: arguments of function `f`.
+        :type Y_init: list of floats
+        :param linear_constrain: Linear constrain on variables.
+        :type linear_constrain: :class:`gadma.optimizers.LinearConstrain`
         :param maxiter: maximum number of genetic algorithm's generations.
+        :type maxiter: int
         :param maxeval: maximum number of function evaluations.
+        :type maxeval: int
+        :param verbose: Verbosity of the output. If 0 then no output.
+        :type verbose: int
         :param callback: callback to call after each generation.
                          It will be called as callback(x, y), where x, y -
                          best_solution of generation and its fitness.
+        :type callback: function
+        :param report_file: File to save report. Check option `verbose`.
+        :type report_file: str
+        :param eval_file: File to save all evaluations of the function `f`.
+        :type eval_file: str
+        :param save_file: File to save information during optimization for its
+                          reconstruction.
+        :type save_file: str
+        :param restore_file: File to restore previous run.
+        :type restore_file: str
+        :param restore_points_only: Restore point/points from previous run and
+                                    run optimization from them once more. If
+                                    False then previous run will be resumed.
+        :type restore_points_only: bool
+        :param restore_x_transform: Restore points but transform them before
+                                    usage in this run.
+        :type restore_x_transform: function
         """
         # First we initialize initial values of some options
         self.cur_mut_rate = self.mut_rate
@@ -656,6 +688,10 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         n_eval_init = 0
         X_total = []
         Y_total = []
+
+        # Check for num_init
+        if num_init_const is not None:
+            num_init = num_init_const * len(variables)
 
         # Create logging files
         if eval_file is not None:

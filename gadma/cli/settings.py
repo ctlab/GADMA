@@ -48,6 +48,7 @@ upper_bound_of_first_split = None
 upper_bound_of_second_split = None
 
 # GA options
+num_init_const = None
 size_of_generation = 10
 
 fractions = [0.2, 0.3, 0.3]

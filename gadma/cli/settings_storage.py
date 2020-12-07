@@ -93,7 +93,7 @@ class SettingsStorage(object):
                      'draw_models_every_n_iteration', 'size_of_generation',
                      'number_of_repeats', 'number_of_processes',
                      'number_of_populations', 'global_maxiter',
-                     'local_maxiter']
+                     'local_maxiter', 'num_init_const']
         float_attrs = ['theta0', 'time_for_generation', 'eps',
                        'const_of_time_in_drawing', 'vmin', 'min_n', 'max_n',
                        'min_t', 'max_t', 'min_m', 'max_m',
@@ -948,10 +948,11 @@ class SettingsStorage(object):
         kwargs = {}
         kwargs['args'] = self.get_engine_args()
         kwargs['verbose'] = self.verbose
+        kwargs['global_num_init_const'] = self.num_init_const
 #        kwargs['linear_constrain'] = self.get_linear_constrain()
         return kwargs
 
-    def get_optimizers_init_kwargs(self):
+    def get_optimizers_init_kwargs(self, variables=None):
         """
         Returns kwargs for first run of optimization. (`X_init` and `Y_init`).
         """
