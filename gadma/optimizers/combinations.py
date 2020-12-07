@@ -87,8 +87,8 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         return wrapper
 
     def optimize(self, f, variables, args=(), global_num_init=50,
-                 X_init=None, Y_init=None, local_options={},
-                 linear_constrain=None,
+                 global_num_init_const=None, X_init=None, Y_init=None,
+                 local_options={}, linear_constrain=None,
                  global_maxiter=None, local_maxiter=None,
                  global_maxeval=None, local_maxeval=None,
                  verbose=0, callback=None, eval_file=None,
@@ -163,6 +163,7 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         # Run global optimizer
         global_result = self.global_optimizer.optimize(f, variables,
                                                        args, global_num_init,
+                                                       global_num_init_const,
                                                        X_init, Y_init,
                                                        linear_constrain,
                                                        global_maxiter,
