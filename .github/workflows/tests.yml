@@ -37,6 +37,7 @@ jobs:
           pip3 install coverage
           pip3 install codecov
           pip3 install pycodestyle
+          pip3 install numpy==1.19.4
           pip3 install GPy
           pip3 install GPyOpt
           pip3 install pandas
@@ -52,7 +53,6 @@ jobs:
 
       - name: Install GADMA and its dependencies (Windows).
         run: |
-          pip install numpy
           pip install scipy
           pip install matplotlib
           pip install Pillow
