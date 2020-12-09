@@ -167,7 +167,7 @@ class SettingsStorage(object):
         if isinstance(value, str) and value.lower() == 'none':
             value = None
         # get rid of numpy as yaml could not serialize it
-        if isinstance(value, np.ndarray):
+        if isinstance(value, np.ndarray) and name != "_inner_data":
             value = value.tolist()
 
         # 0. If attribute is equal to the same from setting storage
