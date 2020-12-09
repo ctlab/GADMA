@@ -167,7 +167,7 @@ class SettingsStorage(object):
         if isinstance(value, str) and value.lower() == 'none':
             value = None
         # get rid of numpy as yaml could not serialize it
-        if isinstance(value, np.ndarray):
+        if isinstance(value, np.ndarray) and name != "_inner_data":
             value = value.tolist()
 
         # 0. If attribute is equal to the same from setting storage
@@ -469,7 +469,7 @@ class SettingsStorage(object):
             spec = importlib.util.spec_from_file_location(module_name, value)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
-#            sys.modules[module_name] = module
+            sys.modules[module_name] = module
             if hasattr(module, "model_func"):
                 func_name = "model_func"
             else:
