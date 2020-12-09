@@ -207,7 +207,7 @@ def eval_wrapper(f, eval_file=None):
         time_start = time.time()
         y = f(x)
         time_end = time.time()
-        if eval_file is not None and y is not None:
+        if eval_file is not None:
             with open(eval_file, 'a') as fl:
                 print(time_start - time_init, y, list(x),
                       time_end - time_start, file=fl, sep='\t')
