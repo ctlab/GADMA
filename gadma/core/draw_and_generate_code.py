@@ -180,7 +180,7 @@ def print_runs_summary(start_time, shared_dict, settings):
                 assert (
                     isinstance(default_model, CustomDemographicModel)
                 ), f"default model is instance of {default_model.__class__}"
-                super(Engine, engine).__setattr__("model", default_model)
+                super(Engine, engine).__setattr__("_model", default_model)
             # Get theta and N ancestral
             theta = engine.get_theta(x, *settings.get_engine_args())
             Nanc = engine.get_N_ancestral_from_theta(theta)

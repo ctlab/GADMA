@@ -221,7 +221,7 @@ class SharedDictForCoreRun(SharedDict):
             y = OrderedDict({group: y})
         if isinstance(engine, Engine) and not is_pickleable(engine.model):
             engine = copy.deepcopy(engine)
-            super(Engine, engine).__setattr__("model", None)
+            super(Engine, engine).__setattr__("_model", None)
         # print(type(x), x)
         if isinstance(x, WeightedMetaArray):
             return (engine, (x, x.metadata), y)
