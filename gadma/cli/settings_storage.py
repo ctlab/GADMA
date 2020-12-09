@@ -469,7 +469,7 @@ class SettingsStorage(object):
             spec = importlib.util.spec_from_file_location(module_name, value)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
-#            sys.modules[module_name] = module
+            sys.modules[module_name] = module
             if hasattr(module, "model_func"):
                 func_name = "model_func"
             else:
