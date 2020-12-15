@@ -63,7 +63,7 @@ def sort_by_other_list(x, y, reverse=False, key=None):
         return x
     if key is None:
         key = ident
-    sort_zip = sorted(zip(x, y), key=lambda p: key(p[1]))
+    sort_zip = sorted(zip(x, y), key=lambda p: key(p[1]), reverse=reverse)
     return [p[0] for p in sort_zip], [p[1] for p in sort_zip]
 
 

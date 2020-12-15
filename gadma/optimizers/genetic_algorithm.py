@@ -373,7 +373,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         if Y_gen is None:
             Y_gen = [f(x) for x in X_gen]
         # Sort by value of fitness
-        X_gen, Y_gen = sort_by_other_list(X_gen, Y_gen, reverse=self.maximize)
+        X_gen, Y_gen = sort_by_other_list(X_gen, Y_gen, reverse=False)
 
         # Simple checks
         assert len(X_gen[0]) == len(variables)

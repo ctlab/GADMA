@@ -274,7 +274,7 @@ class TestCLI(unittest.TestCase):
         settings.units_of_time_in_drawing = 'YeArs'
         self.assertRaises(ValueError, settings.__setattr__,
                           'units_of_time_in_drawing', 'strange_value')
-        settings.const_of_time_in_drawing = 0.01
+        settings.const_of_time_in_drawing = 0.001
         self.assertEqual(settings.units_of_time_in_drawing, 'thousand years')
         settings.const_of_time_in_drawing = 100
         self.assertEqual(settings.const_of_time_in_drawing, 1.0)
