@@ -399,8 +399,8 @@ class SettingsStorage(object):
         # 3.8 Units of time in drawings
         elif (name == 'units_of_time_in_drawing' or
                 name == 'const_of_time_in_drawing'):
-            d = {'generations': 1, 'years': 1, 'thousand years': 0.01,
-                 'thousands of years': 0.01, 'kya': 0.01}
+            d = {'generations': 1, 'years': 1, 'thousand years': 0.001,
+                 'thousands of years': 0.001, 'kya': 0.001}
             if name == 'units_of_time_in_drawing':
                 value = value.lower()
                 if value not in d:
