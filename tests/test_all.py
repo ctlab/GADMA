@@ -289,7 +289,8 @@ class TestRestore(unittest.TestCase):
                          "Migration masks: [[[0, 0], [1, 0]]]\n")
             sys.argv = ['gadma', '--resume', finished_run_dir + "_resumed", 
                         '-p', params_file, '-o', output_3]
-            self.assertRaises(ValueError, get_settings)
+            sett, _ = get_settings()
+            self.assertRaises(ValueError, check_required_settings, sett)
 
             if check_dir_existence(output_3):
                 shutil.rmtree(output_3)
@@ -298,7 +299,8 @@ class TestRestore(unittest.TestCase):
                 fl.write("Migration masks: [[[0, 0, 0], [1, 0, 0]]]\n")
             sys.argv = ['gadma', '--resume', finished_run_dir + "_resumed", 
                         '-p', params_file, '-o', output_3]
-            self.assertRaises(ValueError, get_settings)
+            sett, _ = get_settings()
+            self.assertRaises(ValueError, check_required_settings, sett)
 
         finally:
             if check_dir_existence(finished_run_dir + '_resumed'):

@@ -66,7 +66,7 @@ from .utils import ensure_file_existence, ensure_dir_existence  # NOQA
 from .optimizers import get_local_optimizer, all_local_optimizers  # NOQA
 from .optimizers import get_global_optimizer, all_global_optimizers  # NOQA
 from .cli import SettingsStorage, version, usage, get_settings  # NOQA
-from .cli import settings  # NOQA
+from .cli import check_required_settings, settings  # NOQA
 from .core import CoreRun, shared_dict  # NOQA
 from .Inference import load_data_from_dir, get_claic_score, optimize_ga  # NOQA
 from .run_ls_on_boot_data import load_parameters_from_python_file  # NOQA

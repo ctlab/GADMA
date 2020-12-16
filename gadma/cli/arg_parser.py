@@ -174,7 +174,7 @@ def get_settings():
                           " from -i/--input option. The last is taken.")
         settings_storage.input_file = args.input
 
-    # 3. Checks that we have got all required
+    # 3. Checks that we have got all required (initial checks)
     if (settings_storage.input_file is None and
             settings_storage.resume_from is None):
         raise AttributeError("Input file is required. It could be set by "
@@ -188,6 +188,13 @@ def get_settings():
     ensure_dir_existence(settings_storage.output_directory,
                          check_emptiness=True)
 
+    return settings_storage, args
+
+
+def check_required_settings(settings_storage):
+    """
+    Final checks for required settings.
+    """
     if settings_storage.custom_filename is not None:
         if (settings_storage.lower_bound is None or
                 settings_storage.upper_bound is None):
@@ -216,6 +223,12 @@ def get_settings():
                                  " masks are set.")
 
     if settings_storage.resume_from is not None:
+        old_params_file = os.path.join(settings_storage.resume_from,
+                                       'params_file')
+        old_extra_file = os.path.join(settings_storage.resume_from,
+                                      'extra_params_file')
+        if not os.path.exists(old_extra_file):
+            old_extra_file = None
         old_settings = SettingsStorage.from_file(old_params_file,
                                                  old_extra_file)
         # check what have changed and can we deal with it
@@ -309,4 +322,3 @@ def get_settings():
         if settings_storage.only_models:
             warnings.warn("Option `only models`/--only_models  must be used "
                           " --resume option only. It would be ignored.")
-    return settings_storage, args
