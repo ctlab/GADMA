@@ -4,6 +4,13 @@ try:
 except ImportError:
     pass
 
+__version__ = "unknown"
+try:
+    from . import version
+    __version__ = version.version
+except ImportError:
+    pass
+
 try:
     import PIL
     from PIL import Image
