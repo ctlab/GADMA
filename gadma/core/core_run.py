@@ -520,8 +520,10 @@ class CoreRun(object):
                 old_extra = None
             old_settings = SettingsStorage.from_file(old_params, old_extra)
             old_init_model = old_settings.get_model()
-        for i in range(final_sum - initial_sum + 1 +
-                       int(self.settings.only_models)):
+        # additional one is when true only models is used
+        addit_one = int(self.settings.only_models)
+        addit_one -= int(self.settings.resume_from is None)
+        for i in range(final_sum - initial_sum + 1 + addit_one):
             if i >= len(restore_files):
                 restore_file = None
             else:

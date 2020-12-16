@@ -496,7 +496,8 @@ class TestSomeHandsOn(unittest.TestCase):
                      "local_maxiter: 1\n"
                      "Population labels: YRI\n")
 
-        sys.argv = ['gadma', '-i', snp_data, '-p', params_file, '-o', outdir]
+        sys.argv = ['gadma', '-i', snp_data, '-p', params_file, '-o', outdir,
+                    '--only_models']
         try:
             core.main()
         finally:

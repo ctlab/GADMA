@@ -99,7 +99,6 @@ class TestDataHolder(unittest.TestCase):
                     continue
             with self.subTest(data=dat, size=siz, labels=lab,
                               seq_len=seq, outgroup=out):
-                print(dat, siz, lab, seq, out)
                 sfs_holder = SFSDataHolder(dat, projections=siz, outgroup=out,
                                            population_labels=lab,
                                            sequence_length=seq)
