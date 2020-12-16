@@ -60,7 +60,14 @@ class TestDataHolder(unittest.TestCase):
             data = np.transpose(data, [1,0])
             data.pop_ids = labels
         if data_file == YRI_CEU_NO_LABELS_DATA:
+            assert len(labels) == 2
             data.pop_ids = labels
+        if len(labels) == 1:
+            marg = []
+            for i, lab in enumerate(data.pop_ids):
+                if lab not in labels:
+                    marg.append(i)
+            data = data.marginalize(marg)
         data = data.project(size)
         if not outgroup:
             data = data.fold()
@@ -76,20 +83,35 @@ class TestDataHolder(unittest.TestCase):
         self.assertEqual(d.outgroup, outgroup)
  
     def _test_sfs_reading(self, id):
-        sizes = [None, (20,20), (10, 10), (10, 5)]
+        sizes = [None, (20,20), (10, 10), (10, 5), (5,), (10,)]
         outgroup = [None, True, False]
-        labels = [None, ["YRI", "CEU"], ["CEU", "YRI"]]
+        labels = [None, ["YRI", "CEU"], ["CEU", "YRI"], ["CEU"]]
         seq_lens = [None, 1e6]
         data = [YRI_CEU_DATA, YRI_CEU_NO_LABELS_DATA, SNP_DATA]
         for dat, siz, lab, seq, out in itertools.product(data, sizes, labels,
                                                          seq_lens, outgroup):
+            if lab is not None and siz is not None and len(lab) != len(siz):
+                continue
+            if lab is None and siz is not None and len(siz) == 1:
+                continue 
+            if dat == YRI_CEU_NO_LABELS_DATA:
+                if lab is not None and len(lab) == 1:
+                    continue
             with self.subTest(data=dat, size=siz, labels=lab,
                               seq_len=seq, outgroup=out):
+                print(dat, siz, lab, seq, out)
                 sfs_holder = SFSDataHolder(dat, projections=siz, outgroup=out,
                                            population_labels=lab,
                                            sequence_length=seq)
                 data = get_engine(id).read_data(sfs_holder)
-                siz = siz or ((24,44) if (dat == SNP_DATA) else (20, 20))
+                corr_size = None
+                if dat == SNP_DATA:
+                    corr_size = (24, 44)
+                else:
+                    corr_size = (20, 20)
+                if lab is not None and len(lab) == 1:
+                    corr_size = (corr_size[1],)
+                siz = siz or corr_size
                 lab = lab or (
                     ["Pop 1", "Pop 2"] if dat == YRI_CEU_NO_LABELS_DATA
                     else ["YRI", "CEU"])
