@@ -295,6 +295,12 @@ def _new_population_labels(sfs, new_labels):
     """
     if new_labels is None:
         return sfs
+    if len(sfs.pop_ids) > len(new_labels):
+        marginalize_over = []
+        for i, label in enumerate(sfs.pop_ids):
+            if label not in new_labels:
+                marginalize_over.append(i)
+        sfs = sfs.marginalize(marginalize_over)
     if sfs.pop_ids != new_labels:
         # Create a permutation of axis
         d = {x: i for i, x in enumerate(sfs.pop_ids)}
@@ -408,6 +414,13 @@ def _read_data_snp_type(module, data_holder):
     if data_holder.projections is not None:
         size = data_holder.projections
     if data_holder.population_labels is not None:
+        if len(data_holder.population_labels) < len(population_labels):
+            for label in data_holder.population_labels:
+                assert label in population_labels
+            if len(size) > len(data_holder.population_labels):
+                pop2size = {pop: siz
+                            for pop, siz in zip(population_labels, size)}
+                size = [pop2size[x] for x in data_holder.population_labels]
         population_labels = data_holder.population_labels
     sfs = module.Spectrum.from_data_dict(dd, population_labels,
                                          projections=size,

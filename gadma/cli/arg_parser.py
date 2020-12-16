@@ -188,47 +188,7 @@ def get_settings():
     ensure_dir_existence(settings_storage.output_directory,
                          check_emptiness=True)
 
-    return settings_storage, args
-
-
-def check_required_settings(settings_storage):
-    """
-    Final checks for required settings.
-    """
-    if settings_storage.custom_filename is not None:
-        if (settings_storage.lower_bound is None or
-                settings_storage.upper_bound is None):
-            raise AttributeError("Please specify either `Lower bound` and "
-                                 "`Upper bound` or `Parameter identifiers` "
-                                 "for custom model")
-        for attr_name in ['no_migrations', 'symmetric_migrations',
-                          'split_fractions', 'only_sudden']:
-            value = getattr(settings_storage, attr_name)
-            if bool(value):
-                warnings.warn(f"Setting {attr_name} ({value}) will be ignored "
-                              "as custom model from file is chosen.")
-    else:
-        if (settings_storage.initial_structure is None and
-                settings_storage.final_structure is None):
-            raise AttributeError("Please specify either structure of "
-                                 "demographic history or filename with custom"
-                                 " model.")
-        elif settings_storage.migration_masks is not None:
-            init_struct = settings_storage.initial_structure
-            fin_struct = settings_storage.final_structure
-            if init_struct != fin_struct:
-                raise ValueError(f"Setting Final structure ({fin_struct}) "
-                                 "should be equal to the setting Initial "
-                                 f"structure ({init_struct}) because migration"
-                                 " masks are set.")
-
     if settings_storage.resume_from is not None:
-        old_params_file = os.path.join(settings_storage.resume_from,
-                                       'params_file')
-        old_extra_file = os.path.join(settings_storage.resume_from,
-                                      'extra_params_file')
-        if not os.path.exists(old_extra_file):
-            old_extra_file = None
         old_settings = SettingsStorage.from_file(old_params_file,
                                                  old_extra_file)
         # check what have changed and can we deal with it
@@ -322,3 +282,37 @@ def check_required_settings(settings_storage):
         if settings_storage.only_models:
             warnings.warn("Option `only models`/--only_models  must be used "
                           " --resume option only. It would be ignored.")
+
+    return settings_storage, args
+
+
+def check_required_settings(settings_storage):
+    """
+    Final checks for required settings.
+    """
+    if settings_storage.custom_filename is not None:
+        if (settings_storage.lower_bound is None or
+                settings_storage.upper_bound is None):
+            raise AttributeError("Please specify either `Lower bound` and "
+                                 "`Upper bound` or `Parameter identifiers` "
+                                 "for custom model")
+        for attr_name in ['no_migrations', 'symmetric_migrations',
+                          'split_fractions', 'only_sudden']:
+            value = getattr(settings_storage, attr_name)
+            if bool(value):
+                warnings.warn(f"Setting {attr_name} ({value}) will be ignored "
+                              "as custom model from file is chosen.")
+    else:
+        if (settings_storage.initial_structure is None and
+                settings_storage.final_structure is None):
+            raise AttributeError("Please specify either structure of "
+                                 "demographic history or filename with custom"
+                                 " model.")
+        elif settings_storage.migration_masks is not None:
+            init_struct = settings_storage.initial_structure
+            fin_struct = settings_storage.final_structure
+            if init_struct != fin_struct:
+                raise ValueError(f"Setting Final structure ({fin_struct}) "
+                                 "should be equal to the setting Initial "
+                                 f"structure ({init_struct}) because migration"
+                                 " masks are set.")

@@ -63,7 +63,7 @@ setup(
     data_files=[["gadma", ["gadma/test.fs"]], ("", ["LICENSE"])],
     install_requires=requirements,
     entry_points={
-        'console_scripts': ['gadma = gadma.core:main',
+            'console_scripts': ['gadma = gadma.core:main',
             'gadma-run_ls_on_boot_data = gadma.run_ls_on_boot_data:main',
             'gadma-get_confidence_intervals = gadma.get_confidence_intervals:main']
     },
