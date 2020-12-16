@@ -5,8 +5,7 @@ on:
     branches:
       - master
   release:
-    types:
-      - created
+    types: [published]
 
 jobs:
   build-n-publish:
@@ -45,7 +44,7 @@ jobs:
       if: github.repository_owner == 'ctlab'
 
     - name: Publish distribution 📦 to PyPI
-      if: github.repository_owner == 'ctlab' && github.tag != ''
+      if: github.repository_owner == 'ctlab' && github.event.release
       uses: pypa/gh-action-pypi-publish@master
       with:
         password: ${{ secrets.PYPI_API_TOKEN }}
