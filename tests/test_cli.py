@@ -6,7 +6,8 @@ import copy
 import shutil
 
 import gadma
-from gadma.cli.arg_parser import ArgParser, get_settings
+from gadma.cli.arg_parser import ArgParser, get_settings,\
+    check_required_settings
 from gadma.cli import SettingsStorage, get_variables
 from gadma.cli import settings as default_settings
 from gadma.utils import StdAndFileLogger
@@ -60,12 +61,14 @@ class TestCLI(unittest.TestCase):
             param_file = os.path.join(DATA_PATH,
                                       'another_test_params_bad1')
             sys.argv = ['gadma', '-p', param_file]
-            self.assertRaises(AttributeError, get_settings)
+            sett, _ = get_settings()
+            self.assertRaises(AttributeError, check_required_settings, sett)
 
             param_file = os.path.join(DATA_PATH,
                                       'another_test_params_bad2')
             sys.argv = ['gadma', '-p', param_file]
-            self.assertRaises(AttributeError, get_settings)
+            sett, _ = get_settings()
+            self.assertRaises(AttributeError, check_required_settings, sett)
 
             param_file = os.path.join(DATA_PATH,
                                       'another_test_params_bad3')

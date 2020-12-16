@@ -50,6 +50,17 @@ def main():
     """
     settings_storage, args = arg_parser.get_settings()
 
+    # Data reading
+    print("Data reading")
+    settings_storage.read_data()
+    print(f"Number of populations: {settings_storage.number_of_populations}")
+    print(f"Projections: {settings_storage.projections}")
+    print(f"Population labels: {settings_storage.population_labels}")
+    print(f"Outgroup: {settings_storage.outgroup}")
+    print(f"{bcolors.OKGREEN}--Successful data reading--{bcolors.ENDC}\n")
+
+    arg_parser.check_required_settings(settings_storage)
+
     # Form output directory
     log_file = os.path.join(settings_storage.output_directory, 'GADMA.log')
     params_file = os.path.join(settings_storage.output_directory,
@@ -63,31 +74,22 @@ def main():
     sys.stdout = StdAndFileLogger(log_file, settings_storage.silence)
     sys.stderr = StdAndFileLogger(log_file, stderr=True)
 
-    print(f"{bcolors.OKGREEN}--Successful arguments parsing--{bcolors.ENDC}")
-
-    # Data reading
-    print("\nData reading")
-    settings_storage.read_data()
-    print(f"Number of populations: {settings_storage.number_of_populations}")
-    print(f"Projections: {settings_storage.projections}")
-    print(f"Population labels: {settings_storage.population_labels}")
-    print(f"Outgroup: {settings_storage.outgroup}")
-    print(f"{bcolors.OKGREEN}--Successful data reading--{bcolors.ENDC}")
+    print(f"{bcolors.OKGREEN}--Successful arguments parsing--{bcolors.ENDC}\n")
 
     if settings_storage.directory_with_bootstrap is not None:
-        print("\nBootstrap data reading")
+        print("Bootstrap data reading")
         settings_storage.read_bootstrap_data()
         print(f"Number of files found: "
               f"{len(settings_storage.bootstrap_data)}")
         print(f"{bcolors.OKGREEN}--Successful bootstrap data reading--"
-              f"{bcolors.ENDC}")
+              f"{bcolors.ENDC}\n")
 
     # Save parameters
     settings_storage.to_files(params_file, extra_params_file)
     if not args.test:
-        print(f"\nParameters of launch are saved in output directory: "
+        print(f"Parameters of launch are saved in output directory: "
               f"{params_file}")
-        print(f"All output is saved in output directory: {log_file}")
+        print(f"All output is saved in output directory: {log_file}\n")
 
     print(f"{bcolors.OKBLUE}--Start pipeline--{bcolors.ENDC}")
 
