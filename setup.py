@@ -19,7 +19,6 @@ import os, sys
 
 NAME = 'gadma'
 
-VERSION = '2.0.0rc5'
 SUPPORTED_PYTHON_VERSIONS = ['3.6', '3.7', '3.8']
 
 
@@ -29,12 +28,6 @@ if sys.version[0:3] not in SUPPORTED_PYTHON_VERSIONS:
           "Supported versions are " + ", ".join(SUPPORTED_PYTHON_VERSIONS) + "\n")
     sys.stderr.flush()
     sys.exit(1)
-
-
-# Create a simple version.py module; less trouble than hard-coding the version
-with open(os.path.join('gadma', 'version.py'), 'w') as f:
-    f.write('__version__ = %r\nversion = __version__\n' % VERSION)
-    f.write('\n# This is a new line that ends the file.\n')
 
 
 # Load up the description from README.rst
@@ -47,7 +40,6 @@ requirements = ['numpy', 'scipy', 'matplotlib',
 
 setup(
     name=NAME,
-    version=VERSION,
     author='Ekaterina Noskova',
     author_email='ekaterina.e.noskova@gmail.com',
     url='https://github.com/ctlab/GADMA',
@@ -75,4 +67,6 @@ setup(
             'gadma-run_ls_on_boot_data = gadma.run_ls_on_boot_data:main',
             'gadma-get_confidence_intervals = gadma.get_confidence_intervals:main']
     },
+    setup_requires=["setuptools_scm"],
+    use_scm_version={"write_to": "gadma/version.py"},
 )
