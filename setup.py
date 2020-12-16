@@ -68,5 +68,5 @@ setup(
             'gadma-get_confidence_intervals = gadma.get_confidence_intervals:main']
     },
     setup_requires=["setuptools_scm"],
-    use_scm_version={"write_to": "gadma/version.py"},
+    use_scm_version={"write_to": "gadma/version.py", "local_scheme": "no-local-version"},
 )
