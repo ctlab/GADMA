@@ -19,9 +19,9 @@ def version():
     '''
     Returns string with current version.
     '''
-    from ..version import __version__
+    from ..version import version
     return "GADMA version " + str(
-        __version__
+        version
     ) + "\tby Ekaterina Noskova (ekaterina.e.noskova@gmail.com)" + "\n"
 
 
