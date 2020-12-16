@@ -18,10 +18,18 @@ jobs:
         python-version: 3.7
       if: github.repository_owner == 'ctlab'
 
+    - name: Check out src from Git
+      uses: actions/checkout@v2
+    - name: Get history and tags for SCM versioning to work
+      run: |
+        git fetch --prune --unshallow
+        git fetch --depth=1 origin +refs/tags/*:refs/tags/*
+      if: github.repository_owner == 'ctlab'
+
     - name: Install GADMA and its dependencies and create dist.
       run: |
         pip install numpy==1.19.4
-        python setup.py install
+        python3 setup.py install
         python3 -m pip install --user --upgrade setuptools wheel
         python3 setup.py sdist bdist_wheel
       if: github.repository_owner == 'ctlab'

@@ -19,6 +19,12 @@ from gadma.core.shared_dict import SharedDict, SharedDictForCoreRun
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
 
 
+def get_settings_test():
+    settings, args = get_settings()
+    check_required_settings(settings)
+    return settings, args
+
+
 class TestCLI(unittest.TestCase):
     def test_argparser(self):
         parser = ArgParser()
@@ -29,51 +35,49 @@ class TestCLI(unittest.TestCase):
 
         try:
             sys.argv = ['gadma', '--test']
-            settings, _ = get_settings()
+            settings, _ = get_settings_test()
             settings.inner_data
 
             sys.argv = ['gadma']
-            self.assertRaises(SystemExit, get_settings)
+            self.assertRaises(SystemExit, get_settings_test)
 
             param_file = os.path.join(DATA_PATH, 'another_test_params')
             another_fs = os.path.join(DATA_PATH, 'YRI_CEU.fs')
             sys.argv = ['gadma', '-p', param_file, '-o', 'some_dir',
                         '-i', another_fs]
-            settings, _ = get_settings()
+            settings, _ = get_settings_test()
 
             sys.argv = ['gadma', '-p', param_file, '-o', 'some_dir',
                         '-i', another_fs, '--only_models']
-            settings, _ = get_settings()
+            settings, _ = get_settings_test()
 
             self.assertEqual(settings.output_directory, abspath('some_dir'))
             self.assertEqual(settings.input_file, abspath(another_fs))
             sys.argv = ['gadma', '-p', param_file, '-o', 'tests',
                         '-i', another_fs]
-            self.assertRaises(RuntimeError, get_settings)
+            self.assertRaises(RuntimeError, get_settings_test)
 
             param_file = os.path.join(DATA_PATH,
                                       'another_test_params_without_base')
             sys.argv = ['gadma', '-p', param_file, '-o', 'some_dir']
-            self.assertRaises(AttributeError, get_settings)
+            self.assertRaises(AttributeError, get_settings_test)
             sys.argv = ['gadma', '-p', param_file, '-i', another_fs]
-            self.assertRaises(AttributeError, get_settings)
+            self.assertRaises(AttributeError, get_settings_test)
 
             param_file = os.path.join(DATA_PATH,
                                       'another_test_params_bad1')
             sys.argv = ['gadma', '-p', param_file]
-            sett, _ = get_settings()
-            self.assertRaises(AttributeError, check_required_settings, sett)
+            self.assertRaises(AttributeError, get_settings_test)
 
             param_file = os.path.join(DATA_PATH,
                                       'another_test_params_bad2')
             sys.argv = ['gadma', '-p', param_file]
-            sett, _ = get_settings()
-            self.assertRaises(AttributeError, check_required_settings, sett)
+            self.assertRaises(AttributeError, get_settings_test)
 
             param_file = os.path.join(DATA_PATH,
                                       'another_test_params_bad3')
             sys.argv = ['gadma', '-p', param_file]
-            self.assertRaises(AttributeError, get_settings)
+            self.assertRaises(AttributeError, get_settings_test)
 
             dir_without_run = os.path.join(DATA_PATH, "YRI_CEU_test_boots")
             dir_with_run = os.path.join(DATA_PATH, "my_example_run")
@@ -84,9 +88,9 @@ class TestCLI(unittest.TestCase):
                 fl.write(f"Resume from: {dir_without_run}")
             sys.argv = ['gadma', '-p', created_params_file, '--resume',
                         dir_with_run]
-            self.assertRaises(ValueError, get_settings)
+            self.assertRaises(ValueError, get_settings_test)
             sys.argv = ['gadma', '-p', created_params_file, '--only_models']
-            setting, _ = get_settings()
+            setting, _ = get_settings_test()
             self.assertEqual(setting.resume_from, None)
             self.assertEqual(setting.only_models, False)
         finally:
@@ -475,3 +479,28 @@ class TestCLI(unittest.TestCase):
                           None, upper_bound)
         self.assertRaises(AssertionError, get_variables, p_ids,
                           lower_bound, None)
+
+class TestSomeHandsOn(unittest.TestCase):
+    def test_example_1(self):
+        sys.argv = ['gadma', '--test']
+        core.main()
+
+    def test_example_2(self):
+        snp_data = os.path.join(DATA_PATH, 'data.txt')
+        outdir = os.path.join(DATA_PATH, 'resume_dir')
+        params_file = 'params'
+        if check_dir_existence(outdir):
+            shutil.rmtree(outdir)
+        with open(params_file, 'w') as fl:
+            fl.write("global_maxiter: 1\n"
+                     "local_maxiter: 1\n"
+                     "Population labels: YRI\n")
+
+        sys.argv = ['gadma', '-i', snp_data, '-o', outdir]
+        try:
+            core.main()
+        finally:
+            if check_dir_existence(outdir):
+                shutil.rmtree(outdir)
+            os.remove(params_file)
+            gadma.matplotlib_available = True

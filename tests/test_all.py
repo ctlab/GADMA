@@ -1,6 +1,7 @@
 import unittest
 
 from .test_data import YRI_CEU_DATA
+from .test_cli import get_settings_test
 from gadma import *
 import gadma
 from gadma.core import SharedDictForCoreRun
@@ -96,7 +97,7 @@ class TestRestore(unittest.TestCase):
         param_file = os.path.join(DATA_PATH, 'another_test_params')
         base_out_dir = "test_gs_and_ls_restore_output"
         sys.argv = ['gadma', '-p', param_file, '-o', base_out_dir]
-        settings, _ = get_settings()
+        settings, _ = get_settings_test()
         settings.linked_snp_s = False
         settings.silence = True
         out_dir = 'some_not_existed_dir'
@@ -260,7 +261,7 @@ class TestRestore(unittest.TestCase):
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
 
         try:
-            settings, _ = get_settings()
+            settings, _ = get_settings_test()
             core.main()
 
             # call corerun for cover case when there is o extra file in resume
@@ -289,8 +290,7 @@ class TestRestore(unittest.TestCase):
                          "Migration masks: [[[0, 0], [1, 0]]]\n")
             sys.argv = ['gadma', '--resume', finished_run_dir + "_resumed", 
                         '-p', params_file, '-o', output_3]
-            sett, _ = get_settings()
-            self.assertRaises(ValueError, check_required_settings, sett)
+            self.assertRaises(ValueError, get_settings_test)
 
             if check_dir_existence(output_3):
                 shutil.rmtree(output_3)
@@ -299,8 +299,7 @@ class TestRestore(unittest.TestCase):
                 fl.write("Migration masks: [[[0, 0, 0], [1, 0, 0]]]\n")
             sys.argv = ['gadma', '--resume', finished_run_dir + "_resumed", 
                         '-p', params_file, '-o', output_3]
-            sett, _ = get_settings()
-            self.assertRaises(ValueError, check_required_settings, sett)
+            self.assertRaises(ValueError, get_settings_test)
 
         finally:
             if check_dir_existence(finished_run_dir + '_resumed'):

@@ -50,17 +50,6 @@ def main():
     """
     settings_storage, args = arg_parser.get_settings()
 
-    # Data reading
-    print("Data reading")
-    settings_storage.read_data()
-    print(f"Number of populations: {settings_storage.number_of_populations}")
-    print(f"Projections: {settings_storage.projections}")
-    print(f"Population labels: {settings_storage.population_labels}")
-    print(f"Outgroup: {settings_storage.outgroup}")
-    print(f"{bcolors.OKGREEN}--Successful data reading--{bcolors.ENDC}\n")
-
-    arg_parser.check_required_settings(settings_storage)
-
     # Form output directory
     log_file = os.path.join(settings_storage.output_directory, 'GADMA.log')
     params_file = os.path.join(settings_storage.output_directory,
@@ -74,96 +63,106 @@ def main():
     sys.stdout = StdAndFileLogger(log_file, settings_storage.silence)
     sys.stderr = StdAndFileLogger(log_file, stderr=True)
 
-    print(f"{bcolors.OKGREEN}--Successful arguments parsing--{bcolors.ENDC}\n")
+    try:
+        # Data reading
+        print("Data reading")
+        settings_storage.read_data()
+        print(f"Number of populations: "
+              f"{settings_storage.number_of_populations}")
+        print(f"Projections: {settings_storage.projections}")
+        print(f"Population labels: {settings_storage.population_labels}")
+        print(f"Outgroup: {settings_storage.outgroup}")
+        print(f"{bcolors.OKGREEN}--Successful data reading--{bcolors.ENDC}\n")
 
-    if settings_storage.directory_with_bootstrap is not None:
-        print("Bootstrap data reading")
-        settings_storage.read_bootstrap_data()
-        print(f"Number of files found: "
-              f"{len(settings_storage.bootstrap_data)}")
-        print(f"{bcolors.OKGREEN}--Successful bootstrap data reading--"
+        arg_parser.check_required_settings(settings_storage)
+
+        print(f"{bcolors.OKGREEN}--Successful arguments parsing--"
               f"{bcolors.ENDC}\n")
 
-    # Save parameters
-    settings_storage.to_files(params_file, extra_params_file)
-    if not args.test:
-        print(f"Parameters of launch are saved in output directory: "
-              f"{params_file}")
-        print(f"All output is saved in output directory: {log_file}\n")
+        if settings_storage.directory_with_bootstrap is not None:
+            print("Bootstrap data reading")
+            settings_storage.read_bootstrap_data()
+            print(f"Number of files found: "
+                  f"{len(settings_storage.bootstrap_data)}")
+            print(f"{bcolors.OKGREEN}--Successful bootstrap data reading--"
+                  f"{bcolors.ENDC}\n")
 
-    print(f"{bcolors.OKBLUE}--Start pipeline--{bcolors.ENDC}")
+        # Save parameters
+        settings_storage.to_files(params_file, extra_params_file)
+        if not args.test:
+            print(f"Parameters of launch are saved in output directory: "
+                  f"{params_file}")
+            print(f"All output is saved in output directory: {log_file}\n")
 
-    # Create shared dictionary
-    shared_dict = SharedDictForCoreRun()
+        print(f"{bcolors.OKBLUE}--Start pipeline--{bcolors.ENDC}")
 
-    # Start pool of processes
-    start_time = datetime.now()
+        # Create shared dictionary
+        shared_dict = SharedDictForCoreRun()
 
-    # For debug
-#    shared_dict = SharedDictForCoreRun(multiprocessing=False)
-#    job(0, shared_dict, settings_storage)
-#    os._exit(0)
+        # Start pool of processes
+        start_time = datetime.now()
 
-    pool = Pool(processes=settings_storage.number_of_processes)
+        # For debug
+    #    shared_dict = SharedDictForCoreRun(multiprocessing=False)
+    #    job(0, shared_dict, settings_storage)
+    #    os._exit(0)
 
-    results = []
-    for proc_args in [(i + 1, shared_dict, settings_storage)
-                      for i in range(settings_storage.number_of_repeats)]:
-        results.append(pool.apply_async(job, proc_args))
+        pool = Pool(processes=settings_storage.number_of_processes)
 
-    pool.close()
+        results = []
+        for proc_args in [(i + 1, shared_dict, settings_storage)
+                          for i in range(settings_storage.number_of_repeats)]:
+            results.append(pool.apply_async(job, proc_args))
 
-    check_time = time.time()
-    time_diff = 60 * settings_storage.time_to_print_summary
-    time_bias = 0
-    get_time = min(10, time_diff)
-    while True:
-        time.sleep(get_time - time_bias)
+        pool.close()
+
+        check_time = time.time()
+        time_diff = 60 * settings_storage.time_to_print_summary
         time_bias = 0
-        all_finished = True
-        for r in results:
-            try:
-                r.get(0)
-            except multiprocessing.TimeoutError:
-                all_finished = False
-            except Exception:
-                pool.terminate()
-                print(f"{bcolors.FAIL}Main run failed due to following "
-                      f"exception:{bcolors.ENDC}", file=sys.stderr)
-                print(traceback.format_exc(), file=sys.stderr)
-                print(SUPPORT_STRING)
-                sys.stdout = saved_stdout
-                sys.stderr = saved_stderr
-                os._exit(1)
-        if all_finished:
-            break
-        if (time.time() - check_time) >= time_diff:
-            check_time = time.time()
-            print_runs_summary(start_time, shared_dict, settings_storage)
-            time_bias = time.time() - check_time
-            time_bias %= get_time
+        get_time = min(10, time_diff)
+        while True:
+            time.sleep(get_time - time_bias)
+            time_bias = 0
+            all_finished = True
+            for r in results:
+                try:
+                    r.get(0)
+                except multiprocessing.TimeoutError:
+                    all_finished = False
+                except Exception:
+                    pool.terminate()
+                    print(f"{bcolors.FAIL}Main run failed due to following "
+                          f"exception:{bcolors.ENDC}", file=sys.stderr)
+                    print(traceback.format_exc(), file=sys.stderr)
+                    print(SUPPORT_STRING)
+                    sys.stdout = saved_stdout
+                    sys.stderr = saved_stderr
+                    os._exit(1)
+            if all_finished:
+                break
+            if (time.time() - check_time) >= time_diff:
+                check_time = time.time()
+                print_runs_summary(start_time, shared_dict, settings_storage)
+                time_bias = time.time() - check_time
+                time_bias %= get_time
 
-    pool.join()
-    print_runs_summary(start_time, shared_dict, settings_storage)
+        pool.join()
+        print_runs_summary(start_time, shared_dict, settings_storage)
 
-    print('\n--Finish pipeline--\n')
-    if args.test:
-        print('--Test passed correctly--')
-    if settings_storage.theta0 is None:
-        href = "https://gadma.readthedocs.io/en/latest/user_manual/theta.html"
-        print("\nYou didn't specify theta at the beginning. If you want "
-              "to change it and rescale parameters, please see the "
-              f"tutorial:\n{href}\n")
-#        if (params.resume_dir is not None and
-#                (params.initial_structure != params.final_structure).any()):
-#            print('\nYou have resumed from another launch. Please, check '
-#                  'best AIC model, as information about it was lost.\n')
+        print('\n--Finish pipeline--\n')
+        if args.test:
+            print('--Test passed correctly--')
+        if settings_storage.theta0 is None:
+            h = "https://gadma.readthedocs.io/en/latest/user_manual/theta.html"
+            print("\nYou didn't specify theta at the beginning. If you want "
+                  "to change it and rescale parameters, please see the "
+                  f"tutorial:\n{h}\n")
 
-    print('Thank you for using GADMA!')
-    print(SUPPORT_STRING)
-
-    sys.stdout = saved_stdout
-    sys.stderr = saved_stderr
+        print('Thank you for using GADMA!')
+        print(SUPPORT_STRING)
+    finally:
+        sys.stdout = saved_stdout
+        sys.stderr = saved_stderr
 
 
 if __name__ == '__main__':
