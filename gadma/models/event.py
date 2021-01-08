@@ -199,3 +199,45 @@ class Split(Event):
         sizes_repr = f"[{', '.join(sizes_repr)}]"
 
         return f"[ {self.pop_to_div + 1} pop split {frac_str} {sizes_repr} ]"
+
+
+class SetSize(Event):
+    def __init__(self, pop, t, size_pop=None, g=0):
+        self.pop = pop
+        self.t = t
+        self.size_pop = size_pop
+        self.g = g
+        super(SetSize, self).__init__()
+        self.add_variables([pop, t, size_pop, g])
+
+    def as_custom_string(self, values):
+        pass
+
+
+class MoveLineages(Event):
+
+    def __init__(self, pop_from, pop_to, t, p=1, size_pop_to=None, g_pop_to=None):
+        self.pop_from = pop_from
+        self.pop_to = pop_to
+        self.t = t
+        self.p = p
+        self.size_pop_to = size_pop_to
+        self.g_pop_to = g_pop_to
+        super(MoveLineages, self).__init__()
+        self.add_variables([pop_from, pop_to, t, p, size_pop_to, g_pop_to])
+
+    def as_custom_string(self, values):
+        pass
+
+
+class Leaf(Event):
+    def __init__(self, pop, t=0, size_pop=None, g=None):
+        self.pop = pop
+        self.t = t
+        self.size_pop = size_pop
+        self.g = g
+        super(Leaf, self).__init__()
+        self.add_variables([pop, t, size_pop, g])
+
+    def as_custom_string(self, values):
+        pass

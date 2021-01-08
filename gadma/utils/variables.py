@@ -1,6 +1,6 @@
 import numpy as np
 from .distributions import uniform_generator, trunc_normal_sigma_generator,\
-                           trunc_lognormal_sigma_generator
+                           trunc_lognormal_sigma_generator, DemographicGenerator
 from functools import partial
 from keyword import iskeyword
 
@@ -123,6 +123,40 @@ class ContinuousVariable(Variable):
         return value >= self.domain[0] and value <= self.domain[1]
 
 
+class DemographicVariable(ContinuousVariable):
+
+    default_N_A_domain = np.array([100, 1e6])
+    default_gen_time = 25
+
+    def __init__(self, name, units="physical", domain=None, rand_gen=None):
+        if units != "physical" and units != "genetic":
+            raise ValueError(f"Units {units} is incorrect")
+        self.units = units
+        super(DemographicVariable, self).__init__(name, domain, rand_gen)
+        if units == "physical":
+            self.rand_gen = DemographicGenerator(genetic_generator=self.rand_gen,
+                                                 N_A_domain=self.default_N_A_domain,
+                                                 gen_time=self.default_gen_time)
+
+    def translate_value_into(self, units, value, N_A=None, gen_time=None):
+        raise NotImplementedError
+
+    def translate_units_to(self, units, N_A_variable=None, gen_time=None):
+        if units == self.units:
+            return
+        if N_A_variable is None:
+            raise ValueError("Set domain for N_A variable  for translation")
+        self.domain[0] = self.translate_value_into(units, self.domain[0],
+                                                   N_A_variable.domain[0], gen_time)
+        self.domain[1] = self.translate_value_into(units, self.domain[1],
+                                                   N_A_variable.domain[1], gen_time)
+        self.units = units
+        if units == "physical":
+            self.rand_gen = DemographicGenerator(self.rand_gen, N_A_variable.domain, gen_time)
+        elif units == "genetic":
+            self.rand_gen = self.rand_gen.genetic_generator
+
+
 class DiscreteVariable(Variable):
     """
     Class of the discrete variable.
@@ -176,7 +210,7 @@ class DiscreteVariable(Variable):
         return value in self.domain
 
 
-class PopulationSizeVariable(ContinuousVariable):
+class PopulationSizeVariable(DemographicVariable):
     """
     Variable for keepeing size of population in demographic model.
 
@@ -189,6 +223,19 @@ class PopulationSizeVariable(ContinuousVariable):
     """
     default_domain = np.array([1e-2, 100])
     default_rand_gen = trunc_lognormal_sigma_generator
+
+    def translate_value_into(self, units, value, N_A=None, gen_time=None):
+        if units == self.units:
+            return value
+        if N_A is None:
+            raise ValueError("Set N_A value for translation")
+        if units == "physical":
+            return type(N_A)(N_A * value)
+        elif units == "genetic":
+            return type(N_A)(value / N_A)
+        else:
+            raise ValueError(f"Units {units} is incorrect")
+
 
     @staticmethod
     def translate_units(value, Nanc):
@@ -206,7 +253,7 @@ def migration_generator(domain):
     return trunc_normal_sigma_generator(domain)
 
 
-class MigrationVariable(ContinuousVariable):
+class MigrationVariable(DemographicVariable):
     """
     Variable for keepeing migration parameter of the demographic model.
 
@@ -225,7 +272,7 @@ class MigrationVariable(ContinuousVariable):
         return value / (2 * Nanc)
 
 
-class TimeVariable(ContinuousVariable):
+class TimeVariable(DemographicVariable):
     """
     Variable for keepeing time parameter of the demographic model.
 
@@ -238,6 +285,18 @@ class TimeVariable(ContinuousVariable):
     """
     default_domain = np.array([1e-15, 5])
     default_rand_gen = trunc_normal_sigma_generator
+
+    def translate_value_into(self, units, value, N_A=None, gen_time=None):
+        if units == self.units:
+            return value
+        if N_A is None:
+            raise ValueError("Set N_A value for translation")
+        if units == "physical":
+            return type(N_A)(2 * gen_time * N_A * value)
+        elif units == "genetic":
+            return type(N_A)(value / (2 * gen_time * N_A))
+        else:
+            raise ValueError(f"Units {units} is incorrect")
 
     @staticmethod
     def translate_units(value, Nanc):

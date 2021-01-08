@@ -2,6 +2,7 @@ import unittest
 
 from gadma import *
 import gadma
+from gadma.utils.variables import DemographicVariable
 
 
 class TestVariables(unittest.TestCase):
@@ -86,3 +87,15 @@ class TestVariables(unittest.TestCase):
                 self.assertEqual(func(t / 2), y2)
             self.assertEqual(func(t), y2)
 
+    def test_demographic_variables(self):
+        var1 = PopulationSizeVariable("var1")
+        var2 = PopulationSizeVariable("var2", units="genetic")
+        self.assertEqual(var1.translate_value_into("physical", 1e4), 1e4)
+        self.assertEqual(var2.translate_value_into("physical", 1.2, 1e4), 1.2e4)
+        N_A = PopulationSizeVariable("N_A", domain=[1e3, 1e4])
+        var2.translate_units_to("physical", N_A)
+        self.assertEqual(var2.units, "physical")
+        var3 = TimeVariable("var3", units="physical")
+        self.assertEqual(var3.translate_value_into("genetic", 1e4, 1e2, 25), 2)
+        var3.translate_units_to("genetic", N_A, 25)
+        self.assertEqual("genetic", var3.units)

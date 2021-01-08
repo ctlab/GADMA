@@ -27,6 +27,7 @@ class DemographicModel(Model):
         self.theta0 = theta0  # mutation flux = 4 * mu * length
         self.mu = mu  # mutation rate per base per generation
         self.fixed_vars = {}
+        self.has_Na = False
         self.linear_constrain = linear_constrain
         super(DemographicModel, self).__init__(raise_excep=False)
 

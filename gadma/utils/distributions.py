@@ -92,6 +92,25 @@ def custom_generator(variables):
     return np.array(values, dtype=object)
 
 
+class DemographicGenerator:
+
+    def __init__(self, genetic_generator, N_A_domain, gen_time=None):
+        self.genetic_generator = genetic_generator
+        self.gen_time = gen_time
+        self.N_A_domain = N_A_domain
+
+    def __call__(self, domain, *args, **kwargs):
+        def _correct_val(val):
+            return min(domain[1], max(domain[0], val))
+
+        N_A = uniform_generator(domain=self.N_A_domain)
+        value = self.genetic_generator.__call__(domain, *args, **kwargs)
+
+        if self.gen_time is not None:
+            return _correct_val(type(N_A)(2 * self.gen_time * N_A * value))
+        return _correct_val(type(N_A)(N_A * value))
+
+
 # def multiply_generator(gen1, domain1, gen2, domain2):
 #     def generator(domain):
 #         return gen1(domain1) * gen2(domain2)
