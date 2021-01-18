@@ -15,17 +15,24 @@ class CoalescentDemographicModel(DemographicModel):
     default_size_g = 0
     default_pop_size = None
 
-    def __init__(self, N_e, N_a, gen_time=None, sequence_length=None, mu=None, rec_rate=None,
+    def __init__(self, N_e, mu, sequence_length=None, N_a = None, gen_time=None, rec_rate=None,
                  linear_constrain=None):
         self.events = list()
         self.N_e = N_e
         self.N_a = N_a
-        self.add_variable(N_a)
         self.has_Na = True
         self.rec_rate = rec_rate
+        self.gen_time = gen_time
         self.sequence_length = sequence_length
-        super(CoalescentDemographicModel, self).__init__(gen_time, 4 * mu * sequence_length, mu,
-                                                         linear_constrain)
+        theta0 = None
+        if sequence_length is not None:
+            theta0 = 4 * mu * sequence_length
+
+        super(CoalescentDemographicModel, self).__init__(gen_time=gen_time,
+                                                         theta0=theta0,
+                                                         mu=mu,
+                                                         linear_constrain=linear_constrain)
+        self.add_variable(N_a)
 
     def name2value(self, values):
         var2value = self.var2value(values)

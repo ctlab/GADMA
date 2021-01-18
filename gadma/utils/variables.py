@@ -128,7 +128,7 @@ class DemographicVariable(ContinuousVariable):
     default_N_A_domain = np.array([100, 1e6])
     default_gen_time = 25
 
-    def __init__(self, name, units="physical", domain=None, rand_gen=None):
+    def __init__(self, name, units="genetic", domain=None, rand_gen=None):
         if units != "physical" and units != "genetic":
             raise ValueError(f"Units {units} is incorrect")
         self.units = units
