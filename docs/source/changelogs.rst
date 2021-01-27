@@ -1,15 +1,48 @@
 Changelogs
 ==============
 
-[2.0.0] - 2020-11-12
+[2.0.0] - 2021-01-27
 ---------------------
 
 Prerelease of GADMA v2.0.0.
 
 Code of GADMA was updated in order to make it more stable and accurate. There are tests for implementation and online documentation on ReadTheDocs.
-GADMA is now available via ``pip``!
+GADMA is now available via ``pip`` and has better optimization algorithm!
 
-**Updated options names in parameters file:**
+**Updated perparameters of genetic algorithm**
+
+We have tuned hyperparameters of the genetic algorithm by Bayesian optimization implemented in `SMAC software <https://github.com/automl/SMAC3>`_.
+The following hyperparameters were optimized:
+
++------------------------------------------+-----------+---------------+
+| Hyperparameter                           | Old value | New value     |
++==========================================+===========+===============+
+| Mean mutation rate                       | 0.2       | 0.453272      |
++------------------------------------------+-----------+---------------+
+| Const_for_mutation_rate                  | 1.2       | 1.068062      |
++------------------------------------------+-----------+---------------+
+| Mean mutation strength                   | 0.2       | 0.625049      |
++------------------------------------------+-----------+---------------+
+| Const for mutation strength              | 1.1       | 1.016571      |
++------------------------------------------+-----------+---------------+
+| Fraction of mutated individuals          | 0.3       | 0.55560528752 |
++------------------------------------------+-----------+---------------+
+| Fraction of crossed individuals          | 0.3       | 0.18828153004 |
++------------------------------------------+-----------+---------------+
+| Fraction of random generated individuals | 0.2       | 0.12600048532 |
++------------------------------------------+-----------+---------------+
+
+Four different combinations of hyperparameters were optimized with SMAC.
+This 4th combination provided the best performance on train and test data.
+
+SMAC was launched for 10,000 iterations in 10 parallel runs for 14 days. Four datasets (instances) were used as training data for optimization. We allowed maximum of 50 runs on each of train instances.
+
+.. image:: convergence_smac.png
+    :width: 100%
+
+*Picture above shows the comparison of genetic algorithms with different values of hyperparameters on train and test datasets. Green color corresponds to GADMA v1 and red color for GADMA v2. The abscissa axis presents iterations (log-likelihood evaluations), the ordinate refers to the value of log-likelihood. Colored lines correspond to the medians of best log-likelihoods values (50 runs) and shadowed areas are ranges between first (0.25) and third (0.75) quartiles. (A) Convergence on train datasets (B) Convergence on test datasets.*
+
+**Updated options names in parameters file**
 
 Some options in parameters file were changed. Some of them have new names:
 
@@ -30,7 +63,7 @@ It is still possible to use old names - GADMA will successfully read it and prin
         UserWarning: Setting `Use moments or dadi` is renamed in 2 version of GADMA to `Engine`. It is successfully read. (/home/build/ctlab/GADMA/gadma/cli/settings_storage.py:741
 
 
-**Deprecated options names in parameters file:**
+**Deprecated options names in parameters file**
 
 Some options are deprecated:
 
