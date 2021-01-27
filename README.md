@@ -12,7 +12,7 @@ In contrast to these packages, GADMA is a command-line tool. It presents a serie
 
 GADMA is implemented by Ekaterina Noskova (ekaterina.e.noskova@gmail.com)
 
-**GADMA is now of version 2!**
+**GADMA is now of version 2!** See [Changelog](https://gadma.readthedocs.io/en/latest/changelogs.html).
 
 ### Documentation
 
