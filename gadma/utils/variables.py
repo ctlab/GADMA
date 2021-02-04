@@ -120,7 +120,7 @@ class ContinuousVariable(Variable):
         """
         Check that value is correct for this variable.
         """
-        return value >= self.domain[0] and value <= self.domain[1]
+        return self.domain[0] <= value <= self.domain[1]
 
 
 class DemographicVariable(ContinuousVariable):

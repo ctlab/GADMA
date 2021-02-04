@@ -2,20 +2,19 @@ from ..utils import Variable, PopulationSizeVariable, TimeVariable
 from ..utils import VariablePool, variables_values_repr
 from ..utils import MigrationVariable, DynamicVariable, SelectionVariable
 from .event import Model, SetSize, MoveLineages, Leaf
-from . import DemographicModel
+from . import DemographicModel, EpochDemographicModel
 from collections import OrderedDict
 import copy
 import numpy as np
 
 
 class CoalescentDemographicModel(DemographicModel):
-
     default_p = 1
     default_init_g = None
     default_size_g = 0
     default_pop_size = None
 
-    def __init__(self, N_e, mu, sequence_length=None, N_a = None, gen_time=None, rec_rate=None,
+    def __init__(self, N_e, mu, sequence_length=None, N_a=None, gen_time=None, rec_rate=None,
                  linear_constrain=None):
         self.events = list()
         self.N_e = N_e
@@ -41,27 +40,145 @@ class CoalescentDemographicModel(DemographicModel):
             name2value[var.name] = value
         return name2value
 
-    def change_pop_size(self, pop, t, size_pop=None, g=0):
+    def _get_size_pop(self, pop, time, end2dur, var2value):
+        def f(t):
+            return var2value.get(t, t)
+
+        after_event = None
+        after_time = time
+
+        for event in self.events:
+            if event.pop == pop:
+                if after_time <= f(event.t) <= time or \
+                        after_event is None and f(event.t) <= time:
+                    after_time = f(event.t)
+                    after_event = event
+
+        # incorrect time
+        assert(after_event is not None)
+        delta_time = time - f(after_event.t)
+        size = f(after_event.pop_size)
+        dyn = f(after_event.dyn)
+        g = f(after_event.g)
+        duration = end2dur[f(after_event.t)]
+        # p = last_size + g * t
+        if dyn == "Sud":
+            return size
+        if dyn == "Lin":
+            raise NotImplementedError("Cannot work with linear function.")
+        if dyn == "Exp":
+            # P = P_0 * e^{g*t}
+            start_size = size / np.exp(g * duration)
+            dt = duration - delta_time
+            return start_size * np.exp(g * dt)
+
+    def _get_epoch_duration(self, var2value):
+        times = []
+        for event in self.events:
+            times.append(var2value.get(event.t, event.t))
+        start2dur = dict()
+        end2dur = dict()
+        times.sort(reverse=True)
+        cur_time = times[0]
+        end2dur[cur_time] = 0
+        for t in times:
+            if t != cur_time:
+                start2dur[cur_time] = cur_time - t
+                end2dur[t] = cur_time - t
+                cur_time = t
+        return start2dur, end2dur
+
+    def _processing_epoch(self, epoch_model, epoch_events, pop2pos, size_args, var2value, end2dur):
+        def f(t):
+            return var2value.get(t, t)
+
+        for epoch_event in epoch_events:
+            if isinstance(epoch_event, Leaf):
+                size_args[pop2pos[epoch_event.pop]] = f(epoch_event.size_pop)
+            elif isinstance(epoch_event, MoveLineages):
+                pop2pos[epoch_event.pop_from] = len(size_args)
+                size_args.append(self._get_size_pop(pop=epoch_event.pop_from,
+                                                    time=f(epoch_event.t),
+                                                    end2dur=end2dur,
+                                                    var2value=var2value))
+                epoch_model.add_split(pop_to_div=epoch_event.pop,
+                                      size_args=size_args)
+            elif isinstance(epoch_event, SetSize):
+                size_args[pop2pos[epoch_event.pop]] = f(epoch_event.size_pop)
+
+        epoch_model.add_epoch(time_arg=end2dur[f(epoch_events[0].t)],
+                              size_args=size_args)
+
+    def translate_into(self, ModelClass, values):
+        def f(t):
+            return var2value.get(t, t)
+
+        if ModelClass is EpochDemographicModel:
+            epoch_model = EpochDemographicModel(gen_time=self.gen_time,
+                                                theta0=self.theta0,
+                                                mu=self.mu,
+                                                linear_constrain=self.linear_constrain)
+            var2value = self.var2value(values)
+
+            # set all variables in physical
+            for var in self.variables:
+                var2value[var] = var.translate_value_into(units="physical",
+                                                          value=var2value[var],
+                                                          N_A=var2value.get(self.N_a, self.N_a),
+                                                          gen_time=self.gen_time)
+
+            sorted_events = sorted(self.events,
+                                   key=lambda x: f(x.t),
+                                   reverse=True)
+            num_of_event = len(sorted_events)
+            if num_of_event == 0:
+                raise ValueError("There should be at least one event in the model")
+            start2dur, end2dur = self._get_epoch_duration(var2value)
+            pop2pos = dict()
+            pop2pos[sorted_events[0].pop] = 0
+            size_args = [f(sorted_events[0].size_pop)]
+            cur_epoch_time = f(sorted_events[0].t)
+            epoch_events = []
+            for event in sorted_events:
+                if cur_epoch_time == f(event.t):
+                    epoch_events.append(event)
+                else:
+                    self._processing_epoch(epoch_model=epoch_model,
+                                           epoch_events=epoch_events,
+                                           pop2pos=pop2pos,
+                                           size_args=size_args,
+                                           var2value=var2value,
+                                           end2dur=end2dur)
+                    cur_epoch_time = f(event.t)
+                    epoch_events = []
+            return epoch_model
+        raise ValueError(f"Can not translate coalescent demographic model into {ModelClass}")
+
+    def change_pop_size(self, pop, t, size_pop=None, dyn='Sud', g=0):
         new_set_size = SetSize(pop=pop,
                                t=t,
+                               dyn=dyn,
                                size_pop=size_pop,
                                g=g)
         self.events.append(new_set_size)
         self.add_variables(new_set_size.variables)
 
-    def move_lineages(self, pop_from, pop_to, t, p=1, size_pop_to=None, g_pop_to=None):
+    def move_lineages(self, pop_from, pop, t, p=1, dyn='Sud',
+                      size_pop=None, g=None):
         new_move_lineages = MoveLineages(pop_from=pop_from,
-                                         pop_to=pop_to,
+                                         pop=pop,
                                          t=t,
                                          p=p,
-                                         size_pop_to=size_pop_to,
-                                         g_pop_to=g_pop_to)
+                                         dyn=dyn,
+                                         size_pop=size_pop,
+                                         g=g)
         self.events.append(new_move_lineages)
         self.add_variables(new_move_lineages.variables)
 
-    def add_leaf(self, pop, t=0, size_pop=None, g=None):
+    def add_leaf(self, pop, t=0, dyn='Sud', size_pop=None, g=None):
         new_leaf = Leaf(pop=pop,
                         t=t,
+                        dyn=dyn,
                         size_pop=size_pop,
                         g=g)
         self.events.append(new_leaf)

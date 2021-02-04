@@ -12,12 +12,13 @@ import warnings
 
 momi_available = True
 
+
 class MomiEngine(Engine):
     id = 'momi'
     if momi_available:
         import momi as base_module
         inner_data_type = base_module.Sfs
-    supported_models = [CustomDemographicModel]  #:
+    supported_models = [CustomDemographicModel, CoalescentDemographicModel]  #:
     supported_data = [SFSDataHolder]  #:
 
     @classmethod
@@ -33,7 +34,7 @@ class MomiEngine(Engine):
 
     def _get_pop_name(self, index):
         if self.data is None:
-            return "str" + str(index + 1)
+            return "pop" + str(index)
         return self.data.population_label[index]
 
     def _inner_func(self, values):
@@ -49,16 +50,15 @@ class MomiEngine(Engine):
         for var in self.model.variables:
             var2value[var] = var.translate_value_into(units="physical",
                                                       value=var2value[var],
-                                                      N_A=N_a,
+                                                      N_A=var2value.get(N_a, N_a),
                                                       gen_time=self.model.gen_time)
         model = None
-
         if isinstance(self.model, CustomDemographicModel):
             model = self.model.function(var2value)
         elif isinstance(self.model, CoalescentDemographicModel):
             model = self.base_module.DemographicModel(N_e=self.model.N_e,
                                                       gen_time=self.model.gen_time,
-                                                      muts_per_gen=self.model.muts_per_gen)
+                                                      muts_per_gen=self.model.mu)
             for event in self.model.events:
                 if isinstance(event, Leaf):
                     name = self._get_pop_name(event.pop)
@@ -68,13 +68,13 @@ class MomiEngine(Engine):
                                    g=_get_value(event.g))
                 elif isinstance(event, MoveLineages):
                     name_pop_from = self._get_pop_name(event.pop_from)
-                    name_pop_to = self._get_pop_name(event.pop_to)
+                    name_pop_to = self._get_pop_name(event.pop)
                     model.move_lineages(pop_from=name_pop_from,
                                         pop_to=name_pop_to,
                                         t=_get_value(event.t),
                                         p=_get_value(event.p),
-                                        N=_get_value(event.size_pop_to),
-                                        g=_get_value(event.g_pop_to))
+                                        N=_get_value(event.size_pop),
+                                        g=_get_value(event.g))
                 elif isinstance(event, SetSize):
                     name_pop = self._get_pop_name(event.pop)
                     model.set_size(pop_name=name_pop,
@@ -101,7 +101,6 @@ class MomiEngine(Engine):
 
         sampled_n_dict = dict()
         numb_of_pop = len(ns)
-
         if self.data is None:
             warnings.warn("No name for population")
 
@@ -113,7 +112,7 @@ class MomiEngine(Engine):
         snp_counts = \
             model.simulate_data(length=self.model.sequence_length,
                                 recoms_per_gen=self.model.rec_rate,
-                                muts_per_gen=self.model.muts_per_gen,
+                                muts_per_gen=self.model.mu,
                                 num_replicates=num_replicates,
                                 sampled_n_dict=sampled_n_dict)
         return snp_counts.extract_sfs(n_blocks=100)
