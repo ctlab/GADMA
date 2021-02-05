@@ -170,6 +170,8 @@ def print_runs_summary(start_time, shared_dict, settings):
 
         print(f"All best by {best_by} models")
         print("Number", *metrics, "Model", sep='\t')
+        # save fig titles to use in drawing of best model at the end
+        fig_titles = []
         for model in sorted_models:
             index, info = model
             engine, x, y_vals = info
@@ -214,16 +216,17 @@ def print_runs_summary(start_time, shared_dict, settings):
                     metric_vals.append(val_str)
             print(f"Run {index}", *metric_vals, model_str,
                   addit_str, sep='\t')
-            fig_title = f"Best by {best_by} model. "
+            fig_titles.append(f"Best by {best_by} model. ")
             ind = 0
             for metr in metrics:
                 if metr not in y_vals:
                     continue
                 val_str = metric_vals[ind]
                 ind += 1
-                fig_title += f"{metr}: {val_str}"
+                fig_titles[-1] += f"{metr}: {val_str}"
         # Draw and generate code for best model
-        _, (engine, x, y_vals) = sorted_models[0]
+        index, (engine, x, y_vals) = sorted_models[0]
+        fig_title = fig_titles[0]
         prefix = (settings.BASE_OUTPUT_DIR_PREFIX +
                   settings.LONG_NAME_2_SHORT.get(best_by.lower(),
                                                  best_by.lower()))
