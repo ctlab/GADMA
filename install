@@ -9,6 +9,6 @@ pip3 install dadi
 pip3 install Cython
 git clone https://bitbucket.org/simongravel/moments.git
 cd moments
-python3 setup.py install
+pip3 install moments
 cd ..
-python3 setup.py install
+pip3 install gadma
