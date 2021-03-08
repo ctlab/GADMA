@@ -73,7 +73,7 @@ One should translate time from years into genetic units, therefore divide it by 
 
     # param_file
     ...
-    Upper bound of second split : 83.333
+    Upper bound of second split : 41.666
     ...
 
 Resume launch
