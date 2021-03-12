@@ -1,6 +1,7 @@
 import numpy as np
-from .distributions import uniform_generator, trunc_normal_sigma_generator,\
-                           trunc_lognormal_sigma_generator, DemographicGenerator
+from .distributions import uniform_generator, trunc_normal_sigma_generator, \
+    trunc_lognormal_sigma_generator, \
+    DemographicGenerator
 from functools import partial
 from keyword import iskeyword
 
@@ -27,11 +28,12 @@ class Variable(object):
     :param rand_gen: random generator of the variable, should be a function
                      that takes domain as argument and returns sampled value.
     '''
+
     def __init__(self, name, var_type, domain, rand_gen):
         self.is_active = True
         self.name = name
         # TODO The following assert does not work for python 2
-        assert(name.isidentifier() and not iskeyword(name))
+        assert (name.isidentifier() and not iskeyword(name))
         self.var_type = var_type
         self.domain = domain
         self.rand_gen = rand_gen
@@ -124,7 +126,6 @@ class ContinuousVariable(Variable):
 
 
 class DemographicVariable(ContinuousVariable):
-
     default_N_A_domain = np.array([100, 1e6])
     default_gen_time = 25
 
@@ -134,9 +135,11 @@ class DemographicVariable(ContinuousVariable):
         self.units = units
         super(DemographicVariable, self).__init__(name, domain, rand_gen)
         if units == "physical":
-            self.rand_gen = DemographicGenerator(genetic_generator=self.rand_gen,
-                                                 N_A_domain=self.default_N_A_domain,
-                                                 gen_time=self.default_gen_time)
+            self.rand_gen = DemographicGenerator(
+                genetic_generator=self.rand_gen,
+                N_A_domain=self.default_N_A_domain,
+                gen_time=self.default_gen_time
+            )
 
     def translate_value_into(self, units, value, N_A=None, gen_time=None):
         raise NotImplementedError
@@ -146,13 +149,23 @@ class DemographicVariable(ContinuousVariable):
             return
         if N_A_variable is None:
             raise ValueError("Set domain for N_A variable  for translation")
-        self.domain[0] = self.translate_value_into(units, self.domain[0],
-                                                   N_A_variable.domain[0], gen_time)
-        self.domain[1] = self.translate_value_into(units, self.domain[1],
-                                                   N_A_variable.domain[1], gen_time)
+        self.domain[0] = self.translate_value_into(
+            units, self.domain[0],
+            N_A_variable.domain[0], gen_time
+        )
+        self.domain[1] = self.translate_value_into(
+            units,
+            self.domain[1],
+            N_A_variable.domain[1],
+            gen_time
+        )
         self.units = units
         if units == "physical":
-            self.rand_gen = DemographicGenerator(self.rand_gen, N_A_variable.domain, gen_time)
+            self.rand_gen = DemographicGenerator(
+                self.rand_gen,
+                N_A_variable.domain,
+                gen_time
+            )
         elif units == "genetic":
             self.rand_gen = self.rand_gen.genetic_generator
 
@@ -181,7 +194,7 @@ class DiscreteVariable(Variable):
         if rand_gen is None:
             rand_gen = self.__class__.default_rand_gen
         super(DiscreteVariable, self).__init__(
-                    name, 'discrete', domain, rand_gen)
+            name, 'discrete', domain, rand_gen)
 
     @property
     def domain(self):
@@ -235,7 +248,6 @@ class PopulationSizeVariable(DemographicVariable):
             return type(N_A)(value / N_A)
         else:
             raise ValueError(f"Units {units} is incorrect")
-
 
     @staticmethod
     def translate_units(value, Nanc):
@@ -330,7 +342,7 @@ class FractionVariable(ContinuousVariable):
 
     * :attr:`default_rand_gen` = random uniform distribution over domain.
     """
-    default_domain = np.array([1e-3, 1-1e-3])
+    default_domain = np.array([1e-3, 1 - 1e-3])
     default_rand_gen = uniform_generator
 
     @staticmethod
