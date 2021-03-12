@@ -59,7 +59,7 @@ from .utils import warning_format, get_aic_score  # NOQA
 from .utils import Variable, ContinuousVariable, DiscreteVariable  # NOQA
 from .utils import TimeVariable, PopulationSizeVariable, MigrationVariable  # NOQA
 from .utils import SelectionVariable, DynamicVariable, FractionVariable  # NOQA
-from .utils import VariablePool  # NOQA
+from .utils import DemographicVariable, VariablePool  # NOQA
 from .utils import abspath, check_file_existence, check_dir_existence  # NOQA
 from .utils import ensure_file_existence, ensure_dir_existence  # NOQA
 

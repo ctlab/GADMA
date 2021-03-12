@@ -724,7 +724,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             report_file = ensure_file_existence(report_file)
 
         # Initial design
-        restored = False
+        # restored = False
         if restore_file is not None and self.valid_restore_file(restore_file):
             (n_gen_old, n_eval_old, n_impr_gen_old, X_gen, Y_gen, X_total,
              Y_total, cur_mut_rate, cur_mut_strength) = self.load(restore_file)
@@ -761,7 +761,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                 new_X_init.extend(X_init[len(Y_init):])
                 Y_init.extend(Y_gen)
                 X_init = new_X_init
-            restored = True
+            # restored = True
 
         # Perform 0 generation of GA - initial design.
         if X_init is not None:

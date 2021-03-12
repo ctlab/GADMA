@@ -28,7 +28,7 @@ class DemographicModel(Model):
                  has_anc_size=False, linear_constrain=None):
         super(DemographicModel, self).__init__(raise_excep=False)
         self.gen_time = gen_time
-        self.Nref = Nref  #rescaling factor
+        self.Nref = Nref  # rescaling factor
         self.theta0 = theta0  # mutation flux = 4 * mu * length
         self.mu = mu  # mutation rate per base per generation
         self.has_anc_size = has_anc_size
@@ -54,7 +54,8 @@ class DemographicModel(Model):
         if isinstance(variable, DemographicVariable):
             if variable.units == "physical":
                 variable.rescale(self.Nref)
-        if self.Nref is not None and not isinstance(variable, DemographicVariable):
+        if self.Nref is not None and not isinstance(variable,
+                                                    DemographicVariable):
             raise ValueError("Demographic model has rescaling factor (Nref), "
                              "it is not possible to add not-demographic "
                              f"variables in it. Got variable: {variable}.")
@@ -80,9 +81,7 @@ class DemographicModel(Model):
 
     def translate_values(self, units, values, Nanc=None):
         """
-        Translates values from current units to new. Current version translates
-        only for cases of 1) has_anc_size==True + Nref!=None + Nanc==None;
-        2) has_anc_size==False + Nanc!=None. In 1) case Nref of the 
+        Translates values from current units to new.
 
         :param units: Units to translate to. Could be "physical" or "genetic".
         :param values: Values of parameters.
