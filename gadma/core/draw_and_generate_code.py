@@ -193,7 +193,8 @@ def print_runs_summary(start_time, shared_dict, settings):
                     model_str = engine.model.as_custom_string(x)
                 else:
                     model_str = f" [Nanc = {int(Nanc)}] "
-                    x_translated = engine.model.translate_units(x, Nanc)
+                    x_translated = engine.model.translate_values(
+                        units="physical", values=x, Nanc=Nanc)
                     model_str += engine.model.as_custom_string(x_translated)
             else:
                 model_str = engine.model.as_custom_string(x)

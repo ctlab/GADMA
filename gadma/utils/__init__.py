@@ -1,6 +1,7 @@
 from .variables import Variable, ContinuousVariable, DiscreteVariable  # NOQA
 from .variables import TimeVariable, PopulationSizeVariable, MigrationVariable  # NOQA
 from .variables import SelectionVariable, DynamicVariable, FractionVariable  # NOQA
+from .variables import DemographicVariable  # NOQA
 from .variable_pool import VariablePool  # NOQA
 from .utils import logarithm_transform, exponent_transform, ident_transform  # NOQA
 from .utils import choose_by_weight, sort_by_other_list, fix_args, lru_cache  # NOQA
@@ -15,3 +16,4 @@ from .distributions import trunc_normal, trunc_lognormal  # NOQA
 from .distributions import trunc_normal_3_sigma_rule, trunc_lognormal_3_sigma_rule  # NOQA
 from .distributions import uniform_generator, trunc_lognormal_sigma_generator  # NOQA
 from .distributions import trunc_normal_sigma_generator, custom_generator  # NOQA
+from .distributions import rescale_generator  # NOQA

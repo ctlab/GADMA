@@ -231,11 +231,12 @@ class TestModels(unittest.TestCase):
                 engine.set_model(dm)
                 engine.set_data(data)
                 Nanc = engine.get_theta(dic, *args)
-                tr = dm.translate_units(dic, Nanc)
+                tr = dm.translate_values("physical", dic, Nanc)
+                _tr = dm.translate_values("genetic", dic, Nanc)
                 dm_copy = copy.deepcopy(dm)
                 dm_copy.add_variable(ContinuousVariable("some", [-1, 10]))
                 dic['some'] = 0
-                self.assertRaises(ValueError, dm_copy.translate_units,
+                self.assertRaises(ValueError, dm_copy.translate_values,
                                   dic, Nanc)
                 dm.as_custom_string(dic)
 
@@ -324,7 +325,7 @@ class TestModels(unittest.TestCase):
         fxnu1 = Multiplication(f, nu1)
         tf = Multiplication(f, t)
 
-        model1 = EpochDemographicModel()
+        model1 = EpochDemographicModel(has_anc_size=False)
         model1.add_epoch(t, [nu1])
         model1.add_split(0, [nu1, nu2])
         model1.add_epoch(t, [nu2, fxnu1], [[0, m], [0, 0]], [d1, d2])

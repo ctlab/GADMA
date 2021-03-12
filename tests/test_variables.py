@@ -3,6 +3,15 @@ import unittest
 from gadma import *
 import gadma
 import numpy as np
+import copy
+
+
+test_classes = [PopulationSizeVariable,
+                TimeVariable,
+                MigrationVariable,
+                SelectionVariable,
+                DynamicVariable,
+                FractionVariable]
 
 
 class TestVariables(unittest.TestCase):
@@ -40,12 +49,6 @@ class TestVariables(unittest.TestCase):
                       " or DiscreteVariable instance")
 
     def test_variable_classes(self):
-        test_classes = [PopulationSizeVariable,
-                        TimeVariable,
-                        MigrationVariable,
-                        SelectionVariable,
-                        DynamicVariable,
-                        FractionVariable]
         for i, cls in enumerate(test_classes):
             with self.subTest(variable_cls=cls):
                 self._test_variable(cls('var%d' % i))
@@ -77,9 +80,7 @@ class TestVariables(unittest.TestCase):
         for cls in [gadma.utils.variables.Exp, gadma.utils.variables.Lin,
                     gadma.utils.variables.Sud]:
             el = cls()
-            print(el)
             func = el._inner_func(y1, y2, t)
-            print(func)
             if str(el) != 'Sud':
                 self.assertEqual(func(0), y1)
             else:
@@ -93,9 +94,41 @@ class TestVariables(unittest.TestCase):
         self.assertEqual(var1.translate_value_into("physical", 1e4), 1e4)
         self.assertEqual(var2.translate_value_into("physical", 1.2, 1e4), 1.2e4)
         N_A = PopulationSizeVariable("N_A", domain=[1e3, 1e4])
-        var2.translate_units_to("physical", N_A)
+        var2.translate_units_to("physical", N_A.domain)
         self.assertEqual(var2.units, "physical")
         var3 = TimeVariable("var3", units="physical")
-        self.assertEqual(var3.translate_value_into("genetic", 1e4, 1e2, 25), 2)
-        var3.translate_units_to("genetic", N_A, 25)
+        self.assertEqual(var3.translate_value_into("genetic", 1e4, 1e2), 50)
+        var3.translate_units_to("genetic", N_A.domain)
         self.assertEqual("genetic", var3.units)
+
+        for var_cls in test_classes:
+            if (issubclass(var_cls, ContinuousVariable) and 
+                    var_cls is not FractionVariable):
+                var = var_cls("name", units="genetic")
+                self.assertEqual(list(var.domain),
+                                 list(var_cls.default_domain))
+                var.translate_units_to(units="physical")
+                self.assertEqual(var.units, "physical")
+                self.assertNotEqual(list(var.domain),
+                                    list(var_cls.default_domain))
+
+                var = var_cls("name", units="physical")
+                self.assertNotEqual(list(var.domain),
+                                    list(var_cls.default_domain))
+                for i in range(1000):
+                    self.assertTrue(var.domain[0] <= var.resample() \
+                                    <= var.domain[1])
+                var.translate_units_to(units="genetic")
+                self.assertEqual(var.units, "genetic")
+                self.assertEqual(list(var.domain),
+                                 list(var_cls.default_domain))
+            else:
+                var = var_cls("name")
+                self.assertEqual(var.units, "universal")
+                self.assertRaises(TypeError, var_cls, units="physical")
+                var_orig = copy.deepcopy(var)
+                for units in ["physical", "genetic"]:
+                    var.translate_units_to(units)
+                    self.assertEqual(var.units, "universal")
+                    self.assertEqual(list(var_orig.domain), list(var.domain))
+

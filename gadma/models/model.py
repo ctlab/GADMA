@@ -118,7 +118,7 @@ class Model(object):
         else:
             raise TypeError("Values are either not list nor dict.")
 
-        assert len(ret_dict) == len(self.variables)
+        assert len(ret_dict) == len(self.variables), f"{ret_dict} != {self.variables}"
         return {**ret_dict, **self.fixed_values}
 
     def string_repr(self, values):

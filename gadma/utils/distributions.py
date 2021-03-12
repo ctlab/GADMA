@@ -85,7 +85,7 @@ def custom_generator(variables):
     values = list()
     for var in variables:
         x = var.resample()
-        values.append(var.translate_units(x, N_A))
+        values.append(var.translate_value_into("physical", value=x, Nanc=N_A))
         if isinstance(var, ContinuousVariable):
             values[-1] = max(values[-1], var.domain[0])
             values[-1] = min(values[-1], var.domain[1])
@@ -109,6 +109,13 @@ class DemographicGenerator:
         if self.gen_time is not None:
             return _correct_val(type(N_A)(2 * self.gen_time * N_A * value))
         return _correct_val(type(N_A)(N_A * value))
+
+
+def rescale_generator(generator, factor):
+    def wrap_generator(domain, *args, **kwargs):
+        res = generator(np.array(domain) * factor, *args, **kwargs)
+        return res / factor
+    return wrap_generator
 
 # def multiply_generator(gen1, domain1, gen2, domain2):
 #     def generator(domain):
