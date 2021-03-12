@@ -1,10 +1,9 @@
+from .. import BinaryOperation
 from ..utils import Variable, PopulationSizeVariable, TimeVariable
 from ..utils import VariablePool, variables_values_repr
 from ..utils import MigrationVariable, DynamicVariable, SelectionVariable
 from .event import Model, SetSize, MoveLineages, Leaf
 from . import DemographicModel, EpochDemographicModel
-from collections import OrderedDict
-import copy
 import numpy as np
 
 
@@ -40,26 +39,36 @@ class CoalescentDemographicModel(DemographicModel):
             name2value[var.name] = value
         return name2value
 
-    def _get_size_pop(self, pop, time, end2dur, var2value):
-        def f(t):
-            return var2value.get(t, t)
+    def _get_size_pop(self, pop, time, var2value):
+        def f(var):
+            if isinstance(var, BinaryOperation):
+                return var.get_value(var2value)
+            return var2value.get(var, var)
 
         after_event = None
         after_time = time
 
         for event in self.events:
             if event.pop == pop:
-                if after_time <= f(event.t) <= time or \
-                        after_event is None and f(event.t) <= time:
+                if after_time < f(event.t) < time or \
+                        after_event is None and f(event.t) < time:
                     after_time = f(event.t)
                     after_event = event
 
         # incorrect time
-        assert(after_event is not None)
+        if after_event is None:
+            for event in self.events:
+                if event.pop == pop:
+                    if f(event.t) < after_time or \
+                            after_event is None:
+                        after_time = f(event.t)
+                        after_event = event
+        assert (after_event is not None)
         delta_time = time - f(after_event.t)
-        size = f(after_event.pop_size)
+        size = f(after_event.size_pop)
         dyn = f(after_event.dyn)
         g = f(after_event.g)
+        end2dur = self._get_epoch_duration(var2value=var2value)
         duration = end2dur[f(after_event.t)]
         # p = last_size + g * t
         if dyn == "Sud":
@@ -70,12 +79,19 @@ class CoalescentDemographicModel(DemographicModel):
             # P = P_0 * e^{g*t}
             start_size = size / np.exp(g * duration)
             dt = duration - delta_time
+            # TODO add groth rate
+            # add_epoch(, [start_size * np.exp(g * dt), ]
             return start_size * np.exp(g * dt)
 
     def _get_epoch_duration(self, var2value):
+        def f(var):
+            if isinstance(var, BinaryOperation):
+                return var.get_value(var2value)
+            return var2value.get(var, var)
+
         times = []
         for event in self.events:
-            times.append(var2value.get(event.t, event.t))
+            times.append(f(event.t))
         start2dur = dict()
         end2dur = dict()
         times.sort(reverse=True)
@@ -86,45 +102,50 @@ class CoalescentDemographicModel(DemographicModel):
                 start2dur[cur_time] = cur_time - t
                 end2dur[t] = cur_time - t
                 cur_time = t
-        return start2dur, end2dur
+        return end2dur
 
-    def _processing_epoch(self, epoch_model, epoch_events, pop2pos, size_args, var2value, end2dur):
-        def f(t):
-            return var2value.get(t, t)
-
+    def _processing_epoch(self, epoch_model, epoch_events, pop2pos, size_args, var2value, epoch_begin, epoch_end):
         for epoch_event in epoch_events:
-            if isinstance(epoch_event, Leaf):
-                size_args[pop2pos[epoch_event.pop]] = f(epoch_event.size_pop)
-            elif isinstance(epoch_event, MoveLineages):
+            if isinstance(epoch_event, MoveLineages):
                 pop2pos[epoch_event.pop_from] = len(size_args)
                 size_args.append(self._get_size_pop(pop=epoch_event.pop_from,
-                                                    time=f(epoch_event.t),
-                                                    end2dur=end2dur,
+                                                    time=epoch_begin,
                                                     var2value=var2value))
-                epoch_model.add_split(pop_to_div=epoch_event.pop,
-                                      size_args=size_args)
-            elif isinstance(epoch_event, SetSize):
-                size_args[pop2pos[epoch_event.pop]] = f(epoch_event.size_pop)
 
-        epoch_model.add_epoch(time_arg=end2dur[f(epoch_events[0].t)],
+                size_args[pop2pos[epoch_event.pop]] = self._get_size_pop(pop=epoch_event.pop,
+                                                                         time=epoch_begin,
+                                                                         var2value=var2value)
+                epoch_model.add_split(pop_to_div=epoch_event.pop,
+                                      size_args=[size_args[pop2pos[epoch_event.pop]],
+                                                 size_args[pop2pos[epoch_event.pop_from]]])
+        for pop, pos in pop2pos.items():
+            size_args[pos] = self._get_size_pop(pop=pop,
+                                                time=epoch_end,
+                                                var2value=var2value)
+        epoch_model.add_epoch(time_arg=epoch_begin - epoch_end,
                               size_args=size_args)
 
     def translate_into(self, ModelClass, values):
-        def f(t):
-            return var2value.get(t, t)
+        def f(variable):
+            if isinstance(variable, BinaryOperation):
+                return variable.get_value(values)
+            return var2value.get(variable, variable)
 
         if ModelClass is EpochDemographicModel:
+            if self.N_a is None:
+                raise ValueError("Set N_a value for translation")
+
             epoch_model = EpochDemographicModel(gen_time=self.gen_time,
                                                 theta0=self.theta0,
                                                 mu=self.mu,
                                                 linear_constrain=self.linear_constrain)
             var2value = self.var2value(values)
 
-            # set all variables in physical
+            # set all variables in genetic
             for var in self.variables:
-                var2value[var] = var.translate_value_into(units="physical",
+                var2value[var] = var.translate_value_into(units="genetic",
                                                           value=var2value[var],
-                                                          N_A=var2value.get(self.N_a, self.N_a),
+                                                          N_A=f(self.N_a),
                                                           gen_time=self.gen_time)
 
             sorted_events = sorted(self.events,
@@ -132,8 +153,8 @@ class CoalescentDemographicModel(DemographicModel):
                                    reverse=True)
             num_of_event = len(sorted_events)
             if num_of_event == 0:
-                raise ValueError("There should be at least one event in the model")
-            start2dur, end2dur = self._get_epoch_duration(var2value)
+                return epoch_model
+
             pop2pos = dict()
             pop2pos[sorted_events[0].pop] = 0
             size_args = [f(sorted_events[0].size_pop)]
@@ -143,14 +164,16 @@ class CoalescentDemographicModel(DemographicModel):
                 if cur_epoch_time == f(event.t):
                     epoch_events.append(event)
                 else:
+                    print(epoch_events)
                     self._processing_epoch(epoch_model=epoch_model,
                                            epoch_events=epoch_events,
                                            pop2pos=pop2pos,
                                            size_args=size_args,
                                            var2value=var2value,
-                                           end2dur=end2dur)
+                                           epoch_begin=cur_epoch_time,
+                                           epoch_end=f(event.t))
                     cur_epoch_time = f(event.t)
-                    epoch_events = []
+                    epoch_events = [event]
             return epoch_model
         raise ValueError(f"Can not translate coalescent demographic model into {ModelClass}")
 

@@ -6,7 +6,8 @@ from gadma.models.coalescent_demographic_model import CoalescentDemographicModel
 
 class TestCoalescentDemModel(unittest.TestCase):
 
-    def get_variables_for_gut_2009(self):
+    @staticmethod
+    def get_variables_for_gut_2009():
         nu1F = PopulationSizeVariable('nu1F')
         nu2B = PopulationSizeVariable('nu2B')
         nu2F = PopulationSizeVariable('nu2F')
@@ -14,12 +15,46 @@ class TestCoalescentDemModel(unittest.TestCase):
         T = TimeVariable('T')
         return nu1F, nu2B, nu2F, Tp, T
 
-    def get_absolute_variables_3pop(self):
+    @staticmethod
+    def get_absolute_variables_3pop():
         nu1F = PopulationSizeVariable('nu1F', units="physical")
         nu2F = PopulationSizeVariable('nu2F', units="physical")
         Tf = TimeVariable("Tf", units="physical")
         Tp = TimeVariable("Tp", units="physical")
         return nu1F, nu2F, Tf, Tp
+
+    @staticmethod
+    def get_absolute_variables_model1():
+        N_a = PopulationSizeVariable('N_a', units="genetic")
+        nu1F = PopulationSizeVariable('nu1F', units="genetic")
+        nu2B = PopulationSizeVariable('nu2B', units="genetic")
+        nu2F = PopulationSizeVariable('nu2F', units="genetic")
+        t1 = TimeVariable('t1', units="genetic")
+        t2 = TimeVariable('t2', units="genetic")
+        return N_a, nu1F, nu2B, nu2F, t1, t2
+
+    def test_model1_translation(self):
+        N_a, nu1F, nu2B, nu2F, t1, t2 = self.get_absolute_variables_model1()
+        var2values = {
+            'nu1F': 0.1,
+            'nu2F': 0.7,
+            'nu2B': 0.5,
+            'N_a': 1e5,
+            't1': 1,
+            't2': 5
+        }
+        m = CoalescentDemographicModel(N_e=1e4, N_a=N_a, sequence_length=1e6, gen_time=29, mu=1.25e-8)
+        m.add_leaf(0, size_pop=nu1F)
+        m.add_leaf(1, size_pop=nu2F)
+        m.change_pop_size(1, t=t1, size_pop=nu2B)
+        m.move_lineages(1, 0, t=t2, size_pop=1)
+        translated_model = m.translate_into(EpochDemographicModel, var2values)
+        em = EpochDemographicModel()
+        em.add_split(0, [0.1, 0.5])
+        em.add_epoch(4, [0.1, 0.5])
+        em.add_epoch(1, [0.1, 0.7])
+        self.assertEqual(em.as_custom_string(values=var2values),
+                         translated_model.as_custom_string(values=var2values))
 
     def test_3pop_model_translation(self):
         nu1F, nu2F, Tf, Tp = self.get_absolute_variables_3pop()
@@ -37,7 +72,6 @@ class TestCoalescentDemModel(unittest.TestCase):
         }
 
         m.translate_into(EpochDemographicModel, var2values)
-
 
     def test_gut2009_translation(self):
         nu1F, nu2B, nu2F, Tp, T = self.get_variables_for_gut_2009()
