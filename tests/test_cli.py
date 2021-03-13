@@ -294,6 +294,7 @@ class TestCLI(unittest.TestCase):
                           'min_n', 0)
         self.assertTrue(
             list(PopulationSizeVariable('v').domain) == [0.1, 1000])
+        PopulationSizeVariable.default_domain = [1e-2, 100]  # going back
         settings.min_t = 1e-4
         settings.max_t = 10
         self.assertRaises(ValueError, settings.__setattr__,

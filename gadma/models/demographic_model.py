@@ -17,31 +17,44 @@ class DemographicModel(Model):
     :type mu: float
     :param Nref: rescaling factor of the parameters values.
     :type Nref: float
-    :param has_anc_size: If True then demographic model has parameter of the
-                         ancestral population size. Usually it is True but
-                         for dadi and moments this parameter could be missed.
-    :type has_anc_size: bool
+    :param Nanc_variable: If not None then demographic model has parameter of
+                          the ancestral population size. Usually it is some
+                          variable but for dadi and moments this parameter
+                          could be missed.
+    :type Nanc_variable: :class:`gadma.utils.Variable`
     :param linear_constrain: linear constrain on parameters.
     :type linear_constrain: :class:`gadma.optimizers.LinearConstrain`
     """
     def __init__(self, gen_time=None, theta0=None, mu=None, Nref=None,
-                 has_anc_size=False, linear_constrain=None):
+                 Nanc_variable=None, linear_constrain=None):
         super(DemographicModel, self).__init__(raise_excep=False)
         self.gen_time = gen_time
         self.Nref = Nref  # rescaling factor
         self.theta0 = theta0  # mutation flux = 4 * mu * length
         self.mu = mu  # mutation rate per base per generation
-        self.has_anc_size = has_anc_size
+        self.Nanc_variable = Nanc_variable
         if self.has_anc_size:
-            self.Nanc_variable = PopulationSizeVariable("Nanc",
-                                                        units="physical")
+            if not isinstance(self.Nanc_variable, PopulationSizeVariable):
+                raise ValueError("Nanc_variable must be instance of "
+                                 "PopulationSizeVariable, got: "
+                                 f"{self.Nanc_variable.__class__}.")
+            if self.Nanc_variable.units != "physical":
+                 raise ValueError("Nanc_variable must be in physical units, "
+                                  f"got: {self.Nanc_variable.units}.")
             # If we have rescaling we have to rescale Nanc, it will be done
             # automatically in add_variable
             self.add_variable(self.Nanc_variable)
+            assert len(self.variables) == 1
+            # as there was rescaling then variable has changed:
+            self.Nanc_variable = self.variables[0]
         else:
             self.Nanc_variable = None
         self.fixed_vars = {}
         self.linear_constrain = linear_constrain
+
+    @property
+    def has_anc_size(self):
+        return self.Nanc_variable is not None
 
     def add_variable(self, variable):
         """
@@ -51,9 +64,6 @@ class DemographicModel(Model):
         :param variable: variable to add.
         :type variable: :class:`Variable`
         """
-        if isinstance(variable, DemographicVariable):
-            if variable.units == "physical":
-                variable.rescale(self.Nref)
         if self.Nref is not None and not isinstance(variable,
                                                     DemographicVariable):
             raise ValueError("Demographic model has rescaling factor (Nref), "
@@ -79,40 +89,54 @@ class DemographicModel(Model):
             values = [val for var, val in self.var2value(values).items()]
         return variables_values_repr(self.variables, values)
 
-    def translate_values(self, units, values, Nanc=None):
+    def translate_values(self, units, values, Nanc=None,
+                         time_in_generations=False, rescale_back=False):
         """
-        Translates values from current units to new.
+        Translates values from current units to new. If some variables do not
+        have units they are not translated.
 
         :param units: Units to translate to. Could be "physical" or "genetic".
         :param values: Values of parameters.
         :param Nanc: Size of ancestral population if it is not a parameter.
                      E.g. has_anc_size could be False.
+        :param time_in_generations: If False then time is translated to
+                                    years according to gen_time of model. 
+                                    Valid only if `units`=="physical".
+        :param rescale_back: If True then values are rescaled back according
+                             to Nref factor of the model.
         """
         if Nanc is None and not self.has_anc_size:
-            raise ValueError("It is not possible to translate parameter values"
-                             " of model without Nanc as parameter "
-                             "(has_anc_size==False).")
-        if Nanc is None and self.has_anc_size:
-            Nanc = self.var2value(values)[self.Nanc_variable]
-        Tg = self.gen_time
-        if Tg is None:
-            Tg = 1
+            for var in self.variables:
+                if (isinstance(var, DemographicVariable) and
+                        var.units == "physical"):
+                    raise ValueError("It is not possible to translate "
+                                     "parameter values of model without Nanc "
+                                     "as parameter (has_anc_size==False).")
         var2value = self.var2value(values)
+        if Nanc is None and self.has_anc_size:
+            Nanc = var2value[self.Nanc_variable]
+        Tg = self.gen_time
+        if Tg is None or time_in_generations:
+            Tg = 1
         translated_values = list()
-        for var, val in var2value.items():
-            if not hasattr(var, 'translate_value_into'):
-                raise ValueError("Values cannot be translated for demographic"
-                                 " model as there is at least one variable "
-                                 "that is not specified as demographic.")
-            if var.units == "physical" and self.Nref is not None:
-                var.rescale(1/self.Nref)
-            translated_values.append(var.translate_value_into(units=units,
-                                                              value=val,
-                                                              Nanc=Nanc))
-            if isinstance(var, TimeVariable):
-                translated_values[-1] *= Tg
-            if var.units == "physical" and self.Nref is not None:
-                var.rescale(self.Nref)
+        for var in self.variables:
+            val = var2value[var]
+            if not isinstance(var, DemographicVariable):
+                # ignore translation if it is not possible to do it
+                tr_value = val
+            else:
+                tr_value = var.translate_value_into(units=units,
+                                                    value=val,
+                                                    Nanc=Nanc)
+            if isinstance(var, TimeVariable) and units == "physical":
+                tr_value *= Tg
+            # If our physical units are scaled then we should rescale them back
+            if rescale_back:
+                if (self.Nref is not None and
+                        isinstance(var, DemographicModel) and
+                        var.units == "physical"):
+                    tr_value = var.rescale_value(tr_value, reverse=True)
+            translated_values.append(tr_value)
         return translated_values
 
 
@@ -125,15 +149,16 @@ class EpochDemographicModel(DemographicModel):
     constructor docs.
     """
     def __init__(self, gen_time=None, theta0=None, mu=None, Nref=None,
-                 has_anc_size=False, linear_constrain=None):
+                 Nanc_variable=None, linear_constrain=None):
         self.events = list()
-        lin_con = linear_constrain
-        super(EpochDemographicModel, self).__init__(gen_time=gen_time,
-                                                    theta0=theta0,
-                                                    mu=mu,
-                                                    Nref=Nref,
-                                                    has_anc_size=has_anc_size,
-                                                    linear_constrain=lin_con)
+        super(EpochDemographicModel, self).__init__(
+            gen_time=gen_time,
+            theta0=theta0,
+            mu=mu,
+            Nref=Nref,
+            Nanc_variable=Nanc_variable,
+            linear_constrain=linear_constrain
+        )
 
     def _get_current_pop_sizes(self):
         """
@@ -141,12 +166,12 @@ class EpochDemographicModel(DemographicModel):
         """
         if len(self.events) == 0:
             if self.has_anc_size:
-                return [self.Nanc_variable]
-            if self.Nref:
-                # rescaling Nanc = 1.0:
-                size_cls = PopulationSizeVariable
-                return size_cls._transform_value_from_phys_to_gen(1.0,
-                                                                  self.Nref)
+                return copy.copy([self.Nanc_variable])
+#            if self.Nref is not None:
+#                # rescaling Nanc = 1.0:
+#                size_cls = PopulationSizeVariable
+#                return size_cls._transform_value_from_phys_to_gen(1.0,
+#                                                                  self.Nref)
             return [1.0]
         return copy.copy(self.events[-1].size_args)
 

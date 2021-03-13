@@ -48,6 +48,10 @@ class DadiOrMomentsEngine(Engine):
         data = read_dadi_data(cls.base_module, data_holder)
         return data
 
+    @property
+    def multinom(self):
+        return not self.model.has_anc_size
+
     def _get_key(self, x, grid_sizes):
         var2value = self.model.var2value(x)
         key = tuple(var2value[var] for var in self.model.variables)
@@ -133,6 +137,8 @@ class DadiOrMomentsEngine(Engine):
         return theta / theta0
 
     def get_N_ancestral(self, values, grid_sizes):
+        if self.model.has_anc_size:
+            return self.model.var2value(values)[self.model.Nanc_variable]
         theta = self.get_theta(values, grid_sizes)
         return self.get_N_ancestral_from_theta(theta)
 
@@ -183,13 +189,34 @@ class DadiOrMomentsEngine(Engine):
         if self.data is None or self.model is None:
             raise ValueError("Please set data and model for the engine or"
                              " use set_and_evaluate function instead.")
-        model_sfs = self.simulate(values, self.data.sample_sizes, grid_sizes)
-        # The next two lines usually works like ll_multinom, but when we have
-        # some constrains it could turn out to be ll with some other theta.
-        theta = self._get_theta_from_sfs(values, model_sfs)
+        values_gen = self.model.translate_values(units="genetic",
+                                                 values=values,
+                                                 time_in_generations=False)
+        model_sfs = self.simulate(values_gen,
+                                  self.data.sample_sizes,
+                                  grid_sizes)
+        # TODO: process it
+        if not self.multinom and self.model.linear_constrain is not None:
+            raise ValueError(f"{self.id} engine could not process constrains "
+                             "on demographic model parameters (bounds of time "
+                             "splits) in not-multinom mode.")
+        if not self.multinom:
+            theta0_inv = self.get_N_ancestral_from_theta(1)
+            if theta0_inv is None:
+                warnings.warn("Theta0 is not set and translation of Nanc "
+                              "variable with theta0=1 could be wrong.")
+                theta0_inv = 1.0
+            theta0 = 1 / theta0_inv
+            # just got value of Nanc from values
+            theta = theta0 * self.get_N_ancestral(values, grid_sizes)
+        else:
+            # The next two lines usually works like ll_multinom, but when we
+            # have some constrains it could turn out to be ll with some other
+            # theta.
+            theta = self._get_theta_from_sfs(values_gen, model_sfs)
         ll_model = self.base_module.Inference.ll(theta * model_sfs, self.data)
         # Save simulated data
-        key = self._get_key(values, grid_sizes)
+        key = self._get_key(values_gen, grid_sizes)
         self.saved_add_info[key] = theta
         return ll_model
 

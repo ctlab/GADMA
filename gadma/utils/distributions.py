@@ -111,10 +111,10 @@ class DemographicGenerator:
         return _correct_val(type(N_A)(N_A * value))
 
 
-def rescale_generator(generator, factor):
-    def wrap_generator(domain, *args, **kwargs):
-        res = generator(np.array(domain) * factor, *args, **kwargs)
-        return res / factor
+def rescale_generator(generator, rescale_function, *args, **kwargs):
+    def wrap_generator(domain, *gen_args, **gen_kwargs):
+        res = generator(np.array(domain) * factor, *gen_args, **gen_kwargs)
+        return rescale_function(res, *args, **kwargs)
     return wrap_generator
 
 # def multiply_generator(gen1, domain1, gen2, domain2):

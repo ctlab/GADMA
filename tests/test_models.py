@@ -217,7 +217,7 @@ class TestModels(unittest.TestCase):
         dm.add_split(0, [nu1F, Multiplication(f, nu2B)])
         dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', Dyn])
 
-        dic = {'nu1F': 1.880, nu2B: 0.0724, 'f': 1.0, 'nu2F': 1.764,
+        dic = {'nu1F': 1.880, nu2B: 0.0724, 'f': 0.9, 'nu2F': 1.764,
                'm': 0.930, 'Tp':  0.363, 'T': 0.112, 'Dyn': 'Exp',
                'SudDyn': 'Sud', 's': 0.1, 'dom': 0.5}
 
@@ -234,10 +234,11 @@ class TestModels(unittest.TestCase):
                 tr = dm.translate_values("physical", dic, Nanc)
                 _tr = dm.translate_values("genetic", dic, Nanc)
                 dm_copy = copy.deepcopy(dm)
-                dm_copy.add_variable(ContinuousVariable("some", [-1, 10]))
-                dic['some'] = 0
-                self.assertRaises(ValueError, dm_copy.translate_values,
-                                  dic, Nanc)
+                # raise error if not demographic parameters
+                # dm_copy.add_variable(ContinuousVariable("some", [-1, 10]))
+                # dic['some'] = 0
+                # self.assertRaises(ValueError, dm_copy.translate_values,
+                #                    "genetic", dic, Nanc)
                 dm.as_custom_string(dic)
 
         # test failures
@@ -325,7 +326,7 @@ class TestModels(unittest.TestCase):
         fxnu1 = Multiplication(f, nu1)
         tf = Multiplication(f, t)
 
-        model1 = EpochDemographicModel(has_anc_size=False)
+        model1 = EpochDemographicModel()
         model1.add_epoch(t, [nu1])
         model1.add_split(0, [nu1, nu2])
         model1.add_epoch(t, [nu2, fxnu1], [[0, m], [0, 0]], [d1, d2])
@@ -351,8 +352,27 @@ class TestModels(unittest.TestCase):
         model3.add_epoch(t, [nu1, nu2, nu1], None, [d1, 'Sud', 'Sud'],
                          [s, 0, s], [h, 0.5, 0])
 
+        # create models with ancestral size
+        Nanc = PopulationSizeVariable("Nanc", units="physical")
+        Nu2 = PopulationSizeVariable("N2", units="physical")
+        T3 = TimeVariable("T", units="physical")
+
+        model4 = EpochDemographicModel(Nanc_variable=Nanc)
+        model4.add_epoch(t, [nu1])
+        model4.add_split(0, [nu1, nu2])
+        model4.add_epoch(t, [nu2, fxnu1], [[0, m], [0, 0]], [d1, d2])
+
+        model5 = EpochDemographicModel(Nanc_variable=Nanc)
+        model5.add_epoch(t, [nu1])
+        model5.add_split(0, [nu1, nu2])
+        model5.add_epoch(T3, [Nu2, fxnu1], [[0, m], [0, 0]], [d1, d2])
+        model5.add_split(1, [nu2, nu1])
+        model5.add_epoch(t, [nu1, nu2, nu1], None, None)
+
+
         values = {nu1: 2, nu2: 0.5, nu3: 0.5, t: 0.3, t2: 0.5,
-                  m: 0.1, s: 0.1, d1: 'Exp', d2: 'Lin', f: 0.5, h: 0.3}
+                  m: 0.1, s: 0.1, d1: 'Exp', d2: 'Lin', f: 0.5, h: 0.3,
+                  Nanc: 10000, Nu2: 5000, T3: 4000}
 
         for engine in all_engines():
             customfile = os.path.join(
@@ -368,7 +388,8 @@ class TestModels(unittest.TestCase):
 
             model4 = CustomDemographicModel(func, variables)
 
-            for ind, model in enumerate([model1, model2, model3, model4]):
+            for ind, model in enumerate([model1, model2,
+                                         model3, model4, model5]):
                 for description, data in self._sfs_datasets():
                     msg = f"for model {ind + 1} and {description} data and "\
                           f"{engine.id} engine"

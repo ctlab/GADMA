@@ -116,7 +116,7 @@ class Model(object):
                         if var is not None:
                             ret_dict[var] = values[key]
         else:
-            raise TypeError("Values are either not list nor dict.")
+            raise TypeError(f"Values are either not list nor dict: {values}")
 
         assert len(ret_dict) == len(self.variables), (f"{ret_dict} != "
                                                       f"{self.variables}")

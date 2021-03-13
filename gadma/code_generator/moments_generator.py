@@ -32,6 +32,8 @@ def _print_moments_func(model, values, dt_fac):
 
     f_vars = [x for x in model.variables
               if not isinstance(x, DiscreteVariable)]
+    if model.has_anc_size:
+        f_vars.pop(f_vars.index(model.Nanc_variable))
     ret_str = f"def {FUNCTION_NAME}(params, ns):\n"
     ret_str += "\t%s = params\n" % ", ".join([x.name for x in f_vars])
     ret_str += "\tsts = moments.LinearSystem_1D.steady_state_1D"\
@@ -193,7 +195,7 @@ def _print_model_plotting(engine, nanc, gen_time, gen_time_units):
 
 
 def _print_moments_main(engine, values, nanc, gen_time, gen_time_units):
-    ret_str = _print_p0(values)
+    ret_str = _print_p0(engine, values)
     ret_str += _print_moments_simulation()
     ret_str += _print_main(engine, values, mode='moments', nanc=nanc)
     ret_str += _print_model_plotting(engine, nanc, gen_time, gen_time_units)
@@ -217,7 +219,12 @@ def print_moments_code(engine, values, dt_fac, filename,
     :param gen_time_units: Units of time. String.
 
     """
-
+    # check if multinom and we should save Nanc value
+    if not engine.multinom:
+        Nanc_value = engine.model.var2value(values)[engine.model.Nanc_variable]
+        assert nanc is None or Nanc_value == nanc, f"{nanc}, {Nanc_value}"
+        nanc = Nanc_value
+    values = engine.model.translate_values(units="genetic", values=values)
     ret_str = "import moments\nimport numpy as np\n\n"
     ret_str += _print_moments_func(engine.model, values, dt_fac)
     ret_str += "\n"

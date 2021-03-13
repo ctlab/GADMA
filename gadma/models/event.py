@@ -53,7 +53,8 @@ class Epoch(Event):
     def __init__(self, time_arg, init_size_args, size_args,
                  mig_args=None, dyn_args=None, sel_args=None, dom_args=None):
         # Simple checks
-        assert(len(init_size_args) == len(size_args))
+        assert len(init_size_args) == len(size_args), (f"{len(init_size_args)}"
+                                                       f" != {len(size_args)}")
         if mig_args is not None:
             mig_args = np.array(mig_args)
             assert(mig_args.ndim == 2)

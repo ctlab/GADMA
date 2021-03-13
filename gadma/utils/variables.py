@@ -206,6 +206,9 @@ class DemographicVariable(Variable):
         self.translate_units_to(units, self.default_domain_in_phys)
 
     def translate_value_into(self, units, value, Nanc=None):
+        if not self.correct_value(value):
+            raise ValueError("Given value is not correct: "
+                             f"value {value} not in domain {self.domain}.")
         if self.units == "universal":
             return value
         if units == self.units:
@@ -245,7 +248,7 @@ class DemographicVariable(Variable):
         elif units == "genetic":
             self.rand_gen = self.rand_gen.genetic_generator
 
-    def rescale(self, Nref):
+    def rescale(self, Nref, reverse=False):
         """
         Rescales variable domain and rand_gen by factor of Nref.
         Rescaling is valid if units are physical and rescaling is done by
@@ -255,17 +258,22 @@ class DemographicVariable(Variable):
             return
         if self.units == "genetic":
             return
-        self.rand_gen = rescale_generator(self.rand_gen, Nref)
-        self.domain[0] = self.translate_value_into(
-            units="genetic",
-            value=self.domain[0],
-            Nanc=Nref,
-        )
-        self.domain[1] = self.translate_value_into(
-            units="genetic",
-            value=self.domain[1],
-            Nanc=Nref,
-        )
+        self.rand_gen = rescale_generator(self.rand_gen, self.rescale_value,
+                                          Nref, reverse=reverse)
+        self.domain[0] = self.rescale_value(self.domain[0], Nref,
+                                            reverse=reverse)
+        self.domain[1] = self.rescale_value(self.domain[1], Nref,
+                                            reverse=reverse)
+
+    def rescale_value(self, value, Nref, reverse=False):
+        """
+        Rescales value by factor of Nref.
+        """
+        if reverse:
+            return self._transform_value_from_gen_to_phys(value=value, 
+                                                          Nanc=Nref)
+        return self._transform_value_from_phys_to_gen(value=value, 
+                                                      Nanc=Nref)
 
 
 class PopulationSizeVariable(DemographicVariable, ContinuousVariable):
@@ -284,11 +292,11 @@ class PopulationSizeVariable(DemographicVariable, ContinuousVariable):
 
     @staticmethod
     def _transform_value_from_gen_to_phys(value, Nanc):
-        return type(Nanc)(Nanc * value)
+        return Nanc * value
 
     @staticmethod
     def _transform_value_from_phys_to_gen(value, Nanc):
-        return type(Nanc)(value / Nanc)
+        return value / Nanc
 
 
 def migration_generator(domain):
@@ -318,11 +326,11 @@ class MigrationVariable(DemographicVariable, ContinuousVariable):
 
     @staticmethod
     def _transform_value_from_gen_to_phys(value, Nanc):
-        return type(Nanc)(value / (2 * Nanc))
+        return value / (2 * Nanc)
 
     @staticmethod
     def _transform_value_from_phys_to_gen(value, Nanc):
-        return type(Nanc)(2 * Nanc * value)
+        return 2 * Nanc * value
 
 
 class TimeVariable(DemographicVariable, ContinuousVariable):
@@ -341,11 +349,11 @@ class TimeVariable(DemographicVariable, ContinuousVariable):
 
     @staticmethod
     def _transform_value_from_gen_to_phys(value, Nanc):
-        return type(Nanc)(2 * Nanc * value)
+        return 2 * Nanc * value
 
     @staticmethod
     def _transform_value_from_phys_to_gen(value, Nanc):
-        return type(Nanc)(value / (2 * Nanc))
+        return value / (2 * Nanc)
 
 
 class SelectionVariable(DemographicVariable, ContinuousVariable):
@@ -359,20 +367,16 @@ class SelectionVariable(DemographicVariable, ContinuousVariable):
 
     :note: Values are assumed to be in genetic units.
     """
-    default_domain = np.array([1e-15, 10])
+    default_domain = np.array([0, 10])
     default_rand_gen = trunc_normal_sigma_generator
 
     @staticmethod
     def _transform_value_from_gen_to_phys(value, Nanc):
-        return type(Nanc)(value / (2 * Nanc))
+        return value / (2 * Nanc)
 
     @staticmethod
     def _transform_value_from_phys_to_gen(value, Nanc):
-        return type(Nanc)(2 * Nanc * value)
-
-    @staticmethod
-    def translate_units(value, Nanc):
-        return value / (2 * Nanc)
+        return 2 * Nanc * value
 
 
 class FractionVariable(DemographicVariable, ContinuousVariable):
