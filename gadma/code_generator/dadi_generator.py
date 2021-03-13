@@ -186,7 +186,7 @@ def _print_ll(engine, mode='dadi'):
     else:
         ret_str = f"ll_model = {mode}.Inference.ll(theta * model, data)\n"
     ret_str += "print('Model log likelihood (LL(model, data)): "\
-                   "{0}'.format(ll_model))\n"
+               "{0}'.format(ll_model))\n"
     return ret_str
 
 
@@ -226,7 +226,7 @@ def _print_main(engine, values, mode='dadi', nanc=None):
             ret_str += f"L = {engine.data_holder.sequence_length}\n"
             ret_str += "theta0 = 4 * mu * L\n"
     else:
-        ret_str += "# As no theta0 or mut. rate + seq. length are not set\n" 
+        ret_str += "# As no theta0 or mut. rate + seq. length are not set\n"
         ret_str += "theta0 = 1.0\n"
     if engine.multinom:
         ret_str += "Nanc = int(theta / theta0)\n"

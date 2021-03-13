@@ -270,9 +270,9 @@ class DemographicVariable(Variable):
         Rescales value by factor of Nref.
         """
         if reverse:
-            return self._transform_value_from_gen_to_phys(value=value, 
+            return self._transform_value_from_gen_to_phys(value=value,
                                                           Nanc=Nref)
-        return self._transform_value_from_phys_to_gen(value=value, 
+        return self._transform_value_from_phys_to_gen(value=value,
                                                       Nanc=Nref)
 
 

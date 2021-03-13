@@ -39,8 +39,8 @@ class DemographicModel(Model):
                                  "PopulationSizeVariable, got: "
                                  f"{self.Nanc_variable.__class__}.")
             if self.Nanc_variable.units != "physical":
-                 raise ValueError("Nanc_variable must be in physical units, "
-                                  f"got: {self.Nanc_variable.units}.")
+                raise ValueError("Nanc_variable must be in physical units, "
+                                 f"got: {self.Nanc_variable.units}.")
             # If we have rescaling we have to rescale Nanc, it will be done
             # automatically in add_variable
             self.add_variable(self.Nanc_variable)
@@ -100,7 +100,7 @@ class DemographicModel(Model):
         :param Nanc: Size of ancestral population if it is not a parameter.
                      E.g. has_anc_size could be False.
         :param time_in_generations: If False then time is translated to
-                                    years according to gen_time of model. 
+                                    years according to gen_time of model.
                                     Valid only if `units`=="physical".
         :param rescale_back: If True then values are rescaled back according
                              to Nref factor of the model.
