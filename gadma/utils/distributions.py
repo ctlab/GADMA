@@ -9,7 +9,12 @@ def trunc_normal(mean, sigma, lower, upper):
     if sigma == 0:
         sigma = 1e-15
     a, b = (lower - mean) / sigma, (upper - mean) / sigma
-    return truncnorm.rvs(a, b, loc=mean, scale=sigma)
+    result = truncnorm.rvs(a, b, loc=mean, scale=sigma)
+    # fix additional list wrapper in scipy v1.5.0
+    if isinstance(result, (list, np.ndarray)):
+        assert len(result) == 1
+        result = result[0]
+    return result
 
 
 def trunc_lognormal(mean, sigma, lower, upper):
