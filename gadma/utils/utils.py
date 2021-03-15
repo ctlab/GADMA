@@ -6,6 +6,7 @@ import os
 import tempfile
 import pickle
 from multiprocessing import Process, Queue, queues
+import warnings
 
 
 def logarithm_transform(x):
@@ -133,7 +134,14 @@ def cache_func(f):
 
     @wraps(tuple_wrapper)
     def cache_wrapper(x):
-        return tuple_wrapper(tuple(x))
+        # sometimes does not work so we want to know why it is not working
+        try:
+            return tuple_wrapper(tuple(x))
+        except TypeError as e:
+            warnings.warn(f"Error occurred during caching: {e}. "
+                          f"Got vector {x} of type {type(x)}. Please, send "
+                          f"this warning to ekaterina.e.noskova@gmail.com.")
+            return f(x)
 
     cache_wrapper.cache_info = tuple_wrapper.cache_info
     return cache_wrapper
