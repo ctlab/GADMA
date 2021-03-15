@@ -3,6 +3,7 @@ from .settings_storage import HOME_DIR
 from . import SettingsStorage
 from ..core import SUPPORT_STRING
 from ..utils import ensure_dir_existence
+from .. import __version__
 
 import warnings
 import copy
@@ -19,9 +20,8 @@ def version():
     '''
     Returns string with current version.
     '''
-    from ..version import version
     return "GADMA version " + str(
-        version
+        __version__
     ) + "\tby Ekaterina Noskova (ekaterina.e.noskova@gmail.com)" + "\n"
 
 
