@@ -6,6 +6,7 @@ class VariablesCombination(Model):
     """
     Base class for combination of variables.
     """
+
     def __init__(self):
         super(VariablesCombination, self).__init__(raise_excep=False)
 
@@ -24,6 +25,7 @@ class BinaryOperation(VariablesCombination):
 
     :raises AssertError: if both arguments are not variables.
     """
+
     def __init__(self, arg1, arg2):
         super(BinaryOperation, self).__init__()
         self.arg1 = arg1
@@ -98,6 +100,7 @@ class Addition(BinaryOperation):
     """
     The sum of two variables.
     """
+
     def operation(self, val1, val2):
         return val1 + val2
 
@@ -109,6 +112,7 @@ class Subtraction(BinaryOperation):
     """
     The subtraction of two variables.
     """
+
     def operation(self, val1, val2):
         return val1 - val2
 
@@ -120,6 +124,7 @@ class Multiplication(BinaryOperation):
     """
     The multiplication of two variables.
     """
+
     def operation(self, val1, val2):
         return val1 * val2
 
@@ -131,8 +136,20 @@ class Division(BinaryOperation):
     """
     The division of one variable by another.
     """
+
     def operation(self, val1, val2):
         return val1 / val2
 
     def operation_str(self):
         return "/"
+
+
+class Pow(BinaryOperation):
+    def operation(self, val1, val2):
+        return val1 ** val2
+
+    def operation_str(self):
+        return "**"
+
+class Exp(Pow):
+    pass
