@@ -174,7 +174,10 @@ class TestModelStructure(unittest.TestCase):
 
                     if check_ll:
                         # get ll of data
-                        ll_true = engine.evaluate(x, *args)
+                        try:
+                            ll_true = engine.evaluate(x, *args)
+                        except AttributeError:
+                            assert engine.id == "dadi"
                         random_int = np.random.choice(range(len(structure)))
                     # increase structure
                     for i in range(len(structure)):
