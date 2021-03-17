@@ -49,6 +49,7 @@ jobs:
       - name: Install GADMA and its dependencies (Linux and MacOS).
         run: |
           ./install
+          python -c "import moments"
         if: matrix.os != 'windows-2019'
 
       - name: Install GADMA and its dependencies (Windows).
