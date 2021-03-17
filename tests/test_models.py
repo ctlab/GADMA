@@ -325,6 +325,7 @@ class TestModels(unittest.TestCase):
         h = FractionVariable('h')
         fxnu1 = Multiplication(f, nu1)
         tf = Multiplication(f, t)
+        t_copy = copy.deepcopy(t)
 
         model1 = EpochDemographicModel()
         model1.add_epoch(t, [nu1])
@@ -369,8 +370,7 @@ class TestModels(unittest.TestCase):
         model5.add_split(1, [nu2, nu1])
         model5.add_epoch(t, [nu1, nu2, nu1], None, None)
 
-
-        values = {nu1: 2, nu2: 0.5, nu3: 0.5, t: 0.3, t2: 0.5,
+        values = {nu1: 2, nu2: 0.5, nu3: 0.5, t_copy: 0.3, t2: 0.5,
                   m: 0.1, s: 0.1, d1: 'Exp', d2: 'Lin', f: 0.5, h: 0.3,
                   Nanc: 10000, Nu2: 5000, T3: 4000}
 

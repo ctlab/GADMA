@@ -122,6 +122,14 @@ class TestVariables(unittest.TestCase):
                 self.assertEqual(var.units, "genetic")
                 self.assertEqual(list(var.domain),
                                  list(var_cls.default_domain))
+                self.assertRaises(ValueError, var.translate_value_into,
+                                  units="physical", value=var.domain[0])
+                self.assertRaises(ValueError, var.translate_value_into,
+                                  units="some_invalid", value=var.domain[0])
+
+                # rescaling
+                var = var.rescaling(2)
+                var.resample()
             else:
                 var = var_cls("name")
                 self.assertEqual(var.units, "universal")
@@ -131,4 +139,6 @@ class TestVariables(unittest.TestCase):
                     var.translate_units_to(units)
                     self.assertEqual(var.units, "universal")
                     self.assertEqual(list(var_orig.domain), list(var.domain))
+            self.assertRaises(ValueError, var.translate_value_into,
+                              units="physical", value=-1)
 

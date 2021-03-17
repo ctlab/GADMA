@@ -397,10 +397,6 @@ class FractionVariable(DemographicVariable, ContinuousVariable):
                                                domain=domain,
                                                rand_gen=rand_gen)
 
-    @staticmethod
-    def translate_units(value, Nanc):
-        return value
-
 
 class Dynamic(object):
     """
@@ -578,7 +574,3 @@ class DynamicVariable(DemographicVariable, DiscreteVariable):
         :raises AttributeError: Dynamic variable has incomparative values.
         """
         raise AttributeError("DynamicVariable domain has incomparative values")
-
-    @staticmethod
-    def translate_units(value, Nanc):
-        return value
