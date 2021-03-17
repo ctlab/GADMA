@@ -125,7 +125,9 @@ class ContinuousVariable(Variable):
         """
         Check that value is correct for this variable.
         """
-        return self.domain[0] <= value <= self.domain[1]
+        return (self.domain[0] < value < self.domain[1] or
+                np.isclose(value, self.domain[0]) or
+                np.isclose(value, self.domain[1]))
 
 
 class DiscreteVariable(Variable):

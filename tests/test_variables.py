@@ -41,6 +41,7 @@ class TestVariables(unittest.TestCase):
             self.assertTrue(value <= domain[1])
             self.assertRaises(ValueError, variable.__class__, variable.name,
                               variable.domain[::-1])
+            variable.correct_value(variable.domain[1] + 1e-15)
         elif isinstance(variable, DiscreteVariable):
             pos_val = variable.get_possible_values()
             self.assertTrue(value in pos_val)
@@ -128,7 +129,7 @@ class TestVariables(unittest.TestCase):
                                   units="some_invalid", value=var.domain[0])
 
                 # rescaling
-                var = var.rescaling(2)
+                var.rescale(Nref=2)
                 var.resample()
             else:
                 var = var_cls("name")
