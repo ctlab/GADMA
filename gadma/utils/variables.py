@@ -268,8 +268,16 @@ class DemographicVariable(Variable):
             return
         if self.units == "genetic":
             return
-        self.rand_gen = rescale_generator(self.rand_gen, self.rescale_value,
-                                          Nref, reverse=reverse)
+        base_reverse = reverse
+
+        def rescale_func(value, reverse=False):
+            if base_reverse:
+                reverse = not reverse
+            return self.rescale_value(value=value,
+                                      Nref=Nref,
+                                      reverse=reverse)
+        self.rand_gen = rescale_generator(self.rand_gen,
+                                          rescale_function=rescale_func)
         self.domain[0] = self.rescale_value(self.domain[0], Nref,
                                             reverse=reverse)
         self.domain[1] = self.rescale_value(self.domain[1], Nref,

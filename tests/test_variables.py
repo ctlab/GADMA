@@ -129,8 +129,17 @@ class TestVariables(unittest.TestCase):
                                   units="some_invalid", value=var.domain[0])
 
                 # rescaling
+                old_domain = np.array(var.domain)
                 var.rescale(Nref=2)
                 var.resample()
+                # as it is genetic units nothing happens
+                self.assertEqual(list(old_domain), list(var.domain))
+
+                var.translate_units_to("physical")
+                old_domain = np.array(var.domain)
+                var.rescale(Nref=2)
+                var.resample()
+                self.assertNotEqual(list(old_domain), list(var.domain))
             else:
                 var = var_cls("name")
                 self.assertEqual(var.units, "universal")
