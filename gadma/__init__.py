@@ -11,6 +11,9 @@ try:
 except ImportError:
     pass
 
+from  .import dical2_path
+dical2_path = dical2_path.dical2_path
+
 try:
     import PIL
     from PIL import Image

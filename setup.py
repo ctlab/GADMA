@@ -16,6 +16,11 @@ except ImportError:
 
 import os, sys
 
+# for dical
+import urllib.request
+import tarfile
+import glob
+
 
 NAME = 'gadma'
 
@@ -36,8 +41,69 @@ with open('README.md') as f:
 
 requirements = ['numpy', 'scipy', 'matplotlib',
                 'Pillow', 'Cython', 'mpmath', 'nlopt', 'ruamel.yaml',
-                'dadi']
+                'dadi', 'jpype1']
 
+data_files = [["gadma", ["gadma/test.fs"]], ("", ["LICENSE"])]
+
+# Load dical2 or use the saved version
+def unarchive(tar_gz_archive):
+    tar = tarfile.open(tar_gz_archive, "r:gz")
+    tar.extractall()
+    names = tar.getnames()
+    tar.close()
+    return names
+
+dical2_url = "https://sourceforge.net/projects/dical2/files/latest/download?source=files"
+dical2_saved = os.path.join(".", "diCal2_2_0_5.tar.gz")
+dical2_download = os.path.join(".", "diCal2_LATEST.tar.gz")
+try:
+    urllib.request.urlretrieve(dical2_url, filename=dical2_download)
+    success = True
+except Exception as e:
+    success = False
+    print(f"Dical2 download failed due to the following exception: {e}")
+
+if not os.path.exists(dical2_download):
+    dical2_download = dical2_saved
+    print("Dical2 was taken from saved release.")
+    success = False
+
+if success:
+    try:
+        tar_names = unarchive(dical2_download)
+    except:
+        print("Dical unarchivement failed.")
+        success = False
+
+if not success:
+    try:
+        tar_names = unarchive(dical2_saved)
+        print("Dical2 was taken from saved release.")
+        success = True
+    except Exception as e:
+        print(f"Dical installation failed: {e}. Please try to do it manually. "
+              "Path to dical2 could be set in gadma/dical2_path.py file")
+        success = False
+# write our information to gadma files before installation
+if success:
+    dical_name = None
+    for name in tar_names:
+        if name.startswith("diCal2_"):
+            if os.path.isdir(os.path.join(".", name)):
+                if os.path.exists(os.path.join(".", name, "diCal2.jar")):
+                    dical_name = name
+    if dical_name is not None:
+        with open(os.path.join("gadma", "dical2_path.py"), 'w') as fl:
+            fl.write("#Generated automatically from setup.py\n")
+            fl.write(f"import os\n"
+                     f"dical2_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '{dical_name}'))")
+        # add all files to data_files
+#        data_files.append(("", []))
+        for (dirpath, dirnames, filenames) in os.walk(dical_name):
+            filenames = [os.path.join(dirpath, f_name) for f_name in filenames]
+            data_files.append((dirpath, filenames))
+
+# Begin installation
 setup(
     name=NAME,
     author='Ekaterina Noskova',
@@ -58,9 +124,9 @@ setup(
     packages=find_packages(exclude=['examples', 'tests']),
     include_package_data=True,
     package_data={
-        'gadma.cli': ['*.py',  'params_template', 'extra_params_template', 'test_settings']
+        'gadma.cli': ['*.py',  'params_template', 'extra_params_template', 'test_settings'],
     },
-    data_files=[["gadma", ["gadma/test.fs"]], ("", ["LICENSE"])],
+    data_files=data_files,
     install_requires=requirements,
     entry_points={
             'console_scripts': ['gadma = gadma.core:main',
