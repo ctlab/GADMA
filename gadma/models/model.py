@@ -122,6 +122,19 @@ class Model(object):
                                                       f"{self.variables}")
         return {**ret_dict, **self.fixed_values}
 
+    @staticmethod
+    def get_value_from_var2value(var2value, entity):
+        """
+        Returns value from var2value if entity is variable or returns entity
+        otherwise (as it means that entity is a constant)
+        """
+        from .variables_combinations import BinaryOperation
+        if isinstance(entity, Variable):
+            return var2value[entity]
+        if isinstance(entity, BinaryOperation):
+            return entity.get_value(var2value)
+        return entity
+
     def string_repr(self, values):
         """
         Returns string representation of variables and values.
