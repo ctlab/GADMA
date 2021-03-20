@@ -69,7 +69,7 @@ class DemographicModel(Model):
                        understand what variable or constant is actual Nanc
                        size.
         """
-        if has_anc_size:
+        if self.has_anc_size:
             return self._get_Nanc_size(values)
         else:
             raise ValueError("Model does not have ancestral size so it is not"

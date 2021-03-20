@@ -118,7 +118,7 @@ class DemographicGenerator:
 
 def rescale_generator(generator, rescale_function, *args, **kwargs):
     def wrap_generator(domain, *gen_args, **gen_kwargs):
-        res = generator(np.array(domain) * factor, *gen_args, **gen_kwargs)
+        res = generator(np.array(domain), *gen_args, **gen_kwargs)
         return rescale_function(res, *args, **kwargs)
     return wrap_generator
 

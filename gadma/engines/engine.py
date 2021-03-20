@@ -1,5 +1,4 @@
 from ..data import DataHolder
-from ..utils import Variable
 from ..models import Model
 import copy
 

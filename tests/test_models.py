@@ -82,7 +82,7 @@ class TestModels(unittest.TestCase):
 
         dm = EpochDemographicModel(Nanc_size=10000)
         self.assertTrue(dm.has_anc_size)
-        self.assertEqual(dm.Nanc_size, 10000)
+        self.assertEqual(dm.get_Nanc_size(), 10000)
 
         var_phys = PopulationSizeVariable("nu1", units="physical")
         var_gen = PopulationSizeVariable("nu2", units="genetic")
@@ -90,6 +90,7 @@ class TestModels(unittest.TestCase):
 
         dm = EpochDemographicModel(has_anc_size=False)
         self.assertRaises(ValueError, dm.add_variable, var_phys)
+        self.assertRaises(ValueError, dm.get_Nanc_size)
 
         self.assertRaises(ValueError, EpochDemographicModel, Nanc_size=var_gen)
         self.assertRaises(ValueError, EpochDemographicModel, Nanc_size=var_t)

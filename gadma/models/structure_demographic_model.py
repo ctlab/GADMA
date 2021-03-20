@@ -51,7 +51,7 @@ class StructureDemographicModel(EpochDemographicModel):
     """
     def __init__(self, initial_structure, final_structure,
                  has_migs, has_sels, has_dyns, sym_migs, frac_split,
-                 migs_mask=None, has_anc_size=False, 
+                 migs_mask=None, has_anc_size=False,
                  gen_time=None, theta0=None, mu=None):
         if has_anc_size:
             Nanc_size = PopulationSizeVariable("Nanc", units="physical")
