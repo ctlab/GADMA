@@ -19,13 +19,13 @@ class StructureDemographicModel(EpochDemographicModel):
     :param final_structure: List of ints with number of intervals
                             in final structure.
     :type final_structure: list of ints
-    :param have_migs: If True then model will have migrations.
-    :type have_migs: bool
-    :param have_sels: If True then model will have selection coefficients.
-    :type have_sels: bool
-    :param have_dyns: If True then model will create dynamics of size
+    :param has_migs: If True then model will have migrations.
+    :type has_migs: bool
+    :param has_sels: If True then model will have selection coefficients.
+    :type has_sels: bool
+    :param has_dyns: If True then model will create dynamics of size
                       change different to Sudden change.
-    :type have_dyns: bool
+    :type has_dyns: bool
     :param sym_migs: If True then migrations will be symetric.
     :type sym_migs: bool
     :param frac_split: If True then populations split in some proportion. If
@@ -40,6 +40,8 @@ class StructureDemographicModel(EpochDemographicModel):
                       should be fixed if migs_mask is set
                       (:meth:`increase_structure` raises ValueError).
     :type migs_mask: list
+    :param has_anc_size: If True then Nanc_size variable is created.
+    :type has_anc_size: bool
     :param gen_time: Time in years of one generation.
     :type gen_time: float
     :param theta0: Mutation flux (4\*mu\*L).
@@ -48,10 +50,20 @@ class StructureDemographicModel(EpochDemographicModel):
     :type mu: float
     """
     def __init__(self, initial_structure, final_structure,
-                 have_migs, have_sels, have_dyns, sym_migs, frac_split,
-                 migs_mask=None,
+                 has_migs, has_sels, has_dyns, sym_migs, frac_split,
+                 migs_mask=None, has_anc_size=False, 
                  gen_time=None, theta0=None, mu=None):
-        super(StructureDemographicModel, self).__init__(gen_time, theta0, mu)
+        if has_anc_size:
+            Nanc_size = PopulationSizeVariable("Nanc", units="physical")
+        else:
+            Nanc_size = None
+        super(StructureDemographicModel, self).__init__(
+            gen_time=gen_time,
+            theta0=theta0,
+            mu=mu,
+            has_anc_size=has_anc_size,
+            Nanc_size=Nanc_size,
+        )
         if np.any(np.array(initial_structure) > np.array(final_structure)):
             raise ValueError(f"Elements of the initial structure "
                              f"({initial_structure}) "
@@ -59,9 +71,9 @@ class StructureDemographicModel(EpochDemographicModel):
                              f"final structure ({final_structure}).")
         self.initial_structure = np.array(initial_structure)
         self.final_structure = np.array(final_structure)
-        self.have_migs = have_migs
-        self.have_sels = have_sels
-        self.have_dyns = have_dyns
+        self.has_migs = has_migs
+        self.has_sels = has_sels
+        self.has_dyns = has_dyns
         self.sym_migs = sym_migs
         self.frac_split = frac_split
         self.migs_mask = migs_mask
@@ -70,7 +82,7 @@ class StructureDemographicModel(EpochDemographicModel):
             warnings.warn("Migration mask is used only when more than one "
                           "population is observed")
             self.migs_mask = None
-        if not self.have_migs:
+        if not self.has_migs:
             if self.sym_migs:
                 warnings.warn("There is no migrations and option about "
                               "symmetric migrations will be ignored")
@@ -117,8 +129,13 @@ class StructureDemographicModel(EpochDemographicModel):
         :param structure: Structure of the model.
         :type structure: list of ints
         """
-        super(StructureDemographicModel, self).__init__(self.gen_time,
-                                                        self.theta0, self.mu)
+        super(StructureDemographicModel, self).__init__(
+            gen_time=self.gen_time,
+            theta0=self.theta0,
+            mu=self.mu,
+            has_anc_size=self.has_anc_size,
+            Nanc_size=self.Nanc_size
+        )
         if not (np.all(np.array(structure) >= self.initial_structure)):
             raise ValueError(f"Elements of model structure ({structure}) "
                              f"could not be smaller than elements of the "
@@ -151,7 +168,7 @@ class StructureDemographicModel(EpochDemographicModel):
                     var = PopulationSizeVariable('nu%d%d' % (i_int, i_pop+1))
                     size_vars.append(var)
                 mig_vars = None
-                if self.have_migs and n_pop > 1:
+                if self.has_migs and n_pop > 1:
                     mig_vars = np.zeros(shape=(n_pop, n_pop), dtype=object)
                     mask = None
                     if self.migs_mask is not None:
@@ -171,13 +188,13 @@ class StructureDemographicModel(EpochDemographicModel):
                             if self.sym_migs:
                                 mig_vars[j][i] = var
                 sel_vars = None
-                if self.have_sels:
+                if self.has_sels:
                     sel_vars = list()
                     for i in range(n_pop):
                         var = SelectionVariable('g%d%d' % (i_int, i+1))
                         sel_vars.append(var)
                 dyn_vars = None
-                if self.have_dyns:
+                if self.has_dyns:
                     dyn_vars = list()
                     for i in range(n_pop):
                         var = DynamicVariable('dyn%d%d' % (i_int, i+1))
@@ -388,7 +405,7 @@ class StructureDemographicModel(EpochDemographicModel):
         # First fill with common variables
         for var in self.variables:
             if isinstance(var, MigrationVariable):
-                if self.have_migs == model.have_migs:
+                if self.has_migs == model.has_migs:
                     if self.sym_migs == model.sym_migs:
                         # when we have some new masks name could be missed
                         if var.name in other_varname2value:
@@ -396,10 +413,10 @@ class StructureDemographicModel(EpochDemographicModel):
                         else:
                             var2value[var] = 0
             elif isinstance(var, SelectionVariable):
-                if self.have_sels == model.have_sels:
+                if self.has_sels == model.has_sels:
                     var2value[var] = other_varname2value[var.name]
             elif isinstance(var, DynamicVariable):
-                if self.have_dyns == model.have_dyns:
+                if self.has_dyns == model.has_dyns:
                     var2value[var] = other_varname2value[var.name]
             elif isinstance(var, FractionVariable):
                 if self.frac_split == model.frac_split:
@@ -415,7 +432,7 @@ class StructureDemographicModel(EpochDemographicModel):
             if var in var2value:
                 continue
             if isinstance(var, MigrationVariable):
-                if not model.have_migs:
+                if not model.has_migs:
                     var2value[var] = 0
                 elif self.sym_migs != model.sym_migs:
                     ij = var.name.split('_')[-1]
@@ -429,10 +446,10 @@ class StructureDemographicModel(EpochDemographicModel):
                         var2value[var] = mij_value
                         varname2value[sym_mig_name] = mji_value
             elif isinstance(var, SelectionVariable):
-                assert self.have_sels and not model.have_sels
+                assert self.has_sels and not model.has_sels
                 var2value[var] = 0
             elif isinstance(var, DynamicVariable):
-                assert self.have_dyns and not model.have_dyns
+                assert self.has_dyns and not model.has_dyns
                 var2value[var] = 'Sud'
             elif isinstance(var, FractionVariable):
                 assert self.frac_split and not model.frac_split

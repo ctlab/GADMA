@@ -546,9 +546,9 @@ class CoreRun(object):
                     copy.deepcopy(old_init_model))
                 copy_old_model = copy.deepcopy(old_init_model)
                 copy_self_model = copy.deepcopy(self.model)
-                copy_old_model.have_dyns = False
+                copy_old_model.has_dyns = False
                 copy_old_model = copy_old_model.from_structure(structure)
-                copy_self_model.have_dyns = False
+                copy_self_model.has_dyns = False
                 copy_self_model = copy_self_model.from_structure(structure)
                 ls_x_transform = partial(
                     copy_self_model.transform_values_from_other_model,

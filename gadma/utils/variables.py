@@ -207,6 +207,14 @@ class DemographicVariable(Variable):
         super(DemographicVariable, self).__init__(name, domain, rand_gen)
         self.translate_units_to(units, self.default_domain_in_phys)
 
+    @staticmethod
+    def _transform_value_from_gen_to_phys(value, Nanc):
+        raise NotImplementedError
+
+    @staticmethod
+    def _transform_value_from_phys_to_gen(value, Nanc):
+        raise NotImplementedError
+
     def translate_value_into(self, units, value, Nanc=None):
         if not self.correct_value(value):
             raise ValueError("Given value is not correct: "

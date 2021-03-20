@@ -71,6 +71,29 @@ class TestModels(unittest.TestCase):
                 dm.as_custom_string({var.name: var.resample()
                                      for var in dm.variables})
 
+    def test_epoch_dm_init(self):
+        dm = EpochDemographicModel()
+        self.assertEqual(len(dm.variables), 0)
+        self.assertFalse(dm.has_anc_size)
+        self.assertEqual(dm.Nanc_size, 1)
+
+        dm = EpochDemographicModel(has_anc_size=True)
+        self.assertTrue(dm.has_anc_size)
+
+        dm = EpochDemographicModel(Nanc_size=10000)
+        self.assertTrue(dm.has_anc_size)
+        self.assertEqual(dm.Nanc_size, 10000)
+
+        var_phys = PopulationSizeVariable("nu1", units="physical")
+        var_gen = PopulationSizeVariable("nu2", units="genetic")
+        var_t = TimeVariable("t", units="physical")
+
+        dm = EpochDemographicModel(has_anc_size=False)
+        self.assertRaises(ValueError, dm.add_variable, var_phys)
+
+        self.assertRaises(ValueError, EpochDemographicModel, Nanc_size=var_gen)
+        self.assertRaises(ValueError, EpochDemographicModel, Nanc_size=var_t)
+
     @unittest.skipIf(DADI_NOT_AVAILABLE, "Dadi module is not installed")
     def test_dadi_1pop_0(self):
         @self.dadi_wrapper
@@ -358,12 +381,12 @@ class TestModels(unittest.TestCase):
         Nu2 = PopulationSizeVariable("N2", units="physical")
         T3 = TimeVariable("T", units="physical")
 
-        model4 = EpochDemographicModel(Nanc_variable=Nanc)
+        model4 = EpochDemographicModel(Nanc_size=Nanc)
         model4.add_epoch(t, [nu1])
         model4.add_split(0, [nu1, nu2])
         model4.add_epoch(t, [nu2, fxnu1], [[0, m], [0, 0]], [d1, d2])
 
-        model5 = EpochDemographicModel(Nanc_variable=Nanc)
+        model5 = EpochDemographicModel(Nanc_size=Nanc)
         model5.add_epoch(t, [nu1])
         model5.add_split(0, [nu1, nu2])
         model5.add_epoch(T3, [Nu2, fxnu1], [[0, m], [0, 0]], [d1, d2])

@@ -1008,10 +1008,15 @@ class SettingsStorage(object):
             migs_mask = self.migration_masks
             model = StructureDemographicModel(self.initial_structure,
                                               self.final_structure,
-                                              create_migs, create_sels,
-                                              create_dyns, sym_migs, split_f,
-                                              migs_mask,
-                                              gen_time, theta0, mut_rate)
+                                              has_migs=create_migs,
+                                              has_sels=create_sels,
+                                              has_dyns=create_dyns,
+                                              sym_migs=sym_migs,
+                                              frac_split=split_f,
+                                              migs_mask=migs_mask,
+                                              gen_time=gen_time,
+                                              theta0=theta0,
+                                              mu=mut_rate)
             constrain = self.get_linear_constrain_for_model(model)
             model.linear_constrain = constrain
             return model
@@ -1022,19 +1027,28 @@ class SettingsStorage(object):
             variables = get_variables(self.parameter_identifiers,
                                       self.lower_bound, self.upper_bound)
             if self.model_func is not None:
-                return CustomDemographicModel(self.model_func, variables,
-                                              gen_time, theta0, mut_rate)
+                return CustomDemographicModel(function=self.model_func,
+                                              variables=variables,
+                                              gen_time=gen_time,
+                                              theta0=theta0,
+                                              mu=mut_rate)
             module_name = module_name_from_path(self.custom_filename)
             spec = importlib.util.spec_from_file_location(module_name,
                                                           self.custom_filename)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
-            return CustomDemographicModel(module.model_func, variables,
-                                          gen_time, theta0, mut_rate)
+            return CustomDemographicModel(function=module.model_func,
+                                          variables=variables,
+                                          gen_time=gen_time,
+                                          theta0=theta0,
+                                          mu=mut_rate)
 
         elif self.custom_filename is None and self.model_func is not None:
-            return CustomDemographicModel(self.model_func, None,
-                                          gen_time, theta0, mut_rate)
+            return CustomDemographicModel(function=self.model_func,
+                                          variables=None,
+                                          gen_time=gen_time,
+                                          theta0=theta0,
+                                          mu=mut_rate)
         else:
             raise ValueError("Some settings are missed so no model is "
                              "generated")

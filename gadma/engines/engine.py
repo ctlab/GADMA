@@ -1,6 +1,6 @@
 from ..data import DataHolder
 from ..utils import Variable
-from ..models import BinaryOperation
+from ..models import Model
 import copy
 
 _registered_engines = {}
@@ -66,11 +66,7 @@ class Engine(object):
 
     @staticmethod
     def get_value_from_var2value(var2value, entity):
-        if isinstance(entity, Variable):
-            return var2value[entity]
-        if isinstance(entity, BinaryOperation):
-            return entity.get_value(var2value)
-        return entity
+        return Model.get_value_from_var2value(var2value, entity)
 
     @staticmethod
     def read_data(data_holder):
