@@ -522,7 +522,8 @@ class CoreRun(object):
             old_init_model = old_settings.get_model()
         # additional one is when true only models is used
         addit_one = int(self.settings.only_models)
-        addit_one -= int(self.settings.resume_from is None)
+        if addit_one == 1:
+            addit_one -= int(self.settings.resume_from is None)
         for i in range(final_sum - initial_sum + 1 + addit_one):
             if i >= len(restore_files):
                 restore_file = None
