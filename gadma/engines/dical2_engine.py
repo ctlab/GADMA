@@ -28,12 +28,15 @@ def _dical2_config_info(
     numLoci,
     numAlleles
 ):
-    return dical2_pkg.csd.DemoConfiguration.ConfigInfo(
-        multiplicities,
-        numDemes,
-        numLoci,
-        numAlleles
-    )
+    try:
+        return dical2_pkg.csd.DemoConfiguration.ConfigInfo(
+            multiplicities,
+            numDemes,
+            numLoci,
+            numAlleles
+        )
+    except SystemExit:
+        raise ValueError("Creation of ConfigInfo failed")
 
 
 def _dical2_read_vcf(
@@ -139,6 +142,10 @@ class DiCal2Engine(Engine):
         :returns: readed data
         :rtype: ``Engine.inner_data_type``
         """
+        # Check for reference file
+        if data_holder.reference_file is None:
+            raise ValueError("DiCal2 require reference file.")
+
         # 1. create config_info - information from config file of dical2
         # It contains information from popmap
         sample2pop = read_popinfo(data_holder.popmap_file)

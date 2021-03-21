@@ -97,9 +97,11 @@ if success:
             fl.write("# Generated automatically from setup.py\n")
             fl.write(f"import os\n\n"
                      f"dical2_path = os.path.abspath(\n"
-                     f"    os.path.join(os.path.dirname(__file__)),\n"
-                     f"    '..',\n"
-                     f"    '{dical_name}'\n"
+                     f"    os.path.join(\n"
+                     f"        os.path.dirname(__file__),\n"
+                     f"        '..',\n"
+                     f"        '{dical_name}'\n"
+                     f"    )\n"
                      f")\n")
         # add all files to data_files
 #        data_files.append(("", []))
