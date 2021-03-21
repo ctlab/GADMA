@@ -58,7 +58,7 @@ class TestModels(unittest.TestCase):
         for engine in all_engines():
             with self.subTest(engine=engine.id):
                 filename = f"demographic_model_{engine.id}_YRI_CEU.py"
-                location = os.path.join(EXAMPLE_FOLDER, filename)
+                location = os.path.join(EXAMPLE_FOLDER, "MODELS", filename)
                 spec = importlib.util.spec_from_file_location("module",
                                                               location)
                 module = importlib.util.module_from_spec(spec)
@@ -322,17 +322,20 @@ class TestModels(unittest.TestCase):
 
     def _sfs_datasets(self):
         yield ("usual fs",
-               SFSDataHolder(os.path.join(EXAMPLE_FOLDER, '3d_sfs.fs')))
+               SFSDataHolder(os.path.join(EXAMPLE_FOLDER, 'DATA',
+                                          'sfs', '3d_sfs.fs')))
         yield ("folded fs with mixed labels and downsizing",
-               SFSDataHolder(os.path.join(EXAMPLE_FOLDER, '3d_sfs.fs'),
+               SFSDataHolder(os.path.join(EXAMPLE_FOLDER, 'DATA',
+                                          'sfs', '3d_sfs.fs'),
                              projections=[8, 8, 8],
                              population_labels=['YRI', 'ASW', 'CEU'],
                              outgroup=False))
         yield ("fs without pop labels",
-               SFSDataHolder(os.path.join(EXAMPLE_FOLDER, '3d_sfs_no_name.fs'),
+               SFSDataHolder(os.path.join(EXAMPLE_FOLDER, 'DATA',
+                                          'sfs', '3d_sfs_no_name.fs'),
                              population_labels=['1', '2', '3']))
         yield ("dadi snp file",
-               SFSDataHolder(os.path.join(EXAMPLE_FOLDER,
+               SFSDataHolder(os.path.join(EXAMPLE_FOLDER, 'DATA', 'sfs',
                                           'dadi_snp_file.txt')))
 
     def test_code_generation(self):
@@ -400,7 +403,8 @@ class TestModels(unittest.TestCase):
 
         for engine in all_engines():
             customfile = os.path.join(
-                EXAMPLE_FOLDER, f"demographic_model_{engine.id}_3pops.py")
+                EXAMPLE_FOLDER, "MODELS",
+                f"demographic_model_{engine.id}_3pops.py")
 
             spec = importlib.util.spec_from_file_location(
                 f"module_{engine.id}", customfile)

@@ -14,7 +14,7 @@ import sys
 import timeit
 
 EXAMPLE_FOLDER = os.path.join(os.path.dirname(__file__), "test_data")
-EXAMPLE_DATA = os.path.join(EXAMPLE_FOLDER, "YRI_CEU.fs")
+EXAMPLE_DATA = os.path.join(EXAMPLE_FOLDER, "DATA", "sfs", "YRI_CEU.fs")
 
 class TestGlobalOptimizers(unittest.TestCase):
     def test_registered_global_optimizers_fails(self):
@@ -360,7 +360,7 @@ class TestInference(unittest.TestCase):
                 else:
                     args = ()
                 filename = f"demographic_model_{engine.id}_YRI_CEU.py"
-                location = os.path.join(EXAMPLE_FOLDER, filename)
+                location = os.path.join(EXAMPLE_FOLDER, "MODELS", filename)
                 spec = importlib.util.spec_from_file_location("module",
                                                               location)
                 module = importlib.util.module_from_spec(spec)
@@ -399,10 +399,12 @@ class TestInference(unittest.TestCase):
 #                    report_file='report_file')
 
     def test_inference_claic_funcs(self):
-        dirname = os.path.join(EXAMPLE_FOLDER, 'YRI_CEU_test_boots')
+        dirname = os.path.join(EXAMPLE_FOLDER, "DATA",
+                               "sfs", 'YRI_CEU_test_boots')
         for engine in all_engines():
             projections = (4, 4)
             data = engine.read_data(SFSDataHolder(os.path.join(EXAMPLE_FOLDER,
+                                                               "DATA", "sfs",
                                                                'YRI_CEU.fs'),
                                                   projections=projections))
             boots = gadma.Inference.load_data_from_dir(dirname, engine.id,
@@ -410,7 +412,7 @@ class TestInference(unittest.TestCase):
 
             p0 = [1.881, 0.0710, 1.845, 0.911, 0.355, 0.111]
             filename = os.path.join(
-                EXAMPLE_FOLDER, f'demographic_model_{engine.id}_YRI_CEU.py')
+                EXAMPLE_FOLDER, "MODELS", f'demographic_model_{engine.id}_YRI_CEU.py')
             spec = importlib.util.spec_from_file_location("module", filename)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)

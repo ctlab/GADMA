@@ -443,7 +443,8 @@ class TestLocalOpt(TestBaseOptClass):
 class TestCoreRun(unittest.TestCase):
     def test_core_run(self):
         settings = test_args()
-        settings.input_file = os.path.join(DATA_PATH, 'small_1pop.fs')
+        settings.input_file = os.path.join(DATA_PATH, "DATA", "sfs",
+                                           'small_1pop.fs')
         settings.draw_models_every_n_iteration = 100
         settings.print_models_code_every_n_iteration = 100
         settings.verbose = 10
@@ -451,10 +452,10 @@ class TestCoreRun(unittest.TestCase):
             multiprocessing=False)
         gadma.core.core.job(0, shared_dict, settings)
 
-        settings.custom_filename = os.path.join(DATA_PATH,
+        settings.custom_filename = os.path.join(DATA_PATH, "MODELS",
                                                 "small_1pop_dem_model_dadi.py")
         settings.directory_with_bootstrap = os.path.join(
-            DATA_PATH, 'small_1_pop_bootstrap')
+            DATA_PATH, "DATA", "sfs", 'small_1_pop_bootstrap')
         settings.read_bootstrap_data()
         settings.linked_snp_s = True
         settings.relative_parameters = True
