@@ -31,7 +31,7 @@ class TestCLI(unittest.TestCase):
         parser.format_help()
 
         old_argv = copy.copy(sys.argv)
-        created_params_file = os.path.join(DATA_PATH, "created_params")
+        created_params_file = os.path.join(DATA_PATH, "PARAMS", "created_params")
 
         try:
             sys.argv = ['gadma', '--test']
@@ -41,8 +41,8 @@ class TestCLI(unittest.TestCase):
             sys.argv = ['gadma']
             self.assertRaises(SystemExit, get_settings_test)
 
-            param_file = os.path.join(DATA_PATH, 'another_test_params')
-            another_fs = os.path.join(DATA_PATH, 'YRI_CEU.fs')
+            param_file = os.path.join(DATA_PATH, "PARAMS", 'another_test_params')
+            another_fs = os.path.join(DATA_PATH, "DATA", "sfs", 'YRI_CEU.fs')
             sys.argv = ['gadma', '-p', param_file, '-o', 'some_dir',
                         '-i', another_fs]
             settings, _ = get_settings_test()
@@ -57,32 +57,34 @@ class TestCLI(unittest.TestCase):
                         '-i', another_fs]
             self.assertRaises(RuntimeError, get_settings_test)
 
-            param_file = os.path.join(DATA_PATH,
+            param_file = os.path.join(DATA_PATH, "PARAMS",
                                       'another_test_params_without_base')
             sys.argv = ['gadma', '-p', param_file, '-o', 'some_dir']
             self.assertRaises(AttributeError, get_settings_test)
             sys.argv = ['gadma', '-p', param_file, '-i', another_fs]
             self.assertRaises(AttributeError, get_settings_test)
 
-            param_file = os.path.join(DATA_PATH,
+            param_file = os.path.join(DATA_PATH, "PARAMS",
                                       'another_test_params_bad1')
             sys.argv = ['gadma', '-p', param_file]
             self.assertRaises(AttributeError, get_settings_test)
 
-            param_file = os.path.join(DATA_PATH,
+            param_file = os.path.join(DATA_PATH, "PARAMS",
                                       'another_test_params_bad2')
             sys.argv = ['gadma', '-p', param_file]
             self.assertRaises(AttributeError, get_settings_test)
 
-            param_file = os.path.join(DATA_PATH,
+            param_file = os.path.join(DATA_PATH, "PARAMS",
                                       'another_test_params_bad3')
             sys.argv = ['gadma', '-p', param_file]
             self.assertRaises(AttributeError, get_settings_test)
 
-            dir_without_run = os.path.join(DATA_PATH, "YRI_CEU_test_boots")
+            dir_without_run = os.path.join(DATA_PATH, "DATA", "sfs",
+                                           "YRI_CEU_test_boots")
             dir_with_run = os.path.join(DATA_PATH, "my_example_run")
             with open(created_params_file, 'w') as fl:
-                with open(os.path.join(DATA_PATH, "another_test_params")) as gl:
+                with open(os.path.join(DATA_PATH, "PARAMS",
+                                       "another_test_params")) as gl:
                     for line in gl:
                         fl.write(line)
                 fl.write(f"Resume from: {dir_without_run}")
@@ -97,7 +99,7 @@ class TestCLI(unittest.TestCase):
             sys.argv = old_argv
 
     def test_generation_of_bounds_constrain(self):
-        params_file = os.path.join(DATA_PATH, 'example_params_file')
+        params_file = os.path.join(DATA_PATH, "PARAMS", 'example_params_file')
         settings = SettingsStorage.from_file(params_file)
         settings.get_model()
 
@@ -232,16 +234,16 @@ class TestCLI(unittest.TestCase):
         # custom filename without model_func function
         self.assertRaises(ValueError, settings.__setattr__,
                           "custom_filename",
-                          os.path.join(DATA_PATH, "no_model_func.py"))
+                          os.path.join(DATA_PATH, "MODELS", "no_model_func.py"))
 
         # intial_structure after custom file
         settings.custom_filename = os.path.join(
-            DATA_PATH, "small_1pop_dem_model_moments.py")
+            DATA_PATH, "MODELS", "small_1pop_dem_model_moments.py")
         settings.initial_structure = [1, 1]
         settings.final_structure = [2, 1]
 
         # custom file with not callable model_func
-        path = os.path.join(DATA_PATH,
+        path = os.path.join(DATA_PATH, "MODELS",
                             'small_1pop_dem_model_without_function.py')
         self.assertRaises(ValueError, settings.__setattr__,
                           'custom_filename', path)
@@ -307,14 +309,14 @@ class TestCLI(unittest.TestCase):
         # get model with parameters when there is no pop ids
         settings = SettingsStorage()
         settings.custom_filename = os.path.join(
-            DATA_PATH, "small_1pop_dem_model_no_ids.py")
+            DATA_PATH, "MODELS", "small_1pop_dem_model_no_ids.py")
         self.assertRaises(ValueError, settings.get_model)
         settings.lower_bound = [1e-2, 1e-2, 1e-15, 1e-15]
         settings.upper_bound = [100, 100, 5, 5]
         dm = settings.get_model()
         settings = SettingsStorage()
         settings.custom_filename = os.path.join(
-            DATA_PATH, "small_1pop_dem_model_no_ids_2.py")
+            DATA_PATH, "MODELS", "small_1pop_dem_model_no_ids_2.py")
         self.assertRaises(ValueError, settings.get_model)
         settings.lower_bound = [1e-2, 1e-2, 1e-15, 1e-15]
         settings.upper_bound = [100, 100, 5, 5]
@@ -327,12 +329,13 @@ class TestCLI(unittest.TestCase):
         self.assertTrue(settings.initial_structure == [1, 1])
 
     def test_old_param_file(self):
-        old_param_file = os.path.join(DATA_PATH, 'example_params_old')
+        old_param_file = os.path.join(DATA_PATH, "PARAMS",
+                                      'example_params_old')
         settings = SettingsStorage()
         settings.from_file(old_param_file)
 
     def test_another_param_file(self):
-        param_file = os.path.join(DATA_PATH,
+        param_file = os.path.join(DATA_PATH, "PARAMS",
                                   'another_test_params')
         out_dir = os.path.join(os.path.dirname(__file__), 'output_dir')
         if check_dir_existence(out_dir):
@@ -348,9 +351,10 @@ class TestCLI(unittest.TestCase):
             sys.argv = old_argv
 
     def test_saved_settings_storage(self):
-        param_file = os.path.join(DATA_PATH, 'another_test_params')
-        saved_params_file = os.path.join(DATA_PATH, 'params_file')
-        saved_extra_params_file = os.path.join(DATA_PATH, 'extra_params_file')
+        param_file = os.path.join(DATA_PATH, "PARAMS", 'another_test_params')
+        saved_params_file = os.path.join(DATA_PATH, "PARAMS", 'params_file')
+        saved_extra_params_file = os.path.join(DATA_PATH, "PARAMS",
+                                               'extra_params_file')
 
         settings1 = SettingsStorage.from_file(param_file)
         settings1.pts = None
@@ -487,7 +491,7 @@ class TestSomeHandsOn(unittest.TestCase):
         core.main()
 
     def test_example_2(self):
-        snp_data = os.path.join(DATA_PATH, 'data.txt')
+        snp_data = os.path.join(DATA_PATH, "DATA", "sfs", 'data.txt')
         outdir = os.path.join(DATA_PATH, 'resume_dir')
         params_file = 'params'
         if check_dir_existence(outdir):

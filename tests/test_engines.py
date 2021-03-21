@@ -188,7 +188,8 @@ class TestEngines(unittest.TestCase):
         settings.upper_bound_of_first_split = 100
         settings.upper_bound_of_second_split = 50
 
-        data = dadi.Spectrum.from_file(os.path.join(DATA_PATH, "3d_sfs.fs"))
+        data = dadi.Spectrum.from_file(os.path.join(DATA_PATH, "DATA",
+                                                    "sfs", "3d_sfs.fs"))
         engine = get_engine("moments")
         engine.set_data(data)
         engine.set_model(settings.get_model())
