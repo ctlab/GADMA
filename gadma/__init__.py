@@ -1,3 +1,4 @@
+import warnings
 try:
     import matplotlib
     matplotlib.use("Agg")
@@ -11,7 +12,7 @@ try:
 except ImportError:
     pass
 
-from  .import dical2_path
+from . import dical2_path
 dical2_path = dical2_path.dical2_path
 
 try:
@@ -40,12 +41,16 @@ try:
     import GPyOpt
 except ImportError:
     GPyOpt = None
-import warnings
 
 PIL_available = PIL is not None
 matplotlib_available = matplotlib is not None
 moments_available = moments is not None
 dadi_available = dadi is not None
+dical2_available = dical2_path is not None
+try:
+    from .engines import DiCal2Engine
+except Exception:
+    dical2_available = False
 GPy_available = GPy is not None
 GPyOpt_available = GPyOpt is not None
 

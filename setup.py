@@ -94,9 +94,13 @@ if success:
                     dical_name = name
     if dical_name is not None:
         with open(os.path.join("gadma", "dical2_path.py"), 'w') as fl:
-            fl.write("#Generated automatically from setup.py\n")
-            fl.write(f"import os\n"
-                     f"dical2_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '{dical_name}'))")
+            fl.write("# Generated automatically from setup.py\n")
+            fl.write(f"import os\n\n"
+                     f"dical2_path = os.path.abspath(\n"
+                     f"    os.path.join(os.path.dirname(__file__)),\n"
+                     f"    '..',\n"
+                     f"    '{dical_name}'\n"
+                     f")\n")
         # add all files to data_files
 #        data_files.append(("", []))
         for (dirpath, dirnames, filenames) in os.walk(dical_name):

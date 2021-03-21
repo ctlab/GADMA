@@ -10,5 +10,6 @@ pip3 install Cython
 pip3 install networkx
 pip3 install pandas
 pip3 install demes
+pip3 install jpype1
 pip3 install git+https://bitbucket.org/simongravel/moments.git
 pip3 install gadma

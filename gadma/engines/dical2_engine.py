@@ -35,6 +35,7 @@ def _dical2_config_info(
         numAlleles
     )
 
+
 def _dical2_read_vcf(
     dical2_pkg,
     reader,
@@ -64,6 +65,7 @@ def _dical2_read_vcf(
         commandLineReferenceFileName,
         vcfIgnoreDoubleEntries
     )
+
 
 def _extended_config_info(
     dical2_pkg,
@@ -95,11 +97,15 @@ def _extended_config_info(
         csdList,
     )
 
+
 def get_jar_files():
+    if not os.path.exists(dical2_path):
+        return ""
     jar_files = [os.path.join(dical2_path, 'diCal2.jar')]
-    for name in os.listdir(os.path.join(dical2_path, "diCal2_lib")):
-        if name.endswith(".jar"):
-            jar_files.append(os.path.join(dical2_path, "diCal2_lib", name))
+    if os.path.exists(os.path.join(dical2_path, "diCal2_lib")):
+        for name in os.listdir(os.path.join(dical2_path, "diCal2_lib")):
+            if name.endswith(".jar"):
+                jar_files.append(os.path.join(dical2_path, "diCal2_lib", name))
     return jar_files
 
 
@@ -115,21 +121,20 @@ class DiCal2Engine(Engine):
     inner_data_type = tuple  #: tuple of sequence_list and config info
 
     # run JVM
-    jpype.startJVM(jpype.getDefaultJVMPath(),
-               "-ea", "-Djava.class.path="+":".join(get_jar_files()))
+    if (dical2_path is not None and
+            os.path.exists(os.path.join(dical2_path, 'diCal2.jar'))):
+        jpype.startJVM(jpype.getDefaultJVMPath(),
+                       "-ea",
+                       "-Djava.class.path="+":".join(get_jar_files()))
     base_module = jpype.JPackage("edu.berkeley.diCal2")
 
     @staticmethod
-    def read_data(data_holder, useStationaryForPartially=False, acceptUnphasedAsMissing=False):
+    def read_data(data_holder):
         """
         Reads data from `data_holder.filename` in inner type.
 
         :param data_holder: Holder of data to read.
         :type data_holder: :class:`gadma.DataHolder
-
-        :param useStationaryForPartially: If this switch is set, the partially 
-            missing sites are not ignored, but the stationary distribution is
-            used for them. Kinda only works with the multilocus hmm version.`
 
         :returns: readed data
         :rtype: ``Engine.inner_data_type``
@@ -164,7 +169,7 @@ class DiCal2Engine(Engine):
         # .bed file
         bed_reader = None
         if data_holder.bed_file is not None:
-            bed_reader =  jpype.java.io.FileReader(data_holder.bed_file)
+            bed_reader = jpype.java.io.FileReader(data_holder.bed_file)
         vcfReferenceFilename = data_holder.reference_file
         # what sequences we want to read
         seq_to_read = [sum(mult) > 0 for mult in multiplicities]

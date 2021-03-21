@@ -1,5 +1,7 @@
 from ..utils import check_file_existence, ensure_file_existence
 from ..utils import read_popinfo, get_list_of_names_from_vcf
+import warnings
+
 
 class DataHolder(object):
     """
@@ -41,8 +43,8 @@ class VCFDataHolder(DataHolder):
     Class for VCF data holding.
     It saves some information while it is created.
     """
-    def __init__(self, vcf_file, popmap_file, sample_sizes=None, outgroup=None, ploidy=2,
-                 population_labels=None, seq_len=None,  bed_file=None,
+    def __init__(self, vcf_file, popmap_file, sample_sizes=None, outgroup=None,
+                 ploidy=2, population_labels=None, seq_len=None, bed_file=None,
                  reference_file=None):
         sample2pop = read_popinfo(popmap_file)
         samples = get_list_of_names_from_vcf(vcf_file)
@@ -70,9 +72,10 @@ class VCFDataHolder(DataHolder):
         # Check sample sizes
         sizes = [sum([x == pop for x in sample2pop.values()])
                  for pop in population_labels]
-        sizes *= ploidy
+        sizes = [x * ploidy for x in sizes]
         if sample_sizes is None:
             sample_sizes = sizes
+        sample_sizes = list(sample_sizes)
         assert sample_sizes == sizes, ("Sizes are not equal: "
                                        f"{sample_sizes} != {sizes}")
         super(VCFDataHolder, self).__init__(vcf_file, sample_sizes, outgroup,

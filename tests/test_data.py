@@ -37,6 +37,11 @@ STRANGE_DATA = os.path.join(DATA_PATH, "sfs", "some_strange_data")
 VCF_DATA = os.path.join(DATA_PATH, "vcf", "data.vcf")
 POPMAP = os.path.join(DATA_PATH, "vcf", "popmap")
 
+CONTIG0 =  os.path.join(DATA_PATH, "vcf", "contig.0.vcf")
+CONTIG0_POPMAP = os.path.join(DATA_PATH, "vcf", "contig_0_popmap")
+REFERENCE = os.path.join(DATA_PATH, "vcf", "reference..fa")
+
+
 class TestDataHolder(unittest.TestCase):
 
     def _check_data(self, data, pop_labels, outgroup, sample_sizes):
@@ -74,13 +79,25 @@ class TestDataHolder(unittest.TestCase):
         return data
 
     def test_vcf_dataholder_init(self):
-        sample_sizes = (2,1)
+        sample_sizes = [4,2]
         outgroup = True
         d = VCFDataHolder(vcf_file=VCF_DATA, popmap_file=POPMAP,
                           sample_sizes=sample_sizes, outgroup=outgroup)
-        self.assertEqual(d.population_labels, set(['Pop1', 'Pop2']))
+        self.assertEqual(d.population_labels, ['Pop1', 'Pop2'])
         self.assertEqual(d.projections, sample_sizes)
         self.assertEqual(d.outgroup, outgroup)
+
+        data = VCFDataHolder(vcf_file=CONTIG0, popmap_file=CONTIG0_POPMAP)
+        self.assertEqual(data.population_labels, ["pop1", "pop2"])
+        self.assertEqual(data.projections, [4, 2])
+
+        data = VCFDataHolder(vcf_file=CONTIG0, popmap_file=CONTIG0_POPMAP,
+                             reference_file=REFERENCE)
+        self.assertRaises(AssertionError, VCFDataHolder, vcf_file=CONTIG0,
+                          popmap_file=CONTIG0_POPMAP,
+                          population_labels=["1", "pop2"])
+        self.assertRaises(AssertionError, VCFDataHolder, vcf_file=CONTIG0,
+                          popmap_file=CONTIG0_POPMAP, sample_sizes=[2, 1])
  
     def _test_sfs_reading(self, id):
         sizes = [None, (20,20), (10, 10), (10, 5), (5,), (10,)]
@@ -132,7 +149,7 @@ class TestDataHolder(unittest.TestCase):
         self.assertRaises(SyntaxError, get_engine(id).read_data, data_holder)
         data_holder = SFSDataHolder(DAMAGED_SNP_DATA)
         self.assertRaises(SyntaxError, get_engine(id).read_data, data_holder)
-        vcf_data = VCFDataHolder(VCF_DATA, POPMAP, (2, 1), True)
+        vcf_data = VCFDataHolder(VCF_DATA, POPMAP, (4, 2), True)
         self.assertRaises(ValueError, get_engine(id).read_data, vcf_data)
 
     @unittest.skipIf(DADI_NOT_AVAILABLE, "Dadi module is not installed")
