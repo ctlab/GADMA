@@ -50,7 +50,8 @@ class GlobalOptimizer(Optimizer):
                        X_init=None, Y_init=None,
                        random_type='resample', custom_rand_gen=None):
         """
-        Performs initial design for optimization.
+        Performs initial design for optimization. All x's are transformed and
+        all y's will be multiplied by sign.
 
         :param f: function to use for evaluations. Note that it should be
                   without arguments. Use :meth:`self.fix_f_and_args` to
@@ -58,8 +59,9 @@ class GlobalOptimizer(Optimizer):
         :param variables: variables of function. They are used for random
                           generation of their values.
         :param num_init: number of initial solutions.
-        :param X_init: list of some initial solutions.
+        :param X_init: list of some initial solutions. (Not transformed!)
         :param Y_init: list of function values on the initial solutions.
+                       (not multiplied by sign!)
 
         :returns: pair of lists X and Y. Initial points and value of fitness\
                   function on them.
@@ -67,9 +69,9 @@ class GlobalOptimizer(Optimizer):
         X = list()
         Y = list()
         if X_init is not None:
-            X = X_init
+            X = [self.transform(x) for x in X_init]
             if Y_init is not None:
-                Y = Y_init
+                Y = [self.sign * y for y in Y_init]
             else:
                 Y = list()
             for x in X_init[len(Y):]:
@@ -77,8 +79,8 @@ class GlobalOptimizer(Optimizer):
                 Y.append(f(x))
         for _ in range(num_init - len(X)):
             x = self.randomize(variables, random_type, custom_rand_gen)
-            X.append(x)
-            Y.append(f(x))
+            X.append(self.transform(x))
+            Y.append(self.sign * f(x))
         return X, Y
 
     def optimize(self, f, variables, num_init, X_init=None, Y_init=None,

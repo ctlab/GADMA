@@ -10,6 +10,9 @@ from .global_optimizer import GlobalOptimizer, register_global_optimizer
 from .optimizer_result import OptimizerResult
 from ..utils import eval_wrapper
 from ..utils import ensure_file_existence, fix_args
+from ..utils import list_with_weights_for_pickle,\
+                    list_with_weights_after_pickle
+from ..utils import ContinuousVariable
 
 from .. import GPyOpt
 from .. import GPy
@@ -27,16 +30,30 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         self.ARD = ARD
         self.acquisition_type = acquisition_type
         super(BayesianOptimizer, self).__init__(log_transform, maximize)
-        self.original_transform = copy.deepcopy(self.transform)
-        self.original_inv_transform = copy.deepcopy(self.inv_transform)
+
+    @property
+    def transform(self):
+        return self._trasform
+
+    @transform.setter
+    def transform(self, transform):
+        self.original_transform = transform
 
         def new_transform(x):
             return self.gpyopt_transform(self.original_transform(x))
+        self._trasform = new_transform
+
+    @property
+    def inv_transform(self):
+        return self._inv_trasform
+
+    @inv_transform.setter
+    def inv_transform(self, inv_transform):
+        self.original_inv_transform = inv_transform
 
         def new_inv_transform(x):
-            return self.gpyopt_inv_transform(self.original_inv_transform(x))
-        self.transform = new_transform
-        self.inv_transform = new_inv_transform
+            return self.original_inv_transform(self.gpyopt_inv_transform(x))
+        self._inv_trasform = new_inv_transform
 
     def gpyopt_transform(self, x):
         return [x]
@@ -54,21 +71,21 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
     def get_domain(self, variables):
         gpy_domain = []
         for var in variables:
+            domain = self.original_transform(var.domain)
+            if domain[0] == - np.inf:
+                assert self.log_transform
+                domain[0] = np.log(1e-15)
             gpy_domain.append({'name': var.name,
                                'type': var.var_type,
-                               'domain': self.original_transform(var.domain)})
+                               'domain': domain})
         return gpy_domain
-
-#    def evaluate(self, f, x, args=(), linear_constrain=None):
-#        return [super(BayesianOptimizer, self).evaluate(f, x[0], args,
-#                                                        linear_constrain)]
 
     def _concatenate_f_and_callback(self, f, callback):
         @wraps(f)
         def concat_wrapper(x):
             y = f(x)
             if callback is not None:
-                callback(self.inv_transform(x), y)
+                callback(x, y)
             return [y]
         return concat_wrapper
 
@@ -124,18 +141,49 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         print('*************************************************************',
               file=stream)
         print('Current optimum: %0.3f' % y_best, file=stream)
-        print(f'On parameters: {x_best}')
+        print(f'On parameters: {x_best}', file=stream)
         print('*************************************************************',
               file=stream)
 
         if report_file is not None:
             stream.close()
 
-    def optimize(self, f, variables, args=(), num_init=10,
+    def save(self, n_iter, n_eval, X_total, Y_total, save_file):
+        """
+        Save some values of genetic algorithm to file.
+        """
+        if save_file is None:
+            return
+        info = (int(n_iter), int(n_eval),
+                list_with_weights_for_pickle(X_total), Y_total)
+        super(BayesianOptimization, self).save(info, save_file)
+
+    def valid_restore_file(self, save_file):
+        try:
+            info = self.load(save_file)
+        except Exception:
+            return False
+        if (not isinstance(info[0], int) or not isinstance(info[1], int)):
+            return False
+        if not isinstance(info[3], list) or not isinstance(info[4], list):
+            return False
+        return True
+
+    def load(self, save_file):
+        """
+        Load some values of genetic algorithm from file.
+        """
+        (n_iter, n_eval, X_total, Y_total) = super(BayesianOptimization,
+                                                   self).load(save_file)
+        return (n_iter, n_eval,
+                list_with_weights_after_pickle(X_total), Y_total)
+
+    def optimize(self, f, variables, args=(), num_init=10, num_init_const=None,
                  X_init=None, Y_init=None,
                  linear_constrain=None, maxiter=100, maxeval=100,
                  verbose=0, callback=None, report_file=None, eval_file=None,
-                 save_file=None):
+                 save_file=None, restore_file=None, restore_points_only=False,
+                 restore_x_transform=None):
         r"""
         Return best values of `variables` that minimizes/maximizes
         the function `f`.
@@ -153,9 +201,18 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                          It will be called as callback(x, y), where x, y -
                          best_solution of generation and its fitness.
         """
+        assert np.all([isinstance(var, ContinuousVariable)
+                       for var in variables])
+        # Check for num_init
+        if num_init_const is not None:
+            num_init = num_init_const * len(variables)
+
         from GPyOpt.methods import BayesianOptimization
         if maxiter is None:
             maxiter = 100
+        if maxeval is None:
+            maxeval = maxiter
+
         # Create logging files
         if eval_file is not None:
             ensure_file_existence(eval_file)
@@ -191,10 +248,47 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         kernel = self.get_kernel(ndim)
         gpy_domain = self.get_domain(variables)
 
+        # restore info
+        n_iter_init = 0
+        n_eval_init = 0
+        if restore_file is not None and self.valid_restore_file(restore_file):
+            (n_gen_old, n_eval_old, X_total, Y_total) = self.load(restore_file)
+            if restore_x_transform is not None:
+                X_total = [restore_x_transform(x) for x in X_total]
+                # Let's remember our recalculation but this Y_gen will become
+                # Y_init and Y_init is in usual units without * sign.
+                Y_total = [None for _ in X_total]
+            if not restore_points_only:
+                n_iter_init = n_gen_old
+                n_eval_init = n_eval_old
+            if X_init is None:
+                X_init = X_total
+                Y_init = Y_total
+            elif Y_init is None:
+                X_total.extend(X_init)
+                X_init, Y_init = X_total, Y_total
+            elif len(X_init) == len(Y_init):
+                X_init.extend(X_total)
+                Y_init.extend(Y_total)
+            else:
+                assert len(X_init) > len(Y_init)
+                new_X_init = copy.copy(X_init[:len(Y_init)])
+                new_X_init.extend(X_total)
+                new_X_init.extend(X_init[len(Y_init):])
+                Y_init.extend(Y_total)
+                X_init = new_X_init
+
+        maxeval -= n_eval_init
+
         # Initial design
         X, Y = self.initial_design(finally_wrapped_f, variables, num_init,
                                    X_init, Y_init)
 
+        y_best = min(Y)
+        x_best = X[Y.index(y_best)]
+
+        # we have to reshape X and Y
+        X = [x[0] for x in X]
         Y = np.array(Y).reshape(len(Y), -1)
 
         bo = BayesianOptimization(f=f_in_opt,
@@ -208,6 +302,10 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                                   exact_feval=True,
                                   verbosity=True,
                                   )
+        bo.num_acquisitions = n_iter_init
+
+        if callback is not None:
+            callback(x_best, y_best)
 
         def union_callback(x, y):
             if verbose > 0:

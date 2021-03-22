@@ -699,7 +699,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         # Create logging files
         if eval_file is not None:
             ensure_file_existence(eval_file)
-        if report_file is not None:
+        if verbose > 0 and report_file is not None:
             ensure_file_existence(report_file)
         if save_file is not None:
             ensure_file_existence(save_file)
@@ -767,10 +767,6 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             restored = True
 
         # Perform 0 generation of GA - initial design.
-        if X_init is not None:
-            X_init = [self.transform(x) for x in X_init]
-        if Y_init is not None:
-            Y_init = [self.sign * y for y in Y_init]
         X_gen, Y_gen = self.initial_design(f_in_opt, variables, num_init,
                                            X_init, Y_init, self.random_type,
                                            self.custom_rand_gen)
