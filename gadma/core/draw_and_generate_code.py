@@ -239,14 +239,14 @@ def print_runs_summary(start_time, shared_dict, settings):
             draw_plots_to_file(x, engine, settings, save_plot_file, fig_title)
         except Exception as e:
             drawn = False
-            print(f"{bcolors.FAIL}Run {index}: failed to draw model due to "
-                  f"the following exception: {e}{bcolors.ENDC}")
+            print(f"{bcolors.WARNING}Run {index} warning: failed to draw model"
+                  f" due to the following exception: {e}{bcolors.ENDC}.")
         try:
             generate_code_to_file(x, engine, settings, save_code_file)
         except Exception as e:
             gener = False
-            print(f"{bcolors.FAIL}Run {index}: failed to generate code due to"
-                  f" the following exception: {e}{bcolors.ENDC}")
+            print(f"{bcolors.WARNING}Run {index} warning: failed to generate "
+                  f"code due to the following exception: {e}{bcolors.ENDC}")
         if drawn and gener:
             print("\nYou can find the picture and the Python code of the best "
                   "model in the output directory.\n")
