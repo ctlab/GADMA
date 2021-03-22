@@ -49,23 +49,13 @@ jobs:
       - name: Install GADMA and its dependencies (Linux and MacOS).
         run: |
           ./install
-          python -c "import moments"
         if: matrix.os != 'windows-2019'
 
       - name: Install GADMA and its dependencies (Windows).
         run: |
-          pip install scipy
-          pip install matplotlib
-          pip install Pillow
-          pip install ruamel.yaml
-          pip install mpmath
-          pip install dadi
-          pip install Cython
-          git clone https://bitbucket.org/simongravel/moments.git
-          cd moments
-          python setup.py install
-          cd ..
-          python setup.py install
+          bash install
+          python -c "import moments"
+        shell: cmd
         if: matrix.os == 'windows-2019'
 
       - name: Run tests and codecov.
