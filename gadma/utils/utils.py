@@ -130,7 +130,9 @@ def cache_func(f):
     @lru_cache
     @wraps(f)
     def tuple_wrapper(x_tuple):
-        return f(np.array(x_tuple, dtype=object))
+        x_is_float = np.all([isinstance(el, float) for el in x_tuple])
+        dtype = float if x_is_float else object
+        return f(np.array(x_tuple, dtype=dtype))
 
     @wraps(tuple_wrapper)
     def cache_wrapper(x):
@@ -254,6 +256,11 @@ def timeout(f, time):
     return timeout_wrapper
 
 
+def get_correct_dtype(x):
+    x_is_float = np.all([isinstance(el, float) for el in x])
+    return float if x_is_float else object
+
+
 class WeightedMetaArray(np.ndarray):
     """
     Array with metadata.
@@ -263,7 +270,9 @@ class WeightedMetaArray(np.ndarray):
     :param order: see ``numpy.ndarray`` for more information.
     """
     def __new__(cls, array, dtype=None, order=None):
-        obj = np.asarray(np.array(array, dtype=object),
+        if dtype is None:
+            dtype = get_correct_dtype(array)
+        obj = np.asarray(np.array(array, dtype=get_correct_dtype(array)),
                          dtype=dtype, order=order).view(cls)
         obj.metadata = ""
         obj.weights = np.ones(obj.shape)

@@ -2,6 +2,8 @@ from scipy import optimize
 import numpy as np
 import copy
 
+from ..utils import get_correct_dtype
+
 
 class OptimizerResult(object):
     """
@@ -34,7 +36,7 @@ class OptimizerResult(object):
     """
     def __init__(self, x, y, success: bool, status: int, message: str,
                  X, Y, n_eval: int, n_iter: int, X_out=[], Y_out=[]):
-        self.x = np.array(x, dtype=object)
+        self.x = np.array(x, dtype=get_correct_dtype(x))
         self.y = y
         self.success = success
         self.status = status

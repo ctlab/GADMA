@@ -1,5 +1,5 @@
 from .optimizer import Optimizer
-from ..utils import ContinuousVariable
+from ..utils import ContinuousVariable, get_correct_dtype
 
 import numpy as np
 
@@ -36,10 +36,10 @@ class GlobalOptimizer(Optimizer):
                     arr.append(np.random.uniform(*var.domain))
                 else:
                     arr.append(np.random.choice(var.domain))
-            return np.array(arr, dtype=object)
+            return np.array(arr, dtype=get_correct_dtype(arr))
         elif random_type == 'resample':
             arr = [var.resample() for var in variables]
-            return np.array(arr, dtype=object)
+            return np.array(arr, dtype=get_correct_dtype(arr))
         elif random_type == 'custom':
             return custom_rand_gen(variables)
         else:

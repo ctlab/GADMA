@@ -3,7 +3,7 @@ from .global_optimizer import GlobalOptimizer, register_global_optimizer
 from .optimizer_result import OptimizerResult
 from ..utils import sort_by_other_list, choose_by_weight, eval_wrapper
 from ..utils import trunc_normal_3_sigma_rule, DiscreteVariable,\
-                    WeightedMetaArray
+                    WeightedMetaArray, get_correct_dtype
 from ..utils import update_by_one_fifth_rule, ensure_file_existence, fix_args
 from ..utils import list_with_weights_for_pickle,\
                     list_with_weights_after_pickle
@@ -157,7 +157,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         Mutation of `x` in index `index`. For more information see
         :meth:`mutation`.
         """
-        x_mut = WeightedMetaArray(x, dtype=object)
+        x_mut = WeightedMetaArray(x)
         var = variables[index]
         # Start mutation procedure
         # 1. Uniform type
@@ -262,7 +262,8 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         inds = choose_by_weight(range(len(x)), weights, num_inds)
 
         # Copy the array to change
-        x_mut = [np.array(x, dtype=object) for _ in range(attemts)]
+        x_mut = [np.array(x, dtype=get_correct_dtype(x))
+                 for _ in range(attemts)]
 
         # Start mutation procedure
         for attempt in range(attemts):
@@ -301,12 +302,15 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         """
         assert len(parent1) == len(parent2)
 
-        parent1 = np.array(parent1, dtype=object)
-        parent2 = np.array(parent2, dtype=object)
+        parent1 = np.array(parent1, dtype=get_correct_dtype(parent1))
+        parent2 = np.array(parent2, dtype=get_correct_dtype(parent2))
 
         # Create two children - copies of parents
-        child1 = WeightedMetaArray(parent1, dtype=object)
-        child2 = WeightedMetaArray(parent2, dtype=object)
+        dtype = float
+        if parent1.dtype == object or parent2.dtype == object:
+            dtype = object
+        child1 = WeightedMetaArray(parent1, dtype=dtype)
+        child2 = WeightedMetaArray(parent2, dtype=dtype)
 
         i_att = 0
         while len(parent1) > 1 and np.all(child1 == parent1) and i_att < 5:
@@ -446,8 +450,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         # 4. Random individuals
         for i in range(n_random_gen):
             x = WeightedMetaArray(self.randomize(variables, self.random_type,
-                                                 self.custom_rand_gen),
-                                  dtype=object)
+                                                 self.custom_rand_gen))
             x.metadata = 'r'
             new_X_gen.append(x)
             new_Y_gen.append(f(x))

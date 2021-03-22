@@ -10,7 +10,7 @@ from .utils import update_by_one_fifth_rule, abspath, ensure_file_existence  # N
 from .utils import check_file_existence, check_dir_existence, ensure_dir_existence  # NOQA
 from .utils import StdAndFileLogger, get_aic_score, get_claic_score   # NOQA
 from .utils import float_repr, variables_values_repr, bcolors, warning_format  # NOQA
-from .utils import module_name_from_path, timeout  # NOQA
+from .utils import module_name_from_path, timeout, get_correct_dtype  # NOQA
 from .distributions import trunc_normal, trunc_lognormal  # NOQA
 from .distributions import trunc_normal_3_sigma_rule, trunc_lognormal_3_sigma_rule  # NOQA
 from .distributions import uniform_generator, trunc_lognormal_sigma_generator  # NOQA
