@@ -47,6 +47,9 @@ final_structure = None
 upper_bound_of_first_split = None
 upper_bound_of_second_split = None
 
+# Glocal optimizer
+global_optimizer = "Genetic_algorithm"
+
 # GA options
 num_init_const = None
 size_of_generation = 10

@@ -293,15 +293,15 @@ class TestCLI(unittest.TestCase):
         self.assertRaises(ValueError, settings.__setattr__,
                           'min_n', 0)
         self.assertTrue(
-            (PopulationSizeVariable('v').domain == [0.1, 1000]).all())
+            list(PopulationSizeVariable('v').domain) == [0.1, 1000])
         settings.min_t = 1e-4
         settings.max_t = 10
         self.assertRaises(ValueError, settings.__setattr__,
                           'min_t', -1)
-        self.assertTrue((TimeVariable('v').domain == [1e-4, 10]).all())
+        self.assertTrue(list(TimeVariable('v').domain) == [1e-4, 10])
         settings.min_m = 0
         settings.max_m = 5
-        self.assertTrue((MigrationVariable('v').domain == [0, 5]).all())
+        self.assertTrue(list(MigrationVariable('v').domain) == [0, 5])
 
         # get model with parameters when there is no pop ids
         settings = SettingsStorage()
