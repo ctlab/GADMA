@@ -767,7 +767,8 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             restored = True
 
         # Perform 0 generation of GA - initial design.
-        X_gen, Y_gen = self.initial_design(f_in_opt, variables, num_init,
+        X_gen, Y_gen = self.initial_design(finally_wrapped_f, variables,
+                                           num_init,
                                            X_init, Y_init, self.random_type,
                                            self.custom_rand_gen)
         X_gen, Y_gen = sort_by_other_list(X_gen, Y_gen, reverse=False)
