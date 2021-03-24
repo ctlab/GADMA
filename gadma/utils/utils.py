@@ -305,33 +305,25 @@ class WeightedMetaArray(np.ndarray):
 #        self.metadata = data[2]
 
 
-def list_with_weights_for_pickle(X):
+def serialize_meta_array(x):
     """
-    Transforms elements of ``X`` to pickle it.
+    Transforms ``x`` to pickle it.
     """
-    new_X = list()
-    for x in X:
-        if isinstance(x, WeightedMetaArray):
-            new_X.append((x, x.weights, x.metadata))
-        else:
-            new_X.append(x)
-    return new_X
+    if isinstance(x, WeightedMetaArray):
+        return (x, x.weights, x.metadata)
+    return x
 
 
-def list_with_weights_after_pickle(X):
+def deserialize_meta_array(x):
     """
-    Transforms back pickles version of ``X``.
+    Transforms back pickles version of ``x``.
     """
-    new_X = list()
-    for x in X:
-        if isinstance(x, tuple):
-            arr = WeightedMetaArray(x[0])
-            arr.weights = x[1]
-            arr.metadata = x[2]
-            new_X.append(arr)
-        else:
-            new_X.append(x)
-    return new_X
+    if isinstance(x, tuple):
+        arr = WeightedMetaArray(x[0])
+        arr.weights = x[1]
+        arr.metadata = x[2]
+        return arr
+    return x
 
 
 def update_by_one_fifth_rule(value, const, was_improved):

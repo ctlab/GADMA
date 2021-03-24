@@ -5,7 +5,7 @@ import numpy as np
 from .global_optimizer import GlobalOptimizer
 from .optimizer import ConstrainedOptimizer
 from .optimizer_result import OptimizerResult
-from ..utils import DiscreteVariable, sort_by_other_list
+from ..utils import DiscreteVariable, sort_by_other_list, get_correct_dtype
 
 
 class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
@@ -56,7 +56,7 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                        that were filtered out.
         :param is_filtered: Filter that was used on `base_x`.
         """
-        full_x = np.array(base_x)
+        full_x = np.array(base_x, dtype=get_correct_dtype(base_x))
         full_x[is_filtered] = x
         return full_x
 
@@ -184,7 +184,8 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             print("Result:\n", global_result, file=stream)
 
         # Transform best x to local optimizer as x0 and functions for local
-        x_best = np.array(global_result.x)
+        x_best = np.array(global_result.x,
+                          dtype=get_correct_dtype(global_result.x))
         y_best = global_result.y
         is_not_discrete = self._get_filter(variables)
         x0 = x_best[is_not_discrete]

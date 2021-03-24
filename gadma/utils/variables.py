@@ -97,7 +97,7 @@ class ContinuousVariable(Variable):
             rand_gen = self.__class__.default_rand_gen
         if domain[0] > domain[1]:
             raise ValueError("The lower bound of variable's domain must be "
-                             "greater than upper bound. Got domain: "
+                             "greater than the upper bound. Got domain: "
                              f"{domain}.")
         super(ContinuousVariable, self).__init__(name, 'continuous',
                                                  domain, rand_gen)

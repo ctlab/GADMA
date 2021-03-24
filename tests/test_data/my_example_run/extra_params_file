@@ -33,14 +33,14 @@ Size of generation: 10
 #	Sum of fractions should be <= 1, the remaining fraction is 
 #	fraction of random models.
 #	Default: 0.2,0.3,0.3
-Fractions: [0.2, 0.3, 0.3]
+Fractions: [0.55560528752, 0.18828153004, 0.12600048532]
 
 #	Mutation strength - fraction of parameters in model to mutate 
 #	during global mutation process of model.
 #	Number of parameters to mutate is sampled from binomial 
 #	distribution, so we need to set mean.
 #	Default: 0.2
-Mean mutation strength: 0.3
+Mean mutation strength: 0.625049
 #
 #	Mutation strength can be adaptive: if mutation is good, 
 #	i.e. has the best fitness function (log likelihood),
@@ -48,18 +48,18 @@ Mean mutation strength: 0.3
 #	otherwise it decreases dividing by (1/4)^const.
 #	When const is 1.0 it is not adaptive.
 #	Default: 1.0
-Const for mutation strength: 1.05
+Const for mutation strength: 1.016571
 
 #	Mutation rate - fraction of any parameter to change during
 #	its mutation.
 #	Mutation rate is sampled from truncated normal distribution, 
 #	so we need mean (std can be specified in extra params).
 #	Default 0.2
-Mean mutation rate: 0.1
+Mean mutation rate: 0.453272
 #
 #	Mutation rate also can be adaptive as mutation strength.
 #	Default: 1.02
-Const for mutation rate: 1.01
+Const for mutation rate: 1.068062
 
 #	Genetic algorithm stops when it couldn't improve model by
 #	more that epsilon in logLL
@@ -90,7 +90,7 @@ Vmin: 1
 #	optimal_sfs_scaling. We can choose N_A random between min_N 
 #	and max_N or we can always take it as 1.0.
 #	Default: True
-Random N_A: true
+Random N_A: True
 
 
 
@@ -102,11 +102,19 @@ Time to print summary: 1
 
 
 #	Other parameters of run without description:
+dadi_available: true
+global_maxiter: null
+global_optimizer: Genetic_algorithm
+local_maxiter: null
+migration_masks: null
+moments_available: true
 mutation_rate: null
 n_elitism: 2
+num_init_const: null
 outgroup: true
-p_crossover: 0.3
-p_mutation: 0.3
-p_random: 0.2
+p_crossover: 0.18828153004
+p_mutation: 0.55560528752
+p_random: 0.12600048532
 sequence_length: null
+split_fractions: true
 symmetric_migrations: false

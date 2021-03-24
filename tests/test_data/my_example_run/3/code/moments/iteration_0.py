@@ -6,15 +6,16 @@ def model_func(params, ns):
 	sts = moments.LinearSystem_1D.steady_state_1D(np.sum(ns))
 	fs = moments.Spectrum(sts)
 	fs = moments.Manips.split_1D_to_2D(fs, ns[0], ns[1])
-	nu2_func = lambda t: ((1 - s1) * 1.0) + (nu12 - ((1 - s1) * 1.0)) * (t / t1)
+	nu1_func = lambda t: (s1 * 1.0) * (nu11 / (s1 * 1.0)) ** (t / t1)
 	migs = np.array([[0, m1_12], [m1_21, 0]])
-	fs.integrate(tf=t1, Npop=lambda t: [nu11, nu2_func(t)], m=migs, dt_fac=0.01)
+	fs.integrate(tf=t1, Npop=lambda t: [nu1_func(t), nu12], m=migs, dt_fac=0.01)
 	return fs
 
-data = moments.Spectrum.from_file('/home/katenos/Workspace/popgen/GADMA/fs_examples/YRI_CEU.fs')
+data = moments.Spectrum.from_file('/home/katenos/Workspace/popgen/temp/GADMA/examples/changing_theta/YRI_CEU.fs')
+data.pop_ids = ['YRI', 'CEU']
 ns = data.sample_sizes
 
-p0 = [0.09200137889929888, 0.30099757687879214, 1.1640124094525566, 4.181058071544814, 0, 1.2390776942547495]
+p0 = [0.7537986546874129, 0.05551948159691905, 3.297767552259952, 0.14793793078915865, 6.170790202981885, 0.0]
 model = model_func(p0, ns)
 ll_model = moments.Inference.ll_multinom(model, data)
 print('Model log likelihood (LL(model, data)): {0}'.format(ll_model))
@@ -24,3 +25,17 @@ print('Optimal value of theta: {0}'.format(theta))
 theta0 = 0.37976
 Nanc = int(theta / theta0)
 print('Size of ancestral population: {0}'.format(Nanc))
+
+
+plot_ns = [4 for _ in ns]  # small sizes for fast drawing
+gen_mod = moments.ModelPlot.generate_model(model_func,
+                                           p0, plot_ns)
+moments.ModelPlot.plot_model(gen_mod,
+                             save_file='model_from_GADMA.png',
+                             fig_title='Demographic model from GADMA',
+                             draw_scale=False,
+                             pop_labels=['YRI', 'CEU'],
+                             nref=None,
+                             gen_time=1.0,
+                             gen_time_units='None',
+                             reverse_timeline=True)

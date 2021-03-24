@@ -150,7 +150,7 @@ class CoreRun(object):
         the `output_dir` of this run.
 
         :param x: Vector of values for model parameters.
-        :param y: Value of log-likelihood for this values.
+        :param y: Value of log-likelihood for this values.
         """
         best_by = 'log-likelihood'
         if self.aic_score:

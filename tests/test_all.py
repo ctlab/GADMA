@@ -136,6 +136,17 @@ class TestRestore(unittest.TestCase):
 
     def test_restore_finished_run(self):
         finished_run_dir = os.path.join(DATA_PATH, 'my_example_run')
+        # Check for save_files
+        ga = get_global_optimizer("Genetic_algorithm")
+        for i in range(3):
+            save_file_1 = os.path.join(finished_run_dir, str(i+1),
+                                       "save_file_1_1")
+            save_file_2 = os.path.join(finished_run_dir, str(i+1),
+                                       "save_file_2_1")
+
+            self.assertTrue(ga.valid_restore_file(save_file_1))
+            self.assertTrue(ga.valid_restore_file(save_file_2))
+
         params_file = 'params'
         outdir = os.path.join(DATA_PATH, 'resume_dir')
         if check_dir_existence(outdir):

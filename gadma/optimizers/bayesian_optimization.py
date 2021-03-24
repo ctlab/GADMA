@@ -10,8 +10,6 @@ from .global_optimizer import GlobalOptimizer, register_global_optimizer
 from .optimizer_result import OptimizerResult
 from ..utils import eval_wrapper
 from ..utils import ensure_file_existence, fix_args
-from ..utils import list_with_weights_for_pickle,\
-                    list_with_weights_after_pickle
 from ..utils import ContinuousVariable
 
 from .. import GPyOpt
@@ -326,7 +324,238 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         return result
 
 
+#register_global_optimizer('Bayesian_optimization', BayesianOptimizer)
+
+
+
+class SMACOptimizer(GlobalOptimizer, ConstrainedOptimizer):
+    """
+    Class for Bayesian optimization
+    """
+    def __init__(self, log_transform=False, maximize=False):
+        super(SMACOptimizer, self).__init__(log_transform, maximize)
+
+    def get_config_space(self, variables):
+        space = {}
+        for var in variables:
+            domain = self.original_transform(var.domain)
+            if domain[0] == - np.inf:
+                assert self.log_transform
+                domain[0] = np.log(1e-15)
+            space[var.name] = {'type': 'real',
+                               'space': 'linear',
+                               'range': domain}
+        return gpy_domain
+
+    def write_report(self, n_iter, X_iter, Y_iter, report_file, x, y):
+        """
+        Writes report about each iteration in file or stdout.
+
+        :param report_file: file to write report to. If None then to stdout.
+
+        :param x: Current solution
+        :param y: Current value of fitness function
+        """
+
+        if y < y_best:
+            x_best = x
+            y_best = y
+
+        if report_file is not None:
+            stream = open(report_file, 'a')
+        else:
+            stream = sys.stdout
+
+        print('====================== Iteration %05d ======================' %
+              n_iter, file=stream)
+        print('Added new points:', file=stream)
+
+        for x_iter, y_iter in zip(X_iter, Y_iter):
+            print(str(bo_obj.model), file=stream)
+        print(bo_obj.model.model.kern.lengthscale, file=stream)
+        print('=============================================================',
+              file=stream)
+
+        print('*************************************************************',
+              file=stream)
+        print('Current optimum: %0.3f' % y_best, file=stream)
+        print(f'On parameters: {x_best}', file=stream)
+        print('*************************************************************',
+              file=stream)
+
+        if report_file is not None:
+            stream.close()
+
+    def save(self, n_iter, n_eval, X_total, Y_total, save_file):
+        """
+        Save some values of genetic algorithm to file.
+        """
+        if save_file is None:
+            return
+        info = (int(n_iter), int(n_eval), X_total, Y_total)
+        super(BayesianOptimization, self).save(info, save_file)
+
+    def valid_restore_file(self, save_file):
+        try:
+            info = self.load(save_file)
+        except Exception:
+            return False
+        if (not isinstance(info[0], int) or not isinstance(info[1], int)):
+            return False
+        if not isinstance(info[3], list) or not isinstance(info[4], list):
+            return False
+        return True
+
+    def optimize(self, f, variables, args=(), num_init=10, num_init_const=None,
+                 X_init=None, Y_init=None,
+                 linear_constrain=None, maxiter=100, maxeval=100,
+                 verbose=0, callback=None, report_file=None, eval_file=None,
+                 save_file=None, restore_file=None, restore_points_only=False,
+                 restore_x_transform=None):
+        r"""
+        Return best values of `variables` that minimizes/maximizes
+        the function `f`.
+
+        :param f: function to minimize/maximize. The usage must be the
+                  following: f(x, \*args), where x is list of values.
+        :param variables: list of variables (instances of
+                          :class:`gadma.Variable` class) of the function.
+        :param X_init: list of initial values.
+        :param Y_init: value of function `f` on initial values from `X_init`.
+        :param args: arguments of function `f`.
+        :param maxiter: maximum number of genetic algorithm's generations.
+        :param maxeval: maximum number of function evaluations.
+        :param callback: callback to call after each generation.
+                         It will be called as callback(x, y), where x, y -
+                         best_solution of generation and its fitness.
+        """
+        assert np.all([isinstance(var, ContinuousVariable)
+                       for var in variables])
+        # Check for num_init
+        if num_init_const is not None:
+            num_init = num_init_const * len(variables)
+
+        from GPyOpt.methods import BayesianOptimization
+        if maxiter is None:
+            maxiter = 100
+        if maxeval is None:
+            maxeval = maxiter
+
+        # Create logging files
+        if eval_file is not None:
+            ensure_file_existence(eval_file)
+        if verbose > 0 and report_file is not None:
+            report_file = ensure_file_existence(report_file)
+        if save_file is not None:
+            ensure_file_existence(save_file)
+
+        # Prepare function to use it.
+        # Fix args and cache
+        prepared_f = self.prepare_f_for_opt(f, args)
+        # Wrap for automatic evaluation logging
+        finally_wrapped_f = eval_wrapper(prepared_f, eval_file)
+
+        f_in_opt = partial(self.evaluate, finally_wrapped_f)
+        f_in_opt = fix_args(f_in_opt, (), linear_constrain)
+
+        if callback is not None:
+            callback = self.prepare_callback(callback)
+
+        # Stuff for BO
+        ndim = len(variables)
+        if ndim == 0:
+            x_best = []
+            y_best = f_in_opt([x_best])
+            return OptimizerResult(x=x_best, y=self.sign*y_best,
+                                   success=True, status="0",
+                                   message="Number of variables == 0",
+                                   X=[x_best], Y=[y_best],
+                                   n_eval=1, n_iter=1,
+                                   X_out=[x_best], Y_out=[y_best])
+
+        kernel = self.get_kernel(ndim)
+        gpy_domain = self.get_domain(variables)
+
+        # restore info
+        n_iter_init = 0
+        n_eval_init = 0
+        if restore_file is not None and self.valid_restore_file(restore_file):
+            (n_gen_old, n_eval_old, X_total, Y_total) = self.load(restore_file)
+            if restore_x_transform is not None:
+                X_total = [restore_x_transform(x) for x in X_total]
+                # Let's remember our recalculation but this Y_gen will become
+                # Y_init and Y_init is in usual units without * sign.
+                Y_total = [None for _ in X_total]
+            if not restore_points_only:
+                n_iter_init = n_gen_old
+                n_eval_init = n_eval_old
+            if X_init is None:
+                X_init = X_total
+                Y_init = Y_total
+            elif Y_init is None:
+                X_total.extend(X_init)
+                X_init, Y_init = X_total, Y_total
+            elif len(X_init) == len(Y_init):
+                X_init.extend(X_total)
+                Y_init.extend(Y_total)
+            else:
+                assert len(X_init) > len(Y_init)
+                new_X_init = copy.copy(X_init[:len(Y_init)])
+                new_X_init.extend(X_total)
+                new_X_init.extend(X_init[len(Y_init):])
+                Y_init.extend(Y_total)
+                X_init = new_X_init
+
+        maxeval -= n_eval_init
+
+        # Initial design
+        X, Y = self.initial_design(finally_wrapped_f, variables, num_init,
+                                   X_init, Y_init)
+
+        y_best = min(Y)
+        x_best = X[Y.index(y_best)]
+
+        # we have to reshape X and Y
+        X = [x[0] for x in X]
+        Y = np.array(Y).reshape(len(Y), -1)
+
+        bo = BayesianOptimization(f=f_in_opt,
+                                  domain=gpy_domain,
+                                  model_type='GP',
+                                  acquisition_type=self.acquisition_type,
+                                  kernel=kernel,
+                                  ARD=self.ARD,
+                                  X=np.array(X, dtype=object),
+                                  Y=np.array(Y),
+                                  exact_feval=True,
+                                  verbosity=True,
+                                  )
+        bo.num_acquisitions = n_iter_init
+
+        if callback is not None:
+            callback(x_best, y_best)
+
+        def union_callback(x, y):
+            if verbose > 0:
+                self.write_report(bo, report_file, x, y)
+            if callback is not None:
+                callback(x, y)
+
+        f_in_opt = self._concatenate_f_and_callback(f_in_opt, union_callback)
+
+        bo.f = bo._sign(f_in_opt)
+        bo.objective = GPyOpt.core.task.objective.SingleObjective(
+            bo.f, bo.batch_size, bo.objective_name)
+
+        bo.run_optimization(max_iter=min(maxiter, maxeval)-len(X), eps=0,
+                            verbosity=False)
+
+        result = OptimizerResult.from_GPyOpt_OptimizerResult(bo)
+        return result
+
+
 register_global_optimizer('Bayesian_optimization', BayesianOptimizer)
+
 # import torch
 # from botorch.models import SingleTaskGP
 # from botorch.fit import fit_gpytorch_model
