@@ -1,17 +1,15 @@
 from .optimizer import ConstrainedOptimizer
 from .global_optimizer import GlobalOptimizer, register_global_optimizer
 from .optimizer_result import OptimizerResult
-from ..utils import sort_by_other_list, choose_by_weight, eval_wrapper
+from ..utils import sort_by_other_list, choose_by_weight
 from ..utils import trunc_normal_3_sigma_rule, DiscreteVariable,\
                     WeightedMetaArray, get_correct_dtype
 from ..utils import update_by_one_fifth_rule
 
-from functools import partial
 import numpy as np
 import copy
 import sys
 import time
-from collections import namedtuple
 import types
 
 
@@ -623,7 +621,12 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                                          gen_times=[])
         return run_info
 
-    def _update_run_info_except_result(self, run_info, gen_time=None, n_impr_gen=None, maxiter=None, maxeval=None):
+    def _update_run_info_except_result(self,
+                                       run_info,
+                                       gen_time=None,
+                                       n_impr_gen=None,
+                                       maxiter=None,
+                                       maxeval=None):
         """
         Updates run_info after one iteration of GA.
         """
@@ -677,7 +680,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
     def valid_restore_file(self, save_file):
         try:
             run_info = self.load(save_file)
-        except Exception as e:
+        except Exception:
             return False
         if (not isinstance(run_info.result.n_eval, int) or
                 not isinstance(run_info.result.n_iter, int) or
@@ -691,7 +694,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         return True
 
     def _optimize(self, f, variables, X_init, Y_init, maxiter, maxeval,
-                 iter_callback):
+                  iter_callback):
         X_gen, Y_gen = sort_by_other_list(X_init, Y_init, reverse=False)
         X_gen = X_gen[:self.gen_size]
         Y_gen = Y_gen[:self.gen_size]

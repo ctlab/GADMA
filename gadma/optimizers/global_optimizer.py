@@ -122,7 +122,8 @@ class GlobalOptimizer(Optimizer):
         """
         raise NotImplementedError
 
-    def _update_run_info(self, run_info, x_best, y_best, X, Y, n_eval, **update_kwargs):
+    def _update_run_info(self, run_info, x_best, y_best,
+                         X, Y, n_eval, **update_kwargs):
         """
         Updates run_info after one iteration.
         """
@@ -134,7 +135,8 @@ class GlobalOptimizer(Optimizer):
         run_info.result.Y_out = copy.copy(Y)
         run_info.result.X.extend(run_info.result.X_out)
         run_info.result.Y.extend(run_info.result.Y_out)
-        run_info = self._update_run_info_except_result(run_info, **update_kwargs)
+        run_info = self._update_run_info_except_result(run_info,
+                                                       **update_kwargs)
         return run_info
 
     def _update_run_info_except_result(self, run_info, **update_kwargs):
@@ -277,7 +279,6 @@ class GlobalOptimizer(Optimizer):
         """
         # Create run_info that will be saved during the optimization
         self.run_info = None
-        assert hasattr(self.run_info, "result"), f"{self.run_info} {self.__class__}"
 
         # Check for num_init
         if num_init_const is not None:
@@ -313,7 +314,11 @@ class GlobalOptimizer(Optimizer):
             if restore_x_transform is not None:
                 def y_transform(y):
                     return self.sign * y
-                restored_run_info = self._apply_transform_to_run_info(restored_run_info, restore_x_transform, ident_transform)
+                restored_run_info = self._apply_transform_to_run_info(
+                    run_info=restored_run_info,
+                    x_transform=restore_x_transform,
+                    y_transform=ident_transform
+                )
             if not restore_points_only:
                 self.run_info = restored_run_info
                 num_init = len(restored_run_info.result.X_out)
@@ -323,10 +328,6 @@ class GlobalOptimizer(Optimizer):
                 restored_run_info.result.X_out,
                 restored_run_info.result.Y_out
             )
-
-        # Remember number of func evals
-        prev_n_eval = prepared_f.cache_info.misses
-        assert prev_n_eval == 0
 
         # Perform initial design. X_init and Y_init have transformed values now
         X_init, Y_init = self.initial_design(finally_wrapped_f, variables,
@@ -358,8 +359,6 @@ class GlobalOptimizer(Optimizer):
             # Call callback
             if callback is not None:
                 callback(self.run_info.result.x, self.run_info.result.y)
-            # Update prev_n_eval
-            prev_n_eval = n_eval
 
         # Run callback for initial design
         iter_callback(x_best=X_init[0],
