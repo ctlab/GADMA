@@ -21,6 +21,13 @@ def logarithm_transform(x):
         x = x.astype(float)
     return np.log(x)
 
+def apply_transform(variables, transform, x):
+    is_float = [isinstance(var, ContinuousVariable) for var in variables]
+    if np.all(is_float):
+        return transform(x)
+    x = np.array(x, dtype=get_correct_dtype(x))
+    x[is_float] = transform(x[is_float])
+    return x
 
 def exponent_transform(x):
     """

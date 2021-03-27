@@ -7,6 +7,7 @@ from gadma.engines import *
 from gadma.models import *
 from gadma.cli.arg_parser import test_args
 from gadma.core import SharedDictForCoreRun
+from gadma.utils import ident_transform
 
 import gadma
 import dadi
@@ -17,6 +18,7 @@ import os
 import sys
 import numpy as np
 import pickle
+import copy
 
 warnings.filterwarnings(action='ignore', category=UserWarning,
                         module='.*\.optimizer', lineno=139)
@@ -549,4 +551,41 @@ class TestGlobalOptimizer(unittest.TestCase):
                           X_init=X, Y_init=None)
 
         opt = GlobalOptimizer()
-        self.assertRaises(NotImplementedError, opt.optimize, f, variables, 10)
+        self.assertRaises(NotImplementedError,
+                          opt.optimize, f, variables, num_init=10)
+        self.assertRaises(NotImplementedError,
+                          opt.write_report, variables, None, None)
+        self.assertRaises(NotImplementedError, opt._create_run_info)
+        self.assertRaises(NotImplementedError,
+                          opt._update_run_info_except_result, None)
+        self.assertRaises(NotImplementedError,
+                          opt._apply_transform_to_run_info_except_result,
+                          None, None, None)
+        self.assertRaises(NotImplementedError,
+                          opt.valid_restore_file, None)
+
+    def test_implementations_in_instances(self):
+        for opt in all_global_optimizers():
+            run_info = opt._create_run_info()
+            run_info_2 = opt._update_run_info(copy.deepcopy(run_info),
+                                              x_best=[1, 2, 3], 
+                                              y_best=10,
+                                              X=[],
+                                              Y=[],
+                                              n_eval=2)
+            self.assertEqual(run_info.result.n_iter + 1,
+                             run_info_2.result.n_iter)
+            self.assertEqual(run_info.result.n_eval + 2,
+                             run_info_2.result.n_eval)
+            self.assertNotEqual(run_info.result.x,
+                                run_info_2.result.x)
+            self.assertNotEqual(run_info.result.y,
+                                run_info_2.result.y)
+
+            run_info_3 = opt._apply_transform_to_run_info(
+                run_info,
+                x_transform=ident_transform,
+                y_transform=ident_transform
+            )
+
+            self.assertFalse(opt.valid_restore_file(None))

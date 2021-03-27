@@ -885,11 +885,6 @@ class SettingsStorage(object):
         Return object of global optimizer for optimization according to current
         settings.
         """
-        if self.global_optimizer.lower() == "bayesian_optimization":
-            bo = get_global_optimizer(self.global_optimizer)
-            bo.log_transform = True
-            bo.maximize = True
-            return bo
         if self.global_optimizer.lower() == "genetic_algorithm":
             ga = get_global_optimizer(self.global_optimizer)
             ga.gen_size = self.size_of_generation
@@ -907,7 +902,11 @@ class SettingsStorage(object):
             if self.random_n_a:
                 ga.random_type = 'custom'
                 ga.custom_rand_gen = custom_generator
-        return ga
+            return ga
+        opt = get_global_optimizer(self.global_optimizer)
+#        opt.log_transform = True
+        opt.maximize = True
+        return opt
 
     def get_local_optimizer(self):
         """

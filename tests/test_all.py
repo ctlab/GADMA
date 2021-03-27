@@ -64,9 +64,36 @@ class TestRestore(unittest.TestCase):
         self.assertEqual(res1.y, res3.y, msg=f"{res1}\n{res3}")
         self.assertTrue(res1.y >= res2.y, msg=f"{res1}\n{res2}")
 
+    def test_bo_restore(self):
+        bo = get_global_optimizer("Bayesian_optimization")
+        f = rosenbrock
+        variables = [ContinuousVariable('var1', [1e-15, 10]),
+                     ContinuousVariable('var2', [1e-15, 2])]
+        save_file = "save_file"
+        report_file = "report_file"
+        res1 = bo.optimize(f, variables, maxiter=5, verbose=1,
+                           report_file=report_file,
+                           save_file=save_file)
+
+        res2 = bo.optimize(f, variables, maxiter=10, verbose=1,
+                           report_file=report_file,
+                           restore_file=save_file)
+
+        res3 = bo.optimize(f, variables, maxiter=5, verbose=1,
+                           report_file=report_file,
+                           restore_file=save_file)
+
+        self.assertEqual(res1.y, res3.y, msg=f"{res1}\n{res3}")
+        self.assertTrue(res1.y >= res2.y, msg=f"{res1}\n{res2}")
+
     def test_ls_restore(self):
         for opt in all_local_optimizers():
-            f = rosenbrock
+            print(opt.id)
+            def f(x):
+                print(x)
+                y = rosenbrock(x)
+                print(y)
+                return y
             # positive domain because we check log scaling optimizations too
             variables = [ContinuousVariable('var1', [10, 20]),
                          ContinuousVariable('var2', [1, 2])]
@@ -74,7 +101,7 @@ class TestRestore(unittest.TestCase):
             save_file = "save_file"
             report_file = "report_file"
             res1 = opt.optimize(f, variables, x0=x0, maxiter=5, verbose=1,
-                                report_file=report_file,
+#                                report_file=report_file,
                                 save_file=save_file)
             res2 = opt.optimize(f, variables, x0=x0, maxiter=5, verbose=1,
                                 report_file=report_file,
@@ -90,6 +117,10 @@ class TestRestore(unittest.TestCase):
             self.assertEqual(res1.y, res3.y)
             self.assertTrue(res1.y >= res2.y)
             self.assertTrue(res2.y >= res4.y)
+            print(res1)
+            print(res2)
+            print(res3)
+            print(res4)
             for res in [res1, res2, res3, res4]:
                 self.assertEqual(res.y, f(res.x))
 

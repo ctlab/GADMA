@@ -3,6 +3,7 @@ from .variables import TimeVariable, PopulationSizeVariable, MigrationVariable  
 from .variables import SelectionVariable, DynamicVariable, FractionVariable  # NOQA
 from .variable_pool import VariablePool  # NOQA
 from .utils import logarithm_transform, exponent_transform, ident_transform  # NOQA
+from .utils import apply_transform  # NOQA
 from .utils import choose_by_weight, sort_by_other_list, fix_args, lru_cache  # NOQA
 from .utils import cache_func, eval_wrapper, WeightedMetaArray, is_pickleable  # NOQA
 from .utils import serialize_meta_array, deserialize_meta_array  # NOQA

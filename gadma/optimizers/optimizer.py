@@ -54,7 +54,7 @@ class Optimizer(object):
         """
         return -1 if self.maximize else 1
 
-    def prepare_callback(self, callback):
+    def _prepare_callback(self, callback):
         """
         Wraps callback function for usage inside optimizer. It transforms x
         according to `log_transform` and multiply y to -1 if `maximize` is
@@ -73,7 +73,8 @@ class Optimizer(object):
             return callback(x_tr, self.sign * y)
         return wrapper
 
-    def write_report(self, n_iter, variables, x, y, report_file):
+    @staticmethod
+    def write_report(n_iter, variables, x, y, report_file):
         """
         Writes report of optimizer to file or stdout.
 
@@ -96,7 +97,7 @@ class Optimizer(object):
         if report_file:
             stream.close()
 
-    def wrap_for_report(self, f, variables, verbose, report_file):
+    def _wrap_for_report(self, f, variables, verbose, report_file):
         """
         Wraps function `f` for automatically report output. When function is
         called report is saved to `report_file` every `verbose` call.
@@ -144,7 +145,7 @@ class Optimizer(object):
             return np.inf
         return self.sign * y
 
-    def prepare_f_for_opt(self, f, args=(), cache=True):
+    def _prepare_f_for_opt(self, f, args=(), cache=True):
         """
         Prepares `f` for usage in optimizer. It should be transformed
         according to `log_transform` and `maximize`. Arguments are fixed and

@@ -12,13 +12,13 @@
 #	If it is resumed from other directory and output directory 
 #	isn't set, GADMA will add '_resumed' for previous output 
 #	directory.
-Output directory: /home/katenos/Workspace/popgen/temp/GADMA/my_example_run
+Output directory: tests/test_data/my_example_run
 
 
 #!!!
 #	Input file can be sfs file (should end with .fs) or 
 #	file of SNP's in dadi format (should end with .txt).
-Input file: /home/katenos/Workspace/popgen/temp/GADMA/examples/changing_theta/YRI_CEU.fs
+Input file: examples/optimize_ga_for_YRI_CEU/YRI_CEU.fs
 
 #	'Population labels' is sequence of population names (the same
 #	names as in input file)

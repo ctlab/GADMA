@@ -16,11 +16,43 @@ class GlobalOptimizer(Optimizer):
     """
     Base class for global optimization.
     See :class:`gadma.optimizers.Optimizer` for more information.
-    """
-    def __init__(self, log_transform=False, maximize=False):
+
+    To override class one should implement the following methods:
+
+    - :meth:`GlobalOptimizer.write_report`
+    - :meth:`GlobalOptimizer._create_run_info`
+    - :meth:`GlobalOptimizer._update_run_info_except_result`
+    - :meth:`GlobalOptimizer._apply_transform_to_run_info_except_result`
+    - :meth:`GlobalOptimizer.valid_restore_file`
+    - :meth:`GlobalOptimizer._optimize`
+
+    :param random_type: Type of random generation during initial design.
+                        Could be:
+                        * 'uniform'
+                        * 'resample'
+                        * 'custom'
+                        See help(:meth:`GlobalOptimizer.randomize`) for more
+                        information.
+    :type random_type: str
+    :param custom_rand_gen: Random generator for 'custom' random_type.
+                            Provide generator from variables:
+                            custom_rand_gen(variables) = values
+    :type custom_rand_gen: func
+    :param log_transform: If True then logarithm will be used incide for
+                          parameters.
+    :type log_transform: bool
+    :param maximize: If True then optimization will maximize function.
+    :type maximize: bool
+   """
+    def __init__(self, random_type='resample', custom_rand_gen=None,
+                 log_transform=False, maximize=False):
         super(GlobalOptimizer, self).__init__(log_transform, maximize)
-        self.X = list()
-        self.Y = list()
+        self.random_type = random_type
+        self.custom_rand_gen = custom_rand_gen
+        if self.random_type == 'custom' and self.custom_rand_gen is None:
+            raise ValueError("Please specify custom random generator "
+                             "(custom_rand_gen) for 'custom' type of random "
+                             "sampling.")
         self.run_info = None
 
     def randomize(self, variables, random_type='resample',
@@ -90,6 +122,9 @@ class GlobalOptimizer(Optimizer):
         return X, Y
 
     def _create_run_info(self):
+        """
+        Returns the initial run_info.
+        """
         raise NotImplementedError
 
     @property
@@ -125,7 +160,7 @@ class GlobalOptimizer(Optimizer):
     def _update_run_info(self, run_info, x_best, y_best,
                          X, Y, n_eval, **update_kwargs):
         """
-        Updates run_info after one iteration.
+        Updates run_info after one iteration in-place.
         """
         run_info.result.n_iter += 1
         run_info.result.n_eval += n_eval
@@ -171,25 +206,48 @@ class GlobalOptimizer(Optimizer):
 
         return run_info
 
-    def write_report(self, variables, run_info, report_file):
+    @staticmethod
+    def write_report(variables, run_info, report_file):
         """
-        Write report about one generation in report file.
+        Write report about one iteration of global optimization in report file.
 
-        :note: All values are reported as is, i.e. `X_gen`, `x_best` should be\
-               already translated from log scale if optimization did so;\
-               `Y_gen` and `y_best` must be already multiplied by -1 if we\
-               have maximization instead of minimization.
+        The parent version of :meth:`Optimizer.write_report` is now available
+        under the name :meth:`GlobalOptimizer.parent_write_report`.
+
+        :param variables: Variables of run.
+        :param run_info: Instance of class that contains run info, i.e. current
+                         result.
+        :param report_file: File to write the report. If None then report
+                            should be printed to stdout.
+
+        :note: All values are reported as is, i.e. `X_out`, `x_best` in \
+               `run_info` should be already translated from log scale if \
+               optimization did so; `Y_out` and `y_best` must be already \
+               multiplied by -1 if we have maximization instead of \
+               minimization.
         """
         raise NotImplementedError
 
-    def parent_write_report(self, n_iter, variables, x, y, report_file):
+    @staticmethod
+    def parent_write_report(n_iter, variables, x, y, report_file):
         """
-        Wrapper for parent method.
+        Calls usual :meth:`Optimizer.write_report` method from parent class.
         """
-        return super(GlobalOptimizer, self).write_report(n_iter, variables,
-                                                         x, y, report_file)
+        return super(GlobalOptimizer,
+                     GlobalOptimizer).write_report(n_iter, variables,
+                                                   x, y, report_file)
 
     def _update_X_init_Y_init(self, X_init, Y_init, X_out, Y_out):
+        """
+        Updates X_init and Y_init according to restored X_out and Y_out.
+        It is just union of two arrays with start points that takes into
+        account if some of this arrays are None.
+
+        :param X_init: Initial points.
+        :param Y_init: Value of objective function on initial points `X_init`.
+        :param X_out: Restored points to start with.
+        :param Y_out: Value of objective function on `X_out`.
+        """
         # 1. No X_init and no Y_init
         if X_init is None:
             new_X_init = copy.copy(X_out)
@@ -219,7 +277,26 @@ class GlobalOptimizer(Optimizer):
             new_Y_init.extend(Y_out)
         return new_X_init, new_Y_init
 
-    def _optimize(f, variables, X_init, Y_init, maxiter, maxeval, callback):
+    def _optimize(f, variables, X_init, Y_init,
+                  maxiter, maxeval, iter_callback):
+        """
+        Main part of optimization. Assumes that `X_init` and `Y_init` are
+        correct initial design points. Should run iterations of global
+        optimization with callback calling after each iteration.
+
+        :param f: Cached and wrapped (e.g. eval logging) objective function.
+        :param variables: Variables for `f`. They are supposed to have
+                          transformed domain according to optimizer transform.
+        :param X_init: Correct initial points for `f`.
+        :param Y_init: Value of `f` on `X_init`.
+        :param maxiter: Maximum number of iterations to run.
+        :param maxeval: Maximum number of evaluations to run.
+        :param iter_callback: Callback to run after each iteration. It has the
+            following notation: `iter_callback(x_best,
+            y_best, X_iter, Y_iter, **update_kwargs)`, where
+            **update_kwargs are arguments of
+            :meth:`GlobalOptimizer._update_run_info_except_result`
+        """
         raise NotImplementedError
 
     def optimize(self, f, variables, args=(), num_init=50, num_init_const=None,
@@ -294,7 +371,7 @@ class GlobalOptimizer(Optimizer):
 
         # Prepare function to use it.
         # Fix args and cache
-        prepared_f = self.prepare_f_for_opt(f, args)
+        prepared_f = self._prepare_f_for_opt(f, args)
         # Wrap for automatic evaluation logging
         finally_wrapped_f = eval_wrapper(prepared_f, eval_file)
         # wrap for automatic transform of x's and multiplication by sign of y's

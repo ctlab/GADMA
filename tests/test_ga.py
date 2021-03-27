@@ -237,7 +237,7 @@ class TestGeneticAlg(unittest.TestCase):
                 self.assertEqual(res.y, f(res.x, *args))
                 self.assertTrue(os.stat(eval_file).st_size > 0)
                 self.assertTrue(os.stat(report_file).st_size > 0)
-                int_lines = 0
+                int_lines = -1
                 with open(eval_file) as fl:
                     for line in fl:
                         int_lines += 1

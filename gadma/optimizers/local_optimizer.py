@@ -124,10 +124,10 @@ class NoneOptimizer(LocalOptimizer):
                  verbose=0, callback=None, eval_file=None, report_file=None,
                  save_file=None, restore_file=None, restore_points_only=False,
                  restore_x_transform=None):
-        prepared_f = self.prepare_f_for_opt(f, args, cache=True)
+        prepared_f = self._prepare_f_for_opt(f, args, cache=True)
         wrapped_f = eval_wrapper(prepared_f, eval_file)
-        finally_wrapped_f = self.wrap_for_report(wrapped_f, variables,
-                                                 verbose, report_file)
+        finally_wrapped_f = self._wrap_for_report(wrapped_f, variables,
+                                                  verbose, report_file)
         if restore_file is not None and self.valid_restore_file(restore_file):
             x0, y = self.load(restore_file)
             if restore_x_transform is not None:
@@ -201,8 +201,8 @@ class ScipyOptimizer(LocalOptimizer):
             return False
         return True
 
-    def prepare_callback(self, f, callback, save_file=None):
-        new_callback = super(ScipyOptimizer, self).prepare_callback(callback)
+    def _prepare_callback(self, f, callback, save_file=None):
+        new_callback = super(ScipyOptimizer, self)._prepare_callback(callback)
 
         @wraps(new_callback)
         def wrapper(xk, result_obj=None):
@@ -299,13 +299,13 @@ class ScipyOptimizer(LocalOptimizer):
         # Fix args in function f and cache it.
         # TODO: not intuitive solution, think more about it.
         # Fix args (cache we did at the end)
-        prepared_f = self.prepare_f_for_opt(f, args, cache=False)
+        prepared_f = self._prepare_f_for_opt(f, args, cache=False)
         # Wrap for automatic evaluation log
         wrapped_f = eval_wrapper(prepared_f, eval_file)
         wrapped_f = cache_func(wrapped_f)
         # Wrap for writing report
-        finally_wrapped_f = self.wrap_for_report(wrapped_f, variables,
-                                                 verbose, report_file)
+        finally_wrapped_f = self._wrap_for_report(wrapped_f, variables,
+                                                  verbose, report_file)
 
         f_in_opt = partial(self.evaluate, finally_wrapped_f)
         f_in_opt = fix_args(f_in_opt, (), linear_constrain)
@@ -355,7 +355,7 @@ class ScipyOptimizer(LocalOptimizer):
                 raise ValueError("You have set two callbacks - first in "
                                  "options and second via callback. Please "
                                  "specify one callback.")
-            callback = self.prepare_callback(f_in_opt, callback)
+            callback = self._prepare_callback(f_in_opt, callback)
 
         # IMPORTANT we cannot run scipy optimization for search of 0 params
         if len(variables) == 0:
@@ -480,7 +480,7 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
             return self.sign * np.inf
         return y
 
-    def prepare_callback(self, callback):
+    def _prepare_callback(self, callback):
         @wraps(callback)
         def wrapper(x, y):
             return callback(self.inv_transform(x), y)
@@ -505,18 +505,18 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
         # Fix args in function f and cache it.
         # TODO: not intuitive solution, think more about it.
         # Fix args
-        prepared_f = self.prepare_f_for_opt(f, args, cache=True)
+        prepared_f = self._prepare_f_for_opt(f, args, cache=True)
         # Write automatix evaluation log. Incide optimizer it could different
         # x in function as there can be extra logarithm.
         wrapped_f = eval_wrapper(prepared_f, eval_file)
         # The same with report_file
         f_in_opt = partial(self.evaluate_inner, wrapped_f)
-        f_in_opt = self.wrap_for_report(f_in_opt, variables,
-                                        verbose, report_file)
+        f_in_opt = self._wrap_for_report(f_in_opt, variables,
+                                         verbose, report_file)
 #        f_in_opt = fix_args(f_in_opt, (linear_constrain,))
 
         if callback is not None:
-            callback = self.prepare_callback(callback)
+            callback = self._prepare_callback(callback)
         points_only = restore_points_only
         x_transf = restore_x_transform
         result = self.optimizer.optimize(f_in_opt, vars_in_opt, x0_in_opt,
