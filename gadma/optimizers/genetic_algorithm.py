@@ -692,7 +692,6 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         X_gen = X_init[:self.gen_size]
         Y_gen = Y_init[:self.gen_size]
 
-
         x_best = X_gen[0]
         y_best = Y_gen[0]
 
