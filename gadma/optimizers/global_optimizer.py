@@ -14,20 +14,16 @@ class GlobalOptimizer(Optimizer):
     Base class for global optimization.
     See :class:`gadma.optimizers.Optimizer` for more information.
 
-    To override class one should implement the following methods:
-
-    - :meth:`GlobalOptimizer.write_report`
-    - :meth:`GlobalOptimizer._create_run_info`
-    - :meth:`GlobalOptimizer._update_run_info_except_result`
-    - :meth:`GlobalOptimizer._apply_transform_to_run_info_except_result`
-    - :meth:`GlobalOptimizer.valid_restore_file`
-    - :meth:`GlobalOptimizer._optimize`
+    This class provides methods for initial design and has additional kwargs
+    for it, e.g. `X_init` and `Y_init` in comparison with parent class.
 
     :param random_type: Type of random generation during initial design.
                         Could be:
+
                         * 'uniform'
                         * 'resample'
                         * 'custom'
+
                         See help(:meth:`GlobalOptimizer.randomize`) for more
                         information.
     :type random_type: str
@@ -35,8 +31,8 @@ class GlobalOptimizer(Optimizer):
                             Provide generator from variables:
                             custom_rand_gen(variables) = values
     :type custom_rand_gen: func
-    :param log_transform: If True then logarithm will be used incide for
-                          parameters.
+    :param log_transform: If True then logarithm will be applied for the
+                          parameter space.
     :type log_transform: bool
     :param maximize: If True then optimization will maximize function.
     :type maximize: bool
@@ -85,14 +81,15 @@ class GlobalOptimizer(Optimizer):
                        X_init=None, Y_init=None,
                        random_type='resample', custom_rand_gen=None):
         """
-        Performs initial design for optimization. All x's are transformed and
-        all y's will be multiplied by sign.
+        Performs initial design for optimization. All x's will be transformed
+        according to `log_transform` and all y's will be multiplied by sign.
 
         :param f: function to use for evaluations. Note that it should be
-                  without arguments. Use :meth:`self.fix_f_and_args` to
+                  without arguments. Use :meth:`gadma.utils.fix_args` to
                   get such function from another one with arguments.
         :param variables: variables of function. They are used for random
-                          generation of their values.
+                          generation of their values if random_type is
+                          set to `reasmple`.
         :param num_init: number of initial solutions.
         :param X_init: list of some initial solutions. (Not transformed!)
         :param Y_init: list of function values on the initial solutions.
@@ -122,7 +119,7 @@ class GlobalOptimizer(Optimizer):
     def _update_X_init_Y_init(self, X_init, Y_init, X_out, Y_out):
         """
         Updates X_init and Y_init according to restored X_out and Y_out.
-        It is just union of two arrays with start points that takes into
+        It is just union of two arrays with initial points that takes into
         account if some of this arrays are None.
 
         :param X_init: Initial points.
@@ -161,6 +158,22 @@ class GlobalOptimizer(Optimizer):
 
     def process_optimize_kwargs(self, f, variables,
                                 X_init, Y_init, num_init, num_init_const):
+        """
+        Returns kwargs with `X_init` and `Y_init` to run :meth:`_optimize`.
+
+        :param f: Objective function. If should take no arguments except `x`
+                  but `x` should not be transformed.
+        :param variables: Variables for `f`.
+        :param X_init: Initial points for optimization. They are updated with
+                       points from `self.run_info` if it was restored from
+                       previous run.
+        :param Y_init: Value of objective function `f` on `X_init`.
+        :param num_init: Number of initial points. If `X_init` does not have
+                         enough points they are sampled by :meth:`randomize`.
+        :param num_init_const: If None then `num_init` is used. Otherwise
+                               number of points in initial design is equal to
+                               `num_init_const` \* len(`variables`).
+        """
         # Our X_out and Y_out are restored at that point, we want update
         X_init, Y_init = self._update_X_init_Y_init(
             X_init,
@@ -203,8 +216,8 @@ class GlobalOptimizer(Optimizer):
         the function `f`.
 
         :param f: function to minimize/maximize. The usage must be the
-                  following: f(x, \*args), where x is list of values.
-        :type f: funstion
+                  following: `f(x, \*args)`, where `x` is a list of values.
+        :type f: func
         :param variables: list of variables of the function.
         :type variables: list of :class:`gadma.utils.Variable`
         :param args: Additional arguments of function `f`.
@@ -218,17 +231,18 @@ class GlobalOptimizer(Optimizer):
         :type X_init: list of vectors.
         :param Y_init: value of function `f` on initial values from `X_init`.
         :type Y_init: list of floats
+
         :param linear_constrain: Linear constrain on variables.
         :type linear_constrain: :class:`gadma.optimizers.LinearConstrain`
-        :param maxiter: maximum number of genetic algorithm's generations.
+        :param maxiter: maximum number of algorithm iterations.
         :type maxiter: int
         :param maxeval: maximum number of function evaluations.
         :type maxeval: int
-        :param verbose: Verbosity of the output. If 0 then no output.
+        :param verbose: Verbosity of the report output. If 0 then no output.
         :type verbose: int
-        :param callback: callback to call after each generation.
+        :param callback: callback to call after each iteration.
                          It will be called as callback(x, y), where x, y -
-                         best_solution of generation and its fitness.
+                         best solution of the iteration and its fitness.
         :type callback: function
         :param report_file: File to save report. Check option `verbose`.
         :type report_file: str
@@ -243,9 +257,9 @@ class GlobalOptimizer(Optimizer):
                                     run optimization from them once more. If
                                     False then previous run will be resumed.
         :type restore_points_only: bool
-        :param restore_x_transform: Restore points but transform them before
-                                    usage in this run.
-        :type restore_x_transform: function
+        :param restore_x_transform: Restore points but transform them with
+                                    given transform before usage in this run.
+        :type restore_x_transform: func
         """
         optimize_kwargs = {"X_init": X_init,
                            "Y_init": Y_init,

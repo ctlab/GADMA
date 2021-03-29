@@ -18,6 +18,15 @@ class LocalOptimizer(Optimizer):
     See :class:`gadma.optimizers.Optimizer` for more information.
     """
     def process_optimize_kwargs(self, f, variables, x0, options):
+        """
+        Returns kwargs to run :meth:`_optimize` method. Transforms `x0`
+        according to `log_transform`.
+
+        :param f: Objective function.
+        :param variables: Variables of `f`.
+        :param x0: Initial point of local optimization.
+        :param options: Some additional options of run. 
+        """
         # restore
         if self.run_info.result.x is not None:
             x0 = self.run_info.result.x
@@ -181,14 +190,6 @@ class ScipyOptimizer(LocalOptimizer, ContinuousOptimizer):
     maxeval_kwarg = {}
     opt_type = ''
 
-    def check_variables(self, variables):
-        """
-        Checks that all `variables` are instances of
-        :class:`gadma.utils.Variable` class.
-        """
-        for var in variables:
-            assert isinstance(var, ContinuousVariable)
-
     def __init__(self, method, log_transform=False, maximize=False):
         if method not in self.scipy_methods:
             raise ValueError(f"There is no such {self.opt_type} method "
@@ -197,7 +198,20 @@ class ScipyOptimizer(LocalOptimizer, ContinuousOptimizer):
         self.method = method
         super(ScipyOptimizer, self).__init__(log_transform, maximize)
 
+
+    def check_variables(self, variables):
+        """
+        Checks that all `variables` are instances of
+        :class:`gadma.utils.ContinuousVariable` class.
+        """
+        for var in variables:
+            assert isinstance(var, ContinuousVariable)
+
     def _get_scipy_callback(self, f, iter_callback):
+        """
+        Returns callback function that calls iter_callback but has notation
+        for scipy methods.
+        """
         @wraps(iter_callback)
         def wrapper_for_scipy(xk, result_obj=None):
             yk = f(xk)

@@ -688,6 +688,17 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
 
     def _optimize(self, f, variables, X_init, Y_init, maxiter, maxeval,
                   iter_callback):
+        """
+        Runs genetic algorithm to minimize value of objective function `f`.
+
+        :param f: Function to minimize.
+        :param variables: Variables of objective function.
+        :param X_init: Initial points.
+        :param Y_init: Value of `f` on `X_init`.
+        :param maxiter: Maximum number of iterations.
+        :param maxeval: Maximum number of evaluations.
+        :param iter_callback: Callback to call after each iteration.
+        """
         X_init, Y_init = sort_by_other_list(X_init, Y_init, reverse=False)
         X_gen = X_init[:self.gen_size]
         Y_gen = Y_init[:self.gen_size]

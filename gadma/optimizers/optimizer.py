@@ -24,11 +24,22 @@ class Optimizer(object):
     :meth:`gadma.optimizers.Optimizer.optimize`.
 
     To create new class for optimizer one should at least implement
-    :meth:`gadma.optimizers.Optimizer.valid_restore_file` and
-    :meth:`gadma.optimizers.Optimizer.optimize`
+    :meth:`process_optimize_kwargs`, :meth:`_optimize` and
+    :meth:`_write_report_to_stream`.
+
+    Optimizer has method :meth:`.optimize` that runs optimization. During run
+    it creates so-called `run_info` - an object that is obligated to have
+    attribute `run_info.result` with :class:`gadma.optimizers.OptimizerResult`
+    object which keeps information about current result of optimization.
+
+    If needed `run_info` attributes could be added. Additional fields could
+    be added by overriding :meth:`_create_run_info`. If it is done then the
+    following methods should be checked to be correct:
+    :meth:`_apply_transform_to_run_info`, :meth:`_update_run_info`,
+    :meth:`valid_restore_file`.
 
     :param log_transform: If True then all parameters are optimized in log
-                          scale.
+                          scale. Discrete variables will not be transformed.
     :type log_transform: bool
     :param maximize: If True then maximization of target function is
                      performed.
@@ -62,12 +73,21 @@ class Optimizer(object):
     @staticmethod
     def _n_iter_string(n_iter, variables, x, y):
         """
-        Returns line with iter information of optimizer.
+        Returns line with information of one iteration of the optimizer.
+        Method could be used in
+        :meth:`gadma.optimizers.Optimizer._write_report_to_stream`
+        implementation.
+        The string is tab separated values of iteration number, value of
+        objective function and values of parameters.
 
-        :param n_iter: Number of iteration of optimization.
+        :param n_iter: Number of optimizer iteration.
+        :type n_iter: int
         :param variables: list of variables which values are optimized.
+        :type variables: list or :class:`gadma.utils.VariablesPool`
         :param x: Values of variables.
+        :type x: list
         :param y: Value of target function on `x`.
+        :type y: float
         """
         x_repr = variables_values_repr(variables, x)
         metainfo = ''
@@ -77,14 +97,27 @@ class Optimizer(object):
         return string
 
     def evaluate(self, f, variables, x, args=(), linear_constrain=None):
-        """
-        Evaluates function `f` on values `x` multiplied by sign
-        (-1 if maximize).
+        r"""
+        Evaluates function `f` on values `x`. The result is multiplied by sign
+        which is equal to -1 if `maximize` and 1 otherwise.
 
-        :param f: Target function.
+        If `x` does not satisfy the linear constrain then it is corrected
+        by :meth:`gadma.optimizers.LinearConstrain.try_to_transform` method
+        and if it still does not satisfy then np.inf is returned.
+
+        If Objective function returns None value then np.inf is returned
+        instead.
+
+        :param f: Objective function. The notation is following `f(x, \*args)`.
+        :type f: func
+        :param variables: Variables of objective function `f`.
+        :type variables: list of :class:`gadma.utils.Variable`
         :param x: Value of parameters of `f`.
-        :param args: Other arguments of f. `f(x, args)`.
+        :type x: list
+        :param args: Other arguments of f in addition to `x`.
+        :type args: tuple
         :param linear_constrain: Linear constrain on `x`.
+        :type linear_constrain: :class:`gadma.optimizers.LinearConstrain`
         """
         x_tr = apply_transform(variables, self.inv_transform, x)
         if linear_constrain is not None:
@@ -100,37 +133,52 @@ class Optimizer(object):
         return self.sign * y
 
     def _prepare_f_for_opt(self, f, args, eval_file, cache=True):
-        """
+        r"""
         Prepares `f` for usage in optimizer. It should be transformed
-        according to `log_transform` and `maximize`. Arguments are fixed and
-        it could be cached or not.
+        according to `log_transform` and `maximize`.
 
-        :param f: Target function to work with.
-        :param args: Arguments of the function. `f(x, args)`.
+        Arguments of objective function `f` are fixed. If `eval_file` is not
+        None then it is wrapped for evaluations logging into this file.
+        Finally function is cached if `cache` flag is set to True.
+
+        :param f: Objective function to work with. Notation should be the
+                  following: `f(x, \*args)`
+        :type f: func
+        :param args: Additional to `x` arguments of the objective function.
         :type args: tuple
+        :param eval_file: File to write information about function evaluations.
+        :param eval_file: str
         :param cache: If True then function is cached.
-        :type cache: bool.
+        :type cache: bool
         """
         assert isinstance(cache, bool)
         # Fix args
         f_wrapped = fix_args(f, *args)
         # Wrap for automatic evaluation logging
         f_wrapped = eval_wrapper(f_wrapped, eval_file)
+        # Cache our function
         if cache:
             f_wrapped = cache_func(f_wrapped)
         return f_wrapped
 
     def check_variables(self, variables):
         """
-        Checks that all `variables` are instances of
+        Checks that optimizer could work with this variables.
+
+        Parent method checks that all `variables` are instances of
         :class:`gadma.utils.Variable` class.
+
+        :param variables: Variables to check.
         """
         for var in variables:
             assert isinstance(var, Variable)
 
     def _create_run_info(self):
         """
-        Returns the initial run_info.
+        Returns the initial run_info. Run info must have `result` field that
+        will keep information about current result of the optimization.
+
+        Parent method creates `run_info` with `result` field only.
         """
         result = OptimizerResult(
             x=None,
@@ -148,12 +196,18 @@ class Optimizer(object):
 
     @property
     def run_info(self):
+        """
+        If `run_info` is not set (None) then creates new run_info.
+        """
         if self._run_info is None:
             self._run_info = self._create_run_info()
         return self._run_info
 
     @run_info.setter
     def run_info(self, new_run_info):
+        """
+        Sets new `run_info` and checks than it has attribute `result`.
+        """
         self._run_info = new_run_info
         if new_run_info is not None:
             assert hasattr(self._run_info, "result")
@@ -161,6 +215,15 @@ class Optimizer(object):
     def _apply_transform_to_run_info(self, run_info, x_transform, y_transform):
         """
         Returns copy of run_info with transformed `result` field.
+
+        :param run_info: Run_info to work with.
+        :type run_info: class with `result` field
+        :param x_transform: Function that transforms all x's in
+                            `run_info.result`.
+        :type x_transform: func
+        :param y_transform: Function that transforms all y's in
+                            `run_info.result`.
+        :type y_transform: func
         """
         run_info_tr = copy.deepcopy(run_info)
         # transform result
@@ -170,7 +233,25 @@ class Optimizer(object):
     def _update_run_info(self, run_info, x_best, y_best,
                          X, Y, n_eval, **update_kwargs):
         """
-        Updates run_info after one iteration in-place.
+        Updates `run_info` in-place after one iteration of optimization.
+        Changes attribute `run_info.result` according to given values.
+
+        :param run_info: Run_info to change.
+        :param x_best: New best values of optimization.
+        :type x_best: list
+        :param y_best: New best value of objective function on `x_best`.
+        :type y_best: float
+        :param X: List of values that were evaluated during this iteration.
+        :type X: list of lists
+        :param Y: List of objective function values on `X`.
+        :type Y: list of floats
+        :param n_eval: Number of evaluations during this iteration.
+        :type n_eval: int
+        :param update_kwargs: Additional kwargs for update.
+        :type update_kwargs: dict
+
+        :note: No checks for `x_best`, `y_best` are done. They are assumed to\
+               be better than current optimum.
         """
         run_info.result.n_iter += 1
         run_info.result.n_eval += n_eval
@@ -184,11 +265,17 @@ class Optimizer(object):
 
     def save(self, run_info, save_file):
         """
-        Save some information into file. Is supposed to save info during
-        optimization in order to restore it.
+        Save information about run into the file. Method is supposed to save
+        `run_info` during optimization.
+        If optimizer has `id` then information is saved as enter of dictionary.
+        Saved dict is loaded from `save_file` and is updated with
+        given `run_info` for the follwong dumping.
+        It makes possible to use one save_file for several
+        optimizers with different ids.
 
-        :param info: Information to dump.
+        :param run_info: Information to dump.
         :param save_file: File to save information.
+        :type save_file: str
 
         :note: if save_file is None then nothing will be done. In base class\
                method just dumps `info` to `save_file` with `pickle`.
@@ -216,10 +303,12 @@ class Optimizer(object):
 
     def valid_restore_file(self, save_file):
         """
-        Checks that `save_file` contains valid information and it could be
-        restored from it.
+        Checks that `save_file` contains valid run information and it could be
+        restored from it. Parent method checks that loaded info has `result`
+        attribute.
 
         :param save_file: File to check.
+        :type save_file: str
         """
         try:
             info = self.load(save_file)
@@ -231,11 +320,12 @@ class Optimizer(object):
 
     def load(self, save_file):
         """
-        Loads information that was saved by :meth:`save` method.
+        Loads run information that was saved by :meth:`save` method.
 
         :param save_file: File to restore information from.
+        :type save_file: str
 
-        :note: In base class method just loads from `save_file` with pickle.
+        :note: Method just loads from `save_file` with pickle.
         """
         with open(save_file, 'rb') as fl:
             info = pickle.load(fl)
@@ -249,17 +339,29 @@ class Optimizer(object):
         return run_info
 
     def process_optimize_kwargs(self, f, variables, **optimize_kwargs):
+        """
+        Method that process additional `optimize_kwargs` that were given to
+        :meth:`optimize` method and return kwargs for "_optimize" method.
+
+        :param f: Original objective function that was given to
+                  :meth:`optimize`.
+        :param variables: Original variables for `f` from :meth:`optimize`.
+        :param optimize_kwargs: Kwargs to process.
+
+        :returns: New kwargs to run :meth:`_optimize`.
+        """
         raise NotImplementedError
 
     def write_report(self, variables, run_info, report_file):
         """
         Write report about one iteration of global optimization in report file.
+        Requires implemented :meth:`_write_report_to_stream` method.
 
         :param variables: Variables of run.
         :param run_info: Instance of class that contains run info, i.e. current
                          result.
         :param report_file: File to write the report. If None then report
-                            should be printed to stdout.
+                            will be printed to stdout.
 
         :note: All values are reported as is, i.e. `X_out`, `x_best` in \
                `run_info` should be already translated from log scale if \
@@ -277,20 +379,22 @@ class Optimizer(object):
 
     @staticmethod
     def _write_report_to_stream(variables, run_info, stream):
+        """
+        Writes report to stream. See :meth:`write_report` for more information.
+        """
         raise NotImplementedError
 
     def _optimize(self, f, variables,
                   maxiter, maxeval, iter_callback, **optimize_kwargs):
         """
-        Main part of optimization. Assumes that `X_init` and `Y_init` are
-        correct initial design points. Should run iterations of global
+        Main part of optimization. Method should run iterations of
         optimization with callback calling after each iteration.
+        Method assumes that objective function `f` and its `variables` are
+        already transformed according to `log_transform` and `maximize`.
 
         :param f: Cached and wrapped (e.g. eval logging) objective function.
         :param variables: Variables for `f`. They are supposed to have
                           transformed domain according to optimizer transform.
-        :param X_init: Correct initial points for `f`.
-        :param Y_init: Value of `f` on `X_init`.
         :param maxiter: Maximum number of iterations to run.
         :param maxeval: Maximum number of evaluations to run.
         :param iter_callback: Callback to run after each iteration. It has the
@@ -298,6 +402,7 @@ class Optimizer(object):
             y_best, X_iter, Y_iter, **update_kwargs)`, where
             **update_kwargs are arguments of
             :meth:`GlobalOptimizer._update_run_info_except_result`
+        :param optimize_kwargs: Other kwargs of this run.
         """
         raise NotImplementedError
 
@@ -311,23 +416,23 @@ class Optimizer(object):
         the function `f`.
 
         :param f: function to minimize/maximize. The usage must be the
-                  following: f(x, \*args), where x is list of values.
-        :type f: funstion
+                  following: `f(x, \*args)`, where `x` is a list of values.
+        :type f: func
         :param variables: list of variables of the function.
         :type variables: list of :class:`gadma.utils.Variable`
         :param args: Additional arguments of function `f`.
         :type args: tuple
         :param linear_constrain: Linear constrain on variables.
         :type linear_constrain: :class:`gadma.optimizers.LinearConstrain`
-        :param maxiter: maximum number of genetic algorithm's generations.
+        :param maxiter: maximum number of algorithm iterations.
         :type maxiter: int
         :param maxeval: maximum number of function evaluations.
         :type maxeval: int
-        :param verbose: Verbosity of the output. If 0 then no output.
+        :param verbose: Verbosity of the report output. If 0 then no output.
         :type verbose: int
-        :param callback: callback to call after each generation.
+        :param callback: callback to call after each iteration.
                          It will be called as callback(x, y), where x, y -
-                         best_solution of generation and its fitness.
+                         best solution of the iteration and its fitness.
         :type callback: function
         :param report_file: File to save report. Check option `verbose`.
         :type report_file: str
@@ -342,9 +447,9 @@ class Optimizer(object):
                                     run optimization from them once more. If
                                     False then previous run will be resumed.
         :type restore_points_only: bool
-        :param restore_x_transform: Restore points but transform them before
-                                    usage in this run.
-        :type restore_x_transform: function
+        :param restore_x_transform: Restore points but transform them with
+                                    given transform before usage in this run.
+        :type restore_x_transform: func
         """
         # Create run_info that will be saved during the optimization
         self.run_info = None
