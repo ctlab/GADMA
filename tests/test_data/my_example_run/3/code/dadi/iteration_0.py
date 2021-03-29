@@ -7,7 +7,8 @@ def model_func(params, ns, pts):
 	phi = dadi.PhiManip.phi_1D(xx)
 	phi = dadi.PhiManip.phi_1D_to_2D(xx, phi)
 	nu1_func = lambda t: (s1 * 1.0) * (nu11 / (s1 * 1.0)) ** (t / t1)
-	phi = dadi.Integration.two_pops(phi, xx, T=t1, nu1=nu1_func, nu2=nu12, m12=m1_12, m21=m1_21)
+	nu2_func = lambda t: ((1 - s1) * 1.0) + (nu12 - ((1 - s1) * 1.0)) * (t / t1)
+	phi = dadi.Integration.two_pops(phi, xx, T=t1, nu1=nu1_func, nu2=nu2_func, m12=m1_12, m21=m1_21)
 	sfs = dadi.Spectrum.from_phi(phi, ns, [xx]*len(ns))
 	return sfs
 
@@ -16,7 +17,7 @@ data.pop_ids = ['YRI', 'CEU']
 pts = [20, 30, 40]
 ns = data.sample_sizes
 
-p0 = [0.7537986546874129, 0.05551948159691905, 3.297767552259952, 0.14793793078915865, 6.170790202981885, 0.0]
+p0 = [0.667109513765994, 0.6501037935353557, 2.272591281118335, 0.18589943280508173, 0.9147602260370635, 1.6136687272601704]
 func_ex = dadi.Numerics.make_extrap_log_func(model_func)
 model = func_ex(p0, ns, pts)
 ll_model = dadi.Inference.ll_multinom(model, data)

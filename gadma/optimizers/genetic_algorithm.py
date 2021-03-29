@@ -1,6 +1,5 @@
-from .optimizer import ConstrainedOptimizer
+from .optimizer import ConstrainedOptimizer, Optimizer
 from .global_optimizer import GlobalOptimizer, register_global_optimizer
-from .optimizer_result import OptimizerResult
 from ..utils import sort_by_other_list, choose_by_weight
 from ..utils import trunc_normal_3_sigma_rule, DiscreteVariable,\
                     WeightedMetaArray, get_correct_dtype
@@ -8,9 +7,7 @@ from ..utils import update_by_one_fifth_rule
 
 import numpy as np
 import copy
-import sys
 import time
-import types
 
 
 class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
@@ -531,7 +528,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         return ret_value
 
     @staticmethod
-    def write_report(variables, run_info, report_file):
+    def _write_report_to_stream(variables, run_info, stream):
         """
         Write report about one generation in report file.
 
@@ -554,27 +551,20 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         y_best = run_info.result.y
         mean_time = np.mean(run_info.gen_times)
 
-        if report_file is not None:
-            stream = open(report_file, 'a')
-        else:
-            stream = sys.stdout
         print(f"Generation #{n_gen}.", file=stream)
         print("Current generation of solutions:", file=stream)
         print("N", "Value of fitness function", "Solution",
               file=stream, sep='\t')
-        if report_file is not None:
-            stream.close()
+
         for i, (x, y) in enumerate(zip(X_gen, Y_gen)):
             # Use parent's report write function
-            super(GeneticAlgorithm, GeneticAlgorithm).parent_write_report(
+            string = Optimizer._n_iter_string(
                 n_iter=i,
                 variables=variables,
                 x=x,
                 y=f'{y: 5f}',
-                report_file=report_file
             )
-        if report_file is not None:
-            stream = open(report_file, 'a')
+            print(string, file=stream)
 
         print(f"Current mean mutation rate:\t{run_info.cur_mut_rate: 3f}",
               file=stream)
@@ -585,24 +575,18 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         print("\n--Best solution by value of fitness function--", file=stream)
         print("Value of fitness:", y_best, file=stream)
         print("Solution:", file=stream, end='')
-        if report_file is not None:
-            stream.close()
-        super(GeneticAlgorithm, GeneticAlgorithm).parent_write_report(
+
+        string = Optimizer._n_iter_string(
             n_iter='',
             variables=variables,
             x=x_best,
             y='',
-            report_file=report_file
         )
-        if report_file is not None:
-            stream = open(report_file, 'a')
+        print(string, file=stream)
 
         if mean_time is not None:
             print(f"\nMean time:\t{mean_time:.3f} sec.\n", file=stream)
         print("\n", file=stream)
-
-        if report_file is not None:
-            stream.close()
 
     def _create_run_info(self):
         """
@@ -614,34 +598,18 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         * `n_impr_gen` - number of iteration when improvement happened.
         * `gen_times` - list of times of iterations.
         """
-        result = OptimizerResult(
-            x=None,
-            y=None,
-            success=False,
-            status=0,
-            message="",
-            X=[],
-            Y=[],
-            n_eval=0,
-            n_iter=-1,
-        )
-        run_info = types.SimpleNamespace(result=result,
-                                         cur_mut_rate=self.mut_rate,
-                                         cur_mut_strength=self.mut_strength,
-                                         n_impr_gen=0,
-                                         gen_times=[])
+        run_info = super(GeneticAlgorithm, self)._create_run_info()
+        run_info.cur_mut_rate = self.mut_rate
+        run_info.cur_mut_strength = self.mut_strength
+        run_info.n_impr_gen = 0
+        run_info.gen_times = []
         return run_info
 
-    def _update_run_info_except_result(self,
-                                       run_info,
-                                       gen_time=None,
-                                       n_impr_gen=None,
-                                       maxiter=None,
-                                       maxeval=None):
+    def _update_run_info(self, run_info, x_best, y_best, X, Y,
+                         n_eval, gen_time=None, n_impr_gen=None,
+                         maxiter=None, maxeval=None):
         """
-        Updates fields of `run_info` except `result` after one iteration of GA.
-        It is called after field `run_info.result` is updated so `n_iter` and
-        `n_eval` are already updated.
+        Updates fields of `run_info`after one iteration of GA.
 
         Fields of run_info like `cur_mut_rate`, `cur_mut_strength`, `gen_times`
         are updated. Also message, success and status from :meth:`.is_stopped`
@@ -653,6 +621,12 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         :param maxiter: Maximum number of iterations.
         :param maxeval: Maximum number of evaluations.
         """
+        super(GeneticAlgorithm, self)._update_run_info(run_info=run_info,
+                                                       x_best=x_best,
+                                                       y_best=y_best,
+                                                       X=X,
+                                                       Y=Y,
+                                                       n_eval=n_eval)
         # Update mutation rates and strength
         if n_impr_gen is not None:
             run_info.n_impr_gen = n_impr_gen
@@ -693,14 +667,6 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         run_info.result.message = message
         return run_info
 
-    def _apply_transform_to_run_info_except_result(self, run_info,
-                                                   x_transform, y_transform):
-        """
-        As run_info does not have any other fields that should be transformed
-        like points x's or values of objective y's this method does nothing.
-        """
-        return run_info
-
     def valid_restore_file(self, save_file):
         """
         Returns True if save_file contains valid run_info and False otherwise.
@@ -722,12 +688,14 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
 
     def _optimize(self, f, variables, X_init, Y_init, maxiter, maxeval,
                   iter_callback):
-        X_gen, Y_gen = sort_by_other_list(X_init, Y_init, reverse=False)
-        X_gen = X_gen[:self.gen_size]
-        Y_gen = Y_gen[:self.gen_size]
+        X_init, Y_init = sort_by_other_list(X_init, Y_init, reverse=False)
+        X_gen = X_init[:self.gen_size]
+        Y_gen = Y_init[:self.gen_size]
 
         x_best = X_gen[0]
         y_best = Y_gen[0]
+
+        iter_callback(x_best, y_best, X_init, Y_init)
 
         n_impr_gen = self.run_info.n_impr_gen
         # Begin to create generations

@@ -68,7 +68,7 @@ Eps: 0.01
 #	
 #	and it happens during N iterations:
 #	Default: 100
-Stuck generation number: 50
+Stuck generation number: 10
 
 
 
@@ -103,7 +103,7 @@ Time to print summary: 1
 
 #	Other parameters of run without description:
 dadi_available: true
-global_maxiter: null
+global_maxiter: 2
 global_optimizer: Genetic_algorithm
 local_maxiter: null
 migration_masks: null

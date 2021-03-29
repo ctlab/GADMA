@@ -1,11 +1,8 @@
 from .optimizer import Optimizer
-from ..utils import ContinuousVariable, DiscreteVariable, get_correct_dtype
-from ..utils import serialize_meta_array, deserialize_meta_array
-from ..utils import ensure_file_existence, fix_args, ident_transform
-from ..utils import sort_by_other_list, eval_wrapper
+from ..utils import ContinuousVariable, get_correct_dtype
+from ..utils import sort_by_other_list, apply_transform
 
 import numpy as np
-from functools import partial
 import copy
 
 
@@ -107,7 +104,8 @@ class GlobalOptimizer(Optimizer):
         X = list()
         Y = list()
         if X_init is not None:
-            X = [self.transform(x) for x in X_init]
+            X = [apply_transform(variables, self.transform, x)
+                 for x in X_init]
             if Y_init is not None:
                 Y = [self.sign * y for y in Y_init]
             else:
@@ -117,125 +115,9 @@ class GlobalOptimizer(Optimizer):
                 Y.append(f(x))
         for _ in range(num_init - len(X)):
             x = self.randomize(variables, random_type, custom_rand_gen)
-            X.append(self.transform(x))
+            X.append(apply_transform(variables, self.transform, x))
             Y.append(self.sign * f(x))
         return X, Y
-
-    def _create_run_info(self):
-        """
-        Returns the initial run_info.
-        """
-        raise NotImplementedError
-
-    @property
-    def run_info(self):
-        if self._run_info is None:
-            self._run_info = self._create_run_info()
-        return self._run_info
-
-    @run_info.setter
-    def run_info(self, new_run_info):
-        self._run_info = new_run_info
-        if new_run_info is not None:
-            assert hasattr(self._run_info, "result")
-
-    def _apply_transform_to_run_info(self, run_info, x_transform, y_transform):
-        """
-        Returns copy of run_info with transformed `result` field.
-        """
-        run_info_tr = copy.deepcopy(run_info)
-        # transform result
-        run_info_tr.result.apply_transforms(x_transform, y_transform)
-        return self._apply_transform_to_run_info_except_result(
-            run_info_tr, x_transform, y_transform
-        )
-
-    def _apply_transform_to_run_info_except_result(self, run_info,
-                                                   x_transform, y_transform):
-        """
-        Transforms all fields of run_info except `result` in-place.
-        """
-        raise NotImplementedError
-
-    def _update_run_info(self, run_info, x_best, y_best,
-                         X, Y, n_eval, **update_kwargs):
-        """
-        Updates run_info after one iteration in-place.
-        """
-        run_info.result.n_iter += 1
-        run_info.result.n_eval += n_eval
-        run_info.result.x = x_best
-        run_info.result.y = y_best
-        run_info.result.X_out = copy.copy(X)
-        run_info.result.Y_out = copy.copy(Y)
-        run_info.result.X.extend(run_info.result.X_out)
-        run_info.result.Y.extend(run_info.result.Y_out)
-        run_info = self._update_run_info_except_result(run_info,
-                                                       **update_kwargs)
-        return run_info
-
-    def _update_run_info_except_result(self, run_info, **update_kwargs):
-        """
-        Updates not standard fields of run_info.
-        """
-        raise NotImplementedError
-
-    def save(self, run_info, save_file):
-        """
-        Save some values of genetic algorithm to file.
-        """
-        if save_file is None:
-            return
-        info = self._apply_transform_to_run_info(
-            run_info,
-            x_transform=serialize_meta_array,
-            y_transform=ident_transform
-        )
-        super(GlobalOptimizer, self).save(info, save_file)
-
-    def load(self, save_file):
-        """
-        Load some values of genetic algorithm from file.
-        """
-        info = super(GlobalOptimizer, self).load(save_file)
-        run_info = self._apply_transform_to_run_info(
-            info,
-            x_transform=deserialize_meta_array,
-            y_transform=ident_transform
-        )
-
-        return run_info
-
-    @staticmethod
-    def write_report(variables, run_info, report_file):
-        """
-        Write report about one iteration of global optimization in report file.
-
-        The parent version of :meth:`Optimizer.write_report` is now available
-        under the name :meth:`GlobalOptimizer.parent_write_report`.
-
-        :param variables: Variables of run.
-        :param run_info: Instance of class that contains run info, i.e. current
-                         result.
-        :param report_file: File to write the report. If None then report
-                            should be printed to stdout.
-
-        :note: All values are reported as is, i.e. `X_out`, `x_best` in \
-               `run_info` should be already translated from log scale if \
-               optimization did so; `Y_out` and `y_best` must be already \
-               multiplied by -1 if we have maximization instead of \
-               minimization.
-        """
-        raise NotImplementedError
-
-    @staticmethod
-    def parent_write_report(n_iter, variables, x, y, report_file):
-        """
-        Calls usual :meth:`Optimizer.write_report` method from parent class.
-        """
-        return super(GlobalOptimizer,
-                     GlobalOptimizer).write_report(n_iter, variables,
-                                                   x, y, report_file)
 
     def _update_X_init_Y_init(self, X_init, Y_init, X_out, Y_out):
         """
@@ -277,26 +159,37 @@ class GlobalOptimizer(Optimizer):
             new_Y_init.extend(Y_out)
         return new_X_init, new_Y_init
 
-    def _optimize(f, variables, X_init, Y_init,
-                  maxiter, maxeval, iter_callback):
-        """
-        Main part of optimization. Assumes that `X_init` and `Y_init` are
-        correct initial design points. Should run iterations of global
-        optimization with callback calling after each iteration.
+    def process_optimize_kwargs(self, f, variables,
+                                X_init, Y_init, num_init, num_init_const):
+        # Our X_out and Y_out are restored at that point, we want update
+        X_init, Y_init = self._update_X_init_Y_init(
+            X_init,
+            Y_init,
+            self.run_info.result.X_out,
+            self.run_info.result.Y_out
+        )
+        # Check for number of initial points
+        if num_init_const is not None:
+            num_init = num_init_const * len(variables)
+        # If we restored our run then we do not need to evaluate so many points
+        if self.run_info.result.n_eval > 0:
+            num_init = len(self.run_info.result.X_out)
+        # Just to be sure
+        assert isinstance(num_init, int)
 
-        :param f: Cached and wrapped (e.g. eval logging) objective function.
-        :param variables: Variables for `f`. They are supposed to have
-                          transformed domain according to optimizer transform.
-        :param X_init: Correct initial points for `f`.
-        :param Y_init: Value of `f` on `X_init`.
-        :param maxiter: Maximum number of iterations to run.
-        :param maxeval: Maximum number of evaluations to run.
-        :param iter_callback: Callback to run after each iteration. It has the
-            following notation: `iter_callback(x_best,
-            y_best, X_iter, Y_iter, **update_kwargs)`, where
-            **update_kwargs are arguments of
-            :meth:`GlobalOptimizer._update_run_info_except_result`
-        """
+        # Perform initial design. X_init and Y_init have transformed values now
+        X_init, Y_init = self.initial_design(f, variables,
+                                             num_init,
+                                             X_init, Y_init, self.random_type,
+                                             self.custom_rand_gen)
+        X_init, Y_init = sort_by_other_list(X_init, Y_init, reverse=False)
+
+        # Return our kwargs for _optimize
+        return {"X_init": X_init,
+                "Y_init": Y_init}
+
+    def _optimize(self, f, variables, X_init, Y_init,
+                  maxiter, maxeval, iter_callback):
         raise NotImplementedError
 
     def optimize(self, f, variables, args=(), num_init=50, num_init_const=None,
@@ -354,104 +247,27 @@ class GlobalOptimizer(Optimizer):
                                     usage in this run.
         :type restore_x_transform: function
         """
-        # Create run_info that will be saved during the optimization
-        self.run_info = None
-
-        # Check for num_init
-        if num_init_const is not None:
-            num_init = num_init_const * len(variables)
-
-        # Create logging files
-        if eval_file is not None:
-            eval_file = ensure_file_existence(eval_file)
-        if verbose > 0 and report_file is not None:
-            report_file = ensure_file_existence(report_file)
-        if save_file is not None:
-            save_file = ensure_file_existence(save_file)
-
-        # Prepare function to use it.
-        # Fix args and cache
-        prepared_f = self._prepare_f_for_opt(f, args)
-        # Wrap for automatic evaluation logging
-        finally_wrapped_f = eval_wrapper(prepared_f, eval_file)
-        # wrap for automatic transform of x's and multiplication by sign of y's
-        f_in_opt = partial(self.evaluate, finally_wrapped_f)
-        # Fix linear constrain as extra args
-        f_in_opt = fix_args(f_in_opt, (), linear_constrain)
-
-        # prepare variables and transform their domain
-        vars_in_opt = copy.deepcopy(variables)
-        for var in vars_in_opt:
-            if not isinstance(var, DiscreteVariable):
-                var.domain = self.transform(var.domain)
-
-        # Restore run_info
-        if restore_file is not None and self.valid_restore_file(restore_file):
-            restored_run_info = self.load(restore_file)
-            if restore_x_transform is not None:
-                def y_transform(y):
-                    return self.sign * y
-                restored_run_info = self._apply_transform_to_run_info(
-                    run_info=restored_run_info,
-                    x_transform=restore_x_transform,
-                    y_transform=ident_transform
-                )
-            if not restore_points_only:
-                self.run_info = restored_run_info
-                num_init = len(restored_run_info.result.X_out)
-            X_init, Y_init = self._update_X_init_Y_init(
-                X_init,
-                Y_init,
-                restored_run_info.result.X_out,
-                restored_run_info.result.Y_out
-            )
-
-        # Perform initial design. X_init and Y_init have transformed values now
-        X_init, Y_init = self.initial_design(finally_wrapped_f, variables,
-                                             num_init,
-                                             X_init, Y_init, self.random_type,
-                                             self.custom_rand_gen)
-        X_init, Y_init = sort_by_other_list(X_init, Y_init, reverse=False)
-
-        def iter_callback(x_best, y_best, X_iter, Y_iter, **update_kwargs):
-            # x's and y's are transformed lists
-            x = self.inv_transform(x_best)
-            y = self.sign * y_best
-            X = [self.inv_transform(x) for x in X_iter]
-            Y = [self.sign * y for y in Y_iter]
-            n_eval = prepared_f.cache_info.misses
-            self.run_info = self._update_run_info(
-                run_info=self.run_info,
-                x_best=x,
-                y_best=y,
-                X=X,
-                Y=Y,
-                n_eval=n_eval-self.run_info.result.n_eval,
-                **update_kwargs)
-            # Write report
-            if verbose > 0 and self.run_info.result.n_iter % verbose == 0:
-                self.write_report(variables, self.run_info, report_file)
-            # Save run_info
-            self.save(self.run_info, save_file)
-            # Call callback
-            if callback is not None:
-                callback(self.run_info.result.x, self.run_info.result.y)
-
-        # Run callback for initial design
-        iter_callback(x_best=X_init[0],
-                      y_best=Y_init[0],
-                      X_iter=X_init,
-                      Y_iter=Y_init)
-
-        self._optimize(f=f_in_opt,
-                       variables=vars_in_opt,
-                       X_init=X_init,
-                       Y_init=Y_init,
-                       maxiter=maxiter,
-                       maxeval=maxeval,
-                       iter_callback=iter_callback)
-
-        return self.run_info.result
+        optimize_kwargs = {"X_init": X_init,
+                           "Y_init": Y_init,
+                           "num_init": num_init,
+                           "num_init_const": num_init_const}
+        return super(GlobalOptimizer, self).optimize(
+            f=f,
+            variables=variables,
+            args=args,
+            linear_constrain=linear_constrain,
+            maxiter=maxiter,
+            maxeval=maxeval,
+            verbose=verbose,
+            callback=callback,
+            report_file=report_file,
+            eval_file=eval_file,
+            save_file=save_file,
+            restore_file=restore_file,
+            restore_points_only=restore_points_only,
+            restore_x_transform=restore_x_transform,
+            **optimize_kwargs
+        )
 
 
 def register_global_optimizer(id, optimizer):

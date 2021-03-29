@@ -1,5 +1,5 @@
 Data reading
-[93mUserWarning: Spectrum file /home/katenos/Workspace/popgen/temp/GADMA/examples/changing_theta/YRI_CEU.fs is in an old format - without population labels, so they will be taken from the corresponding parameter: YRI, CEU.[0m (/home/katenos/.local/lib/python3.6/site-packages/gadma-2.0.0rc11.dev18-py3.6.egg/gadma/engines/dadi_moments_common.py:284)
+[93mUserWarning: Spectrum file /home/katenos/Workspace/popgen/temp/GADMA/examples/changing_theta/YRI_CEU.fs is in an old format - without population labels, so they will be taken from the corresponding parameter: YRI, CEU.[0m (/home/katenos/.local/lib/python3.6/site-packages/gadma-2.0.0rc11.dev21-py3.6.egg/gadma/engines/dadi_moments_common.py:284)
 Number of populations: 2
 Projections: [20, 20]
 Population labels: ['YRI', 'CEU']
@@ -8,30 +8,32 @@ Outgroup: True
 
 [92m--Successful arguments parsing--[0m
 
-Parameters of launch are saved in output directory: /home/katenos/Workspace/popgen/temp/GADMA/my_example_run/params_file
-All output is saved in output directory: /home/katenos/Workspace/popgen/temp/GADMA/my_example_run/GADMA.log
+Parameters of launch are saved in output directory: /home/katenos/Workspace/popgen/temp/GADMA/my_example_run_2/params_file
+All output is saved in output directory: /home/katenos/Workspace/popgen/temp/GADMA/my_example_run_2/GADMA.log
 
 [94m--Start pipeline--[0m
 Run launch number 3
-Run launch number 2
 Run launch number 1
+Run launch number 2
 
 [000:01:00]
 All best by log-likelihood models
 Number	log-likelihood	Model
-Run 2	-1677.68	 [Nanc = 8000] [ [ 1 pop split   74.27% (s1) [0.743(s1*1.0), 0.257((1-s1)*1.0)] ],	[ 3000.0(t1), [11749.762(nu11), 2093.868(nu12)], [[0, 4.73e-05(m1_12)], [8.00e-05(m1_21), 0]], [Sud(dyn11), Sud(dyn12)] ] ]	mm	(theta =  3038.14)
-Run 3	-2010.83	 [Nanc = 9944] [ [ 1 pop split   84.38% (s1) [0.844(s1*1.0), 0.156((1-s1)*1.0)] ],	[ 1277.183(t1), [32794.009(nu11), 1876.004(nu12)], [[0, 3.10e-04(m1_12)], [0.00e+00(m1_21), 0]], [Exp(dyn11), Lin(dyn12)] ] ]	m	(theta =  3776.45)
-Run 1	-5737.67	 [Nanc = 3713] [ [ 1 pop split   29.58% (s1) [0.296(s1*1.0), 0.704((1-s1)*1.0)] ],	[ 3000.0(t1), [2937.247(nu11), 2698.84(nu12)], [[0, 1.93e-04(m1_12)], [7.92e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	mm	(theta =  1410.15)
+Run 3	-1371.82	 [Nanc = 7310] [ [ 16679.659(t1), [7310.323(nu11)], [Sud(dyn11)] ],	[ 1 pop split   47.00% (s1) [3436.143(s1*nu11), 3874.18((1-s1)*nu11)] ],	[ 8411.478(t2), [16355.95(nu21), 2856.27(nu22)], [[0, 7.26e-05(m2_12)], [1.92e-04(m2_21), 0]], [Exp(dyn21), Lin(dyn22)] ] ]	(theta =  2776.17)
+Run 1	-2085.85	 [Nanc = 1819] [ [ 4800.718(t1), [18843.512(nu11)], [Sud(dyn11)] ],	[ 1 pop split   41.87% (s1) [7889.086(s1*nu11), 10954.426((1-s1)*nu11)] ],	[ 17721.282(t2), [18055.73(nu21), 790.355(nu22)], [[0, 5.69e-05(m2_12)], [4.95e-04(m2_21), 0]], [Exp(dyn21), Sud(dyn22)] ] ]	c	(theta =  691.09)
+Run 2	-2318.60	 [Nanc = 5325] [ [ 11872.429(t1), [5325.096(nu11)], [Sud(dyn11)] ],	[ 1 pop split   46.07% (s1) [2453.331(s1*nu11), 2871.766((1-s1)*nu11)] ],	[ 4120.521(t2), [100843.038(nu21), 13239.143(nu22)], [[0, 5.65e-05(m2_12)], [2.35e-05(m2_21), 0]], [Exp(dyn21), Exp(dyn22)] ] ]	c	(theta =  2022.26)
+Finish genetic algorithm number 1
 
 You can find the picture and the Python code of the best model in the output directory.
 
+Finish genetic algorithm number 2
 
 [000:02:00]
 All best by log-likelihood models
 Number	log-likelihood	Model
-Run 2	-1197.88	 [Nanc = 7649] [ [ 1 pop split   65.52% (s1) [0.655(s1*1.0), 0.345((1-s1)*1.0)] ],	[ 2868.576(t1), [18940.653(nu11), 3049.105(nu12)], [[0, 5.05e-05(m1_12)], [1.14e-04(m1_21), 0]], [Sud(dyn11), Exp(dyn12)] ] ]	m	(theta =  2905.04)
-Run 3	-1238.39	 [Nanc = 8641] [ [ 1 pop split   77.58% (s1) [0.776(s1*1.0), 0.224((1-s1)*1.0)] ],	[ 2937.177(t1), [23275.018(nu11), 2618.593(nu12)], [[0, 1.04e-04(m1_12)], [1.40e-04(m1_21), 0]], [Exp(dyn11), Exp(dyn12)] ] ]	c	(theta =  3281.85)
-Run 1	-2488.05	 [Nanc = 5779] [ [ 1 pop split   28.87% (s1) [0.289(s1*1.0), 0.711((1-s1)*1.0)] ],	[ 3000.0(t1), [5472.615(nu11), 4200.923(nu12)], [[0, 1.44e-04(m1_12)], [5.09e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	c	(theta =  2194.99)
+Run 3	-1158.60	 [Nanc = 7338] [ [ 16713.939(t1), [7112.687(nu11)], [Sud(dyn11)] ],	[ 1 pop split   70.32% (s1) [5001.556(s1*nu11), 2111.13((1-s1)*nu11)] ],	[ 9437.271(t2), [15263.689(nu21), 3194.151(nu22)], [[0, 1.29e-04(m2_12)], [1.24e-04(m2_21), 0]], [Exp(dyn21), Lin(dyn22)] ] ]	(theta =  2786.78)
+Run 2	-1565.26	 [Nanc = 5680] [ [ 12664.975(t1), [6921.832(nu11)], [Sud(dyn11)] ],	[ 1 pop split   72.13% (s1) [4992.791(s1*nu11), 1929.041((1-s1)*nu11)] ],	[ 3189.766(t2), [98619.538(nu21), 8914.86(nu22)], [[0, 5.38e-05(m2_12)], [2.05e-05(m2_21), 0]], [Exp(dyn21), Exp(dyn22)] ] ]	f	(theta =  2157.25)
+Run 1	-2085.85	 [Nanc = 1819] [ [ 4800.718(t1), [18843.512(nu11)], [Sud(dyn11)] ],	[ 1 pop split   41.87% (s1) [7889.086(s1*nu11), 10954.426((1-s1)*nu11)] ],	[ 17721.282(t2), [18055.73(nu21), 790.355(nu22)], [[0, 5.69e-05(m2_12)], [4.95e-04(m2_21), 0]], [Exp(dyn21), Sud(dyn22)] ] ]	c	(theta =  691.09)
 
 You can find the picture and the Python code of the best model in the output directory.
 
@@ -39,9 +41,9 @@ You can find the picture and the Python code of the best model in the output dir
 [000:03:00]
 All best by log-likelihood models
 Number	log-likelihood	Model
-Run 2	-1154.68	 [Nanc = 8184] [ [ 1 pop split   78.76% (s1) [0.788(s1*1.0), 0.212((1-s1)*1.0)] ],	[ 2610.751(t1), [16222.474(nu11), 3489.785(nu12)], [[0, 5.84e-05(m1_12)], [1.07e-04(m1_21), 0]], [Sud(dyn11), Exp(dyn12)] ] ]	m	(theta =  3108.00)
-Run 3	-1190.43	 [Nanc = 8384] [ [ 1 pop split   77.58% (s1) [0.776(s1*1.0), 0.224((1-s1)*1.0)] ],	[ 2849.575(t1), [22580.835(nu11), 3267.408(nu12)], [[0, 1.07e-04(m1_12)], [1.05e-04(m1_21), 0]], [Lin(dyn11), Exp(dyn12)] ] ]	mmm	(theta =  3183.97)
-Run 1	-1924.32	 [Nanc = 7178] [ [ 1 pop split   36.32% (s1) [0.363(s1*1.0), 0.637((1-s1)*1.0)] ],	[ 3000.0(t1), [6797.099(nu11), 5217.632(nu12)], [[0, 1.40e-04(m1_12)], [3.21e-05(m1_21), 0]], [Sud(dyn11), Sud(dyn12)] ] ]	mmmmm	(theta =  2726.22)
+Run 3	-1102.49	 [Nanc = 6284] [ [ 12477.003(t1), [10639.218(nu11)], [Sud(dyn11)] ],	[ 1 pop split   92.65% (s1) [9857.418(s1*nu11), 781.8((1-s1)*nu11)] ],	[ 2526.257(t2), [17225.038(nu21), 5175.936(nu22)], [[0, 1.13e-04(m2_12)], [5.72e-05(m2_21), 0]], [Exp(dyn21), Lin(dyn22)] ] ]	(theta =  2386.44)
+Run 2	-1565.26	 [Nanc = 5680] [ [ 12664.975(t1), [6921.832(nu11)], [Sud(dyn11)] ],	[ 1 pop split   72.13% (s1) [4992.791(s1*nu11), 1929.041((1-s1)*nu11)] ],	[ 3189.766(t2), [98619.538(nu21), 8914.86(nu22)], [[0, 5.38e-05(m2_12)], [2.05e-05(m2_21), 0]], [Exp(dyn21), Exp(dyn22)] ] ]	f	(theta =  2157.25)
+Run 1	-2085.85	 [Nanc = 1819] [ [ 4800.718(t1), [18843.512(nu11)], [Sud(dyn11)] ],	[ 1 pop split   41.87% (s1) [7889.086(s1*nu11), 10954.426((1-s1)*nu11)] ],	[ 17721.282(t2), [18055.73(nu21), 790.355(nu22)], [[0, 5.69e-05(m2_12)], [4.95e-04(m2_21), 0]], [Exp(dyn21), Sud(dyn22)] ] ]	c	(theta =  691.09)
 
 You can find the picture and the Python code of the best model in the output directory.
 
@@ -49,9 +51,9 @@ You can find the picture and the Python code of the best model in the output dir
 [000:04:00]
 All best by log-likelihood models
 Number	log-likelihood	Model
-Run 2	-1141.91	 [Nanc = 8220] [ [ 1 pop split   91.47% (s1) [0.915(s1*1.0), 0.085((1-s1)*1.0)] ],	[ 2622.261(t1), [16293.996(nu11), 4211.24(nu12)], [[0, 6.88e-05(m1_12)], [1.14e-04(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	mm	(theta =  3121.70)
-Run 3	-1185.38	 [Nanc = 8510] [ [ 1 pop split   77.58% (s1) [0.776(s1*1.0), 0.224((1-s1)*1.0)] ],	[ 2892.668(t1), [19929.515(nu11), 3233.015(nu12)], [[0, 1.06e-04(m1_12)], [1.04e-04(m1_21), 0]], [Lin(dyn11), Exp(dyn12)] ] ]	c	(theta =  3232.12)
-Run 1	-1238.97	 [Nanc = 8093] [ [ 1 pop split   29.53% (s1) [0.295(s1*1.0), 0.705((1-s1)*1.0)] ],	[ 2959.905(t1), [12910.362(nu11), 4014.482(nu12)], [[0, 1.34e-04(m1_12)], [2.92e-05(m1_21), 0]], [Sud(dyn11), Sud(dyn12)] ] ]	m	(theta =  3073.44)
+Run 3	-1075.77	 [Nanc = 7150] [ [ 6790.07(t1), [11915.577(nu11)], [Sud(dyn11)] ],	[ 1 pop split   98.66% (s1) [11756.253(s1*nu11), 159.324((1-s1)*nu11)] ],	[ 1607.082(t2), [16895.378(nu21), 7316.577(nu22)], [[0, 5.15e-05(m2_12)], [4.61e-05(m2_21), 0]], [Exp(dyn21), Lin(dyn22)] ] ]	(theta =  2715.64)
+Run 2	-1565.26	 [Nanc = 5680] [ [ 12664.975(t1), [6921.832(nu11)], [Sud(dyn11)] ],	[ 1 pop split   72.13% (s1) [4992.791(s1*nu11), 1929.041((1-s1)*nu11)] ],	[ 3189.766(t2), [98619.538(nu21), 8914.86(nu22)], [[0, 5.38e-05(m2_12)], [2.05e-05(m2_21), 0]], [Exp(dyn21), Exp(dyn22)] ] ]	f	(theta =  2157.25)
+Run 1	-2085.85	 [Nanc = 1819] [ [ 4800.718(t1), [18843.512(nu11)], [Sud(dyn11)] ],	[ 1 pop split   41.87% (s1) [7889.086(s1*nu11), 10954.426((1-s1)*nu11)] ],	[ 17721.282(t2), [18055.73(nu21), 790.355(nu22)], [[0, 5.69e-05(m2_12)], [4.95e-04(m2_21), 0]], [Exp(dyn21), Sud(dyn22)] ] ]	c	(theta =  691.09)
 
 You can find the picture and the Python code of the best model in the output directory.
 
@@ -59,9 +61,9 @@ You can find the picture and the Python code of the best model in the output dir
 [000:05:00]
 All best by log-likelihood models
 Number	log-likelihood	Model
-Run 2	-1141.91	 [Nanc = 8220] [ [ 1 pop split   91.47% (s1) [0.915(s1*1.0), 0.085((1-s1)*1.0)] ],	[ 2622.261(t1), [16293.996(nu11), 4211.24(nu12)], [[0, 6.88e-05(m1_12)], [1.14e-04(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	mm	(theta =  3121.70)
-Run 3	-1183.61	 [Nanc = 8520] [ [ 1 pop split   77.58% (s1) [0.776(s1*1.0), 0.224((1-s1)*1.0)] ],	[ 2895.751(t1), [19950.756(nu11), 3236.461(nu12)], [[0, 1.06e-04(m1_12)], [9.57e-05(m1_21), 0]], [Lin(dyn11), Exp(dyn12)] ] ]	c	(theta =  3235.56)
-Run 1	-1214.56	 [Nanc = 8030] [ [ 1 pop split   29.53% (s1) [0.295(s1*1.0), 0.705((1-s1)*1.0)] ],	[ 2936.836(t1), [12809.745(nu11), 3983.195(nu12)], [[0, 9.67e-05(m1_12)], [2.94e-05(m1_21), 0]], [Sud(dyn11), Sud(dyn12)] ] ]	c	(theta =  3049.48)
+Run 3	-1065.53	 [Nanc = 7210] [ [ 5448.399(t1), [13746.912(nu11)], [Sud(dyn11)] ],	[ 1 pop split   99.66% (s1) [13700.577(s1*nu11), 46.335((1-s1)*nu11)] ],	[ 1454.529(t2), [12861.753(nu21), 8356.604(nu22)], [[0, 6.20e-05(m2_12)], [6.10e-05(m2_21), 0]], [Exp(dyn21), Lin(dyn22)] ] ]	(theta =  2738.16)
+Run 2	-1565.26	 [Nanc = 5680] [ [ 12664.975(t1), [6921.832(nu11)], [Sud(dyn11)] ],	[ 1 pop split   72.13% (s1) [4992.791(s1*nu11), 1929.041((1-s1)*nu11)] ],	[ 3189.766(t2), [98619.538(nu21), 8914.86(nu22)], [[0, 5.38e-05(m2_12)], [2.05e-05(m2_21), 0]], [Exp(dyn21), Exp(dyn22)] ] ]	f	(theta =  2157.25)
+Run 1	-2085.85	 [Nanc = 1819] [ [ 4800.718(t1), [18843.512(nu11)], [Sud(dyn11)] ],	[ 1 pop split   41.87% (s1) [7889.086(s1*nu11), 10954.426((1-s1)*nu11)] ],	[ 17721.282(t2), [18055.73(nu21), 790.355(nu22)], [[0, 5.69e-05(m2_12)], [4.95e-04(m2_21), 0]], [Exp(dyn21), Sud(dyn22)] ] ]	c	(theta =  691.09)
 
 You can find the picture and the Python code of the best model in the output directory.
 
@@ -69,9 +71,9 @@ You can find the picture and the Python code of the best model in the output dir
 [000:06:00]
 All best by log-likelihood models
 Number	log-likelihood	Model
-Run 2	-1141.19	 [Nanc = 8159] [ [ 1 pop split   82.29% (s1) [0.823(s1*1.0), 0.177((1-s1)*1.0)] ],	[ 2603.044(t1), [16174.585(nu11), 4180.377(nu12)], [[0, 8.36e-05(m1_12)], [8.32e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	m	(theta =  3098.83)
-Run 3	-1183.16	 [Nanc = 8544] [ [ 1 pop split   77.58% (s1) [0.776(s1*1.0), 0.224((1-s1)*1.0)] ],	[ 2904.198(t1), [16951.893(nu11), 3885.655(nu12)], [[0, 1.05e-04(m1_12)], [9.54e-05(m1_21), 0]], [Lin(dyn11), Exp(dyn12)] ] ]	c	(theta =  3245.00)
-Run 1	-1184.82	 [Nanc = 7906] [ [ 1 pop split   32.69% (s1) [0.327(s1*1.0), 0.673((1-s1)*1.0)] ],	[ 2891.653(t1), [15035.608(nu11), 3698.618(nu12)], [[0, 9.18e-05(m1_12)], [2.99e-05(m1_21), 0]], [Sud(dyn11), Sud(dyn12)] ] ]	m	(theta =  3002.57)
+Run 3	-1065.27	 [Nanc = 7230] [ [ 5218.259(t1), [14132.372(nu11)], [Sud(dyn11)] ],	[ 1 pop split   99.79% (s1) [14102.176(s1*nu11), 30.197((1-s1)*nu11)] ],	[ 1387.067(t2), [12459.778(nu21), 8843.315(nu22)], [[0, 5.95e-05(m2_12)], [5.93e-05(m2_21), 0]], [Exp(dyn21), Lin(dyn22)] ] ]	(theta =  2745.96)
+Run 2	-1565.26	 [Nanc = 5680] [ [ 12664.975(t1), [6921.832(nu11)], [Sud(dyn11)] ],	[ 1 pop split   72.13% (s1) [4992.791(s1*nu11), 1929.041((1-s1)*nu11)] ],	[ 3189.766(t2), [98619.538(nu21), 8914.86(nu22)], [[0, 5.38e-05(m2_12)], [2.05e-05(m2_21), 0]], [Exp(dyn21), Exp(dyn22)] ] ]	f	(theta =  2157.25)
+Run 1	-2085.85	 [Nanc = 1819] [ [ 4800.718(t1), [18843.512(nu11)], [Sud(dyn11)] ],	[ 1 pop split   41.87% (s1) [7889.086(s1*nu11), 10954.426((1-s1)*nu11)] ],	[ 17721.282(t2), [18055.73(nu21), 790.355(nu22)], [[0, 5.69e-05(m2_12)], [4.95e-04(m2_21), 0]], [Exp(dyn21), Sud(dyn22)] ] ]	c	(theta =  691.09)
 
 You can find the picture and the Python code of the best model in the output directory.
 
@@ -79,652 +81,20 @@ You can find the picture and the Python code of the best model in the output dir
 [000:07:00]
 All best by log-likelihood models
 Number	log-likelihood	Model
-Run 2	-1127.13	 [Nanc = 8009] [ [ 1 pop split   82.29% (s1) [0.823(s1*1.0), 0.177((1-s1)*1.0)] ],	[ 2839.229(t1), [15875.813(nu11), 4103.159(nu12)], [[0, 7.03e-05(m1_12)], [8.47e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	m	(theta =  3041.59)
-Run 3	-1158.18	 [Nanc = 8176] [ [ 1 pop split   77.58% (s1) [0.776(s1*1.0), 0.224((1-s1)*1.0)] ],	[ 2778.88(t1), [16220.408(nu11), 3334.781(nu12)], [[0, 9.06e-05(m1_12)], [9.97e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	m	(theta =  3104.98)
-Run 1	-1184.82	 [Nanc = 7906] [ [ 1 pop split   32.69% (s1) [0.327(s1*1.0), 0.673((1-s1)*1.0)] ],	[ 2891.653(t1), [15035.608(nu11), 3698.618(nu12)], [[0, 9.18e-05(m1_12)], [2.99e-05(m1_21), 0]], [Sud(dyn11), Sud(dyn12)] ] ]	m	(theta =  3002.57)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:08:00]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1123.78	 [Nanc = 7930] [ [ 1 pop split   82.29% (s1) [0.823(s1*1.0), 0.177((1-s1)*1.0)] ],	[ 2811.33(t1), [15719.812(nu11), 4777.088(nu12)], [[0, 7.10e-05(m1_12)], [6.30e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	mm	(theta =  3011.70)
-Run 3	-1158.18	 [Nanc = 8176] [ [ 1 pop split   77.58% (s1) [0.776(s1*1.0), 0.224((1-s1)*1.0)] ],	[ 2778.88(t1), [16220.408(nu11), 3334.781(nu12)], [[0, 9.06e-05(m1_12)], [9.97e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	m	(theta =  3104.98)
-Run 1	-1184.82	 [Nanc = 7906] [ [ 1 pop split   32.69% (s1) [0.327(s1*1.0), 0.673((1-s1)*1.0)] ],	[ 2891.653(t1), [15035.608(nu11), 3698.618(nu12)], [[0, 9.18e-05(m1_12)], [2.99e-05(m1_21), 0]], [Sud(dyn11), Sud(dyn12)] ] ]	m	(theta =  3002.57)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:09:00]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1123.78	 [Nanc = 7930] [ [ 1 pop split   82.29% (s1) [0.823(s1*1.0), 0.177((1-s1)*1.0)] ],	[ 2811.33(t1), [15719.812(nu11), 4777.088(nu12)], [[0, 7.10e-05(m1_12)], [6.30e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	mm	(theta =  3011.70)
-Run 3	-1152.05	 [Nanc = 8133] [ [ 1 pop split   77.58% (s1) [0.776(s1*1.0), 0.224((1-s1)*1.0)] ],	[ 2764.401(t1), [16135.897(nu11), 3317.406(nu12)], [[0, 7.17e-05(m1_12)], [1.00e-04(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	m	(theta =  3088.80)
-Run 1	-1184.82	 [Nanc = 7906] [ [ 1 pop split   32.69% (s1) [0.327(s1*1.0), 0.673((1-s1)*1.0)] ],	[ 2891.653(t1), [15035.608(nu11), 3698.618(nu12)], [[0, 9.18e-05(m1_12)], [2.99e-05(m1_21), 0]], [Sud(dyn11), Sud(dyn12)] ] ]	m	(theta =  3002.57)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:10:00]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1121.70	 [Nanc = 7932] [ [ 1 pop split   83.27% (s1) [0.833(s1*1.0), 0.167((1-s1)*1.0)] ],	[ 2811.949(t1), [15723.271(nu11), 4778.139(nu12)], [[0, 7.09e-05(m1_12)], [7.04e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	m	(theta =  3012.36)
-Run 3	-1134.89	 [Nanc = 8120] [ [ 1 pop split   90.52% (s1) [0.905(s1*1.0), 0.095((1-s1)*1.0)] ],	[ 2759.857(t1), [16109.373(nu11), 4381.576(nu12)], [[0, 7.18e-05(m1_12)], [1.00e-04(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	c	(theta =  3083.72)
-Run 1	-1184.43	 [Nanc = 7903] [ [ 1 pop split   32.69% (s1) [0.327(s1*1.0), 0.673((1-s1)*1.0)] ],	[ 2890.431(t1), [15029.252(nu11), 3697.055(nu12)], [[0, 9.19e-05(m1_12)], [3.27e-05(m1_21), 0]], [Sud(dyn11), Sud(dyn12)] ] ]	c	(theta =  3001.30)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:11:00]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1121.70	 [Nanc = 7932] [ [ 1 pop split   83.27% (s1) [0.833(s1*1.0), 0.167((1-s1)*1.0)] ],	[ 2811.949(t1), [15723.271(nu11), 4778.139(nu12)], [[0, 7.09e-05(m1_12)], [7.04e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	m	(theta =  3012.36)
-Run 3	-1134.89	 [Nanc = 8120] [ [ 1 pop split   90.52% (s1) [0.905(s1*1.0), 0.095((1-s1)*1.0)] ],	[ 2759.857(t1), [16109.373(nu11), 4381.576(nu12)], [[0, 7.18e-05(m1_12)], [1.00e-04(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	c	(theta =  3083.72)
-Run 1	-1184.43	 [Nanc = 7903] [ [ 1 pop split   32.69% (s1) [0.327(s1*1.0), 0.673((1-s1)*1.0)] ],	[ 2890.431(t1), [15029.252(nu11), 3697.055(nu12)], [[0, 9.19e-05(m1_12)], [3.27e-05(m1_21), 0]], [Sud(dyn11), Sud(dyn12)] ] ]	c	(theta =  3001.30)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:12:00]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1117.24	 [Nanc = 7902] [ [ 1 pop split   83.27% (s1) [0.833(s1*1.0), 0.167((1-s1)*1.0)] ],	[ 2985.799(t1), [15664.752(nu11), 5667.859(nu12)], [[0, 8.49e-05(m1_12)], [7.06e-05(m1_21), 0]], [Sud(dyn11), Exp(dyn12)] ] ]	mm	(theta =  3001.15)
-Run 3	-1134.89	 [Nanc = 8120] [ [ 1 pop split   90.52% (s1) [0.905(s1*1.0), 0.095((1-s1)*1.0)] ],	[ 2759.857(t1), [16109.373(nu11), 4381.576(nu12)], [[0, 7.18e-05(m1_12)], [1.00e-04(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	c	(theta =  3083.72)
-Run 1	-1184.43	 [Nanc = 7903] [ [ 1 pop split   32.69% (s1) [0.327(s1*1.0), 0.673((1-s1)*1.0)] ],	[ 2890.431(t1), [15029.252(nu11), 3697.055(nu12)], [[0, 9.19e-05(m1_12)], [3.27e-05(m1_21), 0]], [Sud(dyn11), Sud(dyn12)] ] ]	c	(theta =  3001.30)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:13:00]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1117.24	 [Nanc = 7902] [ [ 1 pop split   83.27% (s1) [0.833(s1*1.0), 0.167((1-s1)*1.0)] ],	[ 2985.799(t1), [15664.752(nu11), 5667.859(nu12)], [[0, 8.49e-05(m1_12)], [7.06e-05(m1_21), 0]], [Sud(dyn11), Exp(dyn12)] ] ]	mm	(theta =  3001.15)
-Run 3	-1133.89	 [Nanc = 8173] [ [ 1 pop split   90.52% (s1) [0.905(s1*1.0), 0.095((1-s1)*1.0)] ],	[ 2777.885(t1), [15419.407(nu11), 4410.198(nu12)], [[0, 7.14e-05(m1_12)], [9.98e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	m	(theta =  3103.87)
-Run 1	-1184.43	 [Nanc = 7903] [ [ 1 pop split   32.69% (s1) [0.327(s1*1.0), 0.673((1-s1)*1.0)] ],	[ 2890.431(t1), [15029.252(nu11), 3697.055(nu12)], [[0, 9.19e-05(m1_12)], [3.27e-05(m1_21), 0]], [Sud(dyn11), Sud(dyn12)] ] ]	c	(theta =  3001.30)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:14:00]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1115.54	 [Nanc = 8008] [ [ 1 pop split   83.27% (s1) [0.833(s1*1.0), 0.167((1-s1)*1.0)] ],	[ 2763.742(t1), [15873.492(nu11), 5743.385(nu12)], [[0, 8.38e-05(m1_12)], [6.97e-05(m1_21), 0]], [Sud(dyn11), Exp(dyn12)] ] ]	m	(theta =  3041.14)
-Run 3	-1131.64	 [Nanc = 8292] [ [ 1 pop split   90.52% (s1) [0.905(s1*1.0), 0.095((1-s1)*1.0)] ],	[ 2531.772(t1), [15644.742(nu11), 4474.647(nu12)], [[0, 7.03e-05(m1_12)], [9.83e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	m	(theta =  3149.23)
-Run 1	-1184.43	 [Nanc = 7903] [ [ 1 pop split   32.69% (s1) [0.327(s1*1.0), 0.673((1-s1)*1.0)] ],	[ 2890.431(t1), [15029.252(nu11), 3697.055(nu12)], [[0, 9.19e-05(m1_12)], [3.27e-05(m1_21), 0]], [Sud(dyn11), Sud(dyn12)] ] ]	c	(theta =  3001.30)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:15:00]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1113.70	 [Nanc = 8082] [ [ 1 pop split   83.27% (s1) [0.833(s1*1.0), 0.167((1-s1)*1.0)] ],	[ 2789.399(t1), [14870.673(nu11), 5796.704(nu12)], [[0, 8.30e-05(m1_12)], [6.90e-05(m1_21), 0]], [Sud(dyn11), Exp(dyn12)] ] ]	m	(theta =  3069.37)
-Run 3	-1131.64	 [Nanc = 8292] [ [ 1 pop split   90.52% (s1) [0.905(s1*1.0), 0.095((1-s1)*1.0)] ],	[ 2531.772(t1), [15644.742(nu11), 4474.647(nu12)], [[0, 7.03e-05(m1_12)], [9.83e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	m	(theta =  3149.23)
-Run 1	-1162.32	 [Nanc = 7885] [ [ 1 pop split   32.69% (s1) [0.327(s1*1.0), 0.673((1-s1)*1.0)] ],	[ 3000.0(t1), [14897.874(nu11), 3181.147(nu12)], [[0, 8.85e-05(m1_12)], [6.83e-05(m1_21), 0]], [Sud(dyn11), Sud(dyn12)] ] ]	(theta =  2994.78)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:16:00]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1113.70	 [Nanc = 8082] [ [ 1 pop split   83.27% (s1) [0.833(s1*1.0), 0.167((1-s1)*1.0)] ],	[ 2789.399(t1), [14870.673(nu11), 5796.704(nu12)], [[0, 8.30e-05(m1_12)], [6.90e-05(m1_21), 0]], [Sud(dyn11), Exp(dyn12)] ] ]	m	(theta =  3069.37)
-Run 3	-1131.64	 [Nanc = 8292] [ [ 1 pop split   90.52% (s1) [0.905(s1*1.0), 0.095((1-s1)*1.0)] ],	[ 2531.772(t1), [15644.742(nu11), 4474.647(nu12)], [[0, 7.03e-05(m1_12)], [9.83e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	m	(theta =  3149.23)
-Run 1	-1155.18	 [Nanc = 7848] [ [ 18839.221(t1), [7848.259(nu11)], [Lin(dyn11)] ],	[ 1 pop split   32.69% (s1) [2565.904(s1*nu11), 5282.356((1-s1)*nu11)] ],	[ 3342.117(t2), [14826.628(nu21), 3165.934(nu22)], [[0, 8.90e-05(m2_12)], [6.87e-05(m2_21), 0]], [Sud(dyn21), Sud(dyn22)] ] ]	mm	(theta =  2980.45)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:17:00]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1113.70	 [Nanc = 8082] [ [ 1 pop split   83.27% (s1) [0.833(s1*1.0), 0.167((1-s1)*1.0)] ],	[ 2789.399(t1), [14870.673(nu11), 5796.704(nu12)], [[0, 8.30e-05(m1_12)], [6.90e-05(m1_21), 0]], [Sud(dyn11), Exp(dyn12)] ] ]	m	(theta =  3069.37)
-Run 3	-1131.64	 [Nanc = 8292] [ [ 1 pop split   90.52% (s1) [0.905(s1*1.0), 0.095((1-s1)*1.0)] ],	[ 2531.772(t1), [15644.742(nu11), 4474.647(nu12)], [[0, 7.03e-05(m1_12)], [9.83e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	m	(theta =  3149.23)
-Run 1	-1154.29	 [Nanc = 7413] [ [ 17794.6(t1), [9042.648(nu11)], [Lin(dyn11)] ],	[ 1 pop split   32.69% (s1) [2956.396(s1*nu11), 6086.252((1-s1)*nu11)] ],	[ 3156.799(t2), [14004.501(nu21), 2990.385(nu22)], [[0, 9.42e-05(m2_12)], [7.27e-05(m2_21), 0]], [Sud(dyn21), Sud(dyn22)] ] ]	m	(theta =  2815.19)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:18:00]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1113.70	 [Nanc = 8082] [ [ 1 pop split   83.27% (s1) [0.833(s1*1.0), 0.167((1-s1)*1.0)] ],	[ 2789.399(t1), [14870.673(nu11), 5796.704(nu12)], [[0, 8.30e-05(m1_12)], [6.90e-05(m1_21), 0]], [Sud(dyn11), Exp(dyn12)] ] ]	m	(theta =  3069.37)
-Run 3	-1130.37	 [Nanc = 8044] [ [ 1 pop split   90.52% (s1) [0.905(s1*1.0), 0.095((1-s1)*1.0)] ],	[ 2811.008(t1), [14384.386(nu11), 5540.42(nu12)], [[0, 7.25e-05(m1_12)], [8.64e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	mm	(theta =  3055.03)
-Run 1	-1147.16	 [Nanc = 7558] [ [ 15551.19(t1), [8742.887(nu11)], [Exp(dyn11)] ],	[ 1 pop split   37.03% (s1) [3237.675(s1*nu11), 5505.211((1-s1)*nu11)] ],	[ 3218.777(t2), [14279.454(nu21), 3049.096(nu22)], [[0, 1.00e-04(m2_12)], [8.27e-05(m2_21), 0]], [Sud(dyn21), Sud(dyn22)] ] ]	m	(theta =  2870.46)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:19:00]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1113.70	 [Nanc = 8082] [ [ 1 pop split   83.27% (s1) [0.833(s1*1.0), 0.167((1-s1)*1.0)] ],	[ 2789.399(t1), [14870.673(nu11), 5796.704(nu12)], [[0, 8.30e-05(m1_12)], [6.90e-05(m1_21), 0]], [Sud(dyn11), Exp(dyn12)] ] ]	m	(theta =  3069.37)
-Run 3	-1130.37	 [Nanc = 8044] [ [ 1 pop split   90.52% (s1) [0.905(s1*1.0), 0.095((1-s1)*1.0)] ],	[ 2811.008(t1), [14384.386(nu11), 5540.42(nu12)], [[0, 7.25e-05(m1_12)], [8.64e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	mm	(theta =  3055.03)
-Run 1	-1147.16	 [Nanc = 7558] [ [ 15551.19(t1), [8742.887(nu11)], [Exp(dyn11)] ],	[ 1 pop split   37.03% (s1) [3237.675(s1*nu11), 5505.211((1-s1)*nu11)] ],	[ 3218.777(t2), [14279.454(nu21), 3049.096(nu22)], [[0, 1.00e-04(m2_12)], [8.27e-05(m2_21), 0]], [Sud(dyn21), Sud(dyn22)] ] ]	m	(theta =  2870.46)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:20:00]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1113.70	 [Nanc = 8082] [ [ 1 pop split   83.27% (s1) [0.833(s1*1.0), 0.167((1-s1)*1.0)] ],	[ 2789.399(t1), [14870.673(nu11), 5796.704(nu12)], [[0, 8.30e-05(m1_12)], [6.90e-05(m1_21), 0]], [Sud(dyn11), Exp(dyn12)] ] ]	m	(theta =  3069.37)
-Run 3	-1130.37	 [Nanc = 8044] [ [ 1 pop split   90.52% (s1) [0.905(s1*1.0), 0.095((1-s1)*1.0)] ],	[ 2811.008(t1), [14384.386(nu11), 5540.42(nu12)], [[0, 7.25e-05(m1_12)], [8.64e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	mm	(theta =  3055.03)
-Run 1	-1147.16	 [Nanc = 7558] [ [ 15551.19(t1), [8742.887(nu11)], [Exp(dyn11)] ],	[ 1 pop split   37.03% (s1) [3237.675(s1*nu11), 5505.211((1-s1)*nu11)] ],	[ 3218.777(t2), [14279.454(nu21), 3049.096(nu22)], [[0, 1.00e-04(m2_12)], [8.27e-05(m2_21), 0]], [Sud(dyn21), Sud(dyn22)] ] ]	m	(theta =  2870.46)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:21:00]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1112.96	 [Nanc = 7990] [ [ 1 pop split   82.32% (s1) [0.823(s1*1.0), 0.177((1-s1)*1.0)] ],	[ 2925.279(t1), [14965.633(nu11), 5531.613(nu12)], [[0, 8.31e-05(m1_12)], [7.16e-05(m1_21), 0]], [Sud(dyn11), Exp(dyn12)] ] ]	(theta =  3034.64)
-Run 3	-1130.37	 [Nanc = 8044] [ [ 1 pop split   90.52% (s1) [0.905(s1*1.0), 0.095((1-s1)*1.0)] ],	[ 2811.008(t1), [14384.386(nu11), 5540.42(nu12)], [[0, 7.25e-05(m1_12)], [8.64e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	mm	(theta =  3055.03)
-Run 1	-1147.16	 [Nanc = 7558] [ [ 15551.19(t1), [8742.887(nu11)], [Exp(dyn11)] ],	[ 1 pop split   37.03% (s1) [3237.675(s1*nu11), 5505.211((1-s1)*nu11)] ],	[ 3218.777(t2), [14279.454(nu21), 3049.096(nu22)], [[0, 1.00e-04(m2_12)], [8.27e-05(m2_21), 0]], [Sud(dyn21), Sud(dyn22)] ] ]	m	(theta =  2870.46)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:22:01]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1112.96	 [Nanc = 7990] [ [ 1 pop split   82.32% (s1) [0.823(s1*1.0), 0.177((1-s1)*1.0)] ],	[ 2925.297(t1), [14965.599(nu11), 5531.571(nu12)], [[0, 8.31e-05(m1_12)], [7.16e-05(m1_21), 0]], [Sud(dyn11), Exp(dyn12)] ] ]	(theta =  3034.64)
-Run 3	-1130.37	 [Nanc = 8044] [ [ 1 pop split   90.52% (s1) [0.905(s1*1.0), 0.095((1-s1)*1.0)] ],	[ 2811.008(t1), [14384.386(nu11), 5540.42(nu12)], [[0, 7.25e-05(m1_12)], [8.64e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	mm	(theta =  3055.03)
-Run 1	-1146.34	 [Nanc = 7600] [ [ 11844.223(t1), [8791.553(nu11)], [Exp(dyn11)] ],	[ 1 pop split   46.95% (s1) [4127.442(s1*nu11), 4664.112((1-s1)*nu11)] ],	[ 3236.694(t2), [14358.94(nu21), 3066.069(nu22)], [[0, 9.96e-05(m2_12)], [8.23e-05(m2_21), 0]], [Sud(dyn21), Sud(dyn22)] ] ]	m	(theta =  2886.44)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:23:01]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1108.82	 [Nanc = 7606] [ [ 17055.367(t1), [9206.225(nu11)], [Lin(dyn11)] ],	[ 1 pop split   82.32% (s1) [7578.48(s1*nu11), 1627.744((1-s1)*nu11)] ],	[ 2784.531(t2), [14245.45(nu21), 4406.66(nu22)], [[0, 9.68e-05(m2_12)], [7.53e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	mmmm	(theta =  2888.61)
-Run 3	-1127.39	 [Nanc = 7899] [ [ 1 pop split   90.52% (s1) [0.905(s1*1.0), 0.095((1-s1)*1.0)] ],	[ 2760.299(t1), [16204.726(nu11), 5440.475(nu12)], [[0, 6.34e-05(m1_12)], [7.40e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	m	(theta =  2999.92)
-Run 1	-1142.99	 [Nanc = 7548] [ [ 11312.205(t1), [8731.337(nu11)], [Exp(dyn11)] ],	[ 1 pop split   37.03% (s1) [3233.398(s1*nu11), 5497.939((1-s1)*nu11)] ],	[ 3426.041(t2), [14260.59(nu21), 3045.068(nu22)], [[0, 1.00e-04(m2_12)], [8.29e-05(m2_21), 0]], [Sud(dyn21), Sud(dyn22)] ] ]	m	(theta =  2866.67)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:24:01]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1107.24	 [Nanc = 7673] [ [ 12581.842(t1), [9287.162(nu11)], [Lin(dyn11)] ],	[ 1 pop split   82.32% (s1) [7645.108(s1*nu11), 1642.055((1-s1)*nu11)] ],	[ 2809.012(t2), [14370.691(nu21), 4445.402(nu22)], [[0, 9.59e-05(m2_12)], [7.46e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	m	(theta =  2914.00)
-Run 3	-1127.26	 [Nanc = 7900] [ [ 1 pop split   90.52% (s1) [0.905(s1*1.0), 0.095((1-s1)*1.0)] ],	[ 2760.482(t1), [16205.797(nu11), 5440.835(nu12)], [[0, 6.36e-05(m1_12)], [7.40e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	c	(theta =  3000.12)
-Run 1	-1142.99	 [Nanc = 7548] [ [ 11312.205(t1), [8731.337(nu11)], [Exp(dyn11)] ],	[ 1 pop split   37.03% (s1) [3233.398(s1*nu11), 5497.939((1-s1)*nu11)] ],	[ 3426.041(t2), [14260.59(nu21), 3045.068(nu22)], [[0, 1.00e-04(m2_12)], [8.29e-05(m2_21), 0]], [Sud(dyn21), Sud(dyn22)] ] ]	m	(theta =  2866.67)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:25:01]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1107.20	 [Nanc = 7752] [ [ 8412.643(t1), [9382.963(nu11)], [Lin(dyn11)] ],	[ 1 pop split   82.32% (s1) [7723.97(s1*nu11), 1658.993((1-s1)*nu11)] ],	[ 2837.988(t2), [14518.93(nu21), 4491.258(nu22)], [[0, 9.49e-05(m2_12)], [7.38e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	m	(theta =  2944.06)
-Run 3	-1122.92	 [Nanc = 8203] [ [ 1 pop split   90.52% (s1) [0.905(s1*1.0), 0.095((1-s1)*1.0)] ],	[ 2413.456(t1), [15793.533(nu11), 5338.32(nu12)], [[0, 6.10e-05(m1_12)], [7.13e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	m	(theta =  3115.25)
-Run 1	-1142.88	 [Nanc = 7567] [ [ 9847.241(t1), [8753.545(nu11)], [Exp(dyn11)] ],	[ 1 pop split   37.03% (s1) [3241.622(s1*nu11), 5511.922((1-s1)*nu11)] ],	[ 3434.755(t2), [14296.861(nu21), 3052.813(nu22)], [[0, 1.00e-04(m2_12)], [8.26e-05(m2_21), 0]], [Sud(dyn21), Sud(dyn22)] ] ]	m	(theta =  2873.96)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:26:01]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1105.00	 [Nanc = 7620] [ [ 10605.82(t1), [9223.847(nu11)], [Lin(dyn11)] ],	[ 1 pop split   82.32% (s1) [7592.987(s1*nu11), 1630.86((1-s1)*nu11)] ],	[ 3031.942(t2), [14272.72(nu21), 4415.095(nu22)], [[0, 9.66e-05(m2_12)], [8.31e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	m	(theta =  2894.14)
-Run 3	-1122.77	 [Nanc = 8221] [ [ 1 pop split   90.52% (s1) [0.905(s1*1.0), 0.095((1-s1)*1.0)] ],	[ 2418.844(t1), [15828.794(nu11), 5350.239(nu12)], [[0, 6.91e-05(m1_12)], [7.11e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	c	(theta =  3122.21)
-Run 1	-1140.34	 [Nanc = 7027] [ [ 6538.894(t1), [10019.789(nu11)], [Exp(dyn11)] ],	[ 1 pop split   37.03% (s1) [3710.539(s1*nu11), 6309.249((1-s1)*nu11)] ],	[ 3967.137(t2), [13275.846(nu21), 3414.949(nu22)], [[0, 1.04e-04(m2_12)], [7.01e-05(m2_21), 0]], [Sud(dyn21), Sud(dyn22)] ] ]	mmm	(theta =  2668.72)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:27:01]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1105.00	 [Nanc = 7620] [ [ 10605.82(t1), [9223.847(nu11)], [Lin(dyn11)] ],	[ 1 pop split   82.32% (s1) [7592.987(s1*nu11), 1630.86((1-s1)*nu11)] ],	[ 3031.942(t2), [14272.72(nu21), 4415.095(nu22)], [[0, 9.66e-05(m2_12)], [8.31e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	m	(theta =  2894.14)
-Run 3	-1122.77	 [Nanc = 8221] [ [ 1 pop split   90.52% (s1) [0.905(s1*1.0), 0.095((1-s1)*1.0)] ],	[ 2418.844(t1), [15828.794(nu11), 5350.239(nu12)], [[0, 6.91e-05(m1_12)], [7.11e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	c	(theta =  3122.21)
-Run 1	-1140.34	 [Nanc = 7027] [ [ 6538.894(t1), [10019.789(nu11)], [Exp(dyn11)] ],	[ 1 pop split   37.03% (s1) [3710.539(s1*nu11), 6309.249((1-s1)*nu11)] ],	[ 3967.137(t2), [13275.846(nu21), 3414.949(nu22)], [[0, 1.04e-04(m2_12)], [7.01e-05(m2_21), 0]], [Sud(dyn21), Sud(dyn22)] ] ]	mmm	(theta =  2668.72)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:28:01]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1105.00	 [Nanc = 7620] [ [ 10605.82(t1), [9223.847(nu11)], [Lin(dyn11)] ],	[ 1 pop split   82.32% (s1) [7592.987(s1*nu11), 1630.86((1-s1)*nu11)] ],	[ 3031.942(t2), [14272.72(nu21), 4415.095(nu22)], [[0, 9.66e-05(m2_12)], [8.31e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	m	(theta =  2894.14)
-Run 3	-1122.77	 [Nanc = 8221] [ [ 1 pop split   90.52% (s1) [0.905(s1*1.0), 0.095((1-s1)*1.0)] ],	[ 2418.844(t1), [15828.794(nu11), 5350.239(nu12)], [[0, 6.91e-05(m1_12)], [7.11e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	c	(theta =  3122.21)
-Run 1	-1133.68	 [Nanc = 7208] [ [ 10136.172(t1), [8257.342(nu11)], [Exp(dyn11)] ],	[ 1 pop split   46.82% (s1) [3865.987(s1*nu11), 4391.356((1-s1)*nu11)] ],	[ 4069.18(t2), [13617.328(nu21), 3502.788(nu22)], [[0, 1.11e-04(m2_12)], [6.91e-05(m2_21), 0]], [Sud(dyn21), Sud(dyn22)] ] ]	m	(theta =  2737.36)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:29:01]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1105.00	 [Nanc = 7620] [ [ 10605.82(t1), [9223.847(nu11)], [Lin(dyn11)] ],	[ 1 pop split   82.32% (s1) [7592.987(s1*nu11), 1630.86((1-s1)*nu11)] ],	[ 3031.942(t2), [14272.72(nu21), 4415.095(nu22)], [[0, 9.66e-05(m2_12)], [8.31e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	m	(theta =  2894.14)
-Run 3	-1122.77	 [Nanc = 8221] [ [ 1 pop split   90.52% (s1) [0.905(s1*1.0), 0.095((1-s1)*1.0)] ],	[ 2418.844(t1), [15828.794(nu11), 5350.239(nu12)], [[0, 6.91e-05(m1_12)], [7.11e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	c	(theta =  3122.21)
-Run 1	-1133.68	 [Nanc = 7208] [ [ 10136.172(t1), [8257.342(nu11)], [Exp(dyn11)] ],	[ 1 pop split   46.82% (s1) [3865.987(s1*nu11), 4391.356((1-s1)*nu11)] ],	[ 4069.18(t2), [13617.328(nu21), 3502.788(nu22)], [[0, 1.11e-04(m2_12)], [6.91e-05(m2_21), 0]], [Sud(dyn21), Sud(dyn22)] ] ]	m	(theta =  2737.36)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:30:01]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1105.00	 [Nanc = 7620] [ [ 10605.82(t1), [9223.847(nu11)], [Lin(dyn11)] ],	[ 1 pop split   82.32% (s1) [7592.987(s1*nu11), 1630.86((1-s1)*nu11)] ],	[ 3031.942(t2), [14272.72(nu21), 4415.095(nu22)], [[0, 9.66e-05(m2_12)], [8.31e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	m	(theta =  2894.14)
-Run 3	-1122.77	 [Nanc = 8221] [ [ 1 pop split   90.52% (s1) [0.905(s1*1.0), 0.095((1-s1)*1.0)] ],	[ 2418.844(t1), [15828.794(nu11), 5350.239(nu12)], [[0, 6.91e-05(m1_12)], [7.11e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	c	(theta =  3122.21)
-Run 1	-1131.09	 [Nanc = 7063] [ [ 12523.226(t1), [8091.977(nu11)], [Sud(dyn11)] ],	[ 1 pop split   46.82% (s1) [3788.564(s1*nu11), 4303.412((1-s1)*nu11)] ],	[ 3987.689(t2), [13344.621(nu21), 3432.64(nu22)], [[0, 1.13e-04(m2_12)], [7.05e-05(m2_21), 0]], [Sud(dyn21), Sud(dyn22)] ] ]	mm	(theta =  2682.54)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:31:01]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1104.61	 [Nanc = 7625] [ [ 10612.731(t1), [9244.065(nu11)], [Lin(dyn11)] ],	[ 1 pop split   82.75% (s1) [7649.321(s1*nu11), 1594.744((1-s1)*nu11)] ],	[ 3038.361(t2), [14263.433(nu21), 4426.52(nu22)], [[0, 9.64e-05(m2_12)], [8.29e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	(theta =  2895.97)
-Run 3	-1119.62	 [Nanc = 8104] [ [ 1 pop split   87.77% (s1) [0.878(s1*1.0), 0.122((1-s1)*1.0)] ],	[ 2676.643(t1), [15491.774(nu11), 4988.721(nu12)], [[0, 7.40e-05(m1_12)], [6.99e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	(theta =  3077.85)
-Run 1	-1131.07	 [Nanc = 7038] [ [ 14594.877(t1), [8063.279(nu11)], [Sud(dyn11)] ],	[ 1 pop split   46.82% (s1) [3775.128(s1*nu11), 4288.15((1-s1)*nu11)] ],	[ 3973.547(t2), [13297.294(nu21), 3420.466(nu22)], [[0, 1.13e-04(m2_12)], [7.08e-05(m2_21), 0]], [Sud(dyn21), Sud(dyn22)] ] ]	m	(theta =  2673.03)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:32:01]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1081.13	 [Nanc = 6884] [ [ 15333.859(t1), [10918.7(nu11)], [Lin(dyn11)] ],	[ 1 pop split   90.25% (s1) [9854.173(s1*nu11), 1064.527((1-s1)*nu11)] ],	[ 2309.874(t2), [14464.779(nu21), 6476.523(nu22)], [[0, 8.14e-05(m2_12)], [5.85e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	(theta =  2614.62)
-Run 3	-1117.42	 [Nanc = 7982] [ [ 1 pop split   85.43% (s1) [0.854(s1*1.0), 0.146((1-s1)*1.0)] ],	[ 3000.0(t1), [14825.801(nu11), 4846.997(nu12)], [[0, 8.44e-05(m1_12)], [7.42e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	(theta =  3031.33)
-Run 1	-1131.07	 [Nanc = 7038] [ [ 14594.877(t1), [8063.279(nu11)], [Sud(dyn11)] ],	[ 1 pop split   46.82% (s1) [3775.128(s1*nu11), 4288.15((1-s1)*nu11)] ],	[ 3973.547(t2), [13297.294(nu21), 3420.466(nu22)], [[0, 1.13e-04(m2_12)], [7.08e-05(m2_21), 0]], [Sud(dyn21), Sud(dyn22)] ] ]	m	(theta =  2673.03)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:33:03]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1067.65	 [Nanc = 7133] [ [ 9576.538(t1), [13405.401(nu11)], [Lin(dyn11)] ],	[ 1 pop split   95.32% (s1) [12777.55(s1*nu11), 627.85((1-s1)*nu11)] ],	[ 1768.334(t2), [13888.343(nu21), 10798.704(nu22)], [[0, 6.98e-05(m2_12)], [5.74e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	(theta =  2708.85)
-Run 3	-1117.29	 [Nanc = 7967] [ [ 1 pop split   84.66% (s1) [0.847(s1*1.0), 0.153((1-s1)*1.0)] ],	[ 3000.0(t1), [14838.383(nu11), 4821.681(nu12)], [[0, 8.45e-05(m1_12)], [7.31e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	(theta =  3025.75)
-Run 1	-1131.07	 [Nanc = 7038] [ [ 14594.877(t1), [8063.279(nu11)], [Sud(dyn11)] ],	[ 1 pop split   46.82% (s1) [3775.128(s1*nu11), 4288.15((1-s1)*nu11)] ],	[ 3973.547(t2), [13297.294(nu21), 3420.466(nu22)], [[0, 1.13e-04(m2_12)], [7.08e-05(m2_21), 0]], [Sud(dyn21), Sud(dyn22)] ] ]	m	(theta =  2673.03)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:34:03]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7365.204(t1), [15782.678(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15239.832(s1*nu11), 542.846((1-s1)*nu11)] ],	[ 1640.907(t2), [13069.15(nu21), 12624.258(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	(theta =  2735.19)
-Run 3	-1117.29	 [Nanc = 7967] [ [ 1 pop split   84.66% (s1) [0.847(s1*1.0), 0.153((1-s1)*1.0)] ],	[ 3000.0(t1), [14838.385(nu11), 4821.684(nu12)], [[0, 8.45e-05(m1_12)], [7.31e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	(theta =  3025.75)
-Run 1	-1130.95	 [Nanc = 7043] [ [ 14605.019(t1), [8068.882(nu11)], [Sud(dyn11)] ],	[ 1 pop split   46.82% (s1) [3777.752(s1*nu11), 4291.13((1-s1)*nu11)] ],	[ 3976.308(t2), [13306.535(nu21), 3422.843(nu22)], [[0, 1.16e-04(m2_12)], [7.07e-05(m2_21), 0]], [Sud(dyn21), Sud(dyn22)] ] ]	m	(theta =  2674.89)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:35:03]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.958(nu21), 12621.581(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	(theta =  2735.15)
-Run 3	-1117.29	 [Nanc = 7967] [ [ 1 pop split   84.66% (s1) [0.847(s1*1.0), 0.153((1-s1)*1.0)] ],	[ 3000.0(t1), [14838.385(nu11), 4821.684(nu12)], [[0, 8.45e-05(m1_12)], [7.31e-05(m1_21), 0]], [Sud(dyn11), Lin(dyn12)] ] ]	(theta =  3025.75)
-Run 1	-1130.93	 [Nanc = 7069] [ [ 12445.159(t1), [8098.904(nu11)], [Sud(dyn11)] ],	[ 1 pop split   46.82% (s1) [3791.808(s1*nu11), 4307.096((1-s1)*nu11)] ],	[ 3991.103(t2), [13356.045(nu21), 3435.578(nu22)], [[0, 1.15e-04(m2_12)], [7.05e-05(m2_21), 0]], [Sud(dyn21), Sud(dyn22)] ] ]	m	(theta =  2684.84)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:36:03]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	(theta =  2735.15)
-Run 3	-1105.49	 [Nanc = 7297] [ [ 5197.768(t1), [9993.265(nu11)], [Sud(dyn11)] ],	[ 1 pop split   84.66% (s1) [8460.075(s1*nu11), 1533.19((1-s1)*nu11)] ],	[ 2973.079(t2), [13591.221(nu21), 4416.422(nu22)], [[0, 9.22e-05(m2_12)], [7.98e-05(m2_21), 0]], [Sud(dyn21), Lin(dyn22)] ] ]	m	(theta =  2771.43)
-Run 1	-1130.91	 [Nanc = 7063] [ [ 12952.929(t1), [8091.436(nu11)], [Sud(dyn11)] ],	[ 1 pop split   46.82% (s1) [3788.311(s1*nu11), 4303.124((1-s1)*nu11)] ],	[ 3987.422(t2), [13343.729(nu21), 3432.41(nu22)], [[0, 1.15e-04(m2_12)], [7.05e-05(m2_21), 0]], [Sud(dyn21), Sud(dyn22)] ] ]	m	(theta =  2682.36)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:37:03]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	(theta =  2735.15)
-Run 3	-1097.92	 [Nanc = 7220] [ [ 5142.918(t1), [9887.81(nu11)], [Sud(dyn11)] ],	[ 1 pop split   84.66% (s1) [8370.799(s1*nu11), 1517.011((1-s1)*nu11)] ],	[ 2941.705(t2), [14630.987(nu21), 4920.733(nu22)], [[0, 9.32e-05(m2_12)], [8.07e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	mmm	(theta =  2742.19)
-Run 1	-1130.91	 [Nanc = 7063] [ [ 12952.929(t1), [8091.436(nu11)], [Sud(dyn11)] ],	[ 1 pop split   46.82% (s1) [3788.311(s1*nu11), 4303.124((1-s1)*nu11)] ],	[ 3987.422(t2), [13343.729(nu21), 3432.41(nu22)], [[0, 1.15e-04(m2_12)], [7.05e-05(m2_21), 0]], [Sud(dyn21), Sud(dyn22)] ] ]	m	(theta =  2682.36)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:38:03]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	(theta =  2735.15)
-Run 3	-1097.92	 [Nanc = 7220] [ [ 5142.918(t1), [9887.81(nu11)], [Sud(dyn11)] ],	[ 1 pop split   84.66% (s1) [8370.799(s1*nu11), 1517.011((1-s1)*nu11)] ],	[ 2941.705(t2), [14630.987(nu21), 4920.733(nu22)], [[0, 9.32e-05(m2_12)], [8.07e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	mmm	(theta =  2742.19)
-Run 1	-1130.91	 [Nanc = 7063] [ [ 12952.929(t1), [8091.436(nu11)], [Sud(dyn11)] ],	[ 1 pop split   46.82% (s1) [3788.311(s1*nu11), 4303.124((1-s1)*nu11)] ],	[ 3987.422(t2), [13343.729(nu21), 3432.41(nu22)], [[0, 1.15e-04(m2_12)], [7.05e-05(m2_21), 0]], [Sud(dyn21), Sud(dyn22)] ] ]	m	(theta =  2682.36)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-Finish genetic algorithm number 2
-
-[000:39:03]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 3	-1096.01	 [Nanc = 7055] [ [ 5024.879(t1), [11188.974(nu11)], [Sud(dyn11)] ],	[ 1 pop split   88.04% (s1) [9850.557(s1*nu11), 1338.418((1-s1)*nu11)] ],	[ 2874.187(t2), [14295.178(nu21), 4807.793(nu22)], [[0, 9.54e-05(m2_12)], [8.26e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	c	(theta =  2679.25)
-Run 1	-1130.91	 [Nanc = 7063] [ [ 12952.929(t1), [8091.436(nu11)], [Sud(dyn11)] ],	[ 1 pop split   46.82% (s1) [3788.311(s1*nu11), 4303.124((1-s1)*nu11)] ],	[ 3987.422(t2), [13343.729(nu21), 3432.41(nu22)], [[0, 1.15e-04(m2_12)], [7.05e-05(m2_21), 0]], [Sud(dyn21), Sud(dyn22)] ] ]	m	(theta =  2682.36)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:40:04]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 3	-1095.45	 [Nanc = 6999] [ [ 5646.697(t1), [11100.254(nu11)], [Sud(dyn11)] ],	[ 1 pop split   88.04% (s1) [9772.449(s1*nu11), 1327.805((1-s1)*nu11)] ],	[ 2851.397(t2), [14181.828(nu21), 4769.671(nu22)], [[0, 9.62e-05(m2_12)], [8.32e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	m	(theta =  2658.01)
-Run 1	-1126.88	 [Nanc = 7272] [ [ 13336.494(t1), [7757.455(nu11)], [Sud(dyn11)] ],	[ 1 pop split   60.76% (s1) [4713.091(s1*nu11), 3044.363((1-s1)*nu11)] ],	[ 4105.499(t2), [13738.866(nu21), 3534.051(nu22)], [[0, 1.12e-04(m2_12)], [8.07e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	mmm	(theta =  2761.79)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:41:04]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 3	-1095.45	 [Nanc = 6999] [ [ 5646.697(t1), [11100.254(nu11)], [Sud(dyn11)] ],	[ 1 pop split   88.04% (s1) [9772.449(s1*nu11), 1327.805((1-s1)*nu11)] ],	[ 2851.397(t2), [14181.828(nu21), 4769.671(nu22)], [[0, 9.62e-05(m2_12)], [8.32e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	m	(theta =  2658.01)
-Run 1	-1126.88	 [Nanc = 7272] [ [ 13336.494(t1), [7757.455(nu11)], [Sud(dyn11)] ],	[ 1 pop split   60.76% (s1) [4713.091(s1*nu11), 3044.363((1-s1)*nu11)] ],	[ 4105.499(t2), [13738.866(nu21), 3534.051(nu22)], [[0, 1.12e-04(m2_12)], [8.07e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	mmm	(theta =  2761.79)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:42:04]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 3	-1093.16	 [Nanc = 6960] [ [ 6549.835(t1), [11038.989(nu11)], [Sud(dyn11)] ],	[ 1 pop split   88.04% (s1) [9718.513(s1*nu11), 1320.476((1-s1)*nu11)] ],	[ 2697.992(t2), [14103.555(nu21), 4743.346(nu22)], [[0, 9.67e-05(m2_12)], [8.37e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	m	(theta =  2643.34)
-Run 1	-1121.96	 [Nanc = 7193] [ [ 11170.368(t1), [8735.66(nu11)], [Sud(dyn11)] ],	[ 1 pop split   71.41% (s1) [6238.039(s1*nu11), 2497.621((1-s1)*nu11)] ],	[ 3519.265(t2), [13590.293(nu21), 3495.834(nu22)], [[0, 1.13e-04(m2_12)], [8.16e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	m	(theta =  2731.93)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:43:04]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 3	-1093.16	 [Nanc = 6960] [ [ 6549.835(t1), [11038.989(nu11)], [Sud(dyn11)] ],	[ 1 pop split   88.04% (s1) [9718.513(s1*nu11), 1320.476((1-s1)*nu11)] ],	[ 2697.992(t2), [14103.555(nu21), 4743.346(nu22)], [[0, 9.67e-05(m2_12)], [8.37e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	m	(theta =  2643.34)
-Run 1	-1121.96	 [Nanc = 7193] [ [ 11170.368(t1), [8735.66(nu11)], [Sud(dyn11)] ],	[ 1 pop split   71.41% (s1) [6238.039(s1*nu11), 2497.621((1-s1)*nu11)] ],	[ 3519.265(t2), [13590.293(nu21), 3495.834(nu22)], [[0, 1.13e-04(m2_12)], [8.16e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	m	(theta =  2731.93)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:44:04]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 3	-1093.16	 [Nanc = 6960] [ [ 6549.835(t1), [11038.989(nu11)], [Sud(dyn11)] ],	[ 1 pop split   88.04% (s1) [9718.513(s1*nu11), 1320.476((1-s1)*nu11)] ],	[ 2697.992(t2), [14103.555(nu21), 4743.346(nu22)], [[0, 9.67e-05(m2_12)], [8.37e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	m	(theta =  2643.34)
-Run 1	-1116.64	 [Nanc = 7137] [ [ 7749.072(t1), [8666.677(nu11)], [Sud(dyn11)] ],	[ 1 pop split   71.41% (s1) [6188.779(s1*nu11), 2477.898((1-s1)*nu11)] ],	[ 3491.474(t2), [13623.074(nu21), 4148.025(nu22)], [[0, 9.73e-05(m2_12)], [6.74e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	mm	(theta =  2710.35)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:45:04]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 3	-1093.16	 [Nanc = 6960] [ [ 6549.835(t1), [11038.989(nu11)], [Sud(dyn11)] ],	[ 1 pop split   88.04% (s1) [9718.513(s1*nu11), 1320.476((1-s1)*nu11)] ],	[ 2697.992(t2), [14103.555(nu21), 4743.346(nu22)], [[0, 9.67e-05(m2_12)], [8.37e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	m	(theta =  2643.34)
-Run 1	-1116.64	 [Nanc = 7137] [ [ 7749.072(t1), [8666.677(nu11)], [Sud(dyn11)] ],	[ 1 pop split   71.41% (s1) [6188.779(s1*nu11), 2477.898((1-s1)*nu11)] ],	[ 3491.474(t2), [13623.074(nu21), 4148.025(nu22)], [[0, 9.73e-05(m2_12)], [6.74e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	mm	(theta =  2710.35)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:46:04]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 3	-1093.16	 [Nanc = 6960] [ [ 6549.835(t1), [11038.989(nu11)], [Sud(dyn11)] ],	[ 1 pop split   88.04% (s1) [9718.513(s1*nu11), 1320.476((1-s1)*nu11)] ],	[ 2697.992(t2), [14103.555(nu21), 4743.346(nu22)], [[0, 9.67e-05(m2_12)], [8.37e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	m	(theta =  2643.34)
-Run 1	-1116.64	 [Nanc = 7137] [ [ 7749.072(t1), [8666.677(nu11)], [Sud(dyn11)] ],	[ 1 pop split   71.41% (s1) [6188.779(s1*nu11), 2477.898((1-s1)*nu11)] ],	[ 3491.474(t2), [13623.074(nu21), 4148.025(nu22)], [[0, 9.73e-05(m2_12)], [6.74e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	mm	(theta =  2710.35)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:47:04]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 3	-1084.31	 [Nanc = 6933] [ [ 6653.131(t1), [11232.419(nu11)], [Sud(dyn11)] ],	[ 1 pop split   89.84% (s1) [10090.666(s1*nu11), 1141.753((1-s1)*nu11)] ],	[ 2479.09(t2), [14201.149(nu21), 5744.951(nu22)], [[0, 9.19e-05(m2_12)], [6.74e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	(theta =  2633.18)
-Run 1	-1116.64	 [Nanc = 7137] [ [ 7749.072(t1), [8666.677(nu11)], [Sud(dyn11)] ],	[ 1 pop split   71.41% (s1) [6188.779(s1*nu11), 2477.898((1-s1)*nu11)] ],	[ 3491.474(t2), [13623.074(nu21), 4148.025(nu22)], [[0, 9.73e-05(m2_12)], [6.74e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	mm	(theta =  2710.35)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:48:04]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 3	-1066.43	 [Nanc = 7108] [ [ 6094.976(t1), [12677.095(nu11)], [Sud(dyn11)] ],	[ 1 pop split   95.40% (s1) [12093.728(s1*nu11), 583.366((1-s1)*nu11)] ],	[ 1695.545(t2), [13862.484(nu21), 11508.974(nu22)], [[0, 6.97e-05(m2_12)], [6.14e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	(theta =  2699.42)
-Run 1	-1113.77	 [Nanc = 6801] [ [ 7384.604(t1), [10736.885(nu11)], [Sud(dyn11)] ],	[ 1 pop split   88.60% (s1) [9513.284(s1*nu11), 1223.601((1-s1)*nu11)] ],	[ 3327.257(t2), [12982.33(nu21), 3952.928(nu22)], [[0, 1.02e-04(m2_12)], [1.08e-04(m2_21), 0]], [Sud(dyn21), Lin(dyn22)] ] ]	mmmm	(theta =  2582.88)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:49:04]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1065.87	 [Nanc = 7232] [ [ 5058.987(t1), [13733.087(nu11)], [Sud(dyn11)] ],	[ 1 pop split   96.01% (s1) [13184.52(s1*nu11), 548.566((1-s1)*nu11)] ],	[ 1647.642(t2), [13278.672(nu21), 12578.844(nu22)], [[0, 7.23e-05(m2_12)], [5.99e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	(theta =  2746.57)
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 1	-1113.13	 [Nanc = 7121] [ [ 7731.728(t1), [11241.588(nu11)], [Sud(dyn11)] ],	[ 1 pop split   88.60% (s1) [9960.469(s1*nu11), 1281.118((1-s1)*nu11)] ],	[ 3036.457(t2), [13592.583(nu21), 4138.741(nu22)], [[0, 1.27e-04(m2_12)], [8.10e-05(m2_21), 0]], [Exp(dyn21), Lin(dyn22)] ] ]	mmm	(theta =  2704.29)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:50:04]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1065.87	 [Nanc = 7232] [ [ 5058.968(t1), [13733.104(nu11)], [Sud(dyn11)] ],	[ 1 pop split   96.01% (s1) [13184.538(s1*nu11), 548.567((1-s1)*nu11)] ],	[ 1647.642(t2), [13278.672(nu21), 12578.813(nu22)], [[0, 7.23e-05(m2_12)], [5.99e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	(theta =  2746.57)
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 1	-1111.04	 [Nanc = 7401] [ [ 8036.432(t1), [12701.611(nu11)], [Exp(dyn11)] ],	[ 1 pop split   88.60% (s1) [11254.105(s1*nu11), 1447.506((1-s1)*nu11)] ],	[ 3156.123(t2), [12215.755(nu21), 4301.847(nu22)], [[0, 1.22e-04(m2_12)], [7.79e-05(m2_21), 0]], [Exp(dyn21), Lin(dyn22)] ] ]	m	(theta =  2810.86)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:51:04]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1065.87	 [Nanc = 7232] [ [ 5058.968(t1), [13733.104(nu11)], [Sud(dyn11)] ],	[ 1 pop split   96.01% (s1) [13184.538(s1*nu11), 548.567((1-s1)*nu11)] ],	[ 1647.642(t2), [13278.672(nu21), 12578.813(nu22)], [[0, 7.23e-05(m2_12)], [5.99e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	(theta =  2746.57)
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 1	-1107.06	 [Nanc = 7326] [ [ 7954.38(t1), [12571.927(nu11)], [Exp(dyn11)] ],	[ 1 pop split   88.60% (s1) [11139.2(s1*nu11), 1432.727((1-s1)*nu11)] ],	[ 3123.899(t2), [12091.032(nu21), 4257.925(nu22)], [[0, 1.07e-04(m2_12)], [7.87e-05(m2_21), 0]], [Sud(dyn21), Lin(dyn22)] ] ]	m	(theta =  2782.16)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:52:04]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1065.87	 [Nanc = 7232] [ [ 5058.968(t1), [13733.104(nu11)], [Sud(dyn11)] ],	[ 1 pop split   96.01% (s1) [13184.538(s1*nu11), 548.567((1-s1)*nu11)] ],	[ 1647.642(t2), [13278.672(nu21), 12578.813(nu22)], [[0, 7.23e-05(m2_12)], [5.99e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	(theta =  2746.57)
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 1	-1106.79	 [Nanc = 7349] [ [ 7979.595(t1), [12611.779(nu11)], [Exp(dyn11)] ],	[ 1 pop split   88.60% (s1) [11174.51(s1*nu11), 1437.269((1-s1)*nu11)] ],	[ 3133.802(t2), [12129.36(nu21), 4271.422(nu22)], [[0, 1.16e-04(m2_12)], [7.85e-05(m2_21), 0]], [Sud(dyn21), Lin(dyn22)] ] ]	m	(theta =  2790.98)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:53:04]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1065.87	 [Nanc = 7232] [ [ 5058.968(t1), [13733.104(nu11)], [Sud(dyn11)] ],	[ 1 pop split   96.01% (s1) [13184.538(s1*nu11), 548.567((1-s1)*nu11)] ],	[ 1647.642(t2), [13278.672(nu21), 12578.813(nu22)], [[0, 7.23e-05(m2_12)], [5.99e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	(theta =  2746.57)
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 1	-1096.60	 [Nanc = 7330] [ [ 7731.229(t1), [12579.784(nu11)], [Exp(dyn11)] ],	[ 1 pop split   88.60% (s1) [11146.162(s1*nu11), 1433.623((1-s1)*nu11)] ],	[ 2691.246(t2), [14562.017(nu21), 5138.579(nu22)], [[0, 9.43e-05(m2_12)], [5.81e-05(m2_21), 0]], [Exp(dyn21), Exp(dyn22)] ] ]	m	(theta =  2783.90)
+Run 3	-1065.27	 [Nanc = 7230] [ [ 5218.38(t1), [14132.072(nu11)], [Sud(dyn11)] ],	[ 1 pop split   99.79% (s1) [14101.874(s1*nu11), 30.198((1-s1)*nu11)] ],	[ 1387.08(t2), [12460.354(nu21), 8843.363(nu22)], [[0, 5.95e-05(m2_12)], [5.93e-05(m2_21), 0]], [Exp(dyn21), Lin(dyn22)] ] ]	(theta =  2745.96)
+Run 2	-1565.26	 [Nanc = 5680] [ [ 12664.975(t1), [6921.832(nu11)], [Sud(dyn11)] ],	[ 1 pop split   72.13% (s1) [4992.791(s1*nu11), 1929.041((1-s1)*nu11)] ],	[ 3189.766(t2), [98619.538(nu21), 8914.86(nu22)], [[0, 5.38e-05(m2_12)], [2.05e-05(m2_21), 0]], [Exp(dyn21), Exp(dyn22)] ] ]	f	(theta =  2157.25)
+Run 1	-2085.85	 [Nanc = 1819] [ [ 4800.718(t1), [18843.512(nu11)], [Sud(dyn11)] ],	[ 1 pop split   41.87% (s1) [7889.086(s1*nu11), 10954.426((1-s1)*nu11)] ],	[ 17721.282(t2), [18055.73(nu21), 790.355(nu22)], [[0, 5.69e-05(m2_12)], [4.95e-04(m2_21), 0]], [Exp(dyn21), Sud(dyn22)] ] ]	c	(theta =  691.09)
 
 You can find the picture and the Python code of the best model in the output directory.
 
 Finish genetic algorithm number 3
 
-[000:54:04]
+[000:07:55]
 All best by log-likelihood models
 Number	log-likelihood	Model
-Run 3	-1065.87	 [Nanc = 7232] [ [ 5058.968(t1), [13733.104(nu11)], [Sud(dyn11)] ],	[ 1 pop split   96.01% (s1) [13184.538(s1*nu11), 548.567((1-s1)*nu11)] ],	[ 1647.642(t2), [13278.672(nu21), 12578.813(nu22)], [[0, 7.23e-05(m2_12)], [5.99e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2746.57)
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 1	-1092.87	 [Nanc = 7048] [ [ 9022.721(t1), [12095.146(nu11)], [Exp(dyn11)] ],	[ 1 pop split   88.60% (s1) [10716.754(s1*nu11), 1378.392((1-s1)*nu11)] ],	[ 2587.565(t2), [14001.013(nu21), 5946.087(nu22)], [[0, 9.81e-05(m2_12)], [6.04e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	mmm	(theta =  2676.65)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:55:04]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1065.87	 [Nanc = 7232] [ [ 5058.968(t1), [13733.104(nu11)], [Sud(dyn11)] ],	[ 1 pop split   96.01% (s1) [13184.538(s1*nu11), 548.567((1-s1)*nu11)] ],	[ 1647.642(t2), [13278.672(nu21), 12578.813(nu22)], [[0, 7.23e-05(m2_12)], [5.99e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2746.57)
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 1	-1091.51	 [Nanc = 7215] [ [ 9413.614(t1), [12381.826(nu11)], [Exp(dyn11)] ],	[ 1 pop split   88.60% (s1) [10970.763(s1*nu11), 1411.063((1-s1)*nu11)] ],	[ 2648.895(t2), [14332.866(nu21), 5057.716(nu22)], [[0, 9.58e-05(m2_12)], [6.80e-05(m2_21), 0]], [Lin(dyn21), Exp(dyn22)] ] ]	mm	(theta =  2740.09)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:56:04]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1065.87	 [Nanc = 7232] [ [ 5058.968(t1), [13733.104(nu11)], [Sud(dyn11)] ],	[ 1 pop split   96.01% (s1) [13184.538(s1*nu11), 548.567((1-s1)*nu11)] ],	[ 1647.642(t2), [13278.672(nu21), 12578.813(nu22)], [[0, 7.23e-05(m2_12)], [5.99e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2746.57)
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 1	-1091.51	 [Nanc = 7215] [ [ 9413.614(t1), [12381.826(nu11)], [Exp(dyn11)] ],	[ 1 pop split   88.60% (s1) [10970.763(s1*nu11), 1411.063((1-s1)*nu11)] ],	[ 2648.895(t2), [14332.866(nu21), 5057.716(nu22)], [[0, 9.58e-05(m2_12)], [6.80e-05(m2_21), 0]], [Lin(dyn21), Exp(dyn22)] ] ]	mm	(theta =  2740.09)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:57:04]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1065.87	 [Nanc = 7232] [ [ 5058.968(t1), [13733.104(nu11)], [Sud(dyn11)] ],	[ 1 pop split   96.01% (s1) [13184.538(s1*nu11), 548.567((1-s1)*nu11)] ],	[ 1647.642(t2), [13278.672(nu21), 12578.813(nu22)], [[0, 7.23e-05(m2_12)], [5.99e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2746.57)
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 1	-1090.66	 [Nanc = 7035] [ [ 9178.565(t1), [12072.663(nu11)], [Lin(dyn11)] ],	[ 1 pop split   88.60% (s1) [10696.834(s1*nu11), 1375.83((1-s1)*nu11)] ],	[ 2582.755(t2), [13974.988(nu21), 5260.218(nu22)], [[0, 9.83e-05(m2_12)], [6.97e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	mmm	(theta =  2671.68)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:58:04]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1065.87	 [Nanc = 7232] [ [ 5058.968(t1), [13733.104(nu11)], [Sud(dyn11)] ],	[ 1 pop split   96.01% (s1) [13184.538(s1*nu11), 548.567((1-s1)*nu11)] ],	[ 1647.642(t2), [13278.672(nu21), 12578.813(nu22)], [[0, 7.23e-05(m2_12)], [5.99e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2746.57)
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 1	-1090.66	 [Nanc = 7035] [ [ 9178.565(t1), [12072.663(nu11)], [Lin(dyn11)] ],	[ 1 pop split   88.60% (s1) [10696.834(s1*nu11), 1375.83((1-s1)*nu11)] ],	[ 2582.755(t2), [13974.988(nu21), 5260.218(nu22)], [[0, 9.83e-05(m2_12)], [6.97e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	mmm	(theta =  2671.68)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:59:04]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1065.87	 [Nanc = 7232] [ [ 5058.968(t1), [13733.104(nu11)], [Sud(dyn11)] ],	[ 1 pop split   96.01% (s1) [13184.538(s1*nu11), 548.567((1-s1)*nu11)] ],	[ 1647.642(t2), [13278.672(nu21), 12578.813(nu22)], [[0, 7.23e-05(m2_12)], [5.99e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2746.57)
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 1	-1090.66	 [Nanc = 7035] [ [ 9178.565(t1), [12072.663(nu11)], [Lin(dyn11)] ],	[ 1 pop split   88.60% (s1) [10696.834(s1*nu11), 1375.83((1-s1)*nu11)] ],	[ 2582.755(t2), [13974.988(nu21), 5260.218(nu22)], [[0, 9.83e-05(m2_12)], [6.97e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	mmm	(theta =  2671.68)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[001:00:04]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1065.87	 [Nanc = 7232] [ [ 5058.968(t1), [13733.104(nu11)], [Sud(dyn11)] ],	[ 1 pop split   96.01% (s1) [13184.538(s1*nu11), 548.567((1-s1)*nu11)] ],	[ 1647.642(t2), [13278.672(nu21), 12578.813(nu22)], [[0, 7.23e-05(m2_12)], [5.99e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2746.57)
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 1	-1090.03	 [Nanc = 7046] [ [ 9192.881(t1), [12091.493(nu11)], [Lin(dyn11)] ],	[ 1 pop split   88.60% (s1) [10713.518(s1*nu11), 1377.976((1-s1)*nu11)] ],	[ 2586.783(t2), [13996.785(nu21), 5268.422(nu22)], [[0, 9.81e-05(m2_12)], [6.15e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	m	(theta =  2675.84)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[001:01:04]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1065.87	 [Nanc = 7232] [ [ 5058.968(t1), [13733.104(nu11)], [Sud(dyn11)] ],	[ 1 pop split   96.01% (s1) [13184.538(s1*nu11), 548.567((1-s1)*nu11)] ],	[ 1647.642(t2), [13278.672(nu21), 12578.813(nu22)], [[0, 7.23e-05(m2_12)], [5.99e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2746.57)
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 1	-1090.03	 [Nanc = 7046] [ [ 9192.881(t1), [12091.493(nu11)], [Lin(dyn11)] ],	[ 1 pop split   88.60% (s1) [10713.518(s1*nu11), 1377.976((1-s1)*nu11)] ],	[ 2586.783(t2), [13996.785(nu21), 5268.422(nu22)], [[0, 9.81e-05(m2_12)], [6.15e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	m	(theta =  2675.84)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[001:02:05]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1065.87	 [Nanc = 7232] [ [ 5058.968(t1), [13733.104(nu11)], [Sud(dyn11)] ],	[ 1 pop split   96.01% (s1) [13184.538(s1*nu11), 548.567((1-s1)*nu11)] ],	[ 1647.642(t2), [13278.672(nu21), 12578.813(nu22)], [[0, 7.23e-05(m2_12)], [5.99e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2746.57)
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 1	-1089.90	 [Nanc = 7010] [ [ 9842.171(t1), [12029.564(nu11)], [Lin(dyn11)] ],	[ 1 pop split   88.60% (s1) [10658.646(s1*nu11), 1370.918((1-s1)*nu11)] ],	[ 2573.535(t2), [13925.097(nu21), 5241.439(nu22)], [[0, 9.87e-05(m2_12)], [6.18e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	c	(theta =  2662.14)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[001:03:05]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1065.87	 [Nanc = 7232] [ [ 5058.968(t1), [13733.104(nu11)], [Sud(dyn11)] ],	[ 1 pop split   96.01% (s1) [13184.538(s1*nu11), 548.567((1-s1)*nu11)] ],	[ 1647.642(t2), [13278.672(nu21), 12578.813(nu22)], [[0, 7.23e-05(m2_12)], [5.99e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2746.57)
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 1	-1089.90	 [Nanc = 7010] [ [ 9842.171(t1), [12029.564(nu11)], [Lin(dyn11)] ],	[ 1 pop split   88.60% (s1) [10658.646(s1*nu11), 1370.918((1-s1)*nu11)] ],	[ 2573.535(t2), [13925.097(nu21), 5241.439(nu22)], [[0, 9.87e-05(m2_12)], [6.18e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	c	(theta =  2662.14)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[001:04:05]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1065.87	 [Nanc = 7232] [ [ 5058.968(t1), [13733.104(nu11)], [Sud(dyn11)] ],	[ 1 pop split   96.01% (s1) [13184.538(s1*nu11), 548.567((1-s1)*nu11)] ],	[ 1647.642(t2), [13278.672(nu21), 12578.813(nu22)], [[0, 7.23e-05(m2_12)], [5.99e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2746.57)
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 1	-1089.90	 [Nanc = 7010] [ [ 9842.171(t1), [12029.564(nu11)], [Lin(dyn11)] ],	[ 1 pop split   88.60% (s1) [10658.646(s1*nu11), 1370.918((1-s1)*nu11)] ],	[ 2573.535(t2), [13925.097(nu21), 5241.439(nu22)], [[0, 9.87e-05(m2_12)], [6.18e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	c	(theta =  2662.14)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[001:05:05]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1065.87	 [Nanc = 7232] [ [ 5058.968(t1), [13733.104(nu11)], [Sud(dyn11)] ],	[ 1 pop split   96.01% (s1) [13184.538(s1*nu11), 548.567((1-s1)*nu11)] ],	[ 1647.642(t2), [13278.672(nu21), 12578.813(nu22)], [[0, 7.23e-05(m2_12)], [5.99e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2746.57)
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 1	-1089.90	 [Nanc = 7010] [ [ 9842.171(t1), [12029.564(nu11)], [Lin(dyn11)] ],	[ 1 pop split   88.60% (s1) [10658.646(s1*nu11), 1370.918((1-s1)*nu11)] ],	[ 2573.535(t2), [13925.097(nu21), 5241.439(nu22)], [[0, 9.87e-05(m2_12)], [6.18e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	c	(theta =  2662.14)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[001:06:05]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1065.87	 [Nanc = 7232] [ [ 5058.968(t1), [13733.104(nu11)], [Sud(dyn11)] ],	[ 1 pop split   96.01% (s1) [13184.538(s1*nu11), 548.567((1-s1)*nu11)] ],	[ 1647.642(t2), [13278.672(nu21), 12578.813(nu22)], [[0, 7.23e-05(m2_12)], [5.99e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2746.57)
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 1	-1083.78	 [Nanc = 7053] [ [ 9895.606(t1), [12339.022(nu11)], [Lin(dyn11)] ],	[ 1 pop split   91.16% (s1) [11247.94(s1*nu11), 1091.082((1-s1)*nu11)] ],	[ 2376.2(t2), [14153.738(nu21), 5829.417(nu22)], [[0, 9.24e-05(m2_12)], [6.44e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	(theta =  2678.53)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[001:07:05]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1065.87	 [Nanc = 7232] [ [ 5058.968(t1), [13733.104(nu11)], [Sud(dyn11)] ],	[ 1 pop split   96.01% (s1) [13184.538(s1*nu11), 548.567((1-s1)*nu11)] ],	[ 1647.642(t2), [13278.672(nu21), 12578.813(nu22)], [[0, 7.23e-05(m2_12)], [5.99e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2746.57)
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 1	-1067.99	 [Nanc = 7161] [ [ 8961.111(t1), [13631.205(nu11)], [Lin(dyn11)] ],	[ 1 pop split   95.02% (s1) [12951.801(s1*nu11), 679.403((1-s1)*nu11)] ],	[ 1820.625(t2), [13744.954(nu21), 9763.409(nu22)], [[0, 7.27e-05(m2_12)], [5.87e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	(theta =  2719.64)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[001:08:05]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1065.87	 [Nanc = 7232] [ [ 5058.968(t1), [13733.104(nu11)], [Sud(dyn11)] ],	[ 1 pop split   96.01% (s1) [13184.538(s1*nu11), 548.567((1-s1)*nu11)] ],	[ 1647.642(t2), [13278.672(nu21), 12578.813(nu22)], [[0, 7.23e-05(m2_12)], [5.99e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2746.57)
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 1	-1066.00	 [Nanc = 7202] [ [ 7369.777(t1), [15775.975(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.015(s1*nu11), 542.96((1-s1)*nu11)] ],	[ 1641.083(t2), [13071.0(nu21), 12621.321(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	(theta =  2735.14)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[001:09:05]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1065.87	 [Nanc = 7232] [ [ 5058.968(t1), [13733.104(nu11)], [Sud(dyn11)] ],	[ 1 pop split   96.01% (s1) [13184.538(s1*nu11), 548.567((1-s1)*nu11)] ],	[ 1647.642(t2), [13278.672(nu21), 12578.813(nu22)], [[0, 7.23e-05(m2_12)], [5.99e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2746.57)
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 1	-1066.00	 [Nanc = 7202] [ [ 7369.53(t1), [15776.146(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.199(s1*nu11), 542.947((1-s1)*nu11)] ],	[ 1641.06(t2), [13070.987(nu21), 12621.745(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	(theta =  2735.15)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[001:10:05]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1065.87	 [Nanc = 7232] [ [ 5058.968(t1), [13733.104(nu11)], [Sud(dyn11)] ],	[ 1 pop split   96.01% (s1) [13184.538(s1*nu11), 548.567((1-s1)*nu11)] ],	[ 1647.642(t2), [13278.672(nu21), 12578.813(nu22)], [[0, 7.23e-05(m2_12)], [5.99e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2746.57)
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 1	-1066.00	 [Nanc = 7202] [ [ 7369.514(t1), [15776.151(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.202(s1*nu11), 542.949((1-s1)*nu11)] ],	[ 1641.064(t2), [13070.979(nu21), 12621.668(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	(theta =  2735.15)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-Finish genetic algorithm number 1
-
-[001:10:25]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1065.87	 [Nanc = 7232] [ [ 5058.968(t1), [13733.104(nu11)], [Sud(dyn11)] ],	[ 1 pop split   96.01% (s1) [13184.538(s1*nu11), 548.567((1-s1)*nu11)] ],	[ 1647.642(t2), [13278.672(nu21), 12578.813(nu22)], [[0, 7.23e-05(m2_12)], [5.99e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2746.57)
-Run 2	-1066.00	 [Nanc = 7202] [ [ 7369.525(t1), [15776.177(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.226(s1*nu11), 542.951((1-s1)*nu11)] ],	[ 1641.069(t2), [13070.957(nu21), 12621.582(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
-Run 1	-1066.00	 [Nanc = 7202] [ [ 7369.514(t1), [15776.151(nu11)], [Lin(dyn11)] ],	[ 1 pop split   96.56% (s1) [15233.202(s1*nu11), 542.949((1-s1)*nu11)] ],	[ 1641.064(t2), [13070.979(nu21), 12621.668(nu22)], [[0, 7.44e-05(m2_12)], [6.03e-05(m2_21), 0]], [Sud(dyn21), Exp(dyn22)] ] ]	f	(theta =  2735.15)
+Run 3	-1065.27	 [Nanc = 7230] [ [ 5218.38(t1), [14132.072(nu11)], [Sud(dyn11)] ],	[ 1 pop split   99.79% (s1) [14101.874(s1*nu11), 30.198((1-s1)*nu11)] ],	[ 1387.08(t2), [12460.354(nu21), 8843.363(nu22)], [[0, 5.95e-05(m2_12)], [5.93e-05(m2_21), 0]], [Exp(dyn21), Lin(dyn22)] ] ]	f	(theta =  2745.96)
+Run 2	-1565.26	 [Nanc = 5680] [ [ 12664.975(t1), [6921.832(nu11)], [Sud(dyn11)] ],	[ 1 pop split   72.13% (s1) [4992.791(s1*nu11), 1929.041((1-s1)*nu11)] ],	[ 3189.766(t2), [98619.538(nu21), 8914.86(nu22)], [[0, 5.38e-05(m2_12)], [2.05e-05(m2_21), 0]], [Exp(dyn21), Exp(dyn22)] ] ]	f	(theta =  2157.25)
+Run 1	-2085.85	 [Nanc = 1819] [ [ 4800.718(t1), [18843.512(nu11)], [Sud(dyn11)] ],	[ 1 pop split   41.87% (s1) [7889.086(s1*nu11), 10954.426((1-s1)*nu11)] ],	[ 17721.282(t2), [18055.73(nu21), 790.355(nu22)], [[0, 5.69e-05(m2_12)], [4.95e-04(m2_21), 0]], [Exp(dyn21), Sud(dyn22)] ] ]	c	(theta =  691.09)
 
 You can find the picture and the Python code of the best model in the output directory.
 

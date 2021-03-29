@@ -239,7 +239,7 @@ Number of processes: 3
 #
 #	Upper bound for split 1 (in case of 2 or 3 populations).
 #	Default: None
-Upper bound of first split: 3000
+Upper bound of first split: Null
 
 #	Upper bound for split 2 (in case of 3 populations).
 #	Default: None

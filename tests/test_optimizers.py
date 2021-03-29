@@ -115,12 +115,21 @@ class TestBaseOptClass(unittest.TestCase):
         f = np.sin
         x = 0.5
         y = f(x)
+        variables = [ContinuousVariable("var", domain=[0, 1])]
 
         msg = f" ({cls.__name__})"
-        self.assertEqual(opt1.evaluate(f, x), y, msg=msg)
-        self.assertEqual(opt2.evaluate(f, np.log(x)), y, msg=msg)
-        self.assertEqual(opt3.evaluate(f, x), -y, msg=msg)
-        self.assertEqual(opt4.evaluate(f, np.log(x)), -y, msg=msg)
+        self.assertEqual(opt1.evaluate(f=f, variables=variables, x=x),
+                         y,
+                         msg=msg)
+        self.assertEqual(opt2.evaluate(f=f, variables=variables, x=np.log(x)),
+                         y,
+                         msg=msg)
+        self.assertEqual(opt3.evaluate(f=f, variables=variables, x=x),
+                         -y,
+                         msg=msg)
+        self.assertEqual(opt4.evaluate(f=f, variables=variables, x=np.log(x)),
+                         -y,
+                         msg=msg)
 
     def test_initialization(self):
         """
@@ -138,66 +147,41 @@ class TestBaseOptClass(unittest.TestCase):
             return 10
         opt = Optimizer()
         opt.maximize = True
-        self.assertEqual(opt.evaluate(f, []), np.inf)
+        self.assertEqual(opt.evaluate(f, [], []), np.inf)
         opt.maximize = False
-        self.assertEqual(opt.evaluate(f, []), np.inf)
+        self.assertEqual(opt.evaluate(f, [], []), np.inf)
         opt.maximize = True
-        self.assertEqual(opt.evaluate(g, []), -10)
+        self.assertEqual(opt.evaluate(g, [], []), -10)
         opt.maximize = False
-        self.assertEqual(opt.evaluate(g, []), 10)
+        self.assertEqual(opt.evaluate(g, [], []), 10)
 
-        self.assertRaises(NotImplementedError, opt.valid_restore_file, 'file')
         self.assertRaises(NotImplementedError, opt.optimize, f, [])
-        opt.write_report(0, [], [], 10, report_file=None)
+        self.assertRaises(NotImplementedError, opt.write_report,
+                          variables=[], run_info=opt._create_run_info(),
+                          report_file=None)
 
 
 class TestLocalOpt(TestBaseOptClass):
     def test_not_implemented_error(self):
         opt = LocalOptimizer()
-        self.assertRaises(NotImplementedError, opt.optimize, 'f', 'vars', 'x0')
+        def f(x):
+            return 10
+        self.assertRaises(NotImplementedError, opt.optimize, f, [], [])
 
     def test_valid_restore_file(self):
-        opt = get_local_optimizer("None")
-        output_file = os.path.join(DATA_PATH, "save_file")
-        try:
-            self.assertEqual(opt.valid_restore_file(output_file), False)
+        for opt in all_local_optimizers():
+            output_file = os.path.join(DATA_PATH, "save_file")
+            try:
+                self.assertEqual(opt.valid_restore_file(output_file), False)
 
-            with open(output_file, 'wb') as f:
-                pickle.dump([1, 2, 3], f)
-            self.assertEqual(opt.valid_restore_file(output_file), False)
+                with open(output_file, 'wb') as f:
+                    pickle.dump([1, 2, 3], f)
+                self.assertEqual(opt.valid_restore_file(output_file), False)
 
-            with open(output_file, 'wb') as f:
-                pickle.dump((1, 2, 3), f)
-            self.assertEqual(opt.valid_restore_file(output_file), False)
-        finally:
-            os.remove(output_file)
-
-        opt = get_local_optimizer("BFGS")
-        try:
-            self.assertEqual(opt.valid_restore_file(output_file), False)
-
-            with open(output_file, 'wb') as f:
-                pickle.dump([1, 2, 3], f)
-            self.assertEqual(opt.valid_restore_file(output_file), False)
-
-            with open(output_file, 'wb') as f:
-                pickle.dump((1, 2, 3), f)
-            self.assertEqual(opt.valid_restore_file(output_file), False)
-
-            with open(output_file, 'wb') as f:
-                pickle.dump((1, 2, 3.5, 4, 5), f)
-            self.assertEqual(opt.valid_restore_file(output_file), False)
-
-            with open(output_file, 'wb') as f:
-                pickle.dump((1, 2, 3, 4, 5), f)
-            self.assertEqual(opt.valid_restore_file(output_file), False)
-
-            with open(output_file, 'wb') as f:
-                pickle.dump((1, 2, 3, 4, True), f)
-            self.assertEqual(opt.valid_restore_file(output_file), True)
-
-        finally:
-            os.remove(output_file)
+                opt.save(opt._create_run_info(), output_file)
+                self.assertEqual(opt.valid_restore_file(output_file), True)
+            finally:
+                os.remove(output_file)
 
     def test_registered_local_optimizers_fails(self):
         self.assertRaises(ValueError, get_local_optimizer, 'some strange_id')
@@ -215,11 +199,16 @@ class TestLocalOpt(TestBaseOptClass):
         self.assertTrue(len(list(all_local_optimizers())) > 0)
 
         f = np.sin
-        x = 0.5
+        x = [0.5]
         y = f(x)
+        variables = [ContinuousVariable('var', domain=[1e-15, 1])]
 
         for optim in all_local_optimizers():
-            self.assertEqual(optim.evaluate(f, optim.transform(x)), y)
+            vars_tr = copy.deepcopy(variables)
+            vars_tr[0].domain = optim.transform(vars_tr[0].domain)
+            self.assertTrue(vars_tr[0].correct_value(optim.transform(x)[0]))
+            self.assertEqual(optim.evaluate(f=f, variables=vars_tr,
+                                            x=optim.transform(x), args=()), y)
 
         self.assertRaises(ValueError, ScipyOptimizer, "strange_name")
         ScipyOptimizer.scipy_methods = ['method']
@@ -392,6 +381,7 @@ class TestLocalOpt(TestBaseOptClass):
                     res = opt.optimize(f, variables, x0=x0,
                                        args=args, maxiter=2, maxeval=10,
                                        callback=callback,
+                                       verbose=1,
                                        report_file=report_file,
 #                                       save_file=save_file,
                                        eval_file=eval_file)
@@ -555,14 +545,6 @@ class TestGlobalOptimizer(unittest.TestCase):
                           opt.optimize, f, variables, num_init=10)
         self.assertRaises(NotImplementedError,
                           opt.write_report, variables, None, None)
-        self.assertRaises(NotImplementedError, opt._create_run_info)
-        self.assertRaises(NotImplementedError,
-                          opt._update_run_info_except_result, None)
-        self.assertRaises(NotImplementedError,
-                          opt._apply_transform_to_run_info_except_result,
-                          None, None, None)
-        self.assertRaises(NotImplementedError,
-                          opt.valid_restore_file, None)
 
     def test_implementations_in_instances(self):
         for opt in all_global_optimizers():

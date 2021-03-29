@@ -1,7 +1,6 @@
 import operator as op
 import numpy as np
 import copy
-import sys
 
 from .optimizer import ConstrainedOptimizer
 from .global_optimizer import GlobalOptimizer, register_global_optimizer
@@ -10,7 +9,6 @@ from ..utils import ContinuousVariable, WeightedMetaArray
 
 from .. import GPyOpt
 from .. import GPy
-import types
 
 
 class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
@@ -46,18 +44,13 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         return gpy_domain
 
     @staticmethod
-    def write_report(variables, run_info, report_file):
+    def _write_report_to_stream(variables, run_info, stream):
         bo_obj = run_info.bo_obj
         if bo_obj is not None:
             bo_obj._compute_results()
         x_best = run_info.result.x
         y_best = run_info.result.y
         n_iter = run_info.result.n_iter
-
-        if report_file is not None:
-            stream = open(report_file, 'a')
-        else:
-            stream = sys.stdout
 
         if n_iter > 0:
             print("\n", file=stream)
@@ -88,9 +81,6 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         print('*************************************************************',
               file=stream)
 
-        if report_file is not None:
-            stream.close()
-
     def _create_run_info(self):
         """
         Creates the initial run_info. It has the following fields:
@@ -98,26 +88,8 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
           `n_iter`==-1.
         * `bo_obj` - Object of BO from GpyOpt.
         """
-        result = OptimizerResult(
-            x=None,
-            y=None,
-            success=False,
-            status=0,
-            message="",
-            X=[],
-            Y=[],
-            n_eval=0,
-            n_iter=-1,
-        )
-        run_info = types.SimpleNamespace(result=result,
-                                         bo_obj=None)
-        return run_info
-
-    def _update_run_info_except_result(self, run_info, **update_kwargs):
-        return run_info
-
-    def _apply_transform_to_run_info_except_result(self, run_info,
-                                                   x_transform, y_transform):
+        run_info = super(BayesianOptimizer, self)._create_run_info()
+        run_info.bo_obj = None
         return run_info
 
     def valid_restore_file(self, save_file):
@@ -159,6 +131,11 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             self.run_info.result.message = "Number of variables == 0"
             return self.run_info.result
 
+        if len(Y_init) > 0:
+            x_best = X_init[0]
+            y_best = Y_init[0]
+            iter_callback(x_best, y_best, X_init, Y_init)
+
         kernel = self.get_kernel(ndim)
         gpy_domain = self.get_domain(variables)
 
@@ -188,7 +165,7 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                     x_best = x
                     y_best = y
                 Y.append(y)
-            iter_callback(x_best=x_best, y_best=y_best, X_iter=X, Y_iter=Y)
+            iter_callback(x=x_best, y=y_best, X_iter=X, Y_iter=Y)
             return np.array(Y).reshape(len(Y), -1)
 
         bo.f = bo._sign(f_in_gpyopt)
@@ -245,38 +222,9 @@ class SMACOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         return api_config, cs
 
     @staticmethod
-    def write_report(variables, run_info, report_file):
+    def _write_report_to_stream(variables, run_info, stream):
         run_info.bo_obj = None
-        BayesianOptimizer.write_report(variables, run_info, report_file)
-
-    def _create_run_info(self):
-        """
-        Creates the initial run_info. It has the following fields:
-        * `result` - empty :class:`gadma.optimizers.OptimizerResult` with\
-          `n_iter`==-1.
-        * `bo_obj` - Object of BO from GpyOpt.
-        """
-        result = OptimizerResult(
-            x=None,
-            y=None,
-            success=False,
-            status=0,
-            message="",
-            X=[],
-            Y=[],
-            n_eval=0,
-            n_iter=-1,
-        )
-        run_info = types.SimpleNamespace(result=result,
-                                         bo_obj=None)
-        return run_info
-
-    def _update_run_info_except_result(self, run_info, **update_kwargs):
-        return run_info
-
-    def _apply_transform_to_run_info_except_result(self, run_info,
-                                                   x_transform, y_transform):
-        return run_info
+        BayesianOptimizer._write_report_to_stream(variables, run_info, stream)
 
     def valid_restore_file(self, save_file):
         try:
@@ -299,6 +247,7 @@ class SMACOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                        self.run_info.result.n_eval)
         x_best = X_init[0]
         y_best = Y_init[0]
+        iter_callback(x_best, y_best, X_init, Y_init)
 
         api, cs = self.get_configs(variables)
 
@@ -335,7 +284,7 @@ class SMACOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                 x_best = X_iter[Y_iter.index(y)]
             if len(Y_iter) > 0:
                 opt.observe(X_guess, np.array(Y_iter))
-            iter_callback(x_best=x_best, y_best=y_best,
+            iter_callback(x=x_best, y=y_best,
                           X_iter=X_iter, Y_iter=Y_iter)
 
         # report why we stop
