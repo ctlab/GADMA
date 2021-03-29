@@ -25,7 +25,7 @@ class LocalOptimizer(Optimizer):
         :param f: Objective function.
         :param variables: Variables of `f`.
         :param x0: Initial point of local optimization.
-        :param options: Some additional options of run. 
+        :param options: Some additional options of run.
         """
         # restore
         if self.run_info.result.x is not None:
@@ -197,7 +197,6 @@ class ScipyOptimizer(LocalOptimizer, ContinuousOptimizer):
                              f" are: {self.scipy_methods}")
         self.method = method
         super(ScipyOptimizer, self).__init__(log_transform, maximize)
-
 
     def check_variables(self, variables):
         """

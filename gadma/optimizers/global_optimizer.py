@@ -158,7 +158,7 @@ class GlobalOptimizer(Optimizer):
 
     def process_optimize_kwargs(self, f, variables,
                                 X_init, Y_init, num_init, num_init_const):
-        """
+        r"""
         Returns kwargs with `X_init` and `Y_init` to run :meth:`_optimize`.
 
         :param f: Objective function. If should take no arguments except `x`

@@ -64,7 +64,7 @@ jobs:
           pip3 install smac==0.12.4
           pip3 install bayesmark
           pip3 install configspace
-        if: matrix.os != "macos-10.15"
+        if: matrix.os != 'macos-10.15'
 
       - name: Run tests and codecov.
         run: |
