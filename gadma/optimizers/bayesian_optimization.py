@@ -9,6 +9,7 @@ from ..utils import ContinuousVariable, WeightedMetaArray
 
 from .. import GPyOpt
 from .. import GPy
+from .. import smac_available
 
 
 class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
@@ -300,5 +301,5 @@ class SMACOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
         return self.run_info.result
 
-
-register_global_optimizer('SMAC_optimization', SMACOptimizer)
+if smac_available:
+    register_global_optimizer('SMAC_optimization', SMACOptimizer)

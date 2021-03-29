@@ -48,6 +48,9 @@ jobs:
 
       - name: Install GADMA and its dependencies (Linux and MacOS).
         run: |
+          pip3 install smac
+          pip3 install bayesmark
+          pip3 install configspace
           ./install
         if: matrix.os != 'windows-2019'
 
