@@ -5,7 +5,7 @@ import numpy as np
 from .global_optimizer import GlobalOptimizer
 from .optimizer import ConstrainedOptimizer
 from .optimizer_result import OptimizerResult
-from ..utils import DiscreteVariable, sort_by_other_list
+from ..utils import DiscreteVariable, sort_by_other_list, get_correct_dtype
 
 
 class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
@@ -56,7 +56,7 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                        that were filtered out.
         :param is_filtered: Filter that was used on `base_x`.
         """
-        full_x = np.array(base_x)
+        full_x = np.array(base_x, dtype=get_correct_dtype(base_x))
         full_x[is_filtered] = x
         return full_x
 
@@ -161,19 +161,26 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             stream.close()
 
         # Run global optimizer
-        global_result = self.global_optimizer.optimize(f, variables,
-                                                       args, global_num_init,
-                                                       global_num_init_const,
-                                                       X_init, Y_init,
-                                                       linear_constrain,
-                                                       global_maxiter,
-                                                       global_maxeval,
-                                                       verbose, callback,
-                                                       report_file, eval_file,
-                                                       save_file,
-                                                       restore_file,
-                                                       restore_points_only,
-                                                       global_x_transform)
+        global_result = self.global_optimizer.optimize(
+            f=f,
+            variables=variables,
+            args=args,
+            num_init=global_num_init,
+            num_init_const=global_num_init_const,
+            X_init=X_init,
+            Y_init=Y_init,
+            linear_constrain=linear_constrain,
+            maxiter=global_maxiter,
+            maxeval=global_maxeval,
+            verbose=verbose,
+            callback=callback,
+            report_file=report_file,
+            eval_file=eval_file,
+            save_file=save_file,
+            restore_file=restore_file,
+            restore_points_only=restore_points_only,
+            restore_x_transform=global_x_transform
+        )
         if report_file is not None:
             stream = open(report_file, 'a')
         else:
@@ -184,7 +191,8 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             print("Result:\n", global_result, file=stream)
 
         # Transform best x to local optimizer as x0 and functions for local
-        x_best = np.array(global_result.x)
+        x_best = np.array(global_result.x,
+                          dtype=get_correct_dtype(global_result.x))
         y_best = global_result.y
         is_not_discrete = self._get_filter(variables)
         x0 = x_best[is_not_discrete]
@@ -202,17 +210,24 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             stream.close()
 
         # Run local optimizer
-        local_result = self.local_optimizer.optimize(f_local, variables_local,
-                                                     x0, args, local_options,
-                                                     linear_constrain,
-                                                     local_maxiter,
-                                                     local_maxeval,
-                                                     verbose, callback_local,
-                                                     eval_file, report_file,
-                                                     save_file,
-                                                     restore_file,
-                                                     restore_points_only,
-                                                     local_x_transform)
+        local_result = self.local_optimizer.optimize(
+            f=f_local,
+            variables=variables_local,
+            x0=x0,
+            args=args,
+            options=local_options,
+            linear_constrain=linear_constrain,
+            maxiter=local_maxiter,
+            maxeval=local_maxeval,
+            verbose=verbose,
+            callback=callback_local,
+            eval_file=eval_file,
+            report_file=report_file,
+            save_file=save_file,
+            restore_file=restore_file,
+            restore_points_only=restore_points_only,
+            restore_x_transform=local_x_transform
+        )
         # Create result
         success = local_result.success
         message = f"GLOBAL OPTIMIZATION: {global_result.message}; "\

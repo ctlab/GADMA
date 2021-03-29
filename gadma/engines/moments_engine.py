@@ -1,7 +1,7 @@
 from . import register_engine
 from .dadi_moments_common import DadiOrMomentsEngine
 from ..models import CustomDemographicModel, Epoch, Split
-from ..utils import DynamicVariable
+from ..utils import DynamicVariable, get_correct_dtype
 from .. import SFSDataHolder, moments_available
 import numpy as np
 
@@ -114,7 +114,7 @@ class MomentsEngine(DadiOrMomentsEngine):
                 kwargs = {}
                 for x, y in kwargs_with_vars.items():
                     if x == 'm' and isinstance(y, np.ndarray):  # migration
-                        l_s = np.array(y, dtype=object)
+                        l_s = np.array(y, dtype=get_correct_dtype(y))
                         for i in range(y.shape[0]):
                             for j in range(y.shape[1]):
                                 yel = y[i][j]

@@ -17,9 +17,18 @@ def logarithm_transform(x):
         x = [x]
     if not isinstance(x, (list, np.ndarray)):
         return x
-    if isinstance(x, np.ndarray):
-        x = x.astype(float)
+    x = np.array(x).astype(float)
     return np.log(x)
+
+
+def apply_transform(variables, transform, x):
+    from .variables import ContinuousVariable
+    is_float = [isinstance(var, ContinuousVariable) for var in variables]
+    if np.all(is_float):
+        return transform(x)
+    x = np.array(x, dtype=get_correct_dtype(x))
+    x[is_float] = transform(x[is_float])
+    return x
 
 
 def exponent_transform(x):
@@ -30,8 +39,7 @@ def exponent_transform(x):
         x = [x]
     if not isinstance(x, (list, np.ndarray)):
         return x
-    if isinstance(x, np.ndarray):
-        x = x.astype(float)
+    x = np.array(x).astype(float)
     return np.exp(x)
 
 
@@ -130,7 +138,9 @@ def cache_func(f):
     @lru_cache
     @wraps(f)
     def tuple_wrapper(x_tuple):
-        return f(np.array(x_tuple, dtype=object))
+        x_is_float = np.all([isinstance(el, float) for el in x_tuple])
+        dtype = float if x_is_float else object
+        return f(np.array(x_tuple, dtype=dtype))
 
     @wraps(tuple_wrapper)
     def cache_wrapper(x):
@@ -254,6 +264,11 @@ def timeout(f, time):
     return timeout_wrapper
 
 
+def get_correct_dtype(x):
+    x_is_float = np.all([isinstance(el, float) for el in x])
+    return float if x_is_float else object
+
+
 class WeightedMetaArray(np.ndarray):
     """
     Array with metadata.
@@ -263,7 +278,9 @@ class WeightedMetaArray(np.ndarray):
     :param order: see ``numpy.ndarray`` for more information.
     """
     def __new__(cls, array, dtype=None, order=None):
-        obj = np.asarray(np.array(array, dtype=object),
+        if dtype is None:
+            dtype = get_correct_dtype(array)
+        obj = np.asarray(np.array(array, dtype=get_correct_dtype(array)),
                          dtype=dtype, order=order).view(cls)
         obj.metadata = ""
         obj.weights = np.ones(obj.shape)
@@ -296,33 +313,25 @@ class WeightedMetaArray(np.ndarray):
 #        self.metadata = data[2]
 
 
-def list_with_weights_for_pickle(X):
+def serialize_meta_array(x):
     """
-    Transforms elements of ``X`` to pickle it.
+    Transforms ``x`` to pickle it.
     """
-    new_X = list()
-    for x in X:
-        if isinstance(x, WeightedMetaArray):
-            new_X.append((x, x.weights, x.metadata))
-        else:
-            new_X.append(x)
-    return new_X
+    if isinstance(x, WeightedMetaArray):
+        return (x, x.weights, x.metadata)
+    return x
 
 
-def list_with_weights_after_pickle(X):
+def deserialize_meta_array(x):
     """
-    Transforms back pickles version of ``X``.
+    Transforms back pickles version of ``x``.
     """
-    new_X = list()
-    for x in X:
-        if isinstance(x, tuple):
-            arr = WeightedMetaArray(x[0])
-            arr.weights = x[1]
-            arr.metadata = x[2]
-            new_X.append(arr)
-        else:
-            new_X.append(x)
-    return new_X
+    if isinstance(x, tuple):
+        arr = WeightedMetaArray(x[0])
+        arr.weights = x[1]
+        arr.metadata = x[2]
+        return arr
+    return x
 
 
 def update_by_one_fifth_rule(value, const, was_improved):

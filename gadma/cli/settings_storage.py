@@ -8,7 +8,7 @@ from ..models import StructureDemographicModel, CustomDemographicModel
 from ..optimizers import get_local_optimizer, get_global_optimizer
 from ..optimizers import LinearConstrain
 from ..utils import check_dir_existence, check_file_existence, abspath,\
-    module_name_from_path
+    module_name_from_path, custom_generator
 from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable,\
     ContinuousVariable
 import warnings
@@ -125,10 +125,10 @@ class SettingsStorage(object):
                              'population_labels', 'sequence_length']
         bounds_attrs = ['min_n', 'max_n', 'min_t', 'max_t', 'min_m', 'max_m']
         bounds_lists = ['lower_bound', 'upper_bound', 'parameter_identifiers']
-        missed_attrs = ['engine', 'local_optimizer', '_inner_data',
-                        '_bootstrap_data', 'X_init', 'Y_init', 'model_func',
-                        'get_engine_args', 'units_of_time_in_drawing',
-                        'data_holder', 'resume_from_settings',
+        missed_attrs = ['engine', 'global_optimizer', 'local_optimizer',
+                        '_inner_data', '_bootstrap_data', 'X_init', 'Y_init',
+                        'model_func', 'get_engine_args', 'data_holder',
+                        'units_of_time_in_drawing', 'resume_from_settings',
                         'dadi_available', 'moments_available']
 
         super_hasattr = True
@@ -343,7 +343,9 @@ class SettingsStorage(object):
         # 3.3 For engine we need check it exists
         elif name == 'engine':
             get_engine(value)
-        # 3.4 For local_optimizer we need check it existence
+        # 3.4 For local and global optimizer we need check existence
+        elif name == 'global_optimizer':
+            get_global_optimizer(value)
         elif name == 'local_optimizer':
             get_local_optimizer(value)
         # 3.5 If we change engine or pts, we should check for warning if pts
@@ -444,11 +446,10 @@ class SettingsStorage(object):
                 raise AttributeError("Check for supported variables")
 
             old_domain = np.array(cls.default_domain)
-
             if name.startswith('min'):
-                cls.default_domain[0] = value
+                cls.default_domain = [value, cls.default_domain[1]]
             elif name.startswith('max'):
-                cls.default_domain[1] = value
+                cls.default_domain = [cls.default_domain[0], value]
 
             domain_changed = np.any(old_domain != np.array(cls.default_domain))
             if domain_changed:
@@ -884,30 +885,28 @@ class SettingsStorage(object):
         Return object of global optimizer for optimization according to current
         settings.
         """
-        # bo = get_global_optimizer("Bayesian_optimization")
-        # bo.log_transform = True
-        # bo.maximize = True
-#        bo = get_global_optimizer("BOTorch")
-#        bo.log_transform = True
-#        bo.maximize = True
-#        return bo
-        ga = get_global_optimizer("Genetic_algorithm")
-        ga.gen_size = self.size_of_generation
-        ga.n_elitism = self.n_elitism
-        ga.p_mutation = self.p_mutation
-        ga.p_crossover = self.p_crossover
-        ga.p_random = self.p_random
-        ga.mut_rate = self.mean_mutation_rate
-        ga.mut_strength = self.mean_mutation_strength
-        ga.const_mut_rate = self.const_for_mutation_rate
-        ga.const_mut_strength = self.const_for_mutation_strength
-        ga.eps = self.eps
-        ga.n_stuck_gen = self.stuck_generation_number
-        ga.maximize = True
-#        if self.random_n_a:
-#            ga.random_type = 'custom'
-#            ga.custom_rand_gen = custom_generator
-        return ga
+        if self.global_optimizer.lower() == "genetic_algorithm":
+            ga = get_global_optimizer(self.global_optimizer)
+            ga.gen_size = self.size_of_generation
+            ga.n_elitism = self.n_elitism
+            ga.p_mutation = self.p_mutation
+            ga.p_crossover = self.p_crossover
+            ga.p_random = self.p_random
+            ga.mut_rate = self.mean_mutation_rate
+            ga.mut_strength = self.mean_mutation_strength
+            ga.const_mut_rate = self.const_for_mutation_rate
+            ga.const_mut_strength = self.const_for_mutation_strength
+            ga.eps = self.eps
+            ga.n_stuck_gen = self.stuck_generation_number
+            ga.maximize = True
+            if self.random_n_a:
+                ga.random_type = 'custom'
+                ga.custom_rand_gen = custom_generator
+            return ga
+        opt = get_global_optimizer(self.global_optimizer)
+#        opt.log_transform = True
+        opt.maximize = True
+        return opt
 
     def get_local_optimizer(self):
         """

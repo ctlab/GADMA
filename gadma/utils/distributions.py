@@ -1,4 +1,5 @@
 import numpy as np
+from .utils import get_correct_dtype
 
 
 def trunc_normal(mean, sigma, lower, upper):
@@ -94,7 +95,7 @@ def custom_generator(variables):
         if isinstance(var, ContinuousVariable):
             values[-1] = max(values[-1], var.domain[0])
             values[-1] = min(values[-1], var.domain[1])
-    return np.array(values, dtype=object)
+    return np.array(values, dtype=get_correct_dtype(values))
 
 
 class DemographicGenerator:

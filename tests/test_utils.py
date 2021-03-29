@@ -75,7 +75,7 @@ class TestUtils(unittest.TestCase):
 
         X = [x]
         X.append([1, 2])
-        list_with_weights_for_pickle(X)
+        serialize_meta_array(x)
 
         del x.metadata
         x.__str__()

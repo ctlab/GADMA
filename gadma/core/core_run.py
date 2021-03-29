@@ -150,7 +150,7 @@ class CoreRun(object):
         the `output_dir` of this run.
 
         :param x: Vector of values for model parameters.
-        :param y: Value of log-likelihood for this values.
+        :param y: Value of log-likelihood for this values.
         """
         best_by = 'log-likelihood'
         if self.aic_score:
@@ -170,7 +170,9 @@ class CoreRun(object):
                 equal_x = False
             elif x_has_w and x.metadata != self.x_best.metadata:
                 equal_x = False
-        if self.x_best is None or sign * self.y_best > sign * y or not equal_x:
+        if (self.x_best is None or
+                sign * self.y_best > sign * y or
+                (self.y_best == y and not equal_x)):
             self.x_best = x
             self.y_best = y
             self.shared_dict._put_new_model_for_process(

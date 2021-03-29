@@ -237,9 +237,9 @@ class DadiOrMomentsEngine(Engine):
                                     for var in var2val])
         if len(x0) > 0 and len(var2val) > 0:
             x0 = np.array(list(var2val.values()), dtype=object)
-            p0 = x0[is_not_discrete]
+            p0 = x0[is_not_discrete].astype(float)
         else:
-            p0 = x0
+            p0 = x0.astype(float)
 
         @wraps(self.simulate)
         def simul_func(x):
