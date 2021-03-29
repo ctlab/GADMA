@@ -301,5 +301,6 @@ class SMACOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
         return self.run_info.result
 
+
 if smac_available:
     register_global_optimizer('SMAC_optimization', SMACOptimizer)
