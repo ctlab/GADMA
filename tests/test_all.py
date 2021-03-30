@@ -273,7 +273,7 @@ class TestRestore(unittest.TestCase):
         with open(params_file, 'w') as fl:
             fl.write("Stuck generation number: 2\n"
                      "Projections: 4,4\n"
-                     "Initial structure: 2, 1\n"
+                     "Initial structure: 1, 1\n"
                      "Silence: True\n"
                      "global_maxiter: 2\n"
                      "local_maxiter: 1\n")

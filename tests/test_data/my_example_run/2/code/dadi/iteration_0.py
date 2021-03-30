@@ -16,7 +16,7 @@ data.pop_ids = ['YRI', 'CEU']
 pts = [20, 30, 40]
 ns = data.sample_sizes
 
-p0 = [0.460711025328101, 0.3868964003925894, 2.5398842587324215, 0.29155088973655907, 2.507654693052538, 0.0]
+p0 = [0.35134079394370255, 0.22018639448111757, 2.216873182572613, 0.1999881700478657, 0.0, 3.232386970089608]
 func_ex = dadi.Numerics.make_extrap_log_func(model_func)
 model = func_ex(p0, ns, pts)
 ll_model = dadi.Inference.ll_multinom(model, data)

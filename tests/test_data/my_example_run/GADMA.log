@@ -8,93 +8,48 @@ Outgroup: True
 
 [92m--Successful arguments parsing--[0m
 
-Parameters of launch are saved in output directory: /home/katenos/Workspace/popgen/temp/GADMA/my_example_run_2/params_file
-All output is saved in output directory: /home/katenos/Workspace/popgen/temp/GADMA/my_example_run_2/GADMA.log
+Parameters of launch are saved in output directory: /home/katenos/Workspace/popgen/temp/GADMA/my_example_run/params_file
+All output is saved in output directory: /home/katenos/Workspace/popgen/temp/GADMA/my_example_run/GADMA.log
 
 [94m--Start pipeline--[0m
-Run launch number 3
 Run launch number 1
+Run launch number 3
 Run launch number 2
+[93mUserWarning: Additional evaluation for theta. Nothing to worry if this warning is seldom.[0m (/home/katenos/.local/lib/python3.6/site-packages/gadma-2.0.0rc11.dev21-py3.6.egg/gadma/engines/dadi_moments_common.py:119)
 
 [000:01:00]
 All best by log-likelihood models
 Number	log-likelihood	Model
-Run 3	-1371.82	 [Nanc = 7310] [ [ 16679.659(t1), [7310.323(nu11)], [Sud(dyn11)] ],	[ 1 pop split   47.00% (s1) [3436.143(s1*nu11), 3874.18((1-s1)*nu11)] ],	[ 8411.478(t2), [16355.95(nu21), 2856.27(nu22)], [[0, 7.26e-05(m2_12)], [1.92e-04(m2_21), 0]], [Exp(dyn21), Lin(dyn22)] ] ]	(theta =  2776.17)
-Run 1	-2085.85	 [Nanc = 1819] [ [ 4800.718(t1), [18843.512(nu11)], [Sud(dyn11)] ],	[ 1 pop split   41.87% (s1) [7889.086(s1*nu11), 10954.426((1-s1)*nu11)] ],	[ 17721.282(t2), [18055.73(nu21), 790.355(nu22)], [[0, 5.69e-05(m2_12)], [4.95e-04(m2_21), 0]], [Exp(dyn21), Sud(dyn22)] ] ]	c	(theta =  691.09)
-Run 2	-2318.60	 [Nanc = 5325] [ [ 11872.429(t1), [5325.096(nu11)], [Sud(dyn11)] ],	[ 1 pop split   46.07% (s1) [2453.331(s1*nu11), 2871.766((1-s1)*nu11)] ],	[ 4120.521(t2), [100843.038(nu21), 13239.143(nu22)], [[0, 5.65e-05(m2_12)], [2.35e-05(m2_21), 0]], [Exp(dyn21), Exp(dyn22)] ] ]	c	(theta =  2022.26)
-Finish genetic algorithm number 1
+Run 2	-1599.03	 [Nanc = 8072] [ [ 1 pop split   46.63% (s1) [0.466(s1*1.0), 0.534((1-s1)*1.0)] ],	[ 2492.447(t1), [71846.873(nu11), 2663.596(nu12)], [[0, 0.00e+00(m1_12)], [1.70e-04(m1_21), 0]], [Exp(dyn11), Exp(dyn12)] ] ]	(theta =  3065.54)
+Run 1	-1677.46	 [Nanc = 7978] [ [ 21805.817(t1), [7978.725(nu11)], [Sud(dyn11)] ],	[ 1 pop split   24.50% (s1) [1954.417(s1*nu11), 6024.307((1-s1)*nu11)] ],	[ 3462.821(t2), [13040.777(nu21), 1770.283(nu22)], [[0, 0.00e+00(m2_12)], [8.72e-05(m2_21), 0]], [Sud(dyn21), Lin(dyn22)] ] ]	(theta =  3030.00)
+Run 3	-1763.94	 [Nanc = 6996] [ [ 1 pop split   67.75% (s1) [0.677(s1*1.0), 0.323((1-s1)*1.0)] ],	[ 2879.419(t1), [50025.541(nu11), 3222.866(nu12)], [[0, 1.32e-04(m1_12)], [9.71e-05(m1_21), 0]], [Sud(dyn11), Exp(dyn12)] ] ]	(theta =  2657.17)
 
 You can find the picture and the Python code of the best model in the output directory.
 
+[93mUserWarning: Additional evaluation for theta. Nothing to worry if this warning is seldom.[0m (/home/katenos/.local/lib/python3.6/site-packages/gadma-2.0.0rc11.dev21-py3.6.egg/gadma/engines/dadi_moments_common.py:119)
+[93mUserWarning: Additional evaluation for theta. Nothing to worry if this warning is seldom.[0m (/home/katenos/.local/lib/python3.6/site-packages/gadma-2.0.0rc11.dev21-py3.6.egg/gadma/engines/dadi_moments_common.py:119)
+Finish genetic algorithm number 1
 Finish genetic algorithm number 2
 
 [000:02:00]
 All best by log-likelihood models
 Number	log-likelihood	Model
-Run 3	-1158.60	 [Nanc = 7338] [ [ 16713.939(t1), [7112.687(nu11)], [Sud(dyn11)] ],	[ 1 pop split   70.32% (s1) [5001.556(s1*nu11), 2111.13((1-s1)*nu11)] ],	[ 9437.271(t2), [15263.689(nu21), 3194.151(nu22)], [[0, 1.29e-04(m2_12)], [1.24e-04(m2_21), 0]], [Exp(dyn21), Lin(dyn22)] ] ]	(theta =  2786.78)
-Run 2	-1565.26	 [Nanc = 5680] [ [ 12664.975(t1), [6921.832(nu11)], [Sud(dyn11)] ],	[ 1 pop split   72.13% (s1) [4992.791(s1*nu11), 1929.041((1-s1)*nu11)] ],	[ 3189.766(t2), [98619.538(nu21), 8914.86(nu22)], [[0, 5.38e-05(m2_12)], [2.05e-05(m2_21), 0]], [Exp(dyn21), Exp(dyn22)] ] ]	f	(theta =  2157.25)
-Run 1	-2085.85	 [Nanc = 1819] [ [ 4800.718(t1), [18843.512(nu11)], [Sud(dyn11)] ],	[ 1 pop split   41.87% (s1) [7889.086(s1*nu11), 10954.426((1-s1)*nu11)] ],	[ 17721.282(t2), [18055.73(nu21), 790.355(nu22)], [[0, 5.69e-05(m2_12)], [4.95e-04(m2_21), 0]], [Exp(dyn21), Sud(dyn22)] ] ]	c	(theta =  691.09)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:03:00]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1102.49	 [Nanc = 6284] [ [ 12477.003(t1), [10639.218(nu11)], [Sud(dyn11)] ],	[ 1 pop split   92.65% (s1) [9857.418(s1*nu11), 781.8((1-s1)*nu11)] ],	[ 2526.257(t2), [17225.038(nu21), 5175.936(nu22)], [[0, 1.13e-04(m2_12)], [5.72e-05(m2_21), 0]], [Exp(dyn21), Lin(dyn22)] ] ]	(theta =  2386.44)
-Run 2	-1565.26	 [Nanc = 5680] [ [ 12664.975(t1), [6921.832(nu11)], [Sud(dyn11)] ],	[ 1 pop split   72.13% (s1) [4992.791(s1*nu11), 1929.041((1-s1)*nu11)] ],	[ 3189.766(t2), [98619.538(nu21), 8914.86(nu22)], [[0, 5.38e-05(m2_12)], [2.05e-05(m2_21), 0]], [Exp(dyn21), Exp(dyn22)] ] ]	f	(theta =  2157.25)
-Run 1	-2085.85	 [Nanc = 1819] [ [ 4800.718(t1), [18843.512(nu11)], [Sud(dyn11)] ],	[ 1 pop split   41.87% (s1) [7889.086(s1*nu11), 10954.426((1-s1)*nu11)] ],	[ 17721.282(t2), [18055.73(nu21), 790.355(nu22)], [[0, 5.69e-05(m2_12)], [4.95e-04(m2_21), 0]], [Exp(dyn21), Sud(dyn22)] ] ]	c	(theta =  691.09)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:04:00]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1075.77	 [Nanc = 7150] [ [ 6790.07(t1), [11915.577(nu11)], [Sud(dyn11)] ],	[ 1 pop split   98.66% (s1) [11756.253(s1*nu11), 159.324((1-s1)*nu11)] ],	[ 1607.082(t2), [16895.378(nu21), 7316.577(nu22)], [[0, 5.15e-05(m2_12)], [4.61e-05(m2_21), 0]], [Exp(dyn21), Lin(dyn22)] ] ]	(theta =  2715.64)
-Run 2	-1565.26	 [Nanc = 5680] [ [ 12664.975(t1), [6921.832(nu11)], [Sud(dyn11)] ],	[ 1 pop split   72.13% (s1) [4992.791(s1*nu11), 1929.041((1-s1)*nu11)] ],	[ 3189.766(t2), [98619.538(nu21), 8914.86(nu22)], [[0, 5.38e-05(m2_12)], [2.05e-05(m2_21), 0]], [Exp(dyn21), Exp(dyn22)] ] ]	f	(theta =  2157.25)
-Run 1	-2085.85	 [Nanc = 1819] [ [ 4800.718(t1), [18843.512(nu11)], [Sud(dyn11)] ],	[ 1 pop split   41.87% (s1) [7889.086(s1*nu11), 10954.426((1-s1)*nu11)] ],	[ 17721.282(t2), [18055.73(nu21), 790.355(nu22)], [[0, 5.69e-05(m2_12)], [4.95e-04(m2_21), 0]], [Exp(dyn21), Sud(dyn22)] ] ]	c	(theta =  691.09)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:05:00]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1065.53	 [Nanc = 7210] [ [ 5448.399(t1), [13746.912(nu11)], [Sud(dyn11)] ],	[ 1 pop split   99.66% (s1) [13700.577(s1*nu11), 46.335((1-s1)*nu11)] ],	[ 1454.529(t2), [12861.753(nu21), 8356.604(nu22)], [[0, 6.20e-05(m2_12)], [6.10e-05(m2_21), 0]], [Exp(dyn21), Lin(dyn22)] ] ]	(theta =  2738.16)
-Run 2	-1565.26	 [Nanc = 5680] [ [ 12664.975(t1), [6921.832(nu11)], [Sud(dyn11)] ],	[ 1 pop split   72.13% (s1) [4992.791(s1*nu11), 1929.041((1-s1)*nu11)] ],	[ 3189.766(t2), [98619.538(nu21), 8914.86(nu22)], [[0, 5.38e-05(m2_12)], [2.05e-05(m2_21), 0]], [Exp(dyn21), Exp(dyn22)] ] ]	f	(theta =  2157.25)
-Run 1	-2085.85	 [Nanc = 1819] [ [ 4800.718(t1), [18843.512(nu11)], [Sud(dyn11)] ],	[ 1 pop split   41.87% (s1) [7889.086(s1*nu11), 10954.426((1-s1)*nu11)] ],	[ 17721.282(t2), [18055.73(nu21), 790.355(nu22)], [[0, 5.69e-05(m2_12)], [4.95e-04(m2_21), 0]], [Exp(dyn21), Sud(dyn22)] ] ]	c	(theta =  691.09)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:06:00]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1065.27	 [Nanc = 7230] [ [ 5218.259(t1), [14132.372(nu11)], [Sud(dyn11)] ],	[ 1 pop split   99.79% (s1) [14102.176(s1*nu11), 30.197((1-s1)*nu11)] ],	[ 1387.067(t2), [12459.778(nu21), 8843.315(nu22)], [[0, 5.95e-05(m2_12)], [5.93e-05(m2_21), 0]], [Exp(dyn21), Lin(dyn22)] ] ]	(theta =  2745.96)
-Run 2	-1565.26	 [Nanc = 5680] [ [ 12664.975(t1), [6921.832(nu11)], [Sud(dyn11)] ],	[ 1 pop split   72.13% (s1) [4992.791(s1*nu11), 1929.041((1-s1)*nu11)] ],	[ 3189.766(t2), [98619.538(nu21), 8914.86(nu22)], [[0, 5.38e-05(m2_12)], [2.05e-05(m2_21), 0]], [Exp(dyn21), Exp(dyn22)] ] ]	f	(theta =  2157.25)
-Run 1	-2085.85	 [Nanc = 1819] [ [ 4800.718(t1), [18843.512(nu11)], [Sud(dyn11)] ],	[ 1 pop split   41.87% (s1) [7889.086(s1*nu11), 10954.426((1-s1)*nu11)] ],	[ 17721.282(t2), [18055.73(nu21), 790.355(nu22)], [[0, 5.69e-05(m2_12)], [4.95e-04(m2_21), 0]], [Exp(dyn21), Sud(dyn22)] ] ]	c	(theta =  691.09)
-
-You can find the picture and the Python code of the best model in the output directory.
-
-
-[000:07:00]
-All best by log-likelihood models
-Number	log-likelihood	Model
-Run 3	-1065.27	 [Nanc = 7230] [ [ 5218.38(t1), [14132.072(nu11)], [Sud(dyn11)] ],	[ 1 pop split   99.79% (s1) [14101.874(s1*nu11), 30.198((1-s1)*nu11)] ],	[ 1387.08(t2), [12460.354(nu21), 8843.363(nu22)], [[0, 5.95e-05(m2_12)], [5.93e-05(m2_21), 0]], [Exp(dyn21), Lin(dyn22)] ] ]	(theta =  2745.96)
-Run 2	-1565.26	 [Nanc = 5680] [ [ 12664.975(t1), [6921.832(nu11)], [Sud(dyn11)] ],	[ 1 pop split   72.13% (s1) [4992.791(s1*nu11), 1929.041((1-s1)*nu11)] ],	[ 3189.766(t2), [98619.538(nu21), 8914.86(nu22)], [[0, 5.38e-05(m2_12)], [2.05e-05(m2_21), 0]], [Exp(dyn21), Exp(dyn22)] ] ]	f	(theta =  2157.25)
-Run 1	-2085.85	 [Nanc = 1819] [ [ 4800.718(t1), [18843.512(nu11)], [Sud(dyn11)] ],	[ 1 pop split   41.87% (s1) [7889.086(s1*nu11), 10954.426((1-s1)*nu11)] ],	[ 17721.282(t2), [18055.73(nu21), 790.355(nu22)], [[0, 5.69e-05(m2_12)], [4.95e-04(m2_21), 0]], [Exp(dyn21), Sud(dyn22)] ] ]	c	(theta =  691.09)
+[93mUserWarning: Additional evaluation for theta. Nothing to worry if this warning is seldom.[0m (/home/katenos/.local/lib/python3.6/site-packages/gadma-2.0.0rc11.dev21-py3.6.egg/gadma/engines/dadi_moments_common.py:119)
+Run 2	-1378.24	 [Nanc = 7310] [ [ 5861.434(t1), [9496.666(nu11)], [Sud(dyn11)] ],	[ 5861.434(t2), [9496.666(nu21)], [Sud(dyn21)] ],	[ 1 pop split   46.63% (s1) [4427.931(s1*nu21), 5068.735((1-s1)*nu21)] ],	[ 2257.119(t3), [76290.361(nu31), 2016.764(nu32)], [[0, 0.00e+00(m3_12)], [2.11e-04(m3_21), 0]], [Exp(dyn31), Sud(dyn32)] ] ]	(theta =  2776.10)
+Run 3	-1473.85	 [Nanc = 2275] [ [ 16755.448(t1), [17586.139(nu11)], [Exp(dyn11)] ],	[ 1 pop split   66.47% (s1) [11690.244(s1*nu11), 5895.895((1-s1)*nu11)] ],	[ 10962.34(t2), [11543.998(nu21), 3173.675(nu22)], [[0, 1.19e-04(m2_12)], [7.73e-05(m2_21), 0]], [Exp(dyn21), Sud(dyn22)] ] ]	(theta =  864.13)
+Run 1	-1486.88	 [Nanc = 6016] [ [ 14152.635(t1), [7571.15(nu11)], [Lin(dyn11)] ],	[ 20433.891(t2), [7792.275(nu21)], [Exp(dyn21)] ],	[ 1 pop split   15.34% (s1) [1195.33(s1*nu21), 6596.945((1-s1)*nu21)] ],	[ 3418.405(t3), [14824.105(nu31), 2146.846(nu32)], [[0, 0.00e+00(m3_12)], [1.04e-04(m3_21), 0]], [Sud(dyn31), Lin(dyn32)] ] ]	(theta =  2284.97)
 
 You can find the picture and the Python code of the best model in the output directory.
 
 Finish genetic algorithm number 3
 
-[000:07:55]
+[000:02:25]
 All best by log-likelihood models
 Number	log-likelihood	Model
-Run 3	-1065.27	 [Nanc = 7230] [ [ 5218.38(t1), [14132.072(nu11)], [Sud(dyn11)] ],	[ 1 pop split   99.79% (s1) [14101.874(s1*nu11), 30.198((1-s1)*nu11)] ],	[ 1387.08(t2), [12460.354(nu21), 8843.363(nu22)], [[0, 5.95e-05(m2_12)], [5.93e-05(m2_21), 0]], [Exp(dyn21), Lin(dyn22)] ] ]	f	(theta =  2745.96)
-Run 2	-1565.26	 [Nanc = 5680] [ [ 12664.975(t1), [6921.832(nu11)], [Sud(dyn11)] ],	[ 1 pop split   72.13% (s1) [4992.791(s1*nu11), 1929.041((1-s1)*nu11)] ],	[ 3189.766(t2), [98619.538(nu21), 8914.86(nu22)], [[0, 5.38e-05(m2_12)], [2.05e-05(m2_21), 0]], [Exp(dyn21), Exp(dyn22)] ] ]	f	(theta =  2157.25)
-Run 1	-2085.85	 [Nanc = 1819] [ [ 4800.718(t1), [18843.512(nu11)], [Sud(dyn11)] ],	[ 1 pop split   41.87% (s1) [7889.086(s1*nu11), 10954.426((1-s1)*nu11)] ],	[ 17721.282(t2), [18055.73(nu21), 790.355(nu22)], [[0, 5.69e-05(m2_12)], [4.95e-04(m2_21), 0]], [Exp(dyn21), Sud(dyn22)] ] ]	c	(theta =  691.09)
+Run 3	-1245.24	 [Nanc = 2557] [ [ 7944.434(t1), [7738.84(nu11)], [Exp(dyn11)] ],	[ 11958.587(t2), [19925.435(nu21)], [Exp(dyn21)] ],	[ 1 pop split   75.85% (s1) [15113.376(s1*nu21), 4812.059((1-s1)*nu21)] ],	[ 18333.902(t3), [8389.535(nu31), 3472.532(nu32)], [[0, 1.77e-04(m3_12)], [7.84e-05(m3_21), 0]], [Exp(dyn31), Sud(dyn32)] ] ]	f	(theta =  971.12)
+[93mUserWarning: Additional evaluation for theta. Nothing to worry if this warning is seldom.[0m (/home/katenos/.local/lib/python3.6/site-packages/gadma-2.0.0rc11.dev21-py3.6.egg/gadma/engines/dadi_moments_common.py:119)
+Run 2	-1378.24	 [Nanc = 7310] [ [ 5861.434(t1), [9496.666(nu11)], [Sud(dyn11)] ],	[ 5861.434(t2), [9496.666(nu21)], [Sud(dyn21)] ],	[ 1 pop split   46.63% (s1) [4427.931(s1*nu21), 5068.735((1-s1)*nu21)] ],	[ 2257.119(t3), [76290.361(nu31), 2016.764(nu32)], [[0, 0.00e+00(m3_12)], [2.11e-04(m3_21), 0]], [Exp(dyn31), Sud(dyn32)] ] ]	(theta =  2776.10)
+Run 1	-1486.88	 [Nanc = 6016] [ [ 14152.635(t1), [7571.15(nu11)], [Lin(dyn11)] ],	[ 20433.891(t2), [7792.275(nu21)], [Exp(dyn21)] ],	[ 1 pop split   15.34% (s1) [1195.33(s1*nu21), 6596.945((1-s1)*nu21)] ],	[ 3418.405(t3), [14824.105(nu31), 2146.846(nu32)], [[0, 0.00e+00(m3_12)], [1.04e-04(m3_21), 0]], [Sud(dyn31), Lin(dyn32)] ] ]	(theta =  2284.97)
 
 You can find the picture and the Python code of the best model in the output directory.
 

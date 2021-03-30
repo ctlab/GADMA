@@ -15,7 +15,7 @@ data = moments.Spectrum.from_file('/home/katenos/Workspace/popgen/temp/GADMA/exa
 data.pop_ids = ['YRI', 'CEU']
 ns = data.sample_sizes
 
-p0 = [0.460711025328101, 0.3868964003925894, 2.5398842587324215, 0.29155088973655907, 2.507654693052538, 0.0]
+p0 = [0.35134079394370255, 0.22018639448111757, 2.216873182572613, 0.1999881700478657, 0.0, 3.232386970089608]
 model = model_func(p0, ns)
 ll_model = moments.Inference.ll_multinom(model, data)
 print('Model log likelihood (LL(model, data)): {0}'.format(ll_model))

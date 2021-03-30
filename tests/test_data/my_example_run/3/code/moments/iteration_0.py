@@ -6,17 +6,16 @@ def model_func(params, ns):
 	sts = moments.LinearSystem_1D.steady_state_1D(np.sum(ns))
 	fs = moments.Spectrum(sts)
 	fs = moments.Manips.split_1D_to_2D(fs, ns[0], ns[1])
-	nu1_func = lambda t: (s1 * 1.0) * (nu11 / (s1 * 1.0)) ** (t / t1)
-	nu2_func = lambda t: ((1 - s1) * 1.0) + (nu12 - ((1 - s1) * 1.0)) * (t / t1)
+	nu2_func = lambda t: ((1 - s1) * 1.0) * (nu12 / ((1 - s1) * 1.0)) ** (t / t1)
 	migs = np.array([[0, m1_12], [m1_21, 0]])
-	fs.integrate(tf=t1, Npop=lambda t: [nu1_func(t), nu2_func(t)], m=migs, dt_fac=0.01)
+	fs.integrate(tf=t1, Npop=lambda t: [nu11, nu2_func(t)], m=migs, dt_fac=0.01)
 	return fs
 
 data = moments.Spectrum.from_file('/home/katenos/Workspace/popgen/temp/GADMA/examples/changing_theta/YRI_CEU.fs')
 data.pop_ids = ['YRI', 'CEU']
 ns = data.sample_sizes
 
-p0 = [0.667109513765994, 0.6501037935353557, 2.272591281118335, 0.18589943280508173, 0.9147602260370635, 1.6136687272601704]
+p0 = [0.1490866893091755, 0.23539463709808553, 8.102204384224034, 1.5725729184476973, 0.0, 0.0]
 model = model_func(p0, ns)
 ll_model = moments.Inference.ll_multinom(model, data)
 print('Model log likelihood (LL(model, data)): {0}'.format(ll_model))
