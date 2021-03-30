@@ -2,11 +2,13 @@ import unittest
 from gadma import *
 from gadma.utils.utils import CacheInfo, WeightedMetaArray,\
     logarithm_transform, run_f_and_save_result_into_queue, timeout
+from gadma.utils import cache_func, eval_wrapper
 from gadma.utils.distributions import *
 from gadma.utils import *
 import numpy as np
 import multiprocessing
 import time
+import os
 
 
 def f_sleep_10(x):
@@ -44,6 +46,9 @@ class TestUtils(unittest.TestCase):
         trunc_normal_sigma_generator([10, 20])
 
     def test_utils(self):
+        self.assertEqual(logarithm_transform(1), np.log(1))
+        self.assertEqual(exponent_transform(0), np.exp(0))
+
         t = (5, 10)
         self.assertEqual(logarithm_transform(t), t)
         self.assertEqual(exponent_transform(t), t)
@@ -80,3 +85,21 @@ class TestUtils(unittest.TestCase):
         del x.metadata
         x.__str__()
         x.__repr__()
+
+    def test_cache(self):
+        def f(x):
+            return np.min(x)
+        cache_f = cache_func(f)
+        x = np.array([[1, 2], [3, 4]])
+        self.assertEqual(f(x), cache_f(x))
+
+    def test_eval_wrapper_not_exist_file(self):
+        def f(x):
+            return np.min(x)
+        eval_file = "not_existing_file"
+        try:
+            wr_f = eval_wrapper(f, eval_file)
+            self.assertEqual(wr_f([1, 2, 3]), 1)
+        finally:
+            if os.path.exists(eval_file):
+                os.remove(eval_file)

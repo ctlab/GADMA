@@ -483,8 +483,6 @@ class Optimizer(object):
         if restore_file is not None and self.valid_restore_file(restore_file):
             restored_run_info = self.load(restore_file)
             if restore_x_transform is not None:
-                def y_transform(y):
-                    return self.sign * y
                 restored_run_info = self._apply_transform_to_run_info(
                     run_info=restored_run_info,
                     x_transform=restore_x_transform,

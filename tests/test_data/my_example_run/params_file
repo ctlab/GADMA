@@ -150,7 +150,7 @@ Parameter identifiers: Null
 #
 #	Structure of initial model:
 #	Default: all is ones - 1 or 1,1 or 1,1,1
-Initial structure: [1, 1]
+Initial structure: [2, 1]
 
 #	Structure of final model:
 #	Default: equals to initial structure

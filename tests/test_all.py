@@ -88,11 +88,8 @@ class TestRestore(unittest.TestCase):
 
     def test_ls_restore(self):
         for opt in all_local_optimizers():
-            print(opt.id)
             def f(x):
-                print(x)
                 y = rosenbrock(x)
-                print(y)
                 return y
             # positive domain because we check log scaling optimizations too
             variables = [ContinuousVariable('var1', [10, 20]),
@@ -117,10 +114,6 @@ class TestRestore(unittest.TestCase):
             self.assertEqual(res1.y, res3.y)
             self.assertTrue(res1.y >= res2.y)
             self.assertTrue(res2.y >= res4.y)
-            print(res1)
-            print(res2)
-            print(res3)
-            print(res4)
             for res in [res1, res2, res3, res4]:
                 self.assertEqual(res.y, f(res.x))
 
@@ -239,6 +232,14 @@ class TestRestore(unittest.TestCase):
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
         try:
             core.main()
+        finally:
+            if check_dir_existence(finished_run_dir + '_resumed'):
+                shutil.rmtree(finished_run_dir + '_resumed')
+        try:
+            settings, _ = gadma.cli.arg_parser.get_settings()
+            shared_dict = SharedDictForCoreRun(multiprocessing=False)
+            obj = CoreRun(1, shared_dict, settings)
+            obj.run(settings.get_optimizers_init_kwargs())
         finally:
             if check_dir_existence(finished_run_dir + '_resumed'):
                 shutil.rmtree(finished_run_dir + '_resumed')

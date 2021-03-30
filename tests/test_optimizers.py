@@ -155,10 +155,19 @@ class TestBaseOptClass(unittest.TestCase):
         opt.maximize = False
         self.assertEqual(opt.evaluate(g, [], []), 10)
 
-        self.assertRaises(NotImplementedError, opt.optimize, f, [])
+        self.assertRaises(NotImplementedError, opt.optimize, f,
+                          [ContinuousVariable("var", domain=[0, 1])])
         self.assertRaises(NotImplementedError, opt.write_report,
                           variables=[], run_info=opt._create_run_info(),
                           report_file=None)
+
+        opt = ContinuousOptimizer()
+        self.assertRaises(AssertionError, opt.check_variables,
+                          [DiscreteVariable("var", domain=[1, 2])])
+        opt = UnconstrainedOptimizer()
+        self.assertRaises(AssertionError, opt.check_variables,
+                          [ContinuousVariable("var", domain=[1, 2])])
+
 
 
 class TestLocalOpt(TestBaseOptClass):
