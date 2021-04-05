@@ -160,8 +160,8 @@ class NoneOptimizer(LocalOptimizer):
         y = f(x0)
         iter_callback(x0, y, [x0], [y])
         self.run_info.result.success = True
-        self.run_info.result.status=1
-        self.run_info.result.message="SUCCESS"
+        self.run_info.result.status = 1
+        self.run_info.result.message = "SUCCESS"
         return self.run_info.result
 
 
