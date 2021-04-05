@@ -158,11 +158,10 @@ class NoneOptimizer(LocalOptimizer):
     def _optimize(self, f, variables, x0, options,
                   maxiter, maxeval, iter_callback):
         y = f(x0)
-        self.run_info.result = OptimizerResult(x0, y, success=True,
-                                               status=1, message="SUCCESS",
-                                               X=[x0], Y=[y],
-                                               n_eval=1, n_iter=0)
         iter_callback(x0, y, [x0], [y])
+        self.run_info.result.success = True
+        self.run_info.result.status=1
+        self.run_info.result.message="SUCCESS"
         return self.run_info.result
 
 
