@@ -38,9 +38,9 @@ class Variable(object):
         # TODO The following assert does not work for python 2
         assert (name.isidentifier() and not iskeyword(name))
         if domain is None:
-            domain = list(self.__class__.default_domain)
+            domain = copy.deepcopy(self.__class__.default_domain)
         if rand_gen is None:
-            rand_gen = copy.copy(self.__class__.default_rand_gen)
+            rand_gen = copy.deepcopy(self.__class__.default_rand_gen)
         self.var_type = var_type
         self.domain = domain
         self.rand_gen = rand_gen
@@ -204,7 +204,13 @@ class DemographicVariable(Variable):
             self.units = units
         else:
             self.units = "genetic"
-        super(DemographicVariable, self).__init__(name, domain, rand_gen)
+        if isinstance(self, (ContinuousVariable, DiscreteVariable)):
+            super(DemographicVariable, self).__init__(name, domain, rand_gen)
+        else:
+            var_type = "unknown"
+            super(DemographicVariable, self).__init__(name, var_type,
+                                                      domain, rand_gen)
+
         self.translate_units_to(units, self.default_domain_in_phys)
 
     @staticmethod
@@ -239,16 +245,22 @@ class DemographicVariable(Variable):
             return
         if Nanc_domain is None:
             Nanc_domain = list(self.default_domain_in_phys)
-        self.domain[0] = self.translate_value_into(
-            units,
-            self.domain[0],
-            Nanc_domain[0]
+        domain = []
+        domain.append(
+            self.translate_value_into(
+                units,
+                self.domain[0],
+                Nanc_domain[0]
+            )
         )
-        self.domain[1] = self.translate_value_into(
-            units,
-            self.domain[1],
-            Nanc_domain[1],
+        domain.append(
+            self.translate_value_into(
+                units,
+                self.domain[1],
+                Nanc_domain[1],
+            )
         )
+        self.domain = domain
         self.units = units
         if units == "physical":
             self.rand_gen = DemographicGenerator(
@@ -344,7 +356,7 @@ class MigrationVariable(DemographicVariable, ContinuousVariable):
 
     @staticmethod
     def _transform_value_from_gen_to_phys(value, Nanc):
-        return value / (2 * Nanc)
+        return float(value) / (2 * Nanc)
 
     @staticmethod
     def _transform_value_from_phys_to_gen(value, Nanc):
