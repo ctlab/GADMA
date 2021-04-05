@@ -119,7 +119,7 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         if maxiter is None:
             maxiter = 100
         if maxeval is None:
-            maxeval = 100
+            maxeval = maxiter
 
         ndim = len(variables)
 
