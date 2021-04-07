@@ -109,7 +109,8 @@ class SettingsStorage(object):
                       'no_migrations', 'silence', 'test', 'random_n_a',
                       'relative_parameters', 'only_models',
                       'symmetric_migrations', 'split_fractions',
-                      'generate_x_transform']
+                      'generate_x_transform', 'global_log_transform',
+                      'local_log_transform']
         int_list_attrs = ['pts', 'initial_structure', 'final_structure',
                           'projections']
         float_list_attrs = ['lower_bound', 'upper_bound']
@@ -886,27 +887,25 @@ class SettingsStorage(object):
         Return object of global optimizer for optimization according to current
         settings.
         """
-        if self.global_optimizer.lower() == "genetic_algorithm":
-            ga = get_global_optimizer(self.global_optimizer)
-            ga.gen_size = self.size_of_generation
-            ga.n_elitism = self.n_elitism
-            ga.p_mutation = self.p_mutation
-            ga.p_crossover = self.p_crossover
-            ga.p_random = self.p_random
-            ga.mut_rate = self.mean_mutation_rate
-            ga.mut_strength = self.mean_mutation_strength
-            ga.const_mut_rate = self.const_for_mutation_rate
-            ga.const_mut_strength = self.const_for_mutation_strength
-            ga.eps = self.eps
-            ga.n_stuck_gen = self.stuck_generation_number
-            ga.maximize = True
-            if self.random_n_a:
-                ga.random_type = 'custom'
-                ga.custom_rand_gen = custom_generator
-            return ga
         opt = get_global_optimizer(self.global_optimizer)
-#        opt.log_transform = True
+        if self.global_optimizer.lower() == "genetic_algorithm":
+            opt.gen_size = self.size_of_generation
+            opt.n_elitism = self.n_elitism
+            opt.p_mutation = self.p_mutation
+            opt.p_crossover = self.p_crossover
+            opt.p_random = self.p_random
+            opt.mut_rate = self.mean_mutation_rate
+            opt.mut_strength = self.mean_mutation_strength
+            opt.const_mut_rate = self.const_for_mutation_rate
+            opt.const_mut_strength = self.const_for_mutation_strength
+            opt.eps = self.eps
+            opt.n_stuck_gen = self.stuck_generation_number
+
+        opt.log_transform = self.global_log_transform
         opt.maximize = True
+        if self.random_n_a:
+            opt.random_type = 'custom'
+            opt.custom_rand_gen = custom_generator
         return opt
 
     def get_local_optimizer(self):
@@ -916,6 +915,7 @@ class SettingsStorage(object):
         """
         ls = get_local_optimizer(self.local_optimizer)
         ls.maximize = True
+        ls.log_transform = self.local_log_transform
         return ls
 
 #    def get_linear_constrain(self, engine):
