@@ -176,7 +176,10 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         bo.run_optimization(max_iter=min(maxiter, maxeval)-len(X_init), eps=0,
                             verbosity=False)
 
-        self.run_info.result = OptimizerResult.from_GPyOpt_OptimizerResult(bo)
+        result = OptimizerResult.from_GPyOpt_OptimizerResult(bo)
+        self.run_info.result.success = True
+        self.run_info.status = result.status
+        self.run_info.message = result.message
         return self.run_info.result
 
 
