@@ -137,7 +137,9 @@ Y_init = None
 mutation_rate = None
 
 global_maxiter = None
+global_maxeval = None
 local_maxiter = None
+local_maxeval = None
 
 # Additional constants
 P_IDS = {'n': PopulationSizeVariable, 't': TimeVariable,

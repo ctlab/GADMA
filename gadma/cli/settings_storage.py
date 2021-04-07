@@ -93,7 +93,8 @@ class SettingsStorage(object):
                      'draw_models_every_n_iteration', 'size_of_generation',
                      'number_of_repeats', 'number_of_processes',
                      'number_of_populations', 'global_maxiter',
-                     'local_maxiter', 'num_init_const']
+                     'global_maxeval', 'local_maxiter', 'local_maxeval',
+                     'num_init_const']
         float_attrs = ['theta0', 'time_for_generation', 'eps',
                        'const_of_time_in_drawing', 'vmin', 'min_n', 'max_n',
                        'min_t', 'max_t', 'min_m', 'max_m',
