@@ -98,7 +98,7 @@ class TestRestore(unittest.TestCase):
             save_file = "save_file"
             report_file = "report_file"
             res1 = opt.optimize(f, variables, x0=x0, maxiter=5, verbose=1,
-#                                report_file=report_file,
+                                report_file=report_file,
                                 save_file=save_file)
             res2 = opt.optimize(f, variables, x0=x0, maxiter=5, verbose=1,
                                 report_file=report_file,

@@ -44,6 +44,25 @@ class Variable(object):
         self.var_type = var_type
         self.domain = domain
         self.rand_gen = rand_gen
+        self._log_transformed = False
+
+    @property
+    def log_transformed(self):
+        return self._log_transformed
+
+    @log_transformed.setter
+    def log_transformed(self, new_value):
+        if self._log_transformed == new_value:
+            return
+        assert isinstance(new_value, bool)
+        if new_value:
+            self.apply_logarithm()
+        else:
+            self.apply_logarithm(back=True)
+        self._log_transformed = new_value
+
+    def apply_logarithm(self, back=False):
+        raise NotImplementedError
 
     def __copy__(self):
         return self
@@ -56,6 +75,10 @@ class Variable(object):
         :param `*args`: arguments to pass in `rand_gen`.
         :param `**kwargs`: kwargs to pass in `rand_gen`.
         """
+        if self.log_transformed:
+            return np.log(self.rand_gen.__call__(np.exp(self.domain),
+                                                 *args,
+                                                 **kwargs))
         return self.rand_gen.__call__(self.domain, *args, **kwargs)
 
     def __str__(self):
@@ -128,6 +151,15 @@ class ContinuousVariable(Variable):
         return (self.domain[0] < value < self.domain[1] or
                 np.isclose(value, self.domain[0]) or
                 np.isclose(value, self.domain[1]))
+
+    def apply_logarithm(self, back=False):
+        """
+        Applies logarithm transform to the variable. Domain and random
+        generator are changed.
+        """
+        if back:
+            self.domain = np.exp(self.domain).tolist()
+        self.domain = np.log(self.domain).tolist()
 
 
 class DiscreteVariable(Variable):
@@ -427,6 +459,14 @@ class FractionVariable(DemographicVariable, ContinuousVariable):
                                                domain=domain,
                                                rand_gen=rand_gen)
 
+    @staticmethod
+    def _transform_value_from_gen_to_phys(value, Nanc):
+        return value
+
+    @staticmethod
+    def _transform_value_from_phys_to_gen(value, Nanc):
+        return value
+
 
 class Dynamic(object):
     """
@@ -604,3 +644,11 @@ class DynamicVariable(DemographicVariable, DiscreteVariable):
         :raises AttributeError: Dynamic variable has incomparative values.
         """
         raise AttributeError("DynamicVariable domain has incomparative values")
+
+    @staticmethod
+    def _transform_value_from_gen_to_phys(value, Nanc):
+        return value
+
+    @staticmethod
+    def _transform_value_from_phys_to_gen(value, Nanc):
+        return value

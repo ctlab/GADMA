@@ -11,6 +11,7 @@ from ..utils import logarithm_transform, exponent_transform, ident_transform
 from ..utils import apply_transform
 from ..utils import serialize_meta_array, deserialize_meta_array
 from ..utils import DiscreteVariable
+from ..utils.utils import _is_valid_for_log
 from .optimizer_result import OptimizerResult
 import pickle
 from functools import partial
@@ -119,6 +120,10 @@ class Optimizer(object):
         :param linear_constrain: Linear constrain on `x`.
         :type linear_constrain: :class:`gadma.optimizers.LinearConstrain`
         """
+        if (self.log_transform and
+                np.all([not var.log_transformed for var in variables])):
+            # We got not transformed variables and we want to transform them
+            variables = self._prepare_variables(variables)
         x_tr = apply_transform(variables, self.inv_transform, x)
         if linear_constrain is not None:
             if not linear_constrain.fits(x_tr):
@@ -160,6 +165,16 @@ class Optimizer(object):
         if cache:
             f_wrapped = cache_func(f_wrapped)
         return f_wrapped
+
+    def _prepare_variables(self, variables):
+        if not self.log_transform:
+            return variables
+        vars_in_opt = copy.deepcopy(variables)
+        where_to_transform = [_is_valid_for_log(var) for var in variables]
+        for i, var in enumerate(vars_in_opt):
+            if where_to_transform[i]:
+                vars_in_opt[i].log_transformed = True
+        return vars_in_opt
 
     def check_variables(self, variables):
         """
@@ -466,10 +481,7 @@ class Optimizer(object):
             save_file = ensure_file_existence(save_file)
 
         # prepare variables and transform their domain
-        vars_in_opt = copy.deepcopy(variables)
-        for var in vars_in_opt:
-            if not isinstance(var, DiscreteVariable):
-                var.domain = self.transform(var.domain)
+        vars_in_opt = self._prepare_variables(variables)
 
         # Prepare function to use it.
         # Fix args and cache
@@ -501,8 +513,8 @@ class Optimizer(object):
         if self.run_info.result.success:
             return self.run_info.result
 
-        optimize_kwargs = self.process_optimize_kwargs(f=prepared_f,
-                                                       variables=variables,
+        optimize_kwargs = self.process_optimize_kwargs(f=f_in_opt,
+                                                       variables=vars_in_opt,
                                                        **optimize_kwargs)
 
         def iter_callback(x, y, X_iter, Y_iter, **update_kwargs):

@@ -67,15 +67,16 @@ class GlobalOptimizer(Optimizer):
                     arr.append(np.random.uniform(*var.domain))
                 else:
                     arr.append(np.random.choice(var.domain))
-            return np.array(arr, dtype=get_correct_dtype(arr))
+            arr = np.array(arr, dtype=get_correct_dtype(arr))
         elif random_type == 'resample':
             arr = [var.resample() for var in variables]
-            return np.array(arr, dtype=get_correct_dtype(arr))
+            arr = np.array(arr, dtype=get_correct_dtype(arr))
         elif random_type == 'custom':
-            return custom_rand_gen(variables)
+            arr = custom_rand_gen(variables)
         else:
             raise ValueError(f"Unknown type of generation of random "
                              f"solution: {random_type}.")
+        return arr
 
     def initial_design(self, f, variables, num_init,
                        X_init=None, Y_init=None,
@@ -112,8 +113,8 @@ class GlobalOptimizer(Optimizer):
                 Y.append(f(x))
         for _ in range(num_init - len(X)):
             x = self.randomize(variables, random_type, custom_rand_gen)
-            X.append(apply_transform(variables, self.transform, x))
-            Y.append(self.sign * f(x))
+            X.append(x)
+            Y.append(f(x))
         return X, Y
 
     def _update_X_init_Y_init(self, X_init, Y_init, X_out, Y_out):

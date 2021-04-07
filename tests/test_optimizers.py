@@ -112,10 +112,11 @@ class TestBaseOptClass(unittest.TestCase):
         opt3 = cls(maximize=True)
         opt4 = cls(log_transform=True, maximize=True)
 
-        f = np.sin
-        x = 0.5
+        def f(x):
+            return np.sin(x)[0]
+        x = [0.5]
         y = f(x)
-        variables = [ContinuousVariable("var", domain=[0, 1])]
+        variables = [ContinuousVariable("var", domain=[1, 2])]
 
         msg = f" ({cls.__name__})"
         self.assertEqual(opt1.evaluate(f=f, variables=variables, x=x),
@@ -128,6 +129,15 @@ class TestBaseOptClass(unittest.TestCase):
                          -y,
                          msg=msg)
         self.assertEqual(opt4.evaluate(f=f, variables=variables, x=np.log(x)),
+                         -y,
+                         msg=msg)
+
+        # And test that if 0 is in domain log is not working
+        variables = [ContinuousVariable("var", domain=[0, 2])]
+        self.assertEqual(opt2.evaluate(f=f, variables=variables, x=x),
+                         y,
+                         msg=msg)
+        self.assertEqual(opt4.evaluate(f=f, variables=variables, x=x),
                          -y,
                          msg=msg)
 
@@ -210,11 +220,10 @@ class TestLocalOpt(TestBaseOptClass):
         f = np.sin
         x = [0.5]
         y = f(x)
-        variables = [ContinuousVariable('var', domain=[1e-15, 1])]
+        variables = [ContinuousVariable('var', domain=[1e-5, 1])]
 
         for optim in all_local_optimizers():
-            vars_tr = copy.deepcopy(variables)
-            vars_tr[0].domain = optim.transform(vars_tr[0].domain)
+            vars_tr = optim._prepare_variables(variables)
             self.assertTrue(vars_tr[0].correct_value(optim.transform(x)[0]))
             self.assertEqual(optim.evaluate(f=f, variables=vars_tr,
                                             x=optim.transform(x), args=()), y)

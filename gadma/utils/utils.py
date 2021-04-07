@@ -21,13 +21,23 @@ def logarithm_transform(x):
     return np.log(x)
 
 
-def apply_transform(variables, transform, x):
+def _is_valid_for_log(variable):
     from .variables import ContinuousVariable
-    is_float = [isinstance(var, ContinuousVariable) for var in variables]
-    if np.all(is_float):
+    return (isinstance(variable, ContinuousVariable) and
+            not variable.correct_value(0))
+
+
+def apply_transform(variables, transform, x):
+    """
+    Applies transform to `x`. Usually is used for logarithm and exponential
+    transforms. So value if `x` is transformed if it is float
+    (ContinuousVariable) and does not have 0 in its domain.
+    """
+    is_good = [var.log_transformed for var in variables]
+    if np.all(is_good):
         return transform(x)
     x = np.array(x, dtype=get_correct_dtype(x))
-    x[is_float] = transform(x[is_float])
+    x[is_good] = transform(x[is_good])
     return x
 
 
