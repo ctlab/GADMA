@@ -143,6 +143,9 @@ local_maxiter = None
 local_maxeval = None
 local_log_transform = True
 
+# for bayesian optimization
+use_gpyopt = True
+
 # Additional constants
 P_IDS = {'n': PopulationSizeVariable, 't': TimeVariable,
          'm': MigrationVariable, 'd': DynamicVariable, 's': FractionVariable,

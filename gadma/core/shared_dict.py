@@ -56,6 +56,7 @@ class SharedDict(object):
         except KeyError:
             process_dict = OrderedDict()
         process_dict[group] = copy.deepcopy(model)
+        print(process, process_dict)
         self.dict[process] = process_dict
 
     def update_best_model_for_process(self, process, group, model, key=None):

@@ -110,7 +110,7 @@ class SettingsStorage(object):
                       'relative_parameters', 'only_models',
                       'symmetric_migrations', 'split_fractions',
                       'generate_x_transform', 'global_log_transform',
-                      'local_log_transform']
+                      'local_log_transform', 'use_gpyopt']
         int_list_attrs = ['pts', 'initial_structure', 'final_structure',
                           'projections']
         float_list_attrs = ['lower_bound', 'upper_bound']
@@ -906,6 +906,9 @@ class SettingsStorage(object):
         if self.random_n_a:
             opt.random_type = 'custom'
             opt.custom_rand_gen = custom_generator
+
+        if self.global_optimizer.lower() == "bayesian_optimization":
+            opt.use_gpyopt = self.use_gpyopt
         return opt
 
     def get_local_optimizer(self):
