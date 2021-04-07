@@ -247,8 +247,8 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             X_out.insert(0, x_best)
             Y_out.insert(0, y_best)
 
-        X_total = global_result.X + local_result.X
-        Y_total = global_result.Y + local_result.Y
+        X_total = list(global_result.X) + list(local_result.X)
+        Y_total = list(global_result.Y) + list(local_result.Y)
         n_eval = global_result.n_eval + local_result.n_eval
         n_iter = global_result.n_iter + local_result.n_iter
         result = OptimizerResult(x_best, y_best, success, status, message,
