@@ -119,12 +119,17 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         if self.use_gpyopt:
             import GPyOpt
             from GPyOpt.methods import BayesianOptimization
+            from GPyOpt.core.task.objective import SingleObjective
         else:
-            import MyGPyOpt as GPyOpt
-            from GPyOpt.methods import BayesianOptimization
+            import MyGPyOpt
+            from MyGPyOpt.methods import BayesianOptimization
+            from MyGPyOpt.core.task.objective import SingleObjective
 
         if maxiter is None:
-            maxiter = 100
+            if maxeval is not None:
+                maxiter = maxeval
+            else:
+                maxiter = 100
         if maxeval is None:
             maxeval = maxiter
 
@@ -148,13 +153,13 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         gpy_domain = self.get_domain(variables)
 
         Y_init = np.array(Y_init).reshape(len(Y_init), -1)
+        X_init = np.array(X_init, dtype=float)
 
         bo = BayesianOptimization(f=f,
                                   domain=gpy_domain,
                                   model_type='GP',
                                   acquisition_type=self.acquisition_type,
                                   kernel=kernel,
-                                  ARD=self.ARD,
                                   X=np.array(X_init),
                                   Y=np.array(Y_init),
                                   exact_feval=True,
@@ -177,7 +182,7 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             return np.array(Y).reshape(len(Y), -1)
 
         bo.f = bo._sign(f_in_gpyopt)
-        bo.objective = GPyOpt.core.task.objective.SingleObjective(
+        bo.objective = SingleObjective(
             bo.f, bo.batch_size, bo.objective_name)
 
         bo.run_optimization(max_iter=min(maxiter, maxeval)-len(X_init), eps=0,
@@ -252,7 +257,10 @@ class SMACOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         from .smac_optim import SMAC4EPMOpimizer
 
         if maxiter is None:
-            maxiter = 100
+            if maxeval is not None:
+                maxiter = maxeval
+            else:
+                maxiter = 100
         if maxeval is None:
             maxeval = (maxiter * self.n_suggestions +
                        self.run_info.result.n_eval)
@@ -269,6 +277,7 @@ class SMACOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         def get_x_guess(X):
             x_guess = cs.sample_configuration(len(X))
             for i, x in enumerate(X):
+                print(x)
                 for var, par in zip(variables, x):
                     x_guess[i][var.name] = par
             return x_guess
