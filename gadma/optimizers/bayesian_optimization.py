@@ -7,7 +7,7 @@ from .global_optimizer import GlobalOptimizer, register_global_optimizer
 from .optimizer_result import OptimizerResult
 from ..utils import ContinuousVariable, WeightedMetaArray
 
-#from .. import GPyOpt
+from .. import GPyOpt
 from .. import GPy
 from .. import smac_available
 
@@ -18,7 +18,6 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
     """
     def __init__(self, kernel="Matern52", ARD=True, acquisition_type='MPI',
                  random_type='resample', custom_rand_gen=None,
-                 use_gpyopt=False,
                  log_transform=False, maximize=False):
         self.kernel_name = kernel
         self.ARD = ARD
@@ -29,7 +28,6 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             log_transform=log_transform,
             maximize=maximize
         )
-        self.use_gpyopt = use_gpyopt
 
     def _get_kernel_class(self):
         return op.attrgetter(self.kernel_name)(GPy.kern.src.stationary)
@@ -116,14 +114,8 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
     def _optimize(self, f, variables, X_init, Y_init, maxiter, maxeval,
                   iter_callback):
-        if self.use_gpyopt:
-            import GPyOpt
-            from GPyOpt.methods import BayesianOptimization
-            from GPyOpt.core.task.objective import SingleObjective
-        else:
-            import MyGPyOpt
-            from MyGPyOpt.methods import BayesianOptimization
-            from MyGPyOpt.core.task.objective import SingleObjective
+        from GPyOpt.methods import BayesianOptimization
+        from GPyOpt.core.task.objective import SingleObjective
 
         if maxiter is None:
             if maxeval is not None:

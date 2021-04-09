@@ -61,13 +61,13 @@ class SharedDict(object):
             self.dict[process] = process_dict
         except TypeError:
             try:
-               self.dict[process] = process_dict
-               warnings.warn(f"First attempt of connection failed but the "
-                             f"second worked (run {process})")
+                self.dict[process] = process_dict
+                warnings.warn(f"First attempt of connection failed but the "
+                              f"second worked (run {process})")
             except TypeError:
-               warnings.warn(f"Both attempt of connection failed for run "
-                             f"{process}. Maybe this output is not updated "
-                             f"for this run.")
+                warnings.warn(f"Both attempt of connection failed for run "
+                              f"{process}. Maybe this output is not updated "
+                              f"for this run.")
 
     def update_best_model_for_process(self, process, group, model, key=None):
         """
