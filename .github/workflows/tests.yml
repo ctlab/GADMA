@@ -47,7 +47,6 @@ jobs:
       - name: Install GADMA and its dependencies (Linux and MacOS).
         run: |
           ./install
-          python -c "import moments"
         if: matrix.os != 'windows-2019'
 
       - name: Install GADMA and its dependencies (Windows).
@@ -56,6 +55,14 @@ jobs:
           python -c "import moments"
         shell: cmd
         if: matrix.os == 'windows-2019'
+
+      - name: Install SMAC (Linux and Windows).
+        run: |
+          pip3 install scikit-optimize
+          pip3 install smac==0.12.4
+          pip3 install bayesmark
+          pip3 install configspace
+        if: matrix.os != 'macos-10.15'
 
       - name: Run tests and codecov.
         run: |

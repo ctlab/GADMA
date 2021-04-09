@@ -36,6 +36,7 @@ The following optimizers are registered:
 .. automodule:: gadma.optimizers.global_optimizer
    :members: register_global_optimizer, get_global_optimizer, all_global_optimizers, GlobalOptimizer
    :undoc-members:
+   :inherited-members:
    :show-inheritance:
 
 Genetic algorithm
@@ -44,6 +45,7 @@ Genetic algorithm
 .. automodule:: gadma.optimizers.genetic_algorithm
    :members:
    :undoc-members:
+   :inherited-members:
    :show-inheritance:
 
 Bayesian optimization
@@ -52,6 +54,7 @@ Bayesian optimization
 .. automodule:: gadma.optimizers.bayesian_optimization
    :members:
    :undoc-members:
+   :inherited-members:
    :show-inheritance:
 
 
@@ -101,6 +104,7 @@ The following optimizers are registered:
 .. automodule:: gadma.optimizers.local_optimizer
    :members: register_local_optimizer, get_local_optimizer, all_local_optimizers, LocalOptimizer, ScipyOptimizer, ScipyConstrOptimizer, ScipyUnconstrOptimizer, ManuallyConstrOptimizer, NoneOptimizer
    :undoc-members:
+   :inherited-members:
    :show-inheritance:
 
 Combinations of optimizers
@@ -111,6 +115,7 @@ Module :mod:`gadma.optimizers.combinations` contains classes of optimizers that 
 .. automodule:: gadma.optimizers.combinations
    :members:
    :undoc-members:
+   :inherited-members:
    :show-inheritance:
 
 Optimizer result
@@ -119,6 +124,7 @@ Optimizer result
 .. automodule:: gadma.optimizers.optimizer_result
    :members:
    :undoc-members:
+   :inherited-members:
    :show-inheritance:
 
 Linear constrain
@@ -127,4 +133,5 @@ Linear constrain
 .. automodule:: gadma.optimizers.linear_constrain
    :members:
    :undoc-members:
+   :inherited-members:
    :show-inheritance:

@@ -10,11 +10,12 @@ def model_func(params, ns, pts):
 	sfs = dadi.Spectrum.from_phi(phi, ns, [xx]*len(ns))
 	return sfs
 
-data = dadi.Spectrum.from_file('/home/katenos/Workspace/popgen/GADMA/fs_examples/YRI_CEU.fs')
+data = dadi.Spectrum.from_file('/home/katenos/Workspace/popgen/temp/GADMA/examples/changing_theta/YRI_CEU.fs')
+data.pop_ids = ['YRI', 'CEU']
 pts = [20, 30, 40]
 ns = data.sample_sizes
 
-p0 = [0.5486063598420795, 0.6706838903786262, 5.131554293850997, 1.238827852731242, 0.9439077929160516, 0]
+p0 = [0.24495360145858128, 0.2840682042555172, 1.4535376261633102, 0.2843141721817536, 0.0, 1.881282084348083]
 func_ex = dadi.Numerics.make_extrap_log_func(model_func)
 model = func_ex(p0, ns, pts)
 ll_model = dadi.Inference.ll_multinom(model, data)

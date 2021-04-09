@@ -5,6 +5,7 @@ from multiprocessing import Manager
 from functools import partial
 from collections import OrderedDict
 import numpy as np
+import warnings
 
 
 class SharedDict(object):
@@ -56,7 +57,17 @@ class SharedDict(object):
         except KeyError:
             process_dict = OrderedDict()
         process_dict[group] = copy.deepcopy(model)
-        self.dict[process] = process_dict
+        try:
+            self.dict[process] = process_dict
+        except TypeError:
+            try:
+                self.dict[process] = process_dict
+                warnings.warn(f"First attempt of connection failed but the "
+                              f"second worked (run {process})")
+            except TypeError:
+                warnings.warn(f"Both attempt of connection failed for run "
+                              f"{process}. Maybe this output is not updated "
+                              f"for this run.")
 
     def update_best_model_for_process(self, process, group, model, key=None):
         """

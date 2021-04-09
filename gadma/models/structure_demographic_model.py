@@ -1,6 +1,6 @@
 from ..utils import Variable, PopulationSizeVariable, TimeVariable
 from ..utils import MigrationVariable, DynamicVariable, SelectionVariable,\
-                    FractionVariable
+                    FractionVariable, ContinuousVariable
 from . import Epoch, Split
 from .variables_combinations import Multiplication, Subtraction
 from .demographic_model import EpochDemographicModel
@@ -494,4 +494,9 @@ class StructureDemographicModel(EpochDemographicModel):
                 raise ValueError("Some changes in demographic models are not "
                                  "allowed or implemented. Got new variable "
                                  f"({var}) that cannot be processed.")
-        return [var2value[var] for var in self.variables]
+        x_final = [var2value[var] for var in self.variables]
+        for i in range(len(self.variables)):
+            var = self.variables[i]
+            if isinstance(var, ContinuousVariable):
+                x_final[i] = min(max(x_final[i], var.domain[0]), var.domain[1])
+        return x_final

@@ -1,4 +1,5 @@
 import numpy as np
+from .utils import get_correct_dtype
 
 
 def trunc_normal(mean, sigma, lower, upper):
@@ -90,11 +91,16 @@ def custom_generator(variables):
     values = list()
     for var in variables:
         x = var.resample()
-        values.append(var.translate_value_into("physical", value=x, Nanc=N_A))
+        if var.log_transformed:
+            x = np.exp(x)
+        x = var._transform_value_from_gen_to_phys(value=x, Nanc=N_A)
+        if var.log_transformed:
+            x = np.log(x)
+        values.append(x)
         if isinstance(var, ContinuousVariable):
             values[-1] = max(values[-1], var.domain[0])
             values[-1] = min(values[-1], var.domain[1])
-    return np.array(values, dtype=object)
+    return np.array(values, dtype=get_correct_dtype(values))
 
 
 class DemographicGenerator:
@@ -118,7 +124,6 @@ class DemographicGenerator:
 
 def rescale_generator(generator, rescale_function):
     def wrap_generator(domain, *args, **kwargs):
-        print(domain)
         domain = [rescale_function(x, reverse=True) for x in domain]
         res = generator(np.array(domain), *args, **kwargs)
         return rescale_function(res, reverse=False)

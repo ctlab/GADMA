@@ -41,6 +41,15 @@ try:
     import GPyOpt
 except ImportError:
     GPyOpt = None
+try:
+    import smac
+    import ConfigSpace
+    import bayesmark
+    smac_available = True
+except ImportError:
+    smac_available = False
+
+import warnings
 
 PIL_available = PIL is not None
 matplotlib_available = matplotlib is not None
