@@ -1,16 +1,12 @@
-from .optimizer import ConstrainedOptimizer
+from .optimizer import ConstrainedOptimizer, Optimizer
 from .global_optimizer import GlobalOptimizer, register_global_optimizer
-from .optimizer_result import OptimizerResult
-from ..utils import sort_by_other_list, choose_by_weight, eval_wrapper
+from ..utils import sort_by_other_list, choose_by_weight
 from ..utils import trunc_normal_3_sigma_rule, DiscreteVariable,\
-                    WeightedMetaArray
-from ..utils import update_by_one_fifth_rule, ensure_file_existence, fix_args
-from ..utils import list_with_weights_for_pickle,\
-                    list_with_weights_after_pickle
-from functools import partial
+                    WeightedMetaArray, get_correct_dtype
+from ..utils import update_by_one_fifth_rule, apply_transform
+
 import numpy as np
 import copy
-import sys
 import time
 
 
@@ -134,14 +130,9 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         self.crossover_type = crossover_type
         self.crossover_k = crossover_k
         self.mutation_type = mutation_type
-        self.random_type = random_type
-        self.custom_rand_gen = custom_rand_gen
-        if self.random_type == 'custom' and self.custom_rand_gen is None:
-            raise ValueError("Please specify custom random generator "
-                             "(custom_rand_gen) for 'custom' type of random "
-                             "sampling.")
         self.one_fifth_rule = one_fifth_rule
-        super(GeneticAlgorithm, self).__init__(log_transform, maximize)
+        super(GeneticAlgorithm, self).__init__(random_type, custom_rand_gen,
+                                               log_transform, maximize)
 
     def randomize(self, variables, random_type='resample',
                   custom_rand_gen=None):
@@ -157,7 +148,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         Mutation of `x` in index `index`. For more information see
         :meth:`mutation`.
         """
-        x_mut = WeightedMetaArray(x, dtype=object)
+        x_mut = WeightedMetaArray(x)
         var = variables[index]
         # Start mutation procedure
         # 1. Uniform type
@@ -262,7 +253,8 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         inds = choose_by_weight(range(len(x)), weights, num_inds)
 
         # Copy the array to change
-        x_mut = [np.array(x, dtype=object) for _ in range(attemts)]
+        x_mut = [np.array(x, dtype=get_correct_dtype(x))
+                 for _ in range(attemts)]
 
         # Start mutation procedure
         for attempt in range(attemts):
@@ -301,12 +293,15 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         """
         assert len(parent1) == len(parent2)
 
-        parent1 = np.array(parent1, dtype=object)
-        parent2 = np.array(parent2, dtype=object)
+        parent1 = np.array(parent1, dtype=get_correct_dtype(parent1))
+        parent2 = np.array(parent2, dtype=get_correct_dtype(parent2))
 
         # Create two children - copies of parents
-        child1 = WeightedMetaArray(parent1, dtype=object)
-        child2 = WeightedMetaArray(parent2, dtype=object)
+        dtype = float
+        if parent1.dtype == object or parent2.dtype == object:
+            dtype = object
+        child1 = WeightedMetaArray(parent1, dtype=dtype)
+        child2 = WeightedMetaArray(parent2, dtype=dtype)
 
         i_att = 0
         while len(parent1) > 1 and np.all(child1 == parent1) and i_att < 5:
@@ -446,8 +441,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         # 4. Random individuals
         for i in range(n_random_gen):
             x = WeightedMetaArray(self.randomize(variables, self.random_type,
-                                                 self.custom_rand_gen),
-                                  dtype=object)
+                                                 self.custom_rand_gen))
             x.metadata = 'r'
             new_X_gen.append(x)
             new_Y_gen.append(f(x))
@@ -519,8 +513,11 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             stop_by_n_gen = n_gen >= maxiter
 
         if stop_by_n_eval:
-            status = 1
+            status = 2
             message = "MAXIMUM NUMBER OF FUNCTION EVALUATIONS ACHIEVED"
+        if stop_by_n_gen:
+            status = 3
+            message = "MAXIMUM NUMBER OF GENERATIONS ACHIEVED"
         if is_stuck:
             status = 0
             message = f"CONVERGENCE: NO IMPROVEMENT DURING {self.n_stuck_gen}"\
@@ -530,345 +527,216 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             return ret_value, status, message
         return ret_value
 
-    def write_report(self, n_gen, variables, X_gen, Y_gen, x_best, y_best,
-                     mean_time, report_file):
+    @staticmethod
+    def _write_report_to_stream(variables, run_info, stream):
         """
         Write report about one generation in report file.
+
+        :param run_info: Run info that should have at least the following
+                         fields:
+                         * `result` (:class:`gadma.optimizers.OptimizerResult`\
+                         type) - current result,
+                         * `gen_times` - list of iteration times.
+        :param report_file: File to write report. If None then to stdout.
 
         :note: All values are reported as is, i.e. `X_gen`, `x_best` should be\
                already translated from log scale if optimization did so;\
                `Y_gen` and `y_best` must be already multiplied by -1 if we\
                have maximization instead of minimization.
         """
-        if report_file is not None:
-            stream = open(report_file, 'a')
-        else:
-            stream = sys.stdout
+        n_gen = run_info.result.n_iter
+        X_gen = run_info.result.X_out
+        Y_gen = run_info.result.Y_out
+        x_best = run_info.result.x
+        y_best = run_info.result.y
+        mean_time = np.mean(run_info.gen_times)
+
         print(f"Generation #{n_gen}.", file=stream)
         print("Current generation of solutions:", file=stream)
         print("N", "Value of fitness function", "Solution",
               file=stream, sep='\t')
-        if report_file is not None:
-            stream.close()
+
         for i, (x, y) in enumerate(zip(X_gen, Y_gen)):
             # Use parent's report write function
-            super(GeneticAlgorithm, self).write_report(i, variables, x,
-                                                       f'{y: 5f}',
-                                                       report_file)
-        if report_file is not None:
-            stream = open(report_file, 'a')
+            string = Optimizer._n_iter_string(
+                n_iter=i,
+                variables=variables,
+                x=x,
+                y=f'{y: 5f}',
+            )
+            print(string, file=stream)
 
-        if self.one_fifth_rule:
-            print(f"Current mean mutation rate:\t{self.cur_mut_rate: 3f}",
-                  file=stream)
+        print(f"Current mean mutation rate:\t{run_info.cur_mut_rate: 3f}",
+              file=stream)
         print(f"Current mean number of params to change during mutation:\t"
-              f"{max(int(self.cur_mut_strength * len(x_best)), 1): 3d}",
+              f"{max(int(run_info.cur_mut_strength * len(variables)), 1): 3d}",
               file=stream)
 
         print("\n--Best solution by value of fitness function--", file=stream)
         print("Value of fitness:", y_best, file=stream)
         print("Solution:", file=stream, end='')
-        if report_file is not None:
-            stream.close()
-        super(GeneticAlgorithm, self).write_report('', variables, x_best,
-                                                   '', report_file)
-        if report_file is not None:
-            stream = open(report_file, 'a')
+
+        string = Optimizer._n_iter_string(
+            n_iter='',
+            variables=variables,
+            x=x_best,
+            y='',
+        )
+        print(string, file=stream)
 
         if mean_time is not None:
             print(f"\nMean time:\t{mean_time:.3f} sec.\n", file=stream)
         print("\n", file=stream)
 
-        if report_file is not None:
-            stream.close()
+    def _create_run_info(self):
+        """
+        Creates the initial run_info. It has the following fields:
+        * `result` - empty :class:`gadma.optimizers.OptimizerResult` with\
+          `n_iter`==-1.
+        * `cur_mut_rate` - current value of mutation rate.
+        * `cur_mut_strength` - current value of mutation strength.
+        * `n_impr_gen` - number of iteration when improvement happened.
+        * `gen_times` - list of times of iterations.
+        """
+        run_info = super(GeneticAlgorithm, self)._create_run_info()
+        run_info.cur_mut_rate = self.mut_rate
+        run_info.cur_mut_strength = self.mut_strength
+        run_info.n_impr_gen = 0
+        run_info.gen_times = []
+        return run_info
 
-    def save(self, n_gen, n_eval, n_impr_gen, X_gen, Y_gen, X_total, Y_total,
-             save_file):
+    def _update_run_info(self, run_info, x_best, y_best, X, Y,
+                         n_eval, gen_time=None, n_impr_gen=None,
+                         maxiter=None, maxeval=None):
         """
-        Save some values of genetic algorithm to file.
+        Updates fields of `run_info`after one iteration of GA.
+
+        Fields of run_info like `cur_mut_rate`, `cur_mut_strength`, `gen_times`
+        are updated. Also message, success and status from :meth:`.is_stopped`
+        are recorded to `result` field.
+
+        :param run_info: Run info to update.
+        :param gen_time: Time of iteration.
+        :param n_impr_gen: Number of iteration when improvement happened.
+        :param maxiter: Maximum number of iterations.
+        :param maxeval: Maximum number of evaluations.
         """
-        if save_file is None:
-            return
-        info = (int(n_gen), int(n_eval), int(n_impr_gen),
-                list_with_weights_for_pickle(X_gen), Y_gen,
-                list_with_weights_for_pickle(X_total), Y_total,
-                float(self.cur_mut_rate), float(self.cur_mut_strength))
-        super(GeneticAlgorithm, self).save(info, save_file)
+        super(GeneticAlgorithm, self)._update_run_info(run_info=run_info,
+                                                       x_best=x_best,
+                                                       y_best=y_best,
+                                                       X=X,
+                                                       Y=Y,
+                                                       n_eval=n_eval)
+        # Update mutation rates and strength
+        if n_impr_gen is not None:
+            run_info.n_impr_gen = n_impr_gen
+
+            # Our n_iter was already increased so -1 is applied
+            is_impr = (n_impr_gen == run_info.result.n_iter - 1)
+            if self.one_fifth_rule:
+                run_info.cur_mut_rate = update_by_one_fifth_rule(
+                    run_info.cur_mut_rate,
+                    self.const_mut_rate,
+                    is_impr
+                )
+                run_info.cur_mut_rate = min(1.0, run_info.cur_mut_rate)
+            is_mut_best = False
+            x_best = run_info.result.x
+            if hasattr(x_best, 'weights') and len(x_best.metadata) > 0:
+                is_mut_best = x_best.metadata[-1] == 'm'
+            run_info.cur_mut_strength = update_by_one_fifth_rule(
+                run_info.cur_mut_strength,
+                self.const_mut_strength,
+                is_impr and is_mut_best
+            )
+            run_info.cur_mut_strength = min(1.0, run_info.cur_mut_strength)
+
+        # Save gen_time
+        if gen_time is not None:
+            run_info.gen_times.append(gen_time)
+
+        # Create message and success status
+        stoped, status, message = self.is_stopped(run_info.result.n_iter,
+                                                  run_info.result.n_eval,
+                                                  run_info.n_impr_gen,
+                                                  maxiter,
+                                                  maxeval,
+                                                  ret_status=True)
+        run_info.success = stoped
+        run_info.result.status = status
+        run_info.result.message = message
+        return run_info
 
     def valid_restore_file(self, save_file):
+        """
+        Returns True if save_file contains valid run_info and False otherwise.
+        """
         try:
-            info = self.load(save_file)
+            run_info = self.load(save_file)
         except Exception:
             return False
-        if (not isinstance(info[0], int) or not isinstance(info[1], int) or
-                not isinstance(info[2], int)):
+        if (not isinstance(run_info.result.n_eval, int) or
+                not isinstance(run_info.result.n_iter, int) or
+                not isinstance(run_info.n_impr_gen, int)):
             return False
-        if not isinstance(info[3], list) or not isinstance(info[4], list):
+        if (not isinstance(run_info.cur_mut_rate, float) or
+                not isinstance(run_info.cur_mut_strength, float)):
             return False
-        if not isinstance(info[5], list) or not isinstance(info[6], list):
-            return False
-        if not isinstance(info[7], float) or not isinstance(info[8], float):
+        if not isinstance(run_info.gen_times, list):
             return False
         return True
 
-    def load(self, save_file):
+    def _optimize(self, f, variables, X_init, Y_init, maxiter, maxeval,
+                  iter_callback):
         """
-        Load some values of genetic algorithm from file.
+        Runs genetic algorithm to minimize value of objective function `f`.
+
+        :param f: Function to minimize.
+        :param variables: Variables of objective function.
+        :param X_init: Initial points.
+        :param Y_init: Value of `f` on `X_init`.
+        :param maxiter: Maximum number of iterations.
+        :param maxeval: Maximum number of evaluations.
+        :param iter_callback: Callback to call after each iteration.
         """
-        (n_gen, n_eval, n_impr_gen,
-         X_gen, Y_gen, X_total, Y_total,
-         cur_rate, cur_strength) = super(GeneticAlgorithm,
-                                         self).load(save_file)
-        return (n_gen, n_eval, n_impr_gen,
-                list_with_weights_after_pickle(X_gen), Y_gen,
-                list_with_weights_after_pickle(X_total), Y_total,
-                cur_rate, cur_strength)
+        X_init, Y_init = sort_by_other_list(X_init, Y_init, reverse=False)
+        X_gen = X_init[:self.gen_size]
+        Y_gen = Y_init[:self.gen_size]
 
-    def optimize(self, f, variables, args=(), num_init=50, num_init_const=None,
-                 X_init=None, Y_init=None,
-                 linear_constrain=None, maxiter=None, maxeval=None,
-                 verbose=0, callback=None, report_file=None, eval_file=None,
-                 save_file=None, restore_file=None, restore_points_only=False,
-                 restore_x_transform=None):
-        r"""
-        Return best values of `variables` that minimizes/maximizes
-        the function `f`.
+        x_best = X_gen[0]
+        y_best = Y_gen[0]
 
-        :param f: function to minimize/maximize. The usage must be the
-                  following: f(x, \*args), where x is list of values.
-        :type f: funstion
-        :param variables: list of variables of the function.
-        :type variables: list of :class:`gadma.utils.Variable`
-        :param args: Additional arguments of function `f`.
-        :type args: tuple
-        :param num_init: Number of points in initial design.
-        :type num_init: int
-        :param num_init_const: If None then `num_init` is used. Otherwise
-                               number of points in initial design is equal to
-                               `num_init_const` \* len(`variables`).
-        :param X_init: list of initial values.
-        :type X_init: list of vectors.
-        :param Y_init: value of function `f` on initial values from `X_init`.
-        :type Y_init: list of floats
-        :param linear_constrain: Linear constrain on variables.
-        :type linear_constrain: :class:`gadma.optimizers.LinearConstrain`
-        :param maxiter: maximum number of genetic algorithm's generations.
-        :type maxiter: int
-        :param maxeval: maximum number of function evaluations.
-        :type maxeval: int
-        :param verbose: Verbosity of the output. If 0 then no output.
-        :type verbose: int
-        :param callback: callback to call after each generation.
-                         It will be called as callback(x, y), where x, y -
-                         best_solution of generation and its fitness.
-        :type callback: function
-        :param report_file: File to save report. Check option `verbose`.
-        :type report_file: str
-        :param eval_file: File to save all evaluations of the function `f`.
-        :type eval_file: str
-        :param save_file: File to save information during optimization for its
-                          reconstruction.
-        :type save_file: str
-        :param restore_file: File to restore previous run.
-        :type restore_file: str
-        :param restore_points_only: Restore point/points from previous run and
-                                    run optimization from them once more. If
-                                    False then previous run will be resumed.
-        :type restore_points_only: bool
-        :param restore_x_transform: Restore points but transform them before
-                                    usage in this run.
-        :type restore_x_transform: function
-        """
-        # First we initialize initial values of some options
-        self.cur_mut_rate = self.mut_rate
-        self.cur_mut_strength = self.mut_strength
-        # initial number of generation and last impr generation
-        n_gen = 0
-        n_impr_gen = n_gen
-        n_eval_init = 0
-        X_total = []
-        Y_total = []
+        iter_callback(x_best, y_best, X_init, Y_init)
 
-        # Check for num_init
-        if num_init_const is not None:
-            num_init = num_init_const * len(variables)
-
-        # Create logging files
-        if eval_file is not None:
-            ensure_file_existence(eval_file)
-        if report_file is not None:
-            ensure_file_existence(report_file)
-        if save_file is not None:
-            ensure_file_existence(save_file)
-
-        # Prepare function to use it.
-        # Fix args and cache
-        prepared_f = self.prepare_f_for_opt(f, args)
-        # Wrap for automatic evaluation logging
-        finally_wrapped_f = eval_wrapper(prepared_f, eval_file)
-        f_in_opt = partial(self.evaluate, finally_wrapped_f)
-        f_in_opt = fix_args(f_in_opt, (), linear_constrain)
-
-        # prepare variables
-        vars_in_opt = copy.deepcopy(variables)
-        for var in vars_in_opt:
-            if not isinstance(var, DiscreteVariable):
-                var.domain = self.transform(var.domain)
-
-        # Prepare callback if need
-#        if callback is not None:
-#            callback = self.prepare_callback(callback)
-
-        # Write first line of report
-        if verbose > 0 and report_file is not None:
-            report_file = ensure_file_existence(report_file)
-
-        # Initial design
-        # restored = False
-        if restore_file is not None and self.valid_restore_file(restore_file):
-            (n_gen_old, n_eval_old, n_impr_gen_old, X_gen, Y_gen, X_total,
-             Y_total, cur_mut_rate, cur_mut_strength) = self.load(restore_file)
-            if restore_x_transform is not None:
-                X_gen = [restore_x_transform(x) for x in X_gen]
-                X_total = [restore_x_transform(x) for x in X_total]
-                # Let's remember our recalculation but this Y_gen will become
-                # Y_init and Y_init is in usual units without * sign.
-                Y_gen = [self.sign * f_in_opt(x) for x in X_gen]
-                Y_total = [None for _ in X_total]
-            if not restore_points_only:
-                n_gen = n_gen_old
-                n_impr_gen = n_impr_gen_old
-                self.cur_mut_rate = cur_mut_rate
-                self.cur_mut_strength = cur_mut_strength
-                n_eval_init = n_eval_old
-                num_init = len(X_gen)
-            if X_init is None:
-                X_init = X_gen
-                Y_init = Y_gen
-            elif Y_init is None:
-                if Y_gen is not None:
-                    assert len(X_gen) == len(Y_gen)
-                    Y_gen.extend(Y_init)
-                X_gen.extend(X_init)
-                X_init, Y_init = X_gen, Y_gen
-            elif len(X_init) == len(Y_init):
-                X_init.extend(X_gen)
-                Y_init.extend(Y_gen)
-            else:
-                assert len(X_init) > len(Y_init)
-                new_X_init = copy.copy(X_init[:len(Y_init)])
-                new_X_init.extend(X_gen)
-                new_X_init.extend(X_init[len(Y_init):])
-                Y_init.extend(Y_gen)
-                X_init = new_X_init
-            # restored = True
-
-        # Perform 0 generation of GA - initial design.
-        if X_init is not None:
-            X_init = [self.transform(x) for x in X_init]
-        if Y_init is not None:
-            Y_init = [self.sign * y for y in Y_init]
-        X_gen, Y_gen = self.initial_design(f_in_opt, variables, num_init,
-                                           X_init, Y_init, self.random_type,
-                                           self.custom_rand_gen)
-        X_gen, Y_gen = sort_by_other_list(X_gen, Y_gen, reverse=False)
-        X_gen = X_gen[:self.gen_size]
-        Y_gen = Y_gen[:self.gen_size]
-
-        # transform for save function and result
-        # X_gen and Y_gen are in translated form and X_gen_cor, Y_gen_cor not
-        # x_best and y_best will be in good units!!
-        X_gen_cor = [self.inv_transform(x) for x in X_gen]
-        Y_gen_cor = [self.sign * y for y in Y_gen]
-
-        # Save total
-        X_total.extend(copy.deepcopy(X_gen_cor))
-        Y_total.extend(copy.deepcopy(Y_gen_cor))
-
-        # Initialize number of generations, evaluations, best values and so on
-        # x_best and y_best will be in good units!!
-        n_eval = n_eval_init + prepared_f.cache_info.misses
-        x_best = X_gen_cor[0]
-        y_best = Y_gen_cor[0]
-#        assert restored or n_eval > 0
-
-        # Write report about 0 generation
-        # we save and report in units of function f that we have got.
-        if verbose > 0:
-            self.write_report(n_gen, variables, X_gen_cor, Y_gen_cor,
-                              x_best, y_best, None, report_file)
-        self.save(n_gen, n_eval, n_impr_gen, X_gen_cor, Y_gen_cor,
-                  X_total, Y_total, save_file)
-
-        # keep times of generation evaluations
-        times = list()
-
+        n_impr_gen = self.run_info.n_impr_gen
         # Begin to create generations
         while (len(variables) > 0 and
-                not self.is_stopped(n_gen, n_eval, n_impr_gen,
-                                    maxiter, maxeval)):
+                not self.is_stopped(n_gen=self.run_info.result.n_iter,
+                                    n_eval=self.run_info.result.n_eval,
+                                    impr_gen=self.run_info.n_impr_gen,
+                                    maxiter=maxiter,
+                                    maxeval=maxeval)):
             # record time of generation start
             start_time = time.time()
             # Form new generation
-            X_gen, Y_gen = self.selection(f_in_opt, variables, X_gen, Y_gen,
+            X_gen, Y_gen = self.selection(f, variables, X_gen, Y_gen,
                                           self.selection_type,
                                           self.selection_random)
 
-            X_gen_cor = [self.inv_transform(x) for x in X_gen]
-            Y_gen_cor = [self.sign * y for y in Y_gen]
-
-            # Save all generations.
-            X_total.extend(copy.deepcopy(X_gen_cor))
-            Y_total.extend(copy.deepcopy(Y_gen_cor))
-
             # Check if we improve the result
-            if self.sign * (y_best - Y_gen_cor[0]) >= self.eps:
-                n_impr_gen = n_gen
-            if self.sign * (y_best - Y_gen_cor[0]) > 0:
-                x_best = X_gen_cor[0]
-                y_best = Y_gen_cor[0]
+            if y_best - Y_gen[0] >= self.eps:
+                n_impr_gen = self.run_info.result.n_iter
+            if y_best - Y_gen[0] > 0:
+                x_best = X_gen[0]
+                y_best = Y_gen[0]
 
-            # Update mutation rates and strength
-            is_impr = (n_impr_gen == n_gen)
-            if self.one_fifth_rule:
-                self.cur_mut_rate = update_by_one_fifth_rule(
-                    self.cur_mut_rate, self.const_mut_rate, is_impr)
-                self.cur_mut_rate = min(self.cur_mut_rate, 1.0)
-            is_mut_best = False
-            if hasattr(x_best, 'weights') and len(x_best.metadata) > 0:
-                is_mut_best = x_best.metadata[-1] == 'm'
-            self.cur_mut_strength = update_by_one_fifth_rule(
-                self.cur_mut_strength, self.const_mut_strength,
-                is_impr and is_mut_best)
-            self.cur_mut_strength = min(self.cur_mut_strength, 1.0)
-
-            # Update numbers
-            n_gen += 1
-            n_eval = n_eval_init + prepared_f.cache_info.misses
-            times.append(time.time() - start_time)
-
-            # Callback
-            if callback is not None:
-                if n_impr_gen == n_gen - 1:
-                    callback(x_best, y_best)
-
-            # Write report about current generation
-            if verbose > 0 and n_gen % verbose == 0:
-                self.write_report(n_gen, variables, X_gen_cor, Y_gen_cor,
-                                  x_best, y_best, np.mean(times), report_file)
-            # Save generation
-            self.save(n_gen, n_eval, n_impr_gen, X_gen_cor, Y_gen_cor,
-                      X_total, Y_total, save_file)
-
-        # Construct OptimizerResult object to return
-        _, status, message = self.is_stopped(n_gen, n_eval, n_impr_gen,
-                                             maxiter, maxeval,
-                                             ret_status=True)
-        result = OptimizerResult(x=x_best, y=y_best, success=True,
-                                 status=status, message=message, X=X_total,
-                                 Y=Y_total, n_eval=n_eval, n_iter=n_gen,
-                                 X_out=X_gen_cor, Y_out=Y_gen_cor)
-        return result
+            gen_time = time.time() - start_time
+            update_kwargs = {"gen_time": gen_time,
+                             "n_impr_gen": n_impr_gen,
+                             "maxiter": maxiter,
+                             "maxeval": maxeval}
+            iter_callback(x_best, y_best, X_gen, Y_gen, **update_kwargs)
+        return self.run_info.result
 
 
 register_global_optimizer('Genetic_algorithm', GeneticAlgorithm)

@@ -41,6 +41,7 @@ class TestVariables(unittest.TestCase):
             self.assertTrue(value <= domain[1])
             self.assertRaises(ValueError, variable.__class__, variable.name,
                               variable.domain[::-1])
+            variable.correct_value(variable.domain[1] + 1e-15)
         elif isinstance(variable, DiscreteVariable):
             pos_val = variable.get_possible_values()
             self.assertTrue(value in pos_val)
@@ -89,6 +90,15 @@ class TestVariables(unittest.TestCase):
             self.assertEqual(func(t), y2)
 
     def test_demographic_variables(self):
+        var = DemographicVariable("dem")
+        self.assertRaises(NotImplementedError,
+                          var._transform_value_from_gen_to_phys,
+                          value=0,
+                          Nanc=10)
+        self.assertRaises(NotImplementedError,
+                          var._transform_value_from_phys_to_gen,
+                          value=0,
+                          Nanc=10)
         var1 = PopulationSizeVariable("var1", units="physical")
         var2 = PopulationSizeVariable("var2")
         self.assertEqual(var1.translate_value_into("physical", 1e4), 1e4)
@@ -115,6 +125,7 @@ class TestVariables(unittest.TestCase):
                 var = var_cls("name", units="physical")
                 self.assertNotEqual(list(var.domain),
                                     list(var_cls.default_domain))
+                print(var.__class__.__name__, var.domain)
                 for i in range(1000):
                     self.assertTrue(var.domain[0] <= var.resample() \
                                     <= var.domain[1])
@@ -122,6 +133,32 @@ class TestVariables(unittest.TestCase):
                 self.assertEqual(var.units, "genetic")
                 self.assertEqual(list(var.domain),
                                  list(var_cls.default_domain))
+                self.assertRaises(ValueError, var.translate_value_into,
+                                  units="physical", value=var.domain[0])
+                self.assertRaises(ValueError, var.translate_value_into,
+                                  units="some_invalid", value=var.domain[0],
+                                  Nanc=1e4)
+
+                # rescaling
+                old_domain = np.array(var.domain)
+                var.rescale(Nref=2)
+                var.resample()
+                # as it is genetic units nothing happens
+                self.assertEqual(list(old_domain), list(var.domain))
+
+                var.translate_units_to("physical")
+                old_domain = np.array(var.domain)
+                var.rescale(Nref=None)
+                # As it is Nref == None nothing happens
+                self.assertEqual(list(old_domain), list(var.domain))
+                var.rescale(Nref=2)
+                var.resample()
+                self.assertNotEqual(list(old_domain), list(var.domain))
+
+                # rescale back
+                var.rescale(Nref=2, reverse=True)
+                var.resample()
+                self.assertEqual(list(old_domain), list(var.domain))
             else:
                 var = var_cls("name")
                 self.assertEqual(var.units, "universal")
@@ -131,4 +168,6 @@ class TestVariables(unittest.TestCase):
                     var.translate_units_to(units)
                     self.assertEqual(var.units, "universal")
                     self.assertEqual(list(var_orig.domain), list(var.domain))
+            self.assertRaises(ValueError, var.translate_value_into,
+                              units="physical", value=-1)
 

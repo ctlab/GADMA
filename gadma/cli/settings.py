@@ -47,6 +47,9 @@ final_structure = None
 upper_bound_of_first_split = None
 upper_bound_of_second_split = None
 
+# Glocal optimizer
+global_optimizer = "Genetic_algorithm"
+
 # GA options
 num_init_const = None
 size_of_generation = 10
@@ -134,7 +137,11 @@ Y_init = None
 mutation_rate = None
 
 global_maxiter = None
+global_maxeval = None
+global_log_transform = False
 local_maxiter = None
+local_maxeval = None
+local_log_transform = True
 
 # Additional constants
 P_IDS = {'n': PopulationSizeVariable, 't': TimeVariable,

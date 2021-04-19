@@ -12,9 +12,11 @@ import pickle
 import os
 import sys
 import timeit
+import types
+import copy
 
 EXAMPLE_FOLDER = os.path.join(os.path.dirname(__file__), "test_data")
-EXAMPLE_DATA = os.path.join(EXAMPLE_FOLDER, "YRI_CEU.fs")
+EXAMPLE_DATA = os.path.join(EXAMPLE_FOLDER, "DATA", "sfs", "YRI_CEU.fs")
 
 class TestGlobalOptimizers(unittest.TestCase):
     def test_registered_global_optimizers_fails(self):
@@ -208,8 +210,9 @@ class TestGeneticAlg(unittest.TestCase):
             variables.append(ContinuousVariable('var%d' % i, domain=[0,1]))
         x = [[var.resample() for var in variables] for _ in range(20)]
         ga = get_global_optimizer("Genetic_algorithm")
-        ga.write_report(0, variables, [[]], [10], [], 10,
-                        0.1, report_file=None)
+        run_info = ga._create_run_info()
+        run_info.result.x = []
+        ga.write_report(variables, run_info, report_file=None)
 
     def run_example(self, engine_id, example_func, not_bayesopt=False):
         args = ()
@@ -234,7 +237,7 @@ class TestGeneticAlg(unittest.TestCase):
                 self.assertEqual(res.y, f(res.x, *args))
                 self.assertTrue(os.stat(eval_file).st_size > 0)
                 self.assertTrue(os.stat(report_file).st_size > 0)
-                int_lines = 0
+                int_lines = -1
                 with open(eval_file) as fl:
                     for line in fl:
                         int_lines += 1
@@ -318,35 +321,57 @@ class TestGeneticAlg(unittest.TestCase):
     def test_restore_file(self):
         ga = get_global_optimizer("Genetic_algorithm")
         output_file = os.path.join(EXAMPLE_FOLDER, "save_file")
+        run_info = ga._create_run_info()
+        run_info.result.x = []
         try:
             with open(output_file, 'wb') as f:
                 pickle.dump([1, 2, 3], f)
             self.assertEqual(ga.valid_restore_file(output_file), False)
 
+            bad_run_info = copy.deepcopy(run_info)
+            bad_run_info.result = ""
             with open(output_file, 'wb') as f:
-                pickle.dump((1, 2, 3), f)
+                pickle.dump(bad_run_info, f)
+            self.assertEqual(ga.valid_restore_file(output_file), False)
+
+            bad_run_info = types.SimpleNamespace(result=1, n_iter=0)
+            with open(output_file, 'wb') as f:
+                pickle.dump(bad_run_info, f)
+            self.assertEqual(ga.valid_restore_file(output_file), False)
+
+            bad_run_info = copy.deepcopy(run_info)
+            bad_run_info.result.n_eval = "not_int"
+            with open(output_file, 'wb') as f:
+                pickle.dump(bad_run_info, f)
+            self.assertEqual(ga.valid_restore_file(output_file), False)
+
+            bad_run_info = copy.deepcopy(run_info)
+            bad_run_info.result.X_out = 0
+            with open(output_file, 'wb') as f:
+                pickle.dump(bad_run_info, f)
+            self.assertEqual(ga.valid_restore_file(output_file), False)
+
+            bad_run_info = copy.deepcopy(run_info)
+            bad_run_info.result.Y = 0
+            with open(output_file, 'wb') as f:
+                pickle.dump(bad_run_info, f)
+            self.assertEqual(ga.valid_restore_file(output_file), False)
+
+            bad_run_info = copy.deepcopy(run_info)
+            bad_run_info.cur_mut_strength = "not_float"
+            with open(output_file, 'wb') as f:
+                pickle.dump(bad_run_info, f)
+            self.assertEqual(ga.valid_restore_file(output_file), False)
+
+            bad_run_info = copy.deepcopy(run_info)
+            bad_run_info.gen_times = 0
+            with open(output_file, 'wb') as f:
+                pickle.dump(bad_run_info, f)
             self.assertEqual(ga.valid_restore_file(output_file), False)
 
             with open(output_file, 'wb') as f:
-                pickle.dump((1, 2.5, 3, 4, 5, 6, 7, 8, 9), f)
-            self.assertEqual(ga.valid_restore_file(output_file), False)
-
-            with open(output_file, 'wb') as f:
-                pickle.dump((1, 2, 3, 4, 5, 6, 7, 8, 9), f)
-            self.assertEqual(ga.valid_restore_file(output_file), False)
-
-            with open(output_file, 'wb') as f:
-                pickle.dump((1, 2, 3, [4], [5], 6, 7, 8, 9), f)
-            self.assertEqual(ga.valid_restore_file(output_file), False)
-
-            with open(output_file, 'wb') as f:
-                pickle.dump((1, 2, 3, [4], [5], [6], [7], "8", "9"), f)
-            self.assertEqual(ga.valid_restore_file(output_file), False)
-
-            with open(output_file, 'wb') as f:
-                pickle.dump((1, 2, 3, [4], [5], [6], [7], 8.5, 9.5), f)
+                pickle.dump(run_info, f)
             self.assertEqual(ga.valid_restore_file(output_file), True)
-
         finally:
             os.remove(output_file)
 
@@ -360,7 +385,7 @@ class TestInference(unittest.TestCase):
                 else:
                     args = ()
                 filename = f"demographic_model_{engine.id}_YRI_CEU.py"
-                location = os.path.join(EXAMPLE_FOLDER, filename)
+                location = os.path.join(EXAMPLE_FOLDER, "MODELS", filename)
                 spec = importlib.util.spec_from_file_location("module",
                                                               location)
                 module = importlib.util.module_from_spec(spec)
@@ -399,10 +424,12 @@ class TestInference(unittest.TestCase):
 #                    report_file='report_file')
 
     def test_inference_claic_funcs(self):
-        dirname = os.path.join(EXAMPLE_FOLDER, 'YRI_CEU_test_boots')
+        dirname = os.path.join(EXAMPLE_FOLDER, "DATA",
+                               "sfs", 'YRI_CEU_test_boots')
         for engine in all_engines():
             projections = (4, 4)
             data = engine.read_data(SFSDataHolder(os.path.join(EXAMPLE_FOLDER,
+                                                               "DATA", "sfs",
                                                                'YRI_CEU.fs'),
                                                   projections=projections))
             boots = gadma.Inference.load_data_from_dir(dirname, engine.id,
@@ -410,7 +437,7 @@ class TestInference(unittest.TestCase):
 
             p0 = [1.881, 0.0710, 1.845, 0.911, 0.355, 0.111]
             filename = os.path.join(
-                EXAMPLE_FOLDER, f'demographic_model_{engine.id}_YRI_CEU.py')
+                EXAMPLE_FOLDER, "MODELS", f'demographic_model_{engine.id}_YRI_CEU.py')
             spec = importlib.util.spec_from_file_location("module", filename)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)

@@ -1,7 +1,7 @@
-Input file : tests/test_data/small_1pop.fs
+Input file : tests/test_data/DATA/sfs/small_1pop.fs
 Output directory: tests/output_dir
 Projections : 6
-Directory with bootstrap: tests/test_data/small_1_pop_bootstrap
+Directory with bootstrap: tests/test_data/DATA/sfs/small_1_pop_bootstrap
 Linked SNP's : True
 Engine : dadi
 Pts : 5, 10, 15

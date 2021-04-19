@@ -58,7 +58,7 @@ class TestModels(unittest.TestCase):
         for engine in all_engines():
             with self.subTest(engine=engine.id):
                 filename = f"demographic_model_{engine.id}_YRI_CEU.py"
-                location = os.path.join(EXAMPLE_FOLDER, filename)
+                location = os.path.join(EXAMPLE_FOLDER, "MODELS", filename)
                 spec = importlib.util.spec_from_file_location("module",
                                                               location)
                 module = importlib.util.module_from_spec(spec)
@@ -70,6 +70,30 @@ class TestModels(unittest.TestCase):
                 dm.as_custom_string([var.resample() for var in dm.variables])
                 dm.as_custom_string({var.name: var.resample()
                                      for var in dm.variables})
+
+    def test_epoch_dm_init(self):
+        dm = EpochDemographicModel()
+        self.assertEqual(len(dm.variables), 0)
+        self.assertFalse(dm.has_anc_size)
+        self.assertEqual(dm.Nanc_size, 1)
+
+        dm = EpochDemographicModel(has_anc_size=True)
+        self.assertTrue(dm.has_anc_size)
+
+        dm = EpochDemographicModel(Nanc_size=10000)
+        self.assertTrue(dm.has_anc_size)
+        self.assertEqual(dm.get_Nanc_size(), 10000)
+
+        var_phys = PopulationSizeVariable("nu1", units="physical")
+        var_gen = PopulationSizeVariable("nu2", units="genetic")
+        var_t = TimeVariable("t", units="physical")
+
+        dm = EpochDemographicModel(has_anc_size=False)
+        self.assertRaises(ValueError, dm.add_variable, var_phys)
+        self.assertRaises(ValueError, dm.get_Nanc_size)
+
+        self.assertRaises(ValueError, EpochDemographicModel, Nanc_size=var_gen)
+        self.assertRaises(ValueError, EpochDemographicModel, Nanc_size=var_t)
 
     @unittest.skipIf(DADI_NOT_AVAILABLE, "Dadi module is not installed")
     def test_dadi_1pop_0(self):
@@ -298,17 +322,20 @@ class TestModels(unittest.TestCase):
 
     def _sfs_datasets(self):
         yield ("usual fs",
-               SFSDataHolder(os.path.join(EXAMPLE_FOLDER, '3d_sfs.fs')))
+               SFSDataHolder(os.path.join(EXAMPLE_FOLDER, 'DATA',
+                                          'sfs', '3d_sfs.fs')))
         yield ("folded fs with mixed labels and downsizing",
-               SFSDataHolder(os.path.join(EXAMPLE_FOLDER, '3d_sfs.fs'),
+               SFSDataHolder(os.path.join(EXAMPLE_FOLDER, 'DATA',
+                                          'sfs', '3d_sfs.fs'),
                              projections=[8, 8, 8],
                              population_labels=['YRI', 'ASW', 'CEU'],
                              outgroup=False))
         yield ("fs without pop labels",
-               SFSDataHolder(os.path.join(EXAMPLE_FOLDER, '3d_sfs_no_name.fs'),
+               SFSDataHolder(os.path.join(EXAMPLE_FOLDER, 'DATA',
+                                          'sfs', '3d_sfs_no_name.fs'),
                              population_labels=['1', '2', '3']))
         yield ("dadi snp file",
-               SFSDataHolder(os.path.join(EXAMPLE_FOLDER,
+               SFSDataHolder(os.path.join(EXAMPLE_FOLDER, 'DATA', 'sfs',
                                           'dadi_snp_file.txt')))
 
     def test_code_generation(self):
@@ -325,6 +352,7 @@ class TestModels(unittest.TestCase):
         h = FractionVariable('h')
         fxnu1 = Multiplication(f, nu1)
         tf = Multiplication(f, t)
+        t_copy = copy.deepcopy(t)
 
         model1 = EpochDemographicModel()
         model1.add_epoch(t, [nu1])
@@ -357,26 +385,26 @@ class TestModels(unittest.TestCase):
         Nu2 = PopulationSizeVariable("N2", units="physical")
         T3 = TimeVariable("T", units="physical")
 
-        model4 = EpochDemographicModel(Nanc_variable=Nanc)
+        model4 = EpochDemographicModel(Nanc_size=Nanc)
         model4.add_epoch(t, [nu1])
         model4.add_split(0, [nu1, nu2])
         model4.add_epoch(t, [nu2, fxnu1], [[0, m], [0, 0]], [d1, d2])
 
-        model5 = EpochDemographicModel(Nanc_variable=Nanc)
+        model5 = EpochDemographicModel(Nanc_size=Nanc)
         model5.add_epoch(t, [nu1])
         model5.add_split(0, [nu1, nu2])
         model5.add_epoch(T3, [Nu2, fxnu1], [[0, m], [0, 0]], [d1, d2])
         model5.add_split(1, [nu2, nu1])
         model5.add_epoch(t, [nu1, nu2, nu1], None, None)
 
-
-        values = {nu1: 2, nu2: 0.5, nu3: 0.5, t: 0.3, t2: 0.5,
+        values = {nu1: 2, nu2: 0.5, nu3: 0.5, t_copy: 0.3, t2: 0.5,
                   m: 0.1, s: 0.1, d1: 'Exp', d2: 'Lin', f: 0.5, h: 0.3,
                   Nanc: 10000, Nu2: 5000, T3: 4000}
 
         for engine in all_engines():
             customfile = os.path.join(
-                EXAMPLE_FOLDER, f"demographic_model_{engine.id}_3pops.py")
+                EXAMPLE_FOLDER, "MODELS",
+                f"demographic_model_{engine.id}_3pops.py")
 
             spec = importlib.util.spec_from_file_location(
                 f"module_{engine.id}", customfile)

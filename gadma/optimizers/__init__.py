@@ -8,7 +8,7 @@ from .local_optimizer import ManuallyConstrOptimizer  # NOQA
 from .global_optimizer import register_global_optimizer, get_global_optimizer  # NOQA
 from .global_optimizer import all_global_optimizers, GlobalOptimizer  # NOQA
 from .genetic_algorithm import GeneticAlgorithm  # NOQA
-from .bayesian_optimization import BayesianOptimizer  # NOQA
+from .bayesian_optimization import BayesianOptimizer, SMACOptimizer  # NOQA
 from .combinations import GlobalOptimizerAndLocalOptimizer  # NOQA
 from .linear_constrain import LinearConstrain  # NOQA
 from .optimizer_result import OptimizerResult  # NOQA

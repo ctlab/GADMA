@@ -53,23 +53,22 @@ jobs:
 
       - name: Install GADMA and its dependencies (Windows).
         run: |
-          pip install scipy
-          pip install matplotlib
-          pip install Pillow
-          pip install ruamel.yaml
-          pip install mpmath
-          pip install dadi
-          pip install Cython
-          git clone https://bitbucket.org/simongravel/moments.git
-          cd moments
-          python setup.py install
-          cd ..
-          python setup.py install
+          bash install
+          python -c "import moments"
+        shell: cmd
         if: matrix.os == 'windows-2019'
+
+      - name: Install SMAC (Linux and Windows).
+        run: |
+          pip3 install scikit-optimize
+          pip3 install smac==0.12.4
+          pip3 install bayesmark
+          pip3 install configspace
+        if: matrix.os != 'macos-10.15'
 
       - name: Run tests and codecov.
         run: |
-          python -m pytest --timeout=300 --cov=gadma --cov-report=xml -v tests
+          python -m pytest --timeout=300 --cov=gadma --cov-report=xml -v tests --disable-warnings
         
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1

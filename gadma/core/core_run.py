@@ -89,7 +89,9 @@ class CoreRun(object):
             self.optimize_kwargs['report_file'] = self.report_file
             self.optimize_kwargs['save_file'] = self.save_file
             self.optimize_kwargs['global_maxiter'] = settings.global_maxiter
+            self.optimize_kwargs['global_maxeval'] = settings.global_maxeval
             self.optimize_kwargs['local_maxiter'] = settings.local_maxiter
+            self.optimize_kwargs['local_maxeval'] = settings.local_maxeval
             # Create directory for pictures if needed
             if self.settings.draw_models_every_n_iteration != 0:
                 self.pictures_dir = os.path.join(self.output_dir, 'pictures')
@@ -150,7 +152,7 @@ class CoreRun(object):
         the `output_dir` of this run.
 
         :param x: Vector of values for model parameters.
-        :param y: Value of log-likelihood for this values.
+        :param y: Value of log-likelihood for this values.
         """
         best_by = 'log-likelihood'
         if self.aic_score:
@@ -170,7 +172,9 @@ class CoreRun(object):
                 equal_x = False
             elif x_has_w and x.metadata != self.x_best.metadata:
                 equal_x = False
-        if self.x_best is None or sign * self.y_best > sign * y or not equal_x:
+        if (self.x_best is None or
+                sign * self.y_best > sign * y or
+                (self.y_best == y and not equal_x)):
             self.x_best = x
             self.y_best = y
             self.shared_dict._put_new_model_for_process(
@@ -522,7 +526,8 @@ class CoreRun(object):
             old_init_model = old_settings.get_model()
         # additional one is when true only models is used
         addit_one = int(self.settings.only_models)
-        addit_one -= int(self.settings.resume_from is None)
+        if addit_one == 1:
+            addit_one -= int(self.settings.resume_from is None)
         for i in range(final_sum - initial_sum + 1 + addit_one):
             if i >= len(restore_files):
                 restore_file = None
@@ -546,9 +551,9 @@ class CoreRun(object):
                     copy.deepcopy(old_init_model))
                 copy_old_model = copy.deepcopy(old_init_model)
                 copy_self_model = copy.deepcopy(self.model)
-                copy_old_model.have_dyns = False
+                copy_old_model.has_dyns = False
                 copy_old_model = copy_old_model.from_structure(structure)
-                copy_self_model.have_dyns = False
+                copy_self_model.has_dyns = False
                 copy_self_model = copy_self_model.from_structure(structure)
                 ls_x_transform = partial(
                     copy_self_model.transform_values_from_other_model,

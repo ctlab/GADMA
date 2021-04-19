@@ -38,12 +38,31 @@ class Variable(object):
         # TODO The following assert does not work for python 2
         assert (name.isidentifier() and not iskeyword(name))
         if domain is None:
-            domain = list(self.__class__.default_domain)
+            domain = copy.deepcopy(self.__class__.default_domain)
         if rand_gen is None:
-            rand_gen = copy.copy(self.__class__.default_rand_gen)
+            rand_gen = copy.deepcopy(self.__class__.default_rand_gen)
         self.var_type = var_type
         self.domain = domain
         self.rand_gen = rand_gen
+        self._log_transformed = False
+
+    @property
+    def log_transformed(self):
+        return self._log_transformed
+
+    @log_transformed.setter
+    def log_transformed(self, new_value):
+        if self._log_transformed == new_value:
+            return
+        assert isinstance(new_value, bool)
+        if new_value:
+            self.apply_logarithm()
+        else:
+            self.apply_logarithm(back=True)
+        self._log_transformed = new_value
+
+    def apply_logarithm(self, back=False):
+        raise NotImplementedError
 
     def __copy__(self):
         return self
@@ -56,6 +75,10 @@ class Variable(object):
         :param `*args`: arguments to pass in `rand_gen`.
         :param `**kwargs`: kwargs to pass in `rand_gen`.
         """
+        if self.log_transformed:
+            return np.log(self.rand_gen.__call__(np.exp(self.domain),
+                                                 *args,
+                                                 **kwargs))
         return self.rand_gen.__call__(self.domain, *args, **kwargs)
 
     def __str__(self):
@@ -125,7 +148,18 @@ class ContinuousVariable(Variable):
         """
         Check that value is correct for this variable.
         """
-        return self.domain[0] <= value <= self.domain[1]
+        return (self.domain[0] < value < self.domain[1] or
+                np.isclose(value, self.domain[0]) or
+                np.isclose(value, self.domain[1]))
+
+    def apply_logarithm(self, back=False):
+        """
+        Applies logarithm transform to the variable. Domain and random
+        generator are changed.
+        """
+        if back:
+            self.domain = np.exp(self.domain).tolist()
+        self.domain = np.log(self.domain).tolist()
 
 
 class DiscreteVariable(Variable):
@@ -202,8 +236,22 @@ class DemographicVariable(Variable):
             self.units = units
         else:
             self.units = "genetic"
-        super(DemographicVariable, self).__init__(name, domain, rand_gen)
+        if isinstance(self, (ContinuousVariable, DiscreteVariable)):
+            super(DemographicVariable, self).__init__(name, domain, rand_gen)
+        else:
+            var_type = "unknown"
+            super(DemographicVariable, self).__init__(name, var_type,
+                                                      domain, rand_gen)
+
         self.translate_units_to(units, self.default_domain_in_phys)
+
+    @staticmethod
+    def _transform_value_from_gen_to_phys(value, Nanc):
+        raise NotImplementedError
+
+    @staticmethod
+    def _transform_value_from_phys_to_gen(value, Nanc):
+        raise NotImplementedError
 
     def translate_value_into(self, units, value, Nanc=None):
         if not self.correct_value(value):
@@ -229,16 +277,22 @@ class DemographicVariable(Variable):
             return
         if Nanc_domain is None:
             Nanc_domain = list(self.default_domain_in_phys)
-        self.domain[0] = self.translate_value_into(
-            units,
-            self.domain[0],
-            Nanc_domain[0]
+        domain = []
+        domain.append(
+            self.translate_value_into(
+                units,
+                self.domain[0],
+                Nanc_domain[0]
+            )
         )
-        self.domain[1] = self.translate_value_into(
-            units,
-            self.domain[1],
-            Nanc_domain[1],
+        domain.append(
+            self.translate_value_into(
+                units,
+                self.domain[1],
+                Nanc_domain[1],
+            )
         )
+        self.domain = domain
         self.units = units
         if units == "physical":
             self.rand_gen = DemographicGenerator(
@@ -258,8 +312,16 @@ class DemographicVariable(Variable):
             return
         if self.units == "genetic":
             return
-        self.rand_gen = rescale_generator(self.rand_gen, self.rescale_value,
-                                          Nref, reverse=reverse)
+        base_reverse = reverse
+
+        def rescale_func(value, reverse=False):
+            if base_reverse:
+                reverse = not reverse
+            return self.rescale_value(value=value,
+                                      Nref=Nref,
+                                      reverse=reverse)
+        self.rand_gen = rescale_generator(self.rand_gen,
+                                          rescale_function=rescale_func)
         self.domain[0] = self.rescale_value(self.domain[0], Nref,
                                             reverse=reverse)
         self.domain[1] = self.rescale_value(self.domain[1], Nref,
@@ -326,7 +388,7 @@ class MigrationVariable(DemographicVariable, ContinuousVariable):
 
     @staticmethod
     def _transform_value_from_gen_to_phys(value, Nanc):
-        return value / (2 * Nanc)
+        return float(value) / (2 * Nanc)
 
     @staticmethod
     def _transform_value_from_phys_to_gen(value, Nanc):
@@ -398,7 +460,11 @@ class FractionVariable(DemographicVariable, ContinuousVariable):
                                                rand_gen=rand_gen)
 
     @staticmethod
-    def translate_units(value, Nanc):
+    def _transform_value_from_gen_to_phys(value, Nanc):
+        return value
+
+    @staticmethod
+    def _transform_value_from_phys_to_gen(value, Nanc):
         return value
 
 
@@ -580,5 +646,9 @@ class DynamicVariable(DemographicVariable, DiscreteVariable):
         raise AttributeError("DynamicVariable domain has incomparative values")
 
     @staticmethod
-    def translate_units(value, Nanc):
+    def _transform_value_from_gen_to_phys(value, Nanc):
+        return value
+
+    @staticmethod
+    def _transform_value_from_phys_to_gen(value, Nanc):
         return value

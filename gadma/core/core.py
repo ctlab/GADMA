@@ -137,7 +137,7 @@ def main():
                     print(SUPPORT_STRING)
                     sys.stdout = saved_stdout
                     sys.stderr = saved_stderr
-                    os._exit(1)
+                    sys.exit(1)
             if all_finished:
                 break
             if (time.time() - check_time) >= time_diff:

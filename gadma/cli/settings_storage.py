@@ -8,7 +8,7 @@ from ..models import StructureDemographicModel, CustomDemographicModel
 from ..optimizers import get_local_optimizer, get_global_optimizer
 from ..optimizers import LinearConstrain
 from ..utils import check_dir_existence, check_file_existence, abspath,\
-    module_name_from_path
+    module_name_from_path, custom_generator
 from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable,\
     ContinuousVariable
 import warnings
@@ -93,7 +93,8 @@ class SettingsStorage(object):
                      'draw_models_every_n_iteration', 'size_of_generation',
                      'number_of_repeats', 'number_of_processes',
                      'number_of_populations', 'global_maxiter',
-                     'local_maxiter', 'num_init_const']
+                     'global_maxeval', 'local_maxiter', 'local_maxeval',
+                     'num_init_const']
         float_attrs = ['theta0', 'time_for_generation', 'eps',
                        'const_of_time_in_drawing', 'vmin', 'min_n', 'max_n',
                        'min_t', 'max_t', 'min_m', 'max_m',
@@ -108,7 +109,8 @@ class SettingsStorage(object):
                       'no_migrations', 'silence', 'test', 'random_n_a',
                       'relative_parameters', 'only_models',
                       'symmetric_migrations', 'split_fractions',
-                      'generate_x_transform']
+                      'generate_x_transform', 'global_log_transform',
+                      'local_log_transform']
         int_list_attrs = ['pts', 'initial_structure', 'final_structure',
                           'projections']
         float_list_attrs = ['lower_bound', 'upper_bound']
@@ -125,10 +127,10 @@ class SettingsStorage(object):
                              'population_labels', 'sequence_length']
         bounds_attrs = ['min_n', 'max_n', 'min_t', 'max_t', 'min_m', 'max_m']
         bounds_lists = ['lower_bound', 'upper_bound', 'parameter_identifiers']
-        missed_attrs = ['engine', 'local_optimizer', '_inner_data',
-                        '_bootstrap_data', 'X_init', 'Y_init', 'model_func',
-                        'get_engine_args', 'units_of_time_in_drawing',
-                        'data_holder', 'resume_from_settings',
+        missed_attrs = ['engine', 'global_optimizer', 'local_optimizer',
+                        '_inner_data', '_bootstrap_data', 'X_init', 'Y_init',
+                        'model_func', 'get_engine_args', 'data_holder',
+                        'units_of_time_in_drawing', 'resume_from_settings',
                         'dadi_available', 'moments_available']
 
         super_hasattr = True
@@ -343,7 +345,9 @@ class SettingsStorage(object):
         # 3.3 For engine we need check it exists
         elif name == 'engine':
             get_engine(value)
-        # 3.4 For local_optimizer we need check it existence
+        # 3.4 For local and global optimizer we need check existence
+        elif name == 'global_optimizer':
+            get_global_optimizer(value)
         elif name == 'local_optimizer':
             get_local_optimizer(value)
         # 3.5 If we change engine or pts, we should check for warning if pts
@@ -444,11 +448,10 @@ class SettingsStorage(object):
                 raise AttributeError("Check for supported variables")
 
             old_domain = np.array(cls.default_domain)
-
             if name.startswith('min'):
-                cls.default_domain[0] = value
+                cls.default_domain = [value, cls.default_domain[1]]
             elif name.startswith('max'):
-                cls.default_domain[1] = value
+                cls.default_domain = [cls.default_domain[0], value]
 
             domain_changed = np.any(old_domain != np.array(cls.default_domain))
             if domain_changed:
@@ -884,30 +887,26 @@ class SettingsStorage(object):
         Return object of global optimizer for optimization according to current
         settings.
         """
-        # bo = get_global_optimizer("Bayesian_optimization")
-        # bo.log_transform = True
-        # bo.maximize = True
-#        bo = get_global_optimizer("BOTorch")
-#        bo.log_transform = True
-#        bo.maximize = True
-#        return bo
-        ga = get_global_optimizer("Genetic_algorithm")
-        ga.gen_size = self.size_of_generation
-        ga.n_elitism = self.n_elitism
-        ga.p_mutation = self.p_mutation
-        ga.p_crossover = self.p_crossover
-        ga.p_random = self.p_random
-        ga.mut_rate = self.mean_mutation_rate
-        ga.mut_strength = self.mean_mutation_strength
-        ga.const_mut_rate = self.const_for_mutation_rate
-        ga.const_mut_strength = self.const_for_mutation_strength
-        ga.eps = self.eps
-        ga.n_stuck_gen = self.stuck_generation_number
-        ga.maximize = True
-#        if self.random_n_a:
-#            ga.random_type = 'custom'
-#            ga.custom_rand_gen = custom_generator
-        return ga
+        opt = get_global_optimizer(self.global_optimizer)
+        if self.global_optimizer.lower() == "genetic_algorithm":
+            opt.gen_size = self.size_of_generation
+            opt.n_elitism = self.n_elitism
+            opt.p_mutation = self.p_mutation
+            opt.p_crossover = self.p_crossover
+            opt.p_random = self.p_random
+            opt.mut_rate = self.mean_mutation_rate
+            opt.mut_strength = self.mean_mutation_strength
+            opt.const_mut_rate = self.const_for_mutation_rate
+            opt.const_mut_strength = self.const_for_mutation_strength
+            opt.eps = self.eps
+            opt.n_stuck_gen = self.stuck_generation_number
+
+        opt.log_transform = self.global_log_transform
+        opt.maximize = True
+        if self.random_n_a:
+            opt.random_type = 'custom'
+            opt.custom_rand_gen = custom_generator
+        return opt
 
     def get_local_optimizer(self):
         """
@@ -916,6 +915,7 @@ class SettingsStorage(object):
         """
         ls = get_local_optimizer(self.local_optimizer)
         ls.maximize = True
+        ls.log_transform = self.local_log_transform
         return ls
 
 #    def get_linear_constrain(self, engine):
@@ -1008,10 +1008,15 @@ class SettingsStorage(object):
             migs_mask = self.migration_masks
             model = StructureDemographicModel(self.initial_structure,
                                               self.final_structure,
-                                              create_migs, create_sels,
-                                              create_dyns, sym_migs, split_f,
-                                              migs_mask,
-                                              gen_time, theta0, mut_rate)
+                                              has_migs=create_migs,
+                                              has_sels=create_sels,
+                                              has_dyns=create_dyns,
+                                              sym_migs=sym_migs,
+                                              frac_split=split_f,
+                                              migs_mask=migs_mask,
+                                              gen_time=gen_time,
+                                              theta0=theta0,
+                                              mu=mut_rate)
             constrain = self.get_linear_constrain_for_model(model)
             model.linear_constrain = constrain
             return model
@@ -1022,19 +1027,28 @@ class SettingsStorage(object):
             variables = get_variables(self.parameter_identifiers,
                                       self.lower_bound, self.upper_bound)
             if self.model_func is not None:
-                return CustomDemographicModel(self.model_func, variables,
-                                              gen_time, theta0, mut_rate)
+                return CustomDemographicModel(function=self.model_func,
+                                              variables=variables,
+                                              gen_time=gen_time,
+                                              theta0=theta0,
+                                              mu=mut_rate)
             module_name = module_name_from_path(self.custom_filename)
             spec = importlib.util.spec_from_file_location(module_name,
                                                           self.custom_filename)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
-            return CustomDemographicModel(module.model_func, variables,
-                                          gen_time, theta0, mut_rate)
+            return CustomDemographicModel(function=module.model_func,
+                                          variables=variables,
+                                          gen_time=gen_time,
+                                          theta0=theta0,
+                                          mu=mut_rate)
 
         elif self.custom_filename is None and self.model_func is not None:
-            return CustomDemographicModel(self.model_func, None,
-                                          gen_time, theta0, mut_rate)
+            return CustomDemographicModel(function=self.model_func,
+                                          variables=None,
+                                          gen_time=gen_time,
+                                          theta0=theta0,
+                                          mu=mut_rate)
         else:
             raise ValueError("Some settings are missed so no model is "
                              "generated")

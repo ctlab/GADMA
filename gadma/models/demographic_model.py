@@ -17,59 +17,63 @@ class DemographicModel(Model):
     :type mu: float
     :param Nref: rescaling factor of the parameters values.
     :type Nref: float
-    :param Nanc_variable: If not None then demographic model has parameter of
-                          the ancestral population size. Usually it is some
-                          variable but for dadi and moments this parameter
-                          could be missed.
-    :type Nanc_variable: :class:`gadma.utils.Variable`
+    :param has_anc_size: If True then model does not have size of ancestral
+                         population. It is the case for dadi and moments as
+                         they have multinom mode when this size is generated
+                         automatically from the rest of the parameters.
+    :type has_anc_size: bool
     :param linear_constrain: linear constrain on parameters.
     :type linear_constrain: :class:`gadma.optimizers.LinearConstrain`
     """
     def __init__(self, gen_time=None, theta0=None, mu=None, Nref=None,
-                 Nanc_variable=None, linear_constrain=None):
+                 has_anc_size=False, linear_constrain=None):
         super(DemographicModel, self).__init__(raise_excep=False)
         self.gen_time = gen_time
         self.Nref = Nref  # rescaling factor
         self.theta0 = theta0  # mutation flux = 4 * mu * length
         self.mu = mu  # mutation rate per base per generation
-        self.Nanc_variable = Nanc_variable
-        if self.has_anc_size:
-            if not isinstance(self.Nanc_variable, PopulationSizeVariable):
-                raise ValueError("Nanc_variable must be instance of "
-                                 "PopulationSizeVariable, got: "
-                                 f"{self.Nanc_variable.__class__}.")
-            if self.Nanc_variable.units != "physical":
-                raise ValueError("Nanc_variable must be in physical units, "
-                                 f"got: {self.Nanc_variable.units}.")
-            # If we have rescaling we have to rescale Nanc, it will be done
-            # automatically in add_variable
-            self.add_variable(self.Nanc_variable)
-            assert len(self.variables) == 1
-            # as there was rescaling then variable has changed:
-            self.Nanc_variable = self.variables[0]
-        else:
-            self.Nanc_variable = None
+        self.has_anc_size = has_anc_size
         self.fixed_vars = {}
         self.linear_constrain = linear_constrain
 
-    @property
-    def has_anc_size(self):
-        return self.Nanc_variable is not None
-
     def add_variable(self, variable):
         """
-        Overrides :meth:`Model.add_variable` method. Rescales added variables
-        if they are in physical units.
+        Overrides :meth:`Model.add_variable` method. Checks that if model
+        does not have ancestral size then no variables in physical units are
+        added.
 
         :param variable: variable to add.
         :type variable: :class:`Variable`
         """
-        if self.Nref is not None and not isinstance(variable,
-                                                    DemographicVariable):
-            raise ValueError("Demographic model has rescaling factor (Nref), "
-                             "it is not possible to add not-demographic "
-                             f"variables in it. Got variable: {variable}.")
+        if (not self.has_anc_size and
+                isinstance(variable, DemographicVariable) and
+                variable.units == "physical"):
+            raise ValueError("Demographic model has no ancestral size: only "
+                             "variables in genetic units are accepted."
+                             "It will be impossible to translate physical "
+                             f"units of a given variable: {variable}.")
         super(DemographicModel, self).add_variable(variable)
+
+    def _get_Nanc_size(self, values):
+        """
+        Method to override. Is used in :meth:`.DemographicModel.get_Nanc_size`.
+        """
+        raise NotImplementedError
+
+    def get_Nanc_size(self, values=None):
+        """
+        Returns Nanc size as variable (if it is) or constant. If model does not
+        has_anc_size then ValueError is raised.
+
+        :param values: Values of model variables. Could be required to
+                       understand what variable or constant is actual Nanc
+                       size.
+        """
+        if self.has_anc_size:
+            return self._get_Nanc_size(values)
+        else:
+            raise ValueError("Model does not have ancestral size so it is not"
+                             " available.")
 
     def get_number_of_parameters(self, values):
         """
@@ -114,7 +118,7 @@ class DemographicModel(Model):
                                      "as parameter (has_anc_size==False).")
         var2value = self.var2value(values)
         if Nanc is None and self.has_anc_size:
-            Nanc = var2value[self.Nanc_variable]
+            Nanc = self.get_value_from_var2value(var2value, self.Nanc_size)
         Tg = self.gen_time
         if Tg is None or time_in_generations:
             Tg = 1
@@ -146,33 +150,59 @@ class EpochDemographicModel(DemographicModel):
     This type is common for :py:mod:`dadi` and :py:mod:`moments`.
 
     See :class:`gadma.models.demographic_model.DemographicModel` for
-    constructor docs.
+    more information.
+
+    By default (when None value) has_anc_size is True if Nanc_size is set and
+    False otherwise (when Nanc_size is None). If Nanc_size is not set (i.e.
+    None) then it is taken as 1.0.
+
+    :param Nanc_size: Constant or variable for demographic model.
+                      Usually it is some variable but for dadi and moments this
+                      parameter could be equal to 1. In that case they will use
+                      multinom inference and get best Nanc_size for the model.
+    :type Nanc_size: float or :class:`gadma.utils.PopulationSizeVariable`
     """
     def __init__(self, gen_time=None, theta0=None, mu=None, Nref=None,
-                 Nanc_variable=None, linear_constrain=None):
+                 has_anc_size=None, Nanc_size=None, linear_constrain=None):
+        if has_anc_size is None:
+            has_anc_size = Nanc_size is not None
+        if Nanc_size is None:
+            Nanc_size = 1.0
         self.events = list()
         super(EpochDemographicModel, self).__init__(
             gen_time=gen_time,
             theta0=theta0,
             mu=mu,
             Nref=Nref,
-            Nanc_variable=Nanc_variable,
+            has_anc_size=has_anc_size,
             linear_constrain=linear_constrain
         )
+        self.Nanc_size = Nanc_size
+        if isinstance(self.Nanc_size, Variable):
+            if not isinstance(self.Nanc_size, PopulationSizeVariable):
+                raise ValueError("Nanc_size must be instance of "
+                                 "PopulationSizeVariable, got: "
+                                 f"{self.Nanc_size.__class__}.")
+            if self.Nanc_size.units != "physical":
+                raise ValueError("Nanc_size must be in physical units, "
+                                 f"got: {self.Nanc_size.units}.")
+            self.add_variable(self.Nanc_size)
+            assert len(self.variables) == 1
+
+    def _get_Nanc_size(self, values=None):
+        """
+        Method of parent class. Is used in
+        :meth:`.DemographicModel.get_Nanc_size`.
+        `values` are not used in this method.
+        """
+        return self.Nanc_size
 
     def _get_current_pop_sizes(self):
         """
         Returns the populations sizes after the last epoch.
         """
         if len(self.events) == 0:
-            if self.has_anc_size:
-                return copy.copy([self.Nanc_variable])
-#            if self.Nref is not None:
-#                # rescaling Nanc = 1.0:
-#                size_cls = PopulationSizeVariable
-#                return size_cls._transform_value_from_phys_to_gen(1.0,
-#                                                                  self.Nref)
-            return [1.0]
+            return copy.copy([self._get_Nanc_size()])
         return copy.copy(self.events[-1].size_args)
 
     def number_of_populations(self):

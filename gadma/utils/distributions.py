@@ -1,4 +1,5 @@
 import numpy as np
+from .utils import get_correct_dtype
 
 
 def trunc_normal(mean, sigma, lower, upper):
@@ -9,7 +10,12 @@ def trunc_normal(mean, sigma, lower, upper):
     if sigma == 0:
         sigma = 1e-15
     a, b = (lower - mean) / sigma, (upper - mean) / sigma
-    return truncnorm.rvs(a, b, loc=mean, scale=sigma)
+    result = truncnorm.rvs(a, b, loc=mean, scale=sigma)
+    # fix additional list wrapper in scipy v1.5.0
+    if isinstance(result, (list, np.ndarray)):
+        assert len(result) == 1
+        result = result[0]
+    return result
 
 
 def trunc_lognormal(mean, sigma, lower, upper):
@@ -85,11 +91,16 @@ def custom_generator(variables):
     values = list()
     for var in variables:
         x = var.resample()
-        values.append(var.translate_value_into("physical", value=x, Nanc=N_A))
+        if var.log_transformed:
+            x = np.exp(x)
+        x = var._transform_value_from_gen_to_phys(value=x, Nanc=N_A)
+        if var.log_transformed:
+            x = np.log(x)
+        values.append(x)
         if isinstance(var, ContinuousVariable):
             values[-1] = max(values[-1], var.domain[0])
             values[-1] = min(values[-1], var.domain[1])
-    return np.array(values, dtype=object)
+    return np.array(values, dtype=get_correct_dtype(values))
 
 
 class DemographicGenerator:
@@ -111,10 +122,11 @@ class DemographicGenerator:
         return _correct_val(type(N_A)(N_A * value))
 
 
-def rescale_generator(generator, rescale_function, *args, **kwargs):
-    def wrap_generator(domain, *gen_args, **gen_kwargs):
-        res = generator(np.array(domain) * factor, *gen_args, **gen_kwargs)
-        return rescale_function(res, *args, **kwargs)
+def rescale_generator(generator, rescale_function):
+    def wrap_generator(domain, *args, **kwargs):
+        domain = [rescale_function(x, reverse=True) for x in domain]
+        res = generator(np.array(domain), *args, **kwargs)
+        return rescale_function(res, reverse=False)
     return wrap_generator
 
 # def multiply_generator(gen1, domain1, gen2, domain2):

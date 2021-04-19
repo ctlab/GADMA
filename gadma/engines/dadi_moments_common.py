@@ -138,7 +138,9 @@ class DadiOrMomentsEngine(Engine):
 
     def get_N_ancestral(self, values, grid_sizes):
         if self.model.has_anc_size:
-            return self.model.var2value(values)[self.model.Nanc_variable]
+            var2value = self.model.var2value(values)
+            return self.model.get_value_from_var2value(var2value,
+                                                       self.model.Nanc_size)
         theta = self.get_theta(values, grid_sizes)
         return self.get_N_ancestral_from_theta(theta)
 
@@ -235,9 +237,9 @@ class DadiOrMomentsEngine(Engine):
                                     for var in var2val])
         if len(x0) > 0 and len(var2val) > 0:
             x0 = np.array(list(var2val.values()), dtype=object)
-            p0 = x0[is_not_discrete]
+            p0 = x0[is_not_discrete].astype(float)
         else:
-            p0 = x0
+            p0 = x0.astype(float)
 
         @wraps(self.simulate)
         def simul_func(x):
