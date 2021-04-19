@@ -1,10 +1,10 @@
 from . import Engine, register_engine, get_engine
 from ..models import DemographicModel, StructureDemographicModel, \
-    CustomDemographicModel, Epoch, Split
+    CustomDemographicModel, Epoch, Split, BinaryOperation
 from ..models.coalescent_demographic_model import CoalescentDemographicModel
 from ..models.event import Leaf, SetSize, MoveLineages
 from ..utils import DynamicVariable, DiscreteVariable, Variable
-from .. import SFSDataHolder, BinaryOperation
+from .. import SFSDataHolder
 from .. import dadi_available, moments_available
 from ..code_generator import id2printfunc
 

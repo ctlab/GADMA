@@ -1,4 +1,4 @@
-from ..utils import Variable
+from ..utils import Variable, TimeVariable
 from .model import Model
 
 
@@ -83,13 +83,15 @@ class BinaryOperation(VariablesCombination):
         val = self.get_value(values)
         return f"{self.name}={val}"
 
-    def operation(self, val1, val2):
+    @staticmethod
+    def operation(val1, val2):
         """
         Returns the result of binary operation from two values.
         """
         raise NotImplementedError
 
-    def operation_str(self):
+    @staticmethod
+    def operation_str():
         """
         Returns string representation of binary operation.
         """
@@ -101,10 +103,12 @@ class Addition(BinaryOperation):
     The sum of two variables.
     """
 
-    def operation(self, val1, val2):
+    @staticmethod
+    def operation(val1, val2):
         return val1 + val2
 
-    def operation_str(self):
+    @staticmethod
+    def operation_str():
         return "+"
 
 
@@ -113,10 +117,12 @@ class Subtraction(BinaryOperation):
     The subtraction of two variables.
     """
 
-    def operation(self, val1, val2):
+    @staticmethod
+    def operation(val1, val2):
         return val1 - val2
 
-    def operation_str(self):
+    @staticmethod
+    def operation_str():
         return "-"
 
 
@@ -125,10 +131,12 @@ class Multiplication(BinaryOperation):
     The multiplication of two variables.
     """
 
-    def operation(self, val1, val2):
+    @staticmethod
+    def operation(val1, val2):
         return val1 * val2
 
-    def operation_str(self):
+    @staticmethod
+    def operation_str():
         return "*"
 
 
@@ -137,19 +145,29 @@ class Division(BinaryOperation):
     The division of one variable by another.
     """
 
-    def operation(self, val1, val2):
+    @staticmethod
+    def operation(val1, val2):
         return val1 / val2
 
-    def operation_str(self):
+    @staticmethod
+    def operation_str():
         return "/"
 
 
 class Pow(BinaryOperation):
-    def operation(self, val1, val2):
+
+    @staticmethod
+    def operation(val1, val2):
         return val1 ** val2
 
-    def operation_str(self):
+    @staticmethod
+    def operation_str():
         return "**"
 
-class Exp(Pow):
-    pass
+
+def operation_creation(arg1, arg2, operation):
+    if isinstance(arg1, (Model, Variable)) or \
+            isinstance(arg2, (Model, Variable)):
+        return operation(arg1, arg2)
+    else:
+        return operation.operation(arg1, arg2)
