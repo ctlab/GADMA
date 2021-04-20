@@ -5,7 +5,7 @@ import copy
 from .optimizer import ConstrainedOptimizer
 from .global_optimizer import GlobalOptimizer, register_global_optimizer
 from .optimizer_result import OptimizerResult
-from ..utils import ContinuousVariable, WeightedMetaArray
+from ..utils import ContinuousVariable, WeightedMetaArray, get_correct_dtype
 
 from .. import GPyOpt
 from .. import GPy
@@ -255,7 +255,7 @@ class SMACOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                 maxiter = 100
         if maxeval is None:
             maxeval = (maxiter * self.n_suggestions +
-                       self.run_info.result.n_eval)
+                      self.run_info.result.n_eval)
         x_best = X_init[0]
         y_best = Y_init[0]
         iter_callback(x_best, y_best, X_init, Y_init)
@@ -269,11 +269,13 @@ class SMACOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         def get_x_guess(X):
             x_guess = cs.sample_configuration(len(X))
             for i, x in enumerate(X):
-                print(x)
-                for var, par in zip(variables, x):
+                for ind, (var, par) in enumerate(zip(variables, x)):
+                    if isinstance(variables[ind], ContinuousVariable):
+                        par = float(par)
                     x_guess[i][var.name] = par
             return x_guess
 
+        X_init = np.array(X_init, dtype=get_correct_dtype(x_best))
         opt.observe(get_x_guess(X_init), np.array(Y_init))
 
         while (self.run_info.result.n_iter < maxiter and
