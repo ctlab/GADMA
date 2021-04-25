@@ -255,7 +255,7 @@ class SMACOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                 maxiter = 100
         if maxeval is None:
             maxeval = (maxiter * self.n_suggestions +
-                      self.run_info.result.n_eval)
+                       self.run_info.result.n_eval)
         x_best = X_init[0]
         y_best = Y_init[0]
         iter_callback(x_best, y_best, X_init, Y_init)
