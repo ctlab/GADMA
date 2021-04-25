@@ -33,6 +33,8 @@ def apply_transform(variables, transform, x):
     transforms. So value if `x` is transformed if it is float
     (ContinuousVariable) and does not have 0 in its domain.
     """
+    if isinstance(x, list):
+        x = np.array(x, dtype=get_correct_dtype(x))
     if transform == ident_transform:
         return x
     is_good = [var.log_transformed for var in variables]
