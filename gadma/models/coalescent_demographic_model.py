@@ -101,8 +101,8 @@ class CoalescentDemographicModel(DemographicModel):
             if event.pop == pop and event.size_pop is not None:
                 event_time = self.get_value_from_var2value(var2value=var2value,
                                                            entity=event.t)
-                if after_event is None and time_val > event_time or \
-                        time_val > event_time > after_time:
+                if time_val > event_time and (after_event is None or
+                                              event_time > after_time):
                     after_time = event_time
                     after_event = event
                 if inclusive and np.isclose(time_val, event_time):
@@ -124,13 +124,16 @@ class CoalescentDemographicModel(DemographicModel):
             before_event = None
             before_time = None
             for event in self.events:
-                if event.pop == pop:
+                if event.pop == pop or \
+                        isinstance(event, MoveLineages) and event.pop_from == pop:
                     event_time = self.get_value_from_var2value(var2value=var2value,
                                                                entity=event.t)
-                    if before_event is None and event_time > after_time or \
-                            before_time > event_time > after_time:
+                    if event_time > after_time and (before_event is None or
+                                                    before_time > event_time):
                         before_time = event_time
                         before_event = event
+            if before_event is None:
+                return size, dyn
             duration = operation_creation(before_time,
                                           after_time,
                                           Subtraction

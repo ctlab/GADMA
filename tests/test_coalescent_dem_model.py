@@ -69,7 +69,22 @@ class TestCoalescentDemModel(unittest.TestCase):
         return N_a, nu1B, nu1, nu1F, nu2B, nu2F, t1, t2, t3
 
     def test_model2_translation(self):
-        pass
+        N_a, nu1, nu2, nu2F, t1, t2 = self.get_genetic_variables_model1()
+        var2values = {
+            'nu1': 0.4,
+            'nu2F': 0.7,
+            'nu2': 0.5,
+            'N_a': 1e5,
+            't1': 1,
+            't2': 5
+        }
+        m = CoalescentDemographicModel(sequence_length=1e6, gen_time=29, mu=1.25e-8)
+        m.add_leaf(0, size_pop=nu1)
+        m.add_leaf(1, size_pop=nu2F)
+        m.change_pop_size(1, t=t1, size_pop=nu2, dyn="Exp", g=0.9)
+        m.move_lineages(1, 0, t=t2, size_pop=N_a)
+        translated_model = m.translate_into(EpochDemographicModel, var2values)
+        # print(translated_model.as_custom_string(values=var2values))
 
     def test_model3_translation(self):
         N_a, nu1B, nu1, nu1F, nu2B, nu2F, t1, t2, t3 = self.get_genetic_variables_model3()
