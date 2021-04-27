@@ -275,14 +275,14 @@ class ScipyOptimizer(LocalOptimizer, ContinuousOptimizer):
 
         # Run optimization of SciPy
         addit_kw = self.get_addit_scipy_kwargs(variables)
-        res_obj = scipy.optimize.minimize(f, x0, args=(),
+        res_obj = scipy.optimize.minimize(f_in_scipy, x0, args=(),
                                           method=self.method, options=options,
                                           callback=callback, **addit_kw)
         # Call callback after the last iteration
         callback(res_obj.x)
         # Construct OptimizerResult object to return
         result = OptimizerResult.from_SciPy_OptimizeResult(res_obj)
-        assert np.isclose(self.run_info.result.y, self.sign * result.y)
+        assert self.sign * self.run_info.result.y <= result.y
         self.run_info.result.success = result.success
         self.run_info.result.message = result.message
         self.run_info.result.status = result.status
@@ -362,7 +362,7 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
     def evaluate(self, f, variables, x, args=(), linear_constrain=None):
         if np.any([not var.correct_value(el)
                    for el, var in zip(x, variables)]):
-            return np.inf
+            return self.sign * self.out_of_bounds
         # we multiply by sign to avoid double * by -1 and for correct optim.
         return self.sign * super(ManuallyConstrOptimizer, self).evaluate(
             f=f,
@@ -388,6 +388,11 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
                                                       x)
                                       for x in opt_run_info]
             self.run_info.result.Y = self.optimizer.run_info.result.Y
+
+        # Dadi and moments use eps equal to 1e-3. It turned out to be good
+        # value. So we want to use it in our optimizers.
+        if "eps" not in options:
+            options["eps"] = 1e-3
 
         self.optimizer.optimize(f=f,
                                 variables=vars_in_opt,

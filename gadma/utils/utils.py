@@ -22,8 +22,9 @@ def logarithm_transform(x):
 
 
 def _is_valid_for_log(variable):
-    from .variables import ContinuousVariable
+    from .variables import ContinuousVariable, FractionVariable
     return (isinstance(variable, ContinuousVariable) and
+            not isinstance(variable, FractionVariable) and
             not variable.correct_value(0))
 
 
