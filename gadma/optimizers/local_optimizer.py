@@ -271,6 +271,8 @@ class ScipyOptimizer(LocalOptimizer, ContinuousOptimizer):
         def f_in_scipy(x):
             y = f(x)
             iter_callback(x, y, [x], [y])
+            # we need to fix n_iter as it is not an iteration but evaluation
+            self.run_info.result.n_iter -= 1
             return y
 
         # Run optimization of SciPy
@@ -388,6 +390,7 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
                                                       x)
                                       for x in opt_run_info]
             self.run_info.result.Y = self.optimizer.run_info.result.Y
+            self.run_info.result.n_iter = self.optimizer.run_info.result.n_iter
 
         # Dadi and moments use eps equal to 1e-3. It turned out to be good
         # value. So we want to use it in our optimizers.
