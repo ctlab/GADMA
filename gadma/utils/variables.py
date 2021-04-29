@@ -383,7 +383,7 @@ class MigrationVariable(DemographicVariable, ContinuousVariable):
 
     :note: Values are assumed to be in genetic units.
     """
-    default_domain = np.array([0, 10])
+    default_domain = np.array([0, 10.0])
     default_rand_gen = migration_generator
 
     @staticmethod

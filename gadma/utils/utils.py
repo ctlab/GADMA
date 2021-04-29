@@ -22,8 +22,9 @@ def logarithm_transform(x):
 
 
 def _is_valid_for_log(variable):
-    from .variables import ContinuousVariable
+    from .variables import ContinuousVariable, FractionVariable
     return (isinstance(variable, ContinuousVariable) and
+            not isinstance(variable, FractionVariable) and
             not variable.correct_value(0))
 
 
@@ -33,12 +34,18 @@ def apply_transform(variables, transform, x):
     transforms. So value if `x` is transformed if it is float
     (ContinuousVariable) and does not have 0 in its domain.
     """
+    if isinstance(x, list):
+        x = np.array(x, dtype=get_correct_dtype(x))
+    if transform == ident_transform:
+        return x
     is_good = [var.log_transformed for var in variables]
     if np.all(is_good):
-        return transform(x)
-    x = np.array(x, dtype=get_correct_dtype(x))
-    x[is_good] = transform(x[is_good])
-    return x
+        x_tr = transform(x)
+    x_tr = WeightedMetaArray(x, dtype=get_correct_dtype(x))
+    x_tr[is_good] = transform(x[is_good])
+    if isinstance(x, WeightedMetaArray):
+        x_tr.metadata = x.metadata
+    return x_tr
 
 
 def exponent_transform(x):
