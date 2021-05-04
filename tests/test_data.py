@@ -42,8 +42,8 @@ POPMAP = os.path.join(DATA_PATH, "vcf", "popmap")
 
 CONTIG0 =  os.path.join(DATA_PATH, "vcf", "contig.0.vcf")
 CONTIG0_POPMAP = os.path.join(DATA_PATH, "vcf", "contig_0_popmap")
-REFERENCE = os.path.join(DATA_PATH, "vcf", "reference..fa")
-SMALL_REFERENCE = os.path.join(DATA_PATH, "vcf", "small_reference..fa")
+REFERENCE = os.path.join(DATA_PATH, "vcf", "reference.fa")
+SMALL_REFERENCE = os.path.join(DATA_PATH, "vcf", "small_reference.fa")
 
 
 class TestDataHolder(unittest.TestCase):
