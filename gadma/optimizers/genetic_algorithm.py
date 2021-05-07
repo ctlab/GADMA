@@ -849,8 +849,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
 
             # Callback
             if callback is not None:
-                if n_impr_gen == n_gen - 1:
-                    callback(x_best, y_best)
+                callback(x_best, y_best)
 
             # Write report about current generation
             if verbose > 0 and n_gen % verbose == 0:
