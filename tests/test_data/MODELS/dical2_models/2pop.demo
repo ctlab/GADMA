@@ -1,0 +1,21 @@
+# boundary points of the epochs [0,t_1,t_2,infinity) [intervals of constant demography]
+[ ?0 ]
+# EPOCH 1a
+# population structure
+{{0},{1}}
+# population sizes
+?1	?2
+# instantaneous migration rates at beginning of epoch
+null
+# migration rates during epoch
+0	?3
+0	0
+# EPOCH 2
+# population structure
+{{0,1}}
+# population sizes
+?4
+# instantaneous migration rates at beginning of epoch
+null
+# migration rates during epoch
+0

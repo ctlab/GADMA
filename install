@@ -12,4 +12,4 @@ pip3 install pandas
 pip3 install demes
 pip3 install jpype1
 pip3 install git+https://bitbucket.org/simongravel/moments.git@moments-1.1.0
-pip3 install gadma
+python3 setup.py install

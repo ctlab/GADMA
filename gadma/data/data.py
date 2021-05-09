@@ -44,8 +44,8 @@ class VCFDataHolder(DataHolder):
     It saves some information while it is created.
     """
     def __init__(self, vcf_file, popmap_file, sample_sizes=None, outgroup=None,
-                 ploidy=2, population_labels=None, sequence_length=None, bed_file=None,
-                 reference_file=None):
+                 ploidy=2, population_labels=None, sequence_length=None,
+                 bed_file=None, reference_file=None):
         sample2pop = read_popinfo(popmap_file)
         samples = get_list_of_names_from_vcf(vcf_file)
         wrong_samples = list()

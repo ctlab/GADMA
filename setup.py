@@ -98,8 +98,7 @@ if success:
             fl.write(f"import os\n\n"
                      f"dical2_path = os.path.abspath(\n"
                      f"    os.path.join(\n"
-                     f"        os.path.dirname(__file__),\n"
-                     f"        '..',\n"
+                     f"        os.path.dirname(os.path.dirname(__file__)),\n"
                      f"        '{dical_name}'\n"
                      f"    )\n"
                      f")\n")

@@ -1,7 +1,7 @@
 from . import Engine
 from ..models import DemographicModel, StructureDemographicModel,\
-                     CustomDemographicModel
-from ..utils import DiscreteVariable, cache_func
+                     CustomDemographicModel, Epoch, Split
+from ..utils import DiscreteVariable, MigrationVariable, cache_func
 from ..utils import read_popinfo, get_list_of_names_from_vcf
 from .. import VCFDataHolder
 from .. import dadi_available, moments_available
@@ -11,11 +11,17 @@ import warnings
 import os
 import numpy as np
 from functools import wraps
+import copy
 
 import jpype
 import jpype.imports
 from jpype.types import *
 from ..dical2_path import dical2_path
+
+DEFAULT_DICAL2_MODEL = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "dical2_template_model.demo"
+)
 
 
 # Interface above dical2 functions that are used in DiCal2Engine
@@ -134,6 +140,7 @@ def _create_objective_function(
         useEigenCore
     )
 
+
 def _get_lol_config_list(
     dical2_pkg,
     structuredConfig,
@@ -148,6 +155,7 @@ def _get_lol_config_list(
         fancyTransitionMap,
         pcLol
     )
+
 
 def _create_dical_objective(
     dical2_pkg,
@@ -213,6 +221,10 @@ class DiCal2Engine(Engine):
                        "-Djava.class.path="+":".join(get_jar_files()))
     base_module = jpype.JPackage("edu.berkeley.diCal2")
 
+    def __init__(self, data=None, model=None, loci_per_HMM_step=32000):
+        super(DiCal2Engine, self).__init__(data, model)
+        self.loci_per_HMM_step = loci_per_HMM_step
+
     @staticmethod
     def read_data(data_holder):
         """
@@ -244,7 +256,7 @@ class DiCal2Engine(Engine):
                 if sample in sample2pop:
                     pop = sample2pop[sample]
                     mult[populations.index(pop)] = 1
-                multiplicities.add(jpype.java.util.ArrayList(mult))
+                multiplicities.add(jpype.JInt[:](mult))
         config_info = _dical2_config_info(
             dical2_pkg=DiCal2Engine.base_module,
             multiplicities=multiplicities,
@@ -312,83 +324,130 @@ class DiCal2Engine(Engine):
         )
         return sequence_list, config_info
 
+    def _default_trunk_factory(self):
+        csd_module = self.base_module.csd
+        # 1. Trunks TODO: what is it?
+        default_trunc_style_name = "migratingEthan"
+        default_cake_style_name = "average"
+        cake_style = csd_module.TrunkProcess.getCakeStyle(
+            default_cake_style_name
+        )
+        trunk_factory = csd_module.TrunkProcess.TrunkProcessFactory(
+            default_trunc_style_name,
+            cake_style
+        )
+        assert trunk_factory is not None
+        return trunk_factory
+
+    def _get_string_of_model(self, values):
+        var2value = self.model.var2value(values)
+        values_list = [var2value[var] for var in self.model.variables]
+        values_phys = self.model.translate_values(units="physical",
+                                                  values=values_list,
+                                                  time_in_generations=False)
+        var2value = self.model.var2value(values_phys)
+
+        for var in var2value:
+            var2value[var] = var.rescale_value(
+                value=var2value[var],
+                Nref=self.model.Nref,
+                reverse=False
+            )
+            # in dical2 migrations are in 1/4Nref units instead of 1/2Nref
+            if isinstance(var, MigrationVariable):
+                var2value[var] *= 2
+
+        def get_value(entity):
+            return self.model.get_value_from_var2value(var2value, entity)
+
+        ret_str = "# boundary points of the epochs [0,t_1,t_2,infinity) "\
+                  "[intervals of constant demography]\n"
+        epoch_ends = []
+        for event in reversed(self.model.events):
+            if not isinstance(event, Epoch):
+                continue
+            time = get_value(event.time_arg)
+            if len(epoch_ends) == 0:
+                epoch_ends.append(time)
+            else:
+                epoch_ends.append(time + epoch_ends[-1])
+        ret_str += "[ " + ",".join([str(x) for x in epoch_ends]) + " ]\n"
+
+        partition = [[str(pop)]
+                     for pop, _ in enumerate(self.model.events[-1].size_args)]
+        n_epoch = 0
+
+        events = list(reversed(copy.copy(self.model.events)))
+        # add first epoch
+        first_epoch = Epoch(time_arg=0,
+                            init_size_args=[self.model.Nanc_size],
+                            size_args=[self.model.Nanc_size])
+        events.append(first_epoch)
+        for event in events:
+            if isinstance(event, Epoch):
+                n_epoch += 1
+                ret_str += f"# EPOCH {n_epoch}\n"
+                # partition
+                ret_str += "# population structure\n"
+                str_partition = []
+                for deme in partition:
+                    str_partition.append("{" + ",".join(deme) + "}")
+                ret_str += "{" + ",".join(str_partition) + "}\n"
+                # pop sizes
+                # TODO exponential
+                ret_str += "# population sizes\n"
+                pop_sizes = [str(get_value(arg)) for arg in event.size_args]
+                ret_str += "\t".join(pop_sizes) + "\n"
+                # TODO pulse matrix
+                # adds pop_sizes equal to None and add additional rates
+                ret_str += "# instantaneous migration rates at "\
+                           "beginning of epoch\n"
+                ret_str += "null\n"
+                # migration rates
+                ret_str += "# migration rates during epoch\n"
+
+                mig_matrix = []
+                if event.mig_args is None:
+                    n_pop = len(event.size_args)
+                    migs = np.zeros(shape=(n_pop, n_pop))
+                else:
+                    migs = event.mig_args
+                for i, row in enumerate(migs):
+                    mig_matrix.append([])
+                    for j, mig in enumerate(row):
+                        if i == j:
+                            # just in case
+                            mig_matrix[-1].append("0")
+                        else:
+                            mig_matrix[-1].append(str(get_value(mig)))
+                    ret_str += "\t".join(mig_matrix[-1]) + "\n"
+                # Exponential rates
+                # TODO
+            elif isinstance(event, Split):
+                # fix partition
+                pop_that_split = event.pop_to_div
+                partition[pop_that_split].extend(partition[-1])
+                partition = partition[:-1]
+        return ret_str
+
     def _create_demo_model(self, values, trunk_factory):
         """
         Creates demographic model with diCal2 from model of GADMA.
 
         Based on dical2.demography.DemographyFactory.ParamFileDemoFactory
         """
-        var2value = self.model.var2value(values)
-        def get_value(entity):
-            return self.model.get_value_from_var2value(var2value, entity)
-        demography_module = self.base_module.demography
-
-
-        #create DemoFactory
-        demo_factory = demography_module.DemographyFactory.DemoFactory(
+        # As fields of DemographyFactory.DemographyFactory are final
+        # we have no choice but create file with model and read it from it.
+        import tempfile
+        demo_module = self.base_module.demography
+        demo_string = self._get_string_of_model(values)
+        demo_factory = demo_module.DemographyFactory.ParamFileDemoFactory(
+            jpype.java.io.StringReader(demo_string),
+            None,
             self.base_module.csd.UberDemographyCore.DEMO_FACTORY_EPSILON,
-            trunk_factory.halfMigrationRate,
-            None
-        )
-
-        params_to_vary = jpype.java.util.TreeMap()
-        variables = self.model.variables
-
-        def get_mutable_double(entity):
-            return demography_module.DemographyFactory.getMutableDouble(
-                str(entity),
-                params_to_vary
-            )
-        last_end = get_mutable_double(0.0)
-        partition = [ [pop] for pop in enumerate(self.model.events[-1].size_args)]
-        for event in reversed(self.model.events):
-            if isinstance(event, Epoch):
-                # time of events
-                epoch_time = get_value(event.time_arg)
-                curr_break_point = last_end + epoch_time
-                demo_factory.currEpochList.add(
-                    SimplePair(last_end, curr_break_point)
-                )
-                # partition
-                pop_list = jpype.java.util.ArrayList()
-                for deme in partition:
-                    ancient_deme = TreeSet(deme)
-                    pop_list.add(ancient_deme)
-                demo_factory.treePartitionList.add(popList)
-                # pop sizes
-                # TODO exponential
-                pop_sizes = [get_mutable_double(get_value(arg))
-                             for arg in event.size_args]
-                demo_factory.currPopSizesList.add(pop_sizes)
-                # TODO pulse matrix
-                # adds pop_sizes equal to None and add additional rates
-                mig_matrix = []
-                for row in event.mig_args:
-                    mig_matrix.append([])
-                    for mig in row:
-                        mig_matrix[-1].append(
-                            get_mutable_double(get_value(mig))
-                        )
-                demo_factory.currMigrationMatrixList.add(mig_matrix)
-                demo_factory.currPulseMigrationMatrixList.add(None)
-                # Exponential rates
-                # TODO
-                if event.dyn_args is None:
-                    dynamics = ["Sud" for _ in event.size_args]
-                else:
-                    dynamics = [get_value(arg) for arg in event.dyn_args]
-                rates = []
-                for dyn in dynamics:
-                    assert dyn == "Sud"
-                    rates.append(get_mutable_double(0.0))
-                demo_factory.currExpRatesList.add(rates)
-            elif isinstance(event, Split):
-                # fix partition
-                pop_that_split = event.pop_to_div
-                partition[pop_that_split].append(partition[-1])
-                partition = partition[:-1]
-        demo_factory.currEpochList.add(
-            SimplePair(last_end, get_mutable_double(Double.POSITIVE_INFINITY))
+            trunk_factory.halfMigrationRate(),
+            None,
+            False
         )
         return demo_factory
 
@@ -398,18 +457,19 @@ class DiCal2Engine(Engine):
 
         :param values: values of variables of setted demographic model.
         """
-        mut_matrix = DiCal2Engine.base_module.Jama.Matrix([[0, 1], [1, 0]])
+        sequence_list, local_config_info = self.data
+        mut_matrix = jpype.JPackage("Jama").Matrix([[0, 1], [1, 0]])
         extended_config_info = _extended_config_info(
             dical2_pkg=DiCal2Engine.base_module,
             preSequenceList=sequence_list,
             preConfigInfo=local_config_info,
             numPerDeme=None,  # looks like it is null
-            theta=self.model.mu,
-            rho=0,#self.model.recombination_rate,  # TODO
+            theta=4*self.model.Nref*self.model.mu,
+            rho=0,  # self.model.recombination_rate,  # TODO
             mutMatrix=mut_matrix,
-            useLocusSkipping=True,
-            lociPerHmmStep=self.loci_per_HMM_step,  # TODO
-            printLoci=False,
+            useLocusSkipping=False,
+            lociPerHmmStep=self.loci_per_HMM_step,
+            printLoci=None,
             useStationaryForPartially=False,  # TODO
             additionalHapIdx=None,
             csdList=None,  # is not None when csd are from file, we have LOL
@@ -418,19 +478,10 @@ class DiCal2Engine(Engine):
         # Demography
         csd_module = self.base_module.csd
         # 1. Trunks TODO: what is it?
-        default_trunc_style_name = "migratingEthan"
-        default_cake_style_name = "average"
-        cake_style = csd_module.TrunkProcess.getCakeStyle(
-            default_cake_style_name
-        )
-        trunk_factory = csd_module.TrunkProcessFactory(
-            default_trunc_style_name,
-            cake_style
-        )
-        assert trunk_factory is not None
+        trunk_factory = self._default_trunk_factory()
         # interval type
         default_interval_type_name = "loguniform"
-        default_interval_factory_params = "8,0.01,4" # TODO may be different for 3 pops
+        default_interval_factory_params = "8,0.01,4"  # TODO may diff for 3pop
         default_print_intervals = False
         interval_factory = csd_module.IntervalFactory.getIntervalFactory(
             default_interval_type_name,
@@ -451,13 +502,14 @@ class DiCal2Engine(Engine):
         # create config list for lol objective
         chunk = 0
         structured_config = extended_config_info.structuredConfig
-        p_set = extended_config_info.pSet;
+        p_set = extended_config_info.pSet
         fancy_transition_map = extended_config_info.fancyTransitionMap
         csd_configs = jpype.java.util.ArrayList()
         csd_configs.add(jpype.java.util.ArrayList())
         csd_configs.get(0).add(jpype.java.util.ArrayList())
         csd_configs.get(0).get(0).addAll(
-            _get_lol_config_list(structuredConfig=structured_config,
+            _get_lol_config_list(dical2_pkg=self.base_module,
+                                 structuredConfig=structured_config,
                                  pSet=p_set,
                                  fancyTransitionMap=fancy_transition_map,
                                  pcLol=False)
@@ -469,6 +521,7 @@ class DiCal2Engine(Engine):
         cond_obj_fun = cond_obj_type.ConditionLineage
         # Create objective
         objective_function = _create_dical_objective(
+            dical2_pkg=self.base_module,
             csdConfigList=csd_configs,
             demoFactory=demo_factory,
             demoStateFactory=demo_state_factory,
@@ -484,3 +537,8 @@ class DiCal2Engine(Engine):
             useEigenCore=False,  # switch is off be default ODECore
         )
         return objective_function.getLogLikelihood()
+
+
+if (dical2_path is not None and
+        os.path.exists(os.path.join(dical2_path, 'diCal2.jar'))):
+    register_engine("DiCal2")

@@ -191,8 +191,10 @@ class DadiOrMomentsEngine(Engine):
         if self.data is None or self.model is None:
             raise ValueError("Please set data and model for the engine or"
                              " use set_and_evaluate function instead.")
+        var2value = self.model.var2value(values)
+        values_list = [var2value[var] for var in self.model.variables]
         values_gen = self.model.translate_values(units="genetic",
-                                                 values=values,
+                                                 values=values_list,
                                                  time_in_generations=False)
         model_sfs = self.simulate(values_gen,
                                   self.data.sample_sizes,

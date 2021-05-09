@@ -1,4 +1,5 @@
 import warnings
+import os
 try:
     import matplotlib
     matplotlib.use("Agg")
@@ -12,8 +13,13 @@ try:
 except ImportError:
     pass
 
-from . import dical2_path
-dical2_path = dical2_path.dical2_path
+try:
+    from . import dical2_path
+    dical2_path = dical2_path.dical2_path
+    if not os.exists(dical2_path):
+        dical2_path = None
+else:
+    dical2_path = None
 
 try:
     import PIL
@@ -48,8 +54,6 @@ try:
     smac_available = True
 except ImportError:
     smac_available = False
-
-import warnings
 
 PIL_available = PIL is not None
 matplotlib_available = matplotlib is not None
