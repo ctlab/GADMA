@@ -16,9 +16,9 @@ except ImportError:
 try:
     from . import dical2_path
     dical2_path = dical2_path.dical2_path
-    if not os.exists(dical2_path):
+    if not os.path.exists(dical2_path):
         dical2_path = None
-else:
+except ImportError:
     dical2_path = None
 
 try:

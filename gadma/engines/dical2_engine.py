@@ -5,6 +5,7 @@ from ..utils import DiscreteVariable, MigrationVariable, cache_func
 from ..utils import read_popinfo, get_list_of_names_from_vcf
 from .. import VCFDataHolder
 from .. import dadi_available, moments_available
+from . import register_engine
 from ..code_generator import id2printfunc
 
 import warnings
@@ -214,7 +215,7 @@ class DiCal2Engine(Engine):
     inner_data_type = tuple  #: tuple of sequence_list and config info
 
     # run JVM
-    if (dical2_path is not None and
+    if (not jpype.isJVMStarted() and dical2_path is not None and
             os.path.exists(os.path.join(dical2_path, 'diCal2.jar'))):
         jpype.startJVM(jpype.getDefaultJVMPath(),
                        "-ea",
@@ -541,4 +542,4 @@ class DiCal2Engine(Engine):
 
 if (dical2_path is not None and
         os.path.exists(os.path.join(dical2_path, 'diCal2.jar'))):
-    register_engine("DiCal2")
+    register_engine(DiCal2Engine)

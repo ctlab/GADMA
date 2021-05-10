@@ -53,15 +53,16 @@ def unarchive(tar_gz_archive):
     tar.close()
     return names
 
-dical2_url = "https://sourceforge.net/projects/dical2/files/latest/download?source=files"
+#dical2_url = "https://sourceforge.net/projects/dical2/files/latest/download?source=files"
 dical2_saved = os.path.join(".", "diCal2_2_0_5.tar.gz")
 dical2_download = os.path.join(".", "diCal2_LATEST.tar.gz")
-try:
-    urllib.request.urlretrieve(dical2_url, filename=dical2_download)
-    success = True
-except Exception as e:
-    success = False
-    print(f"Dical2 download failed due to the following exception: {e}")
+success = False
+#try:
+#    urllib.request.urlretrieve(dical2_url, filename=dical2_download)
+#    success = True
+#except Exception as e:
+#    success = False
+#    print(f"Dical2 download failed due to the following exception: {e}")
 
 if not os.path.exists(dical2_download):
     dical2_download = dical2_saved
