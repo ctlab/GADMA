@@ -245,19 +245,22 @@ class TestGeneticAlg(unittest.TestCase):
 
     def test_1pop_example_1(self):
         for engine in all_engines():
-            with self.subTest(engine=engine.id):
-                self.run_example(engine.id, get_1pop_sim_example_1)
+            if engine.id != "diCal2":
+                with self.subTest(engine=engine.id):
+                    self.run_example(engine.id, get_1pop_sim_example_1)
 
     def test_1pop_example_2(self):
         for engine in all_engines():
-            with self.subTest(engine=engine.id):
-                self.run_example(engine.id, get_1pop_sim_example_2,
-                                 not_bayesopt=True)
+            if engine.id != "diCal2":
+                with self.subTest(engine=engine.id):
+                    self.run_example(engine.id, get_1pop_sim_example_2,
+                                     not_bayesopt=True)
 
     def test_2pop_example_1(self):
         for engine in all_engines():
-            with self.subTest(engine=engine.id):
-                self.run_example(engine.id, get_2pop_sim_example_1)
+            if engine.id != "diCal2":
+                with self.subTest(engine=engine.id):
+                    self.run_example(engine.id, get_2pop_sim_example_1)
 
     def test_yri_ceu(self):
         nu1F = PopulationSizeVariable('nu1F')
@@ -379,6 +382,8 @@ class TestGeneticAlg(unittest.TestCase):
 class TestInference(unittest.TestCase):
     def test_inference_ga(self):
         for engine in all_engines():
+            if engine.id == "diCal2":
+                continue
             with self.subTest(engine=engine.id):
                 if engine.id == "dadi":
                     args = ([4, 6, 8],)
@@ -427,6 +432,8 @@ class TestInference(unittest.TestCase):
         dirname = os.path.join(EXAMPLE_FOLDER, "DATA",
                                "sfs", 'YRI_CEU_test_boots')
         for engine in all_engines():
+            if engine.id == "diCal2":
+                continue
             projections = (4, 4)
             data = engine.read_data(SFSDataHolder(os.path.join(EXAMPLE_FOLDER,
                                                                "DATA", "sfs",

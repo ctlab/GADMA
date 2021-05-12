@@ -204,6 +204,8 @@ class TestModelStructure(unittest.TestCase):
                             ll_true = func_in_separate_process(
                                 run_dical2_eval, data_holder, dm, x
                             )
+                            if ll_true is None:
+                                check_ll = False
                     else:
                         data = engine.simulate(x, sizes, *args)
                         engine.set_data(data)

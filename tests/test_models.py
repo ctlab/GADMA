@@ -56,6 +56,8 @@ class TestModels(unittest.TestCase):
 
     def test_custom_dm_init(self):
         for engine in all_engines():
+            if engine.id == "diCal2":
+                continue
             with self.subTest(engine=engine.id):
                 filename = f"demographic_model_{engine.id}_YRI_CEU.py"
                 location = os.path.join(EXAMPLE_FOLDER, "MODELS", filename)
@@ -247,6 +249,8 @@ class TestModels(unittest.TestCase):
 
         data = SFSDataHolder(YRI_CEU_DATA)
         for engine in all_engines():
+            if engine.id == "diCal2":
+                continue
             with self.subTest(engine=engine.id):
                 if engine.id == 'dadi':
                     args = ([5, 10, 15],)
@@ -402,6 +406,8 @@ class TestModels(unittest.TestCase):
                   Nanc: 10000, Nu2: 5000, T3: 4000}
 
         for engine in all_engines():
+            if engine.id == "diCal2":
+                continue
             customfile = os.path.join(
                 EXAMPLE_FOLDER, "MODELS",
                 f"demographic_model_{engine.id}_3pops.py")

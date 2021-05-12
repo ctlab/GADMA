@@ -409,12 +409,14 @@ class TestLocalOpt(TestBaseOptClass):
 
     def test_1pop_example_1(self):
         for engine in all_engines():
-            self.run_example(engine.id, get_1pop_sim_example_1)
+            if engine.id != "diCal2":
+                self.run_example(engine.id, get_1pop_sim_example_1)
 
     def test_1pop_example_2(self):
         for engine in all_engines():
-            self.run_example(engine.id, get_1pop_sim_example_2,
-                             will_collapse=True)
+            if engine.id != "diCal2":
+                self.run_example(engine.id, get_1pop_sim_example_2,
+                                 will_collapse=True)
 
     def test_combinations_misses(self):
         ls_opt = get_local_optimizer("BFGS")
