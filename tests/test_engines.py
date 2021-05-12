@@ -5,10 +5,103 @@ from gadma.models import Model
 import os
 import numpy as np
 import jpype
+import multiprocessing
+from multiprocessing import Queue, Process
+from gadma.engines import DiCal2Engine
 
 from .test_data import CONTIG0, CONTIG0_POPMAP, REFERENCE
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
+
+def evaluate_with_dical2_engine(q, er_q, data_holder, model, vals):
+    try:
+        engine = get_engine("diCal2")
+        engine.data = engine.read_data(data_holder)
+        engine.model = model
+        q.put(engine.evaluate(vals))
+    except Exception as e:
+        er_q.put(e)
+        raise e
+
+def evaluate_with_dical2_cmd(q, er_q):
+    try:
+        # run JVM
+        DiCal2Engine._startJVM()
+        dical_pkg = DiCal2Engine.base_module
+        def path(p):
+            return  os.path.join(DATA_PATH, "MODELS", "dical2_models", p)
+        def data_path(p):
+            return os.path.join(DATA_PATH, "DATA", 'vcf', p)
+        dical_args = ['--paramFile', path('mutRec.param'),
+                      '--vcfFile', data_path('contig.0.vcf'),
+                      '--vcfFilterPassString', 'PASS',
+                      '--vcfReferenceFile', data_path('reference.fa'),
+                      '--lociPerHmmStep', '32000',
+                      '--configFile', path('2pop.config'),
+                      '--demoFile', path('2pop.demo'),
+                      '--intervalType', 'loguniform',
+                      '--compositeLikelihood', 'lol',
+                      '--intervalParams', '8,0.01,4',
+    #                      '--startPoint', '0.2,0.5,0.5,0.02,1',
+                      '--bounds', '0.002,20;0.01,20;0.01,20;0.01,20;0.01,20',
+    #                      '--numberIterationsEM', '0',
+    #                      '--numberIterationsMstep', '1',
+    #                      '--verbose'
+                        ]
+        dical_param_set_class = dical_pkg.maximum_likelihood.DiCalParamSet
+        dical_param_set = dical_param_set_class(dical_args, [], [],
+                                                jpype.java.lang.System.out)
+        chunk = 0
+        extended_config = dical_param_set.extendedConfigInfoList.get(chunk)
+        structuredConfig = extended_config.structuredConfig
+        pSet = extended_config.pSet;
+        fancyTransitionMap = extended_config.fancyTransitionMap
+        csdConfigs = jpype.java.util.ArrayList()
+        csdConfigs.add(jpype.java.util.ArrayList())
+        csdConfigs.get(0).add(jpype.java.util.ArrayList())
+        em_module = dical_pkg.maximum_likelihood.StructureEstimationEM
+        csdConfigs.get(0).get(0).addAll(
+            em_module.getLOLConfigList(structuredConfig,
+                                       pSet,
+                                       fancyTransitionMap,
+                                       False)
+        )
+
+        # Create objective
+        objectiveFunction = em_module.DiCalObjectiveFunction(
+            csdConfigs,
+            dical_param_set.demoFactory,
+            dical_param_set.demoStateFactory,
+            dical_param_set.conditionalObjectiveFunction,
+            [0.2,0.5,0.5,0.02,1],
+            False,
+            dical_param_set.trunkFactory,
+            False,
+            csdConfigs.get(0).get(0).get(0).pSet.getMutationRate(0),
+            0,
+            False,
+            True,
+            dical_param_set.useEigenCore
+        )
+        cmd_ll = objectiveFunction.getLogLikelihood()
+        q.put(float(cmd_ll))
+    except Exception as e:
+        er_q.put(e)
+        raise e
+
+
+def func_in_separate_process(function, *args):
+    multiprocessing.set_start_method('spawn', force=True)
+    queue = Queue()
+    er_queue = Queue()
+    p = Process(target=function,
+                args=(queue, er_queue, *args))
+    p.start()
+    p.join() # this blocks until the process terminates
+    if not er_queue.empty():
+        raise RuntimeError() from er_queue.get(0)
+    if not queue.empty():
+        return queue.get(0)
 
 
 class TestEngines(unittest.TestCase):
@@ -237,7 +330,8 @@ class TestEngines(unittest.TestCase):
         self.assertEqual(correct_string, demo_string)
 
     def test_dical2_engine_evaluation(self):
-        dical2_engine = get_engine("DiCal2")
+
+        dical2_engine = get_engine("diCal2")
 
         Nanc = PopulationSizeVariable("Nanc", units="physical")
         N1 = PopulationSizeVariable("N1", units="physical")
@@ -255,73 +349,14 @@ class TestEngines(unittest.TestCase):
         #0.2,0.5,0.5,0.02,1
         values={"T": 4000, "Nanc": 10000, "N1": 5000, "N2": 0.5, "m12": 5e-7}
 
-        # model
-        dical2_engine.model = model
-
         # data
         data = VCFDataHolder(vcf_file=CONTIG0, popmap_file=CONTIG0_POPMAP,
                              reference_file=REFERENCE)
-        dical2_engine.data = dical2_engine.read_data(data)
-        ll = dical2_engine.evaluate(values)
 
+        # we have to create new process to get valid performance with JVM
+        ll = func_in_separate_process(evaluate_with_dical2_engine,
+                                      data, model, values)
         # evaluate with dical2
-        dical_pkg = dical2_engine.base_module
-        def path(p):
-            return  os.path.join(DATA_PATH, "MODELS", "dical2_models", p)
-        def data_path(p):
-            return os.path.join(DATA_PATH, "DATA", 'vcf', p)
-        dical_args = ['--paramFile', path('mutRec.param'),
-                      '--vcfFile', data_path('contig.0.vcf'),
-                      '--vcfFilterPassString', 'PASS',
-                      '--vcfReferenceFile', data_path('reference.fa'),
-                      '--lociPerHmmStep', '32000',
-                      '--configFile', path('2pop.config'),
-                      '--demoFile', path('2pop.demo'),
-                      '--intervalType', 'loguniform',
-                      '--compositeLikelihood', 'lol',
-                      '--intervalParams', '8,0.01,4',
-#                      '--startPoint', '0.2,0.5,0.5,0.02,1',
-                      '--bounds', '0.002,20;0.01,20;0.01,20;0.01,20;0.01,20',
-#                      '--numberIterationsEM', '0',
-#                      '--numberIterationsMstep', '1',
-#                      '--verbose'
-                        ]
-        dical_param_set_class = dical_pkg.maximum_likelihood.DiCalParamSet
-        dical_param_set = dical_param_set_class(dical_args, [], [],
-                                                jpype.java.lang.System.out)
-        chunk = 0
-        extended_config = dical_param_set.extendedConfigInfoList.get(chunk)
-        structuredConfig = extended_config.structuredConfig
-        pSet = extended_config.pSet;
-        fancyTransitionMap = extended_config.fancyTransitionMap
-        csdConfigs = jpype.java.util.ArrayList()
-        csdConfigs.add(jpype.java.util.ArrayList())
-        csdConfigs.get(0).add(jpype.java.util.ArrayList())
-        em_module = dical_pkg.maximum_likelihood.StructureEstimationEM
-        csdConfigs.get(0).get(0).addAll(
-            em_module.getLOLConfigList(structuredConfig,
-                                       pSet,
-                                       fancyTransitionMap,
-                                       False)
-        )
-
-        # Create objective
-        objectiveFunction = em_module.DiCalObjectiveFunction(
-            csdConfigs,
-            dical_param_set.demoFactory,
-            dical_param_set.demoStateFactory,
-            dical_param_set.conditionalObjectiveFunction,
-            [0.2,0.5,0.5,0.02,1],
-            False,
-            dical_param_set.trunkFactory,
-            False,
-            csdConfigs.get(0).get(0).get(0).pSet.getMutationRate(0),
-            0,
-            False,
-            True,
-            dical_param_set.useEigenCore
-        )
-        cmd_ll = objectiveFunction.getLogLikelihood()
+        cmd_ll = func_in_separate_process(evaluate_with_dical2_cmd)
 
         self.assertEqual(ll, cmd_ll)
-

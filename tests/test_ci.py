@@ -23,6 +23,8 @@ class TestConfidenceIntervals(unittest.TestCase):
             os.remove(params_file)
 
         for engine in all_engines():
+            if engine.id == "diCal2":
+                continue
             model_name = f"small_1pop_dem_model_{engine.id}.py"
             model_name = os.path.join(DATA_DIR, "MODELS", model_name)
             no_ids_model_name = os.path.join(DATA_DIR, "MODELS",
@@ -57,6 +59,8 @@ class TestConfidenceIntervals(unittest.TestCase):
 
     def test_run_ci_evaluation(self):
         for engine in all_engines():
+            if engine.id == "diCal2":
+                continue
             output_dir = os.path.join(DATA_DIR, f"run_ls_out_{engine.id}")
             table = os.path.join(output_dir, 'result_table')
             try:

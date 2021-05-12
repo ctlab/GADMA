@@ -46,6 +46,17 @@ REFERENCE = os.path.join(DATA_PATH, "vcf", "reference.fa")
 SMALL_REFERENCE = os.path.join(DATA_PATH, "vcf", "small_reference.fa")
 
 
+def run_dical2_reading(q, er_q, data):
+    try:
+        res = gadma.engines.DiCal2Engine.read_data(data)
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        # q.put(res)  # Not working as java objects are unpickleable
+    except Exception as e:
+        er_q.put(e)
+        raise e
+
+
 class TestDataHolder(unittest.TestCase):
 
     def _check_data(self, data, pop_labels, outgroup, sample_sizes):
@@ -174,11 +185,10 @@ class TestDataHolder(unittest.TestCase):
 
     @unittest.skipIf(dical2_available, "DiCal2 is not installed")
     def test_dical2_reading(self):
+        from .test_engines import func_in_separate_process
         data = VCFDataHolder(vcf_file=CONTIG0, popmap_file=CONTIG0_POPMAP,
                              reference_file=REFERENCE)
-        ret = gadma.engines.DiCal2Engine.read_data(data)
-        self.assertTrue(isinstance(ret, tuple))
-        self.assertEqual(len(ret), 2)
+        func_in_separate_process(run_dical2_reading, data)  # checks are inside
 
     @unittest.skipIf(dical2_available, "DiCal2 is not installed")
     def test_dical2_reading_fails(self):

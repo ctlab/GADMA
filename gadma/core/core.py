@@ -10,6 +10,7 @@ import sys
 
 from datetime import datetime
 import multiprocessing
+
 from multiprocessing import Pool
 import time
 import traceback
@@ -48,6 +49,9 @@ def main():
     GADMA and holds base pool of processes. Prints progress periodically for
     each run, saves plots and pictures of best model and generates code.
     """
+    # To be sure about memory and JVM in cubprocesses
+    multiprocessing.set_start_method('spawn', force=True)
+
     settings_storage, args = arg_parser.get_settings()
 
     # Form output directory

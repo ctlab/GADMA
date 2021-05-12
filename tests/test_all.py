@@ -298,7 +298,7 @@ class TestRestore(unittest.TestCase):
             fl.write("Stuck generation number: 2\n"
                      "Projections: 4,4\n"
                      "Migration masks: [[0, 1], [0, 0]]\n"
-                     "Silence: True\n"
+#                     "Silence: True\n"
                      "global_maxiter: 2\n"
                      "local_maxiter: 1\n")
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]

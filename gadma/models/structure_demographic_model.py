@@ -133,6 +133,7 @@ class StructureDemographicModel(EpochDemographicModel):
             gen_time=self.gen_time,
             theta0=self.theta0,
             mu=self.mu,
+            Nref=self.Nref,
             has_anc_size=self.has_anc_size,
             Nanc_size=self.Nanc_size
         )
@@ -316,6 +317,9 @@ class StructureDemographicModel(EpochDemographicModel):
         # So we build dict with variables correspondence - they will be moved
         # forward by one event starting with chosen event.
         oldvar2newvar = {}
+        # special case for Nanc_size
+        if self.has_anc_size:
+            oldvar2newvar[old_model.Nanc_size] = self.Nanc_size
         for i, (old_event, new_event) in enumerate(zip(old_model.events,
                                                        self.events)):
             if i >= event_index:

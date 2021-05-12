@@ -10,11 +10,25 @@ TEST_STRUCTURES = [(1,), (2,),
 
 BASE_TEST_STRUCTURES = [(2,), (2,1), (1, 1, 1)]
 
+DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
+
+
 import warnings
 warnings.filterwarnings(action='ignore', category=UserWarning,
                         module='.*\.structure_demographic_model', lineno=77)
 warnings.filterwarnings(action='ignore', category=UserWarning,
                         module='.*\.structure_demographic_model', lineno=81)
+
+def run_dical2_eval(q, er_q, data, model, values):
+    try:
+        engine = get_engine("diCal2")
+        engine.data = engine.read_data(data)
+        engine.model = model
+        res = engine.evaluate(values)
+        q.put(res)
+    except Exception as e:
+        er_q.put(e)
+        raise e
 
 class TestModelStructure(unittest.TestCase):
     def _generate_mig_mask(self, structure, sym_migs):
@@ -131,34 +145,43 @@ class TestModelStructure(unittest.TestCase):
                 sym_migs=False, migs_mask=masks, frac_split=True)
 
     def test_likelihood_after_increase(self):
-        for structure in BASE_TEST_STRUCTURES:
-            for create_migs, create_sels, create_dyns, sym_migs, fracs in\
-                    list(itertools.product([False, True],repeat=5)):
-                if not create_migs:
-                    sym_migs = False
-                def model_generator(structure):
-                    return StructureDemographicModel(structure,
-                                                     np.array(structure) + 1,
-                                                     has_migs=create_migs,
-                                                     has_sels=create_sels,
-                                                     has_dyns=create_dyns,
-                                                     sym_migs=sym_migs,
-                                                     frac_split=fracs)
- 
-                dm = model_generator(structure)
-                variables = dm.variables
-                x = [var.resample() for var in variables]
+        from .test_engines import func_in_separate_process
+        for engine in all_engines():
+            for structure in BASE_TEST_STRUCTURES:
+                for create_migs, create_sels, create_dyns, sym_migs, fracs in\
+                        list(itertools.product([False, True],repeat=5)):
+                    if not create_migs:
+                        sym_migs = False
+                    has_anc_size = False
+                    if engine.id == "diCal2":
+                        has_anc_size = True
+                    def model_generator(structure):
+                        return StructureDemographicModel(structure,
+                                                         np.array(structure) + 1,
+                                                         has_migs=create_migs,
+                                                         has_sels=create_sels,
+                                                         has_dyns=create_dyns,
+                                                         sym_migs=sym_migs,
+                                                         frac_split=fracs,
+                                                         has_anc_size=has_anc_size)
+     
+                    dm = model_generator(structure)
+                    dm.mu = 1.25e-8
+                    dm.Nref = 10000
+                    variables = dm.variables
+                    x = [var.resample() for var in variables]
 
-                bad_structure = list(structure)
-                for i in range(len(bad_structure)):
-                    if bad_structure[i] == 1:
-                        continue
-                    bad_structure[i] -= 1
-                    self.assertRaises(ValueError, dm.increase_structure,
-                                      bad_structure)
+                    bad_structure = list(structure)
+                    for i in range(len(bad_structure)):
+                        if bad_structure[i] == 1:
+                            continue
+                        bad_structure[i] -= 1
+                        self.assertRaises(ValueError, dm.increase_structure,
+                                          bad_structure)
 
-                check_ll = np.random.choice([True, False], p=[1/6, 5/6])
-                for engine in all_engines():
+                    check_ll = np.random.choice([True, False], p=[1/6, 5/6])
+                    random_int = np.random.choice(range(len(structure)))
+
                     engine.set_model(dm)
                     if engine.id == 'dadi':
                         sizes = [8 for _ in range(len(structure))]
@@ -167,18 +190,32 @@ class TestModelStructure(unittest.TestCase):
                         sizes = [4 for _ in range(len(structure))]
                         args = ()
                     # simulate data
-                    data = engine.simulate(x, sizes, *args)
-                    engine.set_data(data)
-#                    print(data)
-#                    print(type(data))
+                    if engine.id == "diCal2":
+                        VCF_DATA = os.path.join(DATA_PATH, "DATA", "vcf",
+                                                "small.vcf")
+                        POPMAP = os.path.join(DATA_PATH, "DATA", "vcf",
+                                              f"popmap_{len(structure)}pop")
+                        REFERENCE = os.path.join(DATA_PATH, "DATA", "vcf",
+                                                 "reference.fa")
+                        data_holder = VCFDataHolder(vcf_file=VCF_DATA,
+                                                    popmap_file=POPMAP,
+                                                    reference_file=REFERENCE)
+                        if check_ll:
+                            ll_true = func_in_separate_process(
+                                run_dical2_eval, data_holder, dm, x
+                            )
+                    else:
+                        data = engine.simulate(x, sizes, *args)
+                        engine.set_data(data)
+    #                    print(data)
+    #                    print(type(data))
 
-                    if check_ll:
-                        # get ll of data
-                        try:
-                            ll_true = engine.evaluate(x, *args)
-                        except AttributeError:
-                            assert engine.id == "dadi"
-                        random_int = np.random.choice(range(len(structure)))
+                        if check_ll:
+                            # get ll of data
+                            try:
+                                ll_true = engine.evaluate(x, *args)
+                            except AttributeError:
+                                assert engine.id == "dadi"
                     # increase structure
                     for i in range(len(structure)):
                         new_structure = list(copy.copy(structure))
@@ -200,9 +237,20 @@ class TestModelStructure(unittest.TestCase):
                         engine.set_model(new_dm)
 #                        print("!!!", dm.var2value(x), new_dm.var2value(new_X[0]))
                         if check_ll and random_int == i:
-                            new_ll = engine.evaluate(new_X[0], *args)
-                            self.assertTrue(np.allclose(ll_true, new_ll),
-                                            msg=f"{ll_true} != {new_ll} : {msg}")
+                            if engine.id == "diCal2":
+                                new_ll = func_in_separate_process(
+                                    run_dical2_eval,
+                                    data_holder,
+                                    new_dm,
+                                    new_X[0]
+                                )
+                            else:
+                                new_ll = engine.evaluate(new_X[0], *args)
+                            if ll_true is None or new_ll is None:
+                                pass
+                            else:
+                                self.assertTrue(np.allclose(ll_true, new_ll),
+                                                msg=f"{ll_true} != {new_ll} : {msg}")
 
                 dm.final_structure = dm.get_structure()
                 self.assertRaises(ValueError, dm.increase_structure)

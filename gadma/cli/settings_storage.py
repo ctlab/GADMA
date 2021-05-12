@@ -962,11 +962,12 @@ class SettingsStorage(object):
         """
         Returns `args` of :func:`engine.evaluate` function.
         """
+        args = ()
         if engine_id is None:
             engine_id = self.engine
         if engine_id == 'dadi':
             args = (self.pts,)
-        else:
+        elif engine_id == 'moments':
             args = (MomentsEngine.default_dt_fac,)
         return args
 

@@ -214,17 +214,25 @@ class DiCal2Engine(Engine):
     supported_data = [VCFDataHolder]  #:
     inner_data_type = tuple  #: tuple of sequence_list and config info
 
-    # run JVM
-    if (not jpype.isJVMStarted() and dical2_path is not None and
-            os.path.exists(os.path.join(dical2_path, 'diCal2.jar'))):
-        jpype.startJVM(jpype.getDefaultJVMPath(),
-                       "-ea",
-                       "-Djava.class.path="+":".join(get_jar_files()))
     base_module = jpype.JPackage("edu.berkeley.diCal2")
 
     def __init__(self, data=None, model=None, loci_per_HMM_step=32000):
         super(DiCal2Engine, self).__init__(data, model)
         self.loci_per_HMM_step = loci_per_HMM_step
+
+    @staticmethod
+    def _startJVM():
+        # run JVM
+        if (not jpype.isJVMStarted() and dical2_path is not None and
+                os.path.exists(os.path.join(dical2_path, 'diCal2.jar'))):
+            jpype.startJVM(jpype.getDefaultJVMPath(),
+                           "-ea",
+                           "-Djava.class.path="+":".join(get_jar_files()),
+                           ignoreUnrecognized=False)
+
+    @staticmethod
+    def _stopJVM():
+        jpype.shutdownJVM()
 
     @staticmethod
     def read_data(data_holder):
@@ -241,6 +249,7 @@ class DiCal2Engine(Engine):
         if data_holder.reference_file is None:
             raise ValueError("DiCal2 require reference file.")
 
+        DiCal2Engine._startJVM()
         # 1. create config_info - information from config file of dical2
         # It contains information from popmap
         sample2pop = read_popinfo(data_holder.popmap_file)
@@ -326,6 +335,7 @@ class DiCal2Engine(Engine):
         return sequence_list, config_info
 
     def _default_trunk_factory(self):
+        self._startJVM()
         csd_module = self.base_module.csd
         # 1. Trunks TODO: what is it?
         default_trunc_style_name = "migratingEthan"
@@ -452,12 +462,13 @@ class DiCal2Engine(Engine):
         )
         return demo_factory
 
-    def evaluate(self, values, **options):
+    def _evaluate(self, values, **options):
         """
         Evaluation of the objective function of the engine.
 
         :param values: values of variables of setted demographic model.
         """
+        self._startJVM()
         sequence_list, local_config_info = self.data
         mut_matrix = jpype.JPackage("Jama").Matrix([[0, 1], [1, 0]])
         extended_config_info = _extended_config_info(
@@ -537,7 +548,25 @@ class DiCal2Engine(Engine):
             verbose=True,
             useEigenCore=False,  # switch is off be default ODECore
         )
-        return objective_function.getLogLikelihood()
+        return float(objective_function.getLogLikelihood())
+
+    def evaluate(self, values, **options):
+        """
+        Evaluation of the objective function of the engine.
+
+        :param values: values of variables of setted demographic model.
+        """
+        if self.data is None or self.model is None:
+            raise ValueError("Please set data and model for the engine or"
+                             " use set_and_evaluate function instead.")
+        try:
+            return self._evaluate(values, **options)
+        except Exception:
+            return None
+
+    def generate_code(self, values, filename=None,
+                      nanc=None, gen_time=None, gen_time_units=None):
+        self._startJVM()
 
 
 if (dical2_path is not None and

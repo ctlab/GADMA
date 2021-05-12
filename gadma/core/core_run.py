@@ -226,6 +226,8 @@ class CoreRun(object):
         if verbose != 0 and n_iter % verbose == 0:
             if isinstance(self.model, EpochDemographicModel):
                 for engine in all_engines():
+                    if engine.id == 'diCal2':
+                        continue
                     save_file = os.path.join(self.code_dir, engine.id,
                                              filename)
                     args = self.settings.get_engine_args(engine.id)
