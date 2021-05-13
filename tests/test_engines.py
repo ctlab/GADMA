@@ -299,9 +299,6 @@ class TestEngines(unittest.TestCase):
         self.assertRaises(ValueError, engine.get_theta, values)
 
     def test_dical2_engine_models_reading(self):
-        from jpype import java
-        from jpype import JDouble
-        from java.io import FileReader
         #load model from file and compare it with created
         dical2_engine = engines.DiCal2Engine()
         model_file = os.path.join(DATA_PATH, "MODELS",
