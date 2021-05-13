@@ -566,7 +566,7 @@ class DiCal2Engine(Engine):
 
     def generate_code(self, values, filename=None,
                       nanc=None, gen_time=None, gen_time_units=None):
-        self._startJVM()
+        pass
 
 
 if (dical2_path is not None and
