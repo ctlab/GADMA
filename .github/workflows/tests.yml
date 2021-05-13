@@ -49,6 +49,11 @@ jobs:
           pip3 install pytest-cov
           pip3 install pytest-timeout
 
+      - name: Upgrade NumPy for Python 3.8.
+        run: |
+          pip3 install --upgrade numpy
+        if: matrix.python-version == 3.8
+
       - name: Install GADMA and its dependencies (Linux and MacOS).
         run: |
           ./install
