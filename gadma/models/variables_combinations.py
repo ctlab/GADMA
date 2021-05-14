@@ -1,3 +1,6 @@
+import numpy as np
+
+from ..utils import PopulationSizeVariable
 from ..utils import Variable, TimeVariable
 from .model import Model
 
@@ -165,9 +168,82 @@ class Pow(BinaryOperation):
         return "**"
 
 
+class Exp(BinaryOperation):
+
+    @property
+    def name(self):
+        if isinstance(self.arg1, (Variable, BinaryOperation)):
+            arg1_name = self.arg1.name
+            if isinstance(self.arg1, BinaryOperation):
+                arg1_name = f"({arg1_name})"
+        else:
+            arg1_name = self.arg1
+        return f"exp{arg1_name}"
+
+    @staticmethod
+    def operation(val1, val2=None):
+        return round(np.exp(val1), 3)
+
+    @staticmethod
+    def operation_str():
+        raise NotImplementedError
+
+
 def operation_creation(arg1, arg2, operation):
     if isinstance(arg1, (Model, Variable)) or \
             isinstance(arg2, (Model, Variable)):
+        if operation is Addition:
+            return create_addition(arg1, arg2)
+        if operation is Subtraction:
+            return create_subtraction(arg1, arg2)
+        if operation is Division:
+            return create_division(arg1, arg2)
+        if operation is Multiplication:
+            return create_multiplication(arg1, arg2)
         return operation(arg1, arg2)
     else:
         return operation.operation(arg1, arg2)
+
+
+def create_addition(arg1, arg2):
+    if not isinstance(arg1, (Model, Variable)):
+        if np.isclose(arg1, 0):
+            return arg2
+    if not isinstance(arg2, (Model, Variable)):
+        if np.isclose(arg2, 0):
+            return arg1
+    return Addition(arg1, arg2)
+
+
+def create_subtraction(arg1, arg2):
+    if not isinstance(arg2, (Model, Variable)):
+        if np.isclose(arg2, 0):
+            return arg1
+    if isinstance(arg1, (Model, Variable)) and isinstance(arg2, (Model, Variable)):
+        if arg1 == arg2:
+            return 0
+    return Subtraction(arg1, arg2)
+
+
+def create_division(arg1, arg2):
+    if isinstance(arg1, (Model, Variable)) and isinstance(arg2, (Model, Variable)):
+        if arg1 == arg2:
+            return 1
+    if not isinstance(arg2, (Model, Variable)):
+        if np.isclose(arg2, 0):
+            raise ValueError("Can not divide by zero")
+    return Division(arg1, arg2)
+
+
+def create_multiplication(arg1, arg2):
+    if not isinstance(arg1, (Model, Variable)):
+        if np.isclose(arg1, 0):
+            return 0
+        if np.isclose(arg1, 1):
+            return arg2
+    if not isinstance(arg2, (Model, Variable)):
+        if np.isclose(arg2, 0):
+            return 0
+        if np.isclose(arg2, 1):
+            return arg1
+    return Multiplication(arg1, arg2)

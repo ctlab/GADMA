@@ -1,4 +1,4 @@
-from .variables_combinations import BinaryOperation, Subtraction, Division, Multiplication, Pow, operation_creation
+from .variables_combinations import BinaryOperation, Subtraction, Division, Multiplication, Pow, operation_creation, Exp
 from ..utils import Variable
 from .event import SetSize, MoveLineages, Leaf
 from . import DemographicModel, EpochDemographicModel
@@ -25,7 +25,7 @@ class CoalescentDemographicModel(DemographicModel):
      otherwise model behavior is undefined. Also leaf should be created at the same time.
     """
 
-    def __init__(self, mu, gen_time=None, sequence_length=None, rec_rate=None,
+    def __init__(self, mu=None, gen_time=None, sequence_length=None, rec_rate=None,
                  linear_constrain=None):
         self.events = list()
         self.rec_rate = rec_rate
@@ -75,7 +75,7 @@ class CoalescentDemographicModel(DemographicModel):
         :type value: list or dict
         """
         event = max(self.events, key=lambda x: self.get_value_from_var2value(var2value, x.t))
-        Nanc_var = self._get_size_pop(event.pop, time=event.t, var2value=var2value)
+        Nanc_var, sud = self._get_size_pop(event.pop, time=event.t, var2value=var2value)
         return Nanc_var
 
     def _get_size_pop(self, pop, time, var2value, inclusive=True):
@@ -141,20 +141,19 @@ class CoalescentDemographicModel(DemographicModel):
             start_size = operation_creation(
                 size,
                 operation_creation(
-                    np.exp(1),
                     operation_creation(
                         g,
                         duration,
                         Multiplication
                     ),
-                    Pow
+                    np.exp(1),
+                    Exp
                 ),
                 Division
             )
             new_size = operation_creation(
                 start_size,
                 operation_creation(
-                    np.exp(1),
                     operation_creation(
                         g,
                         operation_creation(
@@ -164,7 +163,8 @@ class CoalescentDemographicModel(DemographicModel):
                         ),
                         Multiplication
                     ),
-                    Pow
+                    np.exp(1),
+                    Exp
                 ),
                 Multiplication
             )
@@ -212,7 +212,7 @@ class CoalescentDemographicModel(DemographicModel):
         :type values: list or dict
         """
 
-        if ModelClass is EpochDemographicModel:
+        if issubclass(ModelClass, EpochDemographicModel):
 
             def is_from_one_epoch(x, y):
                 return np.isclose(self.get_value_from_var2value(var2value=var2value,
@@ -225,9 +225,8 @@ class CoalescentDemographicModel(DemographicModel):
 
             var2value = self.var2value(values)
 
-            Nanc_var = self.get_Nanc_variable(var2value)[0]
-            Nanc = self.get_value_from_var2value(var2value=var2value,
-                                                 entity=Nanc_var)
+            Nanc_var = self.get_Nanc_variable(var2value)
+            Nanc = self._get_Nanc_size(values)
 
             epoch_model = EpochDemographicModel(gen_time=self.gen_time,
                                                 theta0=self.theta0,
