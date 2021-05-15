@@ -561,7 +561,9 @@ class DiCal2Engine(Engine):
                              " use set_and_evaluate function instead.")
         try:
             return self._evaluate(values, **options)
-        except Exception:
+        except jpype.JavaException as e:
+            # print(exception.message())
+            # print(exception.stacktrace())
             return None
 
     def generate_code(self, values, filename=None,
