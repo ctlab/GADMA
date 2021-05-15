@@ -205,7 +205,7 @@ class TestDataHolder(unittest.TestCase):
                              reference_file=SMALL_REFERENCE)
         self.assertRaises(ValueError,
                           gadma.engines.DiCal2Engine.read_data, data)
-
+        gadma,engines.DiCal2Engine._startJVM()
 
     @unittest.skipIf(MOMENTS_NOT_AVAILABLE or DADI_NOT_AVAILABLE,
                      'moments and dadi are not installed')
