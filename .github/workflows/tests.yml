@@ -6,9 +6,7 @@ name: build
 # events but only for the master branch
 on:
   push:
-    branches: [ master, devel ]
   pull_request:
-    branches: [ master, devel ]
 
 jobs:
   build:
@@ -32,6 +30,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Set up Java.
+        uses: actions/setup-java@v1
+        with:
+          java-version: '8'
+
       - name: Install dependencies for tests.
         run: |
           pip3 install coverage
@@ -45,6 +48,11 @@ jobs:
           pip3 install pytest
           pip3 install pytest-cov
           pip3 install pytest-timeout
+
+      - name: Upgrade NumPy for Python 3.8.
+        run: |
+          pip3 install --upgrade numpy
+        if: matrix.python-version == 3.8
 
       - name: Install GADMA and its dependencies (Linux and MacOS).
         run: |
@@ -68,8 +76,8 @@ jobs:
 
       - name: Run tests and codecov.
         run: |
-          python -m pytest --timeout=300 --cov=gadma --cov-report=xml -v tests --disable-warnings
-        
+          python -m pytest --timeout=600 --cov=gadma --cov-report=xml -v tests --disable-warnings
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
@@ -77,4 +85,3 @@ jobs:
           file: ./coverage.xml
           flags: unittests
         if: matrix.os == 'ubuntu-18.04' && matrix.python-version == '3.6'
-
