@@ -216,7 +216,8 @@ class SetSize(Event):
 
 
 class MoveLineages(Event):
-    def __init__(self, pop_from, pop, t, p=1, dyn='Sud', size_pop=None, g=None):
+    def __init__(self, pop_from, pop, t, p=1,
+                 dyn='Sud', size_pop=None, g=None):
         self.pop_from = pop_from
         self.pop = pop
         self.t = t

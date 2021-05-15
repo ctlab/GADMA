@@ -1,16 +1,12 @@
-from . import Engine, register_engine, get_engine
-from ..models import DemographicModel, StructureDemographicModel, \
-    CustomDemographicModel, Epoch, Split, BinaryOperation
+from . import Engine
+from ..models import CustomDemographicModel, BinaryOperation
 from ..models.coalescent_demographic_model import CoalescentDemographicModel
 from ..models.event import Leaf, SetSize, MoveLineages
-from ..utils import DynamicVariable, DiscreteVariable, Variable
 from .. import SFSDataHolder
-from .. import dadi_available, moments_available
-from ..code_generator import id2printfunc
 
 import warnings
 
-momi_available = True
+momi_available = False
 
 
 class MomiEngine(Engine):
@@ -48,17 +44,21 @@ class MomiEngine(Engine):
 
         var2value = self.model.var2value(values)
         for var in self.model.variables:
-            var2value[var] = var.translate_value_into(units="physical",
-                                                      value=var2value[var],
-                                                      N_A=var2value.get(N_a, N_a),
-                                                      gen_time=self.model.gen_time)
+            var2value[var] = var.translate_value_into(
+                units="physical",
+                value=var2value[var],
+                N_A=var2value.get(N_a, N_a),
+                gen_time=self.model.gen_time
+            )
         model = None
         if isinstance(self.model, CustomDemographicModel):
             model = self.model.function(var2value)
         elif isinstance(self.model, CoalescentDemographicModel):
-            model = self.base_module.DemographicModel(N_e=self.model.N_e,
-                                                      gen_time=self.model.gen_time,
-                                                      muts_per_gen=self.model.mu)
+            model = self.base_module.DemographicModel(
+                N_e=self.model.N_e,
+                gen_time=self.model.gen_time,
+                muts_per_gen=self.model.mu
+            )
             for event in self.model.events:
                 if isinstance(event, Leaf):
                     name = self._get_pop_name(event.pop)

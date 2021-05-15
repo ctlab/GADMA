@@ -6,6 +6,7 @@ pip3 install Pillow
 pip3 install ruamel.yaml
 pip3 install mpmath
 pip3 install dadi
+pip3 install momi
 pip3 install Cython
 pip3 install networkx
 pip3 install pandas

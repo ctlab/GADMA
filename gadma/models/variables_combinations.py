@@ -1,7 +1,6 @@
 import numpy as np
 
-from ..utils import PopulationSizeVariable
-from ..utils import Variable, TimeVariable
+from ..utils import Variable
 from .model import Model
 
 
@@ -170,6 +169,9 @@ class Pow(BinaryOperation):
 
 class Exp(BinaryOperation):
 
+    def __init__(self, arg1):
+        super(Exp, self).__init__(arg1, None)
+
     @property
     def name(self):
         if isinstance(self.arg1, (Variable, BinaryOperation)):
@@ -189,7 +191,11 @@ class Exp(BinaryOperation):
         raise NotImplementedError
 
 
-def operation_creation(arg1, arg2, operation):
+def operation_creation(operation, arg1, arg2=None):
+    if arg2 is None and operation is not Exp:
+        raise ValueError(
+            "All operation except Exp should take 2 arguments"
+        )
     if isinstance(arg1, (Model, Variable)) or \
             isinstance(arg2, (Model, Variable)):
         if operation is Addition:
@@ -200,8 +206,14 @@ def operation_creation(arg1, arg2, operation):
             return create_division(arg1, arg2)
         if operation is Multiplication:
             return create_multiplication(arg1, arg2)
-        return operation(arg1, arg2)
+        if operation is Exp:
+            return Exp(arg1)
+        raise ValueError(
+            f"Can not create operation {operation}"
+        )
     else:
+        if operation is Exp:
+            return Exp.operation(arg1)
         return operation.operation(arg1, arg2)
 
 
@@ -219,14 +231,16 @@ def create_subtraction(arg1, arg2):
     if not isinstance(arg2, (Model, Variable)):
         if np.isclose(arg2, 0):
             return arg1
-    if isinstance(arg1, (Model, Variable)) and isinstance(arg2, (Model, Variable)):
+    if isinstance(arg1, (Model, Variable)) \
+            and isinstance(arg2, (Model, Variable)):
         if arg1 == arg2:
             return 0
     return Subtraction(arg1, arg2)
 
 
 def create_division(arg1, arg2):
-    if isinstance(arg1, (Model, Variable)) and isinstance(arg2, (Model, Variable)):
+    if isinstance(arg1, (Model, Variable)) \
+            and isinstance(arg2, (Model, Variable)):
         if arg1 == arg2:
             return 1
     if not isinstance(arg2, (Model, Variable)):
