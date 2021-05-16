@@ -51,6 +51,14 @@ class CoalescentDemographicModel(DemographicModel):
             linear_constrain=linear_constrain
         )
 
+    @classmethod
+    def create_from(cls, model):
+        if isinstance(model, EpochDemographicModel):
+            model.translate_to(cls)
+        raise ValueError(
+            f"Cannot translate to {model.__class__}"
+        )
+
     @staticmethod
     def get_value_from_var2value(var2value, entity):
         if isinstance(entity, Variable):
@@ -114,7 +122,8 @@ class CoalescentDemographicModel(DemographicModel):
         """
         time_val = self.get_value_from_var2value(
             var2value=var2value,
-            entity=time)
+            entity=time
+        )
         after_event = None
         after_time = None
 

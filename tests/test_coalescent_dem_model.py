@@ -1,7 +1,7 @@
 import unittest
 from gadma import *
 from gadma.models.coalescent_demographic_model import CoalescentDemographicModel
-from gadma.models.variables_combinations import operation_creation
+from gadma.models.variables_combinations import operation_creation, Exp
 
 
 class TestCoalescentDemModel(unittest.TestCase):
@@ -84,6 +84,31 @@ class TestCoalescentDemModel(unittest.TestCase):
         m.add_leaf(1, size_pop=nu2F)
         m.change_pop_size(1, t=t1, size_pop=nu2, dyn="Exp", g=0.9)
         m.move_lineages(1, 0, t=t2, size_pop=N_a)
+        em = EpochDemographicModel(gen_time=29, mu=1.25e-8)
+        # g = log(N / N0) / t where N is final size (closer to nowdays) and
+        # N0 is start size (the most ancient) t - time interval
+        # THEN we have g, t and N and we want N0 = N / exp(gt)
+        exp_op = operation_creation(
+            Exp,
+            operation_creation(
+                Multiplication,
+                0.9,
+                operation_creation(
+                    Subtraction,
+                    t2,
+                    t1
+                )
+            ))
+        nu20 = operation_creation(
+            Division,
+            nu2,
+            exp_op
+        )
+        # Construct our model
+        em.add_split(0, [nu1, nu20])
+        em.add_epoch(operation_creation(Subtraction, t2, t1), [nu1, nu2], dyn_args=['Sud', "Exp"])
+        em.add_epoch(operation_creation(Subtraction, t1, 0), [nu1, nu2F])
+        print(em.as_custom_string(values=var2values))
         translated_model = m.translate_into(EpochDemographicModel, var2values)
         print(translated_model.as_custom_string(values=var2values))
 

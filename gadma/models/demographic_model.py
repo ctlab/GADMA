@@ -385,3 +385,6 @@ class EpochDemographicModel(DemographicModel):
                 else:
                     b += time_arg
         return [], 0
+
+    def translate_to(self, ModelClass):
+        pass
