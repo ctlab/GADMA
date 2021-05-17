@@ -401,7 +401,7 @@ def _change_outgroup(sfs, new_outgroup):
     if new_outgroup is not None:
         if new_outgroup and sfs.folded:
             raise ValueError("Data does not have outgroup.")
-        if not new_outgroup:
+        if not new_outgroup and not sfs.folded:
             sfs = sfs.fold()
     return sfs
 
