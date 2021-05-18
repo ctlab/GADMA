@@ -18,7 +18,7 @@ def logarithm_transform(x):
     if not isinstance(x, (list, np.ndarray)):
         return x
     x = np.array(x).astype(float)
-    return np.log(x)
+    return np.around(np.log(x), 14)
 
 
 def _is_valid_for_log(variable):
@@ -57,7 +57,7 @@ def exponent_transform(x):
     if not isinstance(x, (list, np.ndarray)):
         return x
     x = np.array(x).astype(float)
-    return np.exp(x)
+    return np.around(np.exp(x), 14)
 
 
 def ident_transform(x):
