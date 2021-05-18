@@ -225,10 +225,12 @@ class DiCal2Engine(Engine):
         # run JVM
         if (not jpype.isJVMStarted() and dical2_path is not None and
                 os.path.exists(os.path.join(dical2_path, 'diCal2.jar'))):
-            jpype.startJVM(jpype.getDefaultJVMPath(),
-                           "-ea",
-                           "-Djava.class.path="+":".join(get_jar_files()),
-                           ignoreUnrecognized=False)
+            jpype.startJVM(
+                jpype.getDefaultJVMPath(),
+                "-ea",
+                "-Djava.class.path="+os.pathsep.join(get_jar_files()),
+                ignoreUnrecognized=False
+            )
 
     @staticmethod
     def _stopJVM():

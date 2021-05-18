@@ -310,7 +310,12 @@ class StructureDemographicModel(EpochDemographicModel):
                                      f"{var.__class__}")
             new_X = []
             for x in X:
-                new_X.append(copy.copy(new_values))
+                new_X.append([])
+                # if we have anc size than we should put after first variable
+                if self.has_anc_size:
+                    new_X[-1].extend([x[0]])
+                    x = x[1:]
+                new_X[-1].extend(copy.copy(new_values))
                 new_X[-1].extend(x)
             return self, new_X
 
