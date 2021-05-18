@@ -148,7 +148,15 @@ class ContinuousVariable(Variable):
         """
         Check that value is correct for this variable.
         """
-        return self.domain[0] <= value <= self.domain[1]
+        is_great = self.domain[0] <= value <= self.domain[1]
+        is_close_left = np.isclose(value, self.domain[0])
+        is_close_right = np.isclose(value, self.domain[1])
+        # We have special case when something is smaller or greater than zero
+        if np.close(self.domain[0], 0):  # greater than zero
+            return (is_great or is_close_right)
+        if np.close(self.domain[1], 0):  # smaller than zero
+            return (is_great or is_close_left)
+        return (is_great or is_close_left or is_close_right)
 
     def apply_logarithm(self, back=False):
         """
