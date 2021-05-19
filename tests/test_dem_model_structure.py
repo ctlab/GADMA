@@ -19,16 +19,25 @@ warnings.filterwarnings(action='ignore', category=UserWarning,
 warnings.filterwarnings(action='ignore', category=UserWarning,
                         module='.*\.structure_demographic_model', lineno=81)
 
-def run_dical2_eval(q, er_q, data, model, values):
+def run_dical2_eval(q, er_q, data_holder, models_pairs, vals_pairs):
     try:
         engine = get_engine("diCal2")
-        engine.data = engine.read_data(data)
-        engine.model = model
-        res = engine.evaluate(values)
-        q.put(res)
+        engine.data = engine.read_data(data_holder)
+        result_list = []
+        for model_pair, vals_pair in zip(models_pairs, vals_pairs):
+            model_1, model_2 = model_pair
+            vals_1, vals_2 = vals_pair
+            engine.model = model_1
+            ll1 = engine.evaluate(vals_1)
+            engine.model = model_2
+            ll2 = engine.evaluate(vals_2)
+            print(ll1, ll2)
+            result_list.append([ll1, ll2])
+        q.put(result_list)
     except Exception as e:
         er_q.put(e)
         raise e
+
 
 class TestModelStructure(unittest.TestCase):
     def _generate_mig_mask(self, structure, sym_migs):
@@ -146,14 +155,17 @@ class TestModelStructure(unittest.TestCase):
 
     def run_likelihood_after_increase_test(self, engine):
         from .test_engines import func_in_separate_process
+        has_anc_size = False
         for structure in BASE_TEST_STRUCTURES:
+            if engine.id == "diCal2":
+                has_anc_size = True
+                models_pairs = []
+                values_pairs = []
+                messages = []
             for create_migs, create_sels, create_dyns, sym_migs, fracs in\
                     list(itertools.product([False, True],repeat=5)):
                 if not create_migs:
                     sym_migs = False
-                has_anc_size = False
-                if engine.id == "diCal2":
-                    has_anc_size = True
                 def model_generator(structure):
                     return StructureDemographicModel(structure,
                                                      np.array(structure) + 1,
@@ -199,12 +211,6 @@ class TestModelStructure(unittest.TestCase):
                     data_holder = VCFDataHolder(vcf_file=VCF_DATA,
                                                 popmap_file=POPMAP,
                                                 reference_file=REFERENCE)
-                    if check_ll:
-                        ll_true = func_in_separate_process(
-                            run_dical2_eval, data_holder, dm, x
-                        )
-                        if ll_true is None:
-                            check_ll = False
                 else:
                     data = engine.simulate(x, sizes, *args)
                     engine.set_data(data)
@@ -228,7 +234,6 @@ class TestModelStructure(unittest.TestCase):
                           f"create_dyns: {create_dyns}, "\
                           f"sym_migs: {sym_migs}, "\
                           f"fracs: {fracs}"
-#                        print(msg)
                     new_dm = copy.deepcopy(dm)
                     new_dm, new_X = new_dm.increase_structure(
                         new_structure, [x])
@@ -239,22 +244,28 @@ class TestModelStructure(unittest.TestCase):
 #                        print("!!!", dm.var2value(x), new_dm.var2value(new_X[0]))
                     if check_ll and random_int == i:
                         if engine.id == "diCal2":
-                            new_ll = func_in_separate_process(
-                                run_dical2_eval,
-                                data_holder,
-                                new_dm,
-                                new_X[0]
-                            )
+                            models_pairs.append([copy.deepcopy(dm), copy.deepcopy(new_dm)])
+                            values_pairs.append([x, new_X[0]])
+                            messages.append(msg)
                         else:
                             new_ll = engine.evaluate(new_X[0], *args)
-                        if ll_true is None or new_ll is None:
-                            pass
-                        else:
                             self.assertTrue(np.allclose(ll_true, new_ll),
                                             msg=f"{ll_true} != {new_ll} : {msg}")
-
             dm.final_structure = dm.get_structure()
             self.assertRaises(ValueError, dm.increase_structure)
+
+            # run all together for dical2
+            if engine.id == "diCal2":
+                results = func_in_separate_process(run_dical2_eval, data_holder,
+                                                   models_pairs, values_pairs)
+                for ll_pair, msg in zip(results, messages):
+                    ll1, ll2 = ll_pair
+                    if ll1 is None or ll2 is None:
+                        print(msg)
+                        print(ll1, ll2)
+                        continue
+                    self.assertTrue(np.allclose(ll1, ll2),
+                                    msg=f"{ll1} != {ll2} : {msg}")
 
     def test_likelihood_after_increase_all_except_diCal2(self):
         for engine in all_engines():

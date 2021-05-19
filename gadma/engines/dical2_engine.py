@@ -225,6 +225,7 @@ class DiCal2Engine(Engine):
     def __init__(self, data=None, model=None, loci_per_HMM_step=32000):
         super(DiCal2Engine, self).__init__(data, model)
         self.loci_per_HMM_step = loci_per_HMM_step
+        self._extended_config_info = None
 
     @staticmethod
     def _startJVM():
@@ -341,6 +342,41 @@ class DiCal2Engine(Engine):
             numAlleles=config_info.numAlleles,
         )
         return sequence_list, config_info
+
+    def set_model(self, model):
+        if model is None or self.model is None or self.data is None:
+            do_nothing = True
+        else:
+            if self.model.mu == model.mu and self.model.Nref == model.Nref:
+                do_nothing = True
+            elif jpype.isJVMStarted():
+                do_nothing = True
+            else:
+                do_nothing = False
+        super(DiCal2Engine, self).set_model(model)
+        if not do_nothing:
+            self._evaluate_and_save_extended_config_info()
+
+    def _evaluate_and_save_extended_config_info(self):
+        self._startJVM()
+        sequence_list, local_config_info = self.data
+        mut_matrix = jpype.JPackage("Jama").Matrix([[0, 1], [1, 0]])
+        extended_config_info = _extended_config_info(
+            dical2_pkg=DiCal2Engine.base_module,
+            preSequenceList=sequence_list,
+            preConfigInfo=local_config_info,
+            numPerDeme=None,  # looks like it is null
+            theta=4*self.model.Nref*self.model.mu,
+            rho=0,  # self.model.recombination_rate,  # TODO
+            mutMatrix=mut_matrix,
+            useLocusSkipping=False,
+            lociPerHmmStep=self.loci_per_HMM_step,
+            printLoci=None,
+            useStationaryForPartially=False,  # TODO
+            additionalHapIdx=None,
+            csdList=None,  # is not None when csd are from file, we have LOL
+        )
+        self._extended_config_info = extended_config_info
 
     def _default_trunk_factory(self):
         self._startJVM()
@@ -477,23 +513,8 @@ class DiCal2Engine(Engine):
         :param values: values of variables of setted demographic model.
         """
         self._startJVM()
-        sequence_list, local_config_info = self.data
-        mut_matrix = jpype.JPackage("Jama").Matrix([[0, 1], [1, 0]])
-        extended_config_info = _extended_config_info(
-            dical2_pkg=DiCal2Engine.base_module,
-            preSequenceList=sequence_list,
-            preConfigInfo=local_config_info,
-            numPerDeme=None,  # looks like it is null
-            theta=4*self.model.Nref*self.model.mu,
-            rho=0,  # self.model.recombination_rate,  # TODO
-            mutMatrix=mut_matrix,
-            useLocusSkipping=False,
-            lociPerHmmStep=self.loci_per_HMM_step,
-            printLoci=None,
-            useStationaryForPartially=False,  # TODO
-            additionalHapIdx=None,
-            csdList=None,  # is not None when csd are from file, we have LOL
-        )
+        if self._extended_config_info is None:
+            self._evaluate_and_save_extended_config_info()
         # Demography
         csd_module = self.base_module.csd
         # 1. Trunks TODO: what is it?
@@ -519,9 +540,9 @@ class DiCal2Engine(Engine):
         demo_factory = self._create_demo_model(values, trunk_factory)
         # create config list for lol objective
         chunk = 0
-        structured_config = extended_config_info.structuredConfig
-        p_set = extended_config_info.pSet
-        fancy_transition_map = extended_config_info.fancyTransitionMap
+        structured_config = self._extended_config_info.structuredConfig
+        p_set = self._extended_config_info.pSet
+        fancy_transition_map = self._extended_config_info.fancyTransitionMap
         csd_configs = jpype.java.util.ArrayList()
         csd_configs.add(jpype.java.util.ArrayList())
         csd_configs.get(0).add(jpype.java.util.ArrayList())
