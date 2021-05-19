@@ -12,4 +12,4 @@ pip3 install pandas
 pip3 install demes
 pip3 install jpype1
 pip3 install git+https://bitbucket.org/simongravel/moments.git@moments
-pip3 install .
+python3 setup.py install
