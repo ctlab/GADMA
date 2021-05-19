@@ -148,7 +148,9 @@ class ContinuousVariable(Variable):
         """
         Check that value is correct for this variable.
         """
-        return self.domain[0] <= value <= self.domain[1]
+        return (self.domain[0] <= value <= self.domain[1] or
+                np.isclose(self.domain[0], value) or
+                np.isclose(self.domain[1], value))
 
     def apply_logarithm(self, back=False):
         """
