@@ -200,6 +200,12 @@ def get_jar_files():
         for name in os.listdir(os.path.join(dical2_path, "diCal2_lib")):
             if name.endswith(".jar"):
                 jar_files.append(os.path.join(dical2_path, "diCal2_lib", name))
+    # additional files created for help
+    gadma_dir = os.path.dirname(os.path.dirname(__file__))
+    custom_files = [os.path.join(gadma_dir, "CatchSystemExit.jar")]
+    for filename in custom_files:
+        if os.path.exists(filename):
+            jar_files.append(filename)
     return jar_files
 
 
@@ -488,7 +494,6 @@ class DiCal2Engine(Engine):
             additionalHapIdx=None,
             csdList=None,  # is not None when csd are from file, we have LOL
         )
-
         # Demography
         csd_module = self.base_module.csd
         # 1. Trunks TODO: what is it?
@@ -512,7 +517,6 @@ class DiCal2Engine(Engine):
         )
 
         demo_factory = self._create_demo_model(values, trunk_factory)
-
         # create config list for lol objective
         chunk = 0
         structured_config = extended_config_info.structuredConfig
@@ -550,7 +554,10 @@ class DiCal2Engine(Engine):
             verbose=True,
             useEigenCore=False,  # switch is off be default ODECore
         )
-        return float(objective_function.getLogLikelihood())
+        ll = jpype.JClass("CatchSystemExit").getLogLikelihood(
+            objective_function
+        )
+        return float(ll)
 
     def evaluate(self, values, **options):
         """
@@ -563,9 +570,9 @@ class DiCal2Engine(Engine):
                              " use set_and_evaluate function instead.")
         try:
             return self._evaluate(values, **options)
-        except jpype.java.lang.RuntimeException as e:
-            # print(exception.message())
-            # print(exception.stacktrace())
+        except jpype.JException as e:
+            # print(e.message())
+            # print(e.stackTrace())
             return None
 
     def generate_code(self, values, filename=None,

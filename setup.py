@@ -130,6 +130,7 @@ setup(
     packages=find_packages(exclude=['examples', 'tests']),
     include_package_data=True,
     package_data={
+        'gadma': ["CatchSystemExit.jar"],
         'gadma.cli': ['*.py',  'params_template', 'extra_params_template', 'test_settings'],
     },
     data_files=data_files,
