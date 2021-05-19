@@ -39,10 +39,15 @@ def apply_transform(variables, transform, x):
     if transform == ident_transform:
         return x
     is_good = [var.log_transformed for var in variables]
-    if np.all(is_good):
-        x_tr = transform(x)
     x_tr = WeightedMetaArray(x, dtype=get_correct_dtype(x))
     x_tr[is_good] = transform(x[is_good])
+    # We should check float precision after transform
+    for i, var in enumerate(variables):
+        if var.log_transformed and hasattr(var, "_true_domain"):
+            if np.isclose(x_tr[i], var._true_domain[0]):
+                x_tr[i] = var._true_domain[0]
+            if np.isclose(x_tr[i], var._true_domain[1]):
+                x_tr[i] = var._true_domain[1]
     if isinstance(x, WeightedMetaArray):
         x_tr.metadata = x.metadata
     return x_tr
