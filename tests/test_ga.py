@@ -300,6 +300,7 @@ class TestGeneticAlg(unittest.TestCase):
         res = ga.optimize(f, dm.variables, verbose=10, maxeval=30,
                           report_file='report_file', save_file='save_file',
                           eval_file='eval_file', callback=callback)
+        print("Finished test_yri_ceu")
 
     def test_run_gadma_test(self):
         sys.argv = ['gadma', '--test']
@@ -429,6 +430,7 @@ class TestInference(unittest.TestCase):
 #                    report_file='report_file')
 
     def test_inference_claic_funcs(self):
+        print("start_test_inference")
         dirname = os.path.join(EXAMPLE_FOLDER, "DATA",
                                "sfs", 'YRI_CEU_test_boots')
         for engine in all_engines():
