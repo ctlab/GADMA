@@ -432,8 +432,10 @@ class TestInference(unittest.TestCase):
         dirname = os.path.join(EXAMPLE_FOLDER, "DATA",
                                "sfs", 'YRI_CEU_test_boots')
         for engine in all_engines():
+            print(engine)
             if engine.id == "diCal2":
                 continue
+            print(438)
             projections = (4, 4)
             data = engine.read_data(SFSDataHolder(os.path.join(EXAMPLE_FOLDER,
                                                                "DATA", "sfs",
@@ -441,29 +443,37 @@ class TestInference(unittest.TestCase):
                                                   projections=projections))
             boots = gadma.Inference.load_data_from_dir(dirname, engine.id,
                                                        projections=projections)
+            print(446)
 
             p0 = [1.881, 0.0710, 1.845, 0.911, 0.355, 0.111]
             filename = os.path.join(
                 EXAMPLE_FOLDER, "MODELS", f'demographic_model_{engine.id}_YRI_CEU.py')
+            print(451)
             spec = importlib.util.spec_from_file_location("module", filename)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
             func = module.model_func
 
+            print(457)
             if engine.id == 'dadi':
+                print(459)
                 pts = [4, 6, 8]
                 c1 = gadma.Inference.get_claic_score(func, boots, p0, data,
                                                      engine.id, pts=pts)
+                print(c1)
                 c2 = gadma.Inference.get_claic_score(func, boots, p0, data,
                                                      pts=pts)
+                print(c2)
                 # old interface
                 c3 = gadma.Inference.get_claic_score(func, boots, p0, data,
                                                      pts=pts, eps=1e-2)
+                print(c3)
                 c4 = gadma.Inference.get_claic_score(func, boots, p0, data,
                                                      pts, 1e-2)
+                print(c4)
                 c5 = gadma.Inference.get_claic_score(func, boots, p0, data,
                                                      pts, eps=1e-2)
-
+                print(c5)
                 self.assertEqual(c1, c2)
                 self.assertEqual(c2, c3)
                 self.assertEqual(c3, c4)
@@ -475,20 +485,26 @@ class TestInference(unittest.TestCase):
                                   func, boots, p0, data, 'moments', pts)
                 self.assertRaises(Exception, gadma.Inference.get_claic_score,
                                   func, boots, p0, data, None, 1e-2)
+                print(488)
             elif engine.id == 'moments':
+                print(490)
                 pts = [4, 6, 8]
                 c1 = gadma.Inference.get_claic_score(func, boots, p0, data,
                                                 engine.id, pts=pts)
+                print(c1)
                 c2 = gadma.Inference.get_claic_score(func, boots, p0, data,
                                                 engine.id)
+                print(c2)
                 # old interface
                 c3 = gadma.Inference.get_claic_score(func, boots, p0, data,
                                                 pts=None, eps=1e-2)
+                print(c3)
                 c4 = gadma.Inference.get_claic_score(func, boots, p0, data,
                                                 None, 1e-2)
+                print(c4)
                 c5 = gadma.Inference.get_claic_score(func, boots, p0, data,
                                                 None, eps=1e-2)
-
+                print(c5)
                 self.assertEqual(c1, c2)
                 self.assertEqual(c2, c3)
                 self.assertEqual(c3, c4)
@@ -497,4 +513,4 @@ class TestInference(unittest.TestCase):
                 # fails
                 self.assertRaises(Exception, gadma.Inference.get_claic_score,
                                   func, boots, p0, data, pts=pts)
-
+                print(516)
