@@ -33,6 +33,7 @@ def run_dical2_eval(q, er_q, data_holder, models_pairs, vals_pairs):
             ll2 = engine.evaluate(vals_2)
             print(ll1, ll2)
             result_list.append([ll1, ll2])
+        engine._stopJVM()
         q.put(result_list)
     except Exception as e:
         er_q.put(e)
@@ -157,6 +158,7 @@ class TestModelStructure(unittest.TestCase):
         from .test_engines import func_in_separate_process
         has_anc_size = False
         for structure in BASE_TEST_STRUCTURES:
+            print(structure)
             if engine.id == "diCal2":
                 has_anc_size = True
                 models_pairs = []
@@ -190,7 +192,7 @@ class TestModelStructure(unittest.TestCase):
                     self.assertRaises(ValueError, dm.increase_structure,
                                       bad_structure)
 
-                check_ll = np.random.choice([True, False], p=[1/6, 5/6])
+                check_ll = True#np.random.choice([True, False], p=[1/6, 5/6])
                 random_int = np.random.choice(range(len(structure)))
 
                 engine.set_model(dm)

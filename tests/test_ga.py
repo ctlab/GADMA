@@ -429,7 +429,7 @@ class TestInference(unittest.TestCase):
                     save_file='save_file', eval_file='eval_file',)
 #                    report_file='report_file')
 
-    def test_inference_claic_funcs(self):
+    def _test_inference_claic_funcs(self):
         print("start_test_inference")
         dirname = os.path.join(EXAMPLE_FOLDER, "DATA",
                                "sfs", 'YRI_CEU_test_boots')
