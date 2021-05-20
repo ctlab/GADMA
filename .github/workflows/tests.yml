@@ -48,6 +48,7 @@ jobs:
           pip3 install pytest
           pip3 install pytest-cov
           pip3 install pytest-timeout
+          pip3 install pytest-faulthandler
 
       - name: Upgrade NumPy for Python 3.8.
         run: |
