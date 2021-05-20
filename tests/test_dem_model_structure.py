@@ -192,7 +192,7 @@ class TestModelStructure(unittest.TestCase):
                     self.assertRaises(ValueError, dm.increase_structure,
                                       bad_structure)
 
-                check_ll = True#np.random.choice([True, False], p=[1/6, 5/6])
+                check_ll = np.random.choice([True, False], p=[1/6, 5/6])
                 random_int = np.random.choice(range(len(structure)))
 
                 engine.set_model(dm)
