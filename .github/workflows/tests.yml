@@ -49,6 +49,7 @@ jobs:
           pip3 install pytest-cov
           pip3 install pytest-timeout
           pip3 install pytest-faulthandler
+          pip3 install gdb
 
       - name: Upgrade NumPy for Python 3.8.
         run: |
@@ -77,7 +78,7 @@ jobs:
 
       - name: Run tests and codecov.
         run: |
-          python -m pytest --timeout=700 --cov=gadma --cov-report=xml -vs tests --disable-warnings
+          gdb --args python -m pytest --timeout=700 --cov=gadma --cov-report=xml -vs tests --disable-warnings
         
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
