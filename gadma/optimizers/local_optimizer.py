@@ -369,6 +369,11 @@ class ScipyOptimizer(LocalOptimizer):
                                      [x], [y], 1, 1)
             return result
 
+        # Good values from dadi
+        if (self.method != "Nelder-Mead" and self.method != "Powell" and
+                "eps" not in options):
+            options["eps"] = 1e-3
+
         # Run optimization of SciPy
         addit_kw = self.get_addit_scipy_kwargs(variables)
         res_obj = scipy.optimize.minimize(f_in_opt, x0_in_opt, args=(),
@@ -450,7 +455,7 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
         self.optimizer = optimizer
         super(ManuallyConstrOptimizer, self).__init__(log_transform,
                                                       self.optimizer.maximize)
-        self.out_of_bounds = np.inf
+        self.out_of_bounds = 1e8  # np.inf
 
     @property
     def id(self):
@@ -477,7 +482,7 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
                 return self.sign * self.out_of_bounds
         y = f(self.inv_transform(x), *args)
         if y is None or np.isnan(y):
-            return self.sign * np.inf
+            return self.sign * self.out_of_bounds
         return y
 
     def prepare_callback(self, callback):
