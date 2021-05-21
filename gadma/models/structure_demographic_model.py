@@ -1,6 +1,6 @@
 from ..utils import Variable, PopulationSizeVariable, TimeVariable
 from ..utils import MigrationVariable, DynamicVariable, SelectionVariable,\
-                    FractionVariable
+                    FractionVariable, InbreedingVariable
 from . import Epoch, Split
 from .variables_combinations import Multiplication, Subtraction
 from .demographic_model import EpochDemographicModel
@@ -22,6 +22,8 @@ class StructureDemographicModel(EpochDemographicModel):
     :param have_migs: If True then model will have migrations.
     :type have_migs: bool
     :param have_sels: If True then model will have selection coefficients.
+    :type have_sels: bool
+    :param have_inbr: If True then model will have inbreeding.
     :type have_sels: bool
     :param have_dyns: If True then model will create dynamics of size
                       change different to Sudden change.
@@ -49,8 +51,8 @@ class StructureDemographicModel(EpochDemographicModel):
     """
     def __init__(self, initial_structure, final_structure,
                  have_migs, have_sels, have_dyns, sym_migs, frac_split,
-                 migs_mask=None,
-                 gen_time=None, theta0=None, mu=None):
+                 migs_mask=None, gen_time=None,
+                 theta0=None, mu=None, have_inbr=None):
         super(StructureDemographicModel, self).__init__(gen_time, theta0, mu)
         if np.any(np.array(initial_structure) > np.array(final_structure)):
             raise ValueError(f"Elements of the initial structure "
@@ -65,6 +67,7 @@ class StructureDemographicModel(EpochDemographicModel):
         self.sym_migs = sym_migs
         self.frac_split = frac_split
         self.migs_mask = migs_mask
+        self.have_inbr = have_inbr
         # check that mask is correct
         if len(self.initial_structure) == 1 and self.migs_mask is not None:
             warnings.warn("Migration mask is used only when more than one "
@@ -182,8 +185,16 @@ class StructureDemographicModel(EpochDemographicModel):
                     for i in range(n_pop):
                         var = DynamicVariable('dyn%d%d' % (i_int, i+1))
                         dyn_vars.append(var)
-                self.add_epoch(time_var, size_vars,
-                               mig_vars, dyn_vars, sel_vars)
+                inbr_vars = None
+                if _i == n_int:
+                    inbr_vars = list()
+                    for i in range(n_pop):
+                        var = InbreedingVariable('F%d%d' % (i_int, i+1))
+                        inbr_vars.append(var)
+
+                self.add_epoch(time_arg=time_var, size_args=size_vars,
+                               mig_args=mig_vars, dyn_args=dyn_vars,
+                               sel_args=sel_vars, inbr_args=inbr_vars)
             if n_pop < len(structure):
                 if self.frac_split:
                     frac_var = FractionVariable(f"s{n_pop}")
@@ -274,6 +285,7 @@ class StructureDemographicModel(EpochDemographicModel):
             new_event = self.events[0]
             new_values = []
             for var in new_event.variables:
+                # print(new_event.variables)
                 if var not in new_event.get_vars_not_in_init_args():
                     continue
                 # We put as time some random value
@@ -287,6 +299,9 @@ class StructureDemographicModel(EpochDemographicModel):
                     new_values.append("Sud")
                 elif isinstance(var, SelectionVariable):
                     new_values.append(0)
+                elif isinstance(var, InbreedingVariable):
+                    pass
+                # Нужно ли тут делать resample?
                 else:
                     raise ValueError(f"Unknown type of variable: "
                                      f"{var.__class__}")

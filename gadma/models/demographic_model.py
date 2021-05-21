@@ -1,4 +1,4 @@
-from ..utils import Variable, TimeVariable
+from ..utils import Variable, TimeVariable, InbreedingVariable
 from ..utils import VariablePool, variables_values_repr
 from . import Model, Epoch, Split
 import copy
@@ -98,7 +98,8 @@ class EpochDemographicModel(DemographicModel):
         return len(self._get_current_pop_sizes())
 
     def add_epoch(self, time_arg, size_args, mig_args=None,
-                  dyn_args=None, sel_args=None, dom_args=None):
+                  dyn_args=None, sel_args=None,
+                  dom_args=None, inbr_args=None):
         """
         Adds new epoch to the demographic model events.
 
@@ -109,14 +110,28 @@ class EpochDemographicModel(DemographicModel):
         :param sel_args: selection coefficients of the populations during
                          the epoch.
         :param dom_args: dominance coefficients.
+        :param inbr_args: inbreeding level in population.
 
         :note: all arguments could contain variables of :class:`Variable`\
                class as well as different constants/values including\
                :class:`gadma.models.BinaryOperation` instances.
         """
+        for n_event in range(len(self.events)):
+            if isinstance(self.events[n_event], Epoch):
+                if self.events[n_event].inbr_args is not None:
+                    self.events[n_event].inbr_args = None
+                    # for n_var in range(len(self.variables)):
+                    #     if isinstance(self.variables[n_var], InbreedingVariable):
+                    #         self.variables = self.variables.pop(n_var)
+        for event in self.events:
+            if isinstance(event, Epoch):
+                if event.inbr_args is not None:
+                    raise ValueError("Demographic model already has Epoch"
+                                     " with inbreeding")
+        # Кажется, что тут небольшой оверкилл
         sizes = self._get_current_pop_sizes()
-        new_epoch = Epoch(time_arg, sizes, size_args,
-                          mig_args, dyn_args, sel_args, dom_args)
+        new_epoch = Epoch(time_arg, sizes, size_args, mig_args,
+                          dyn_args, sel_args, dom_args, inbr_args)
         self.events.append(new_epoch)
         self.add_variables(new_epoch.variables)
 
@@ -213,7 +228,8 @@ class EpochDemographicModel(DemographicModel):
                                event.mig_args,
                                event.dyn_args,
                                event.sel_args,
-                               event.dom_args)
+                               event.dom_args,
+                               event.inbr_args)
             variables = help_event.variables
             if event.dyn_args is not None:
                 for dyn in event.dyn_args:

@@ -93,6 +93,7 @@ class DadiEngine(DadiOrMomentsEngine):
         phi = dadi.PhiManip.phi_1D(xx)
 
         addit_values = {}
+        inbreeding = False
         for ind, event in enumerate(self.model.events):
             if isinstance(event, Epoch):
                 if event.dyn_args is not None:
@@ -130,7 +131,21 @@ class DadiEngine(DadiOrMomentsEngine):
                     func_name = "phi_%dD_to_%dD_split_%d" % (
                         event.n_pop, event.n_pop + 1, event.pop_to_div + 1)
                     phi = getattr(dadi.PhiManip, func_name)(xx, phi)
-        sfs = dadi.Spectrum.from_phi(phi, ns, [xx]*len(ns))
+            if isinstance(event, Epoch):
+                if event.inbr_args is not None:
+                    inbr_list = []
+                    for i in range(event.n_pop):
+                        inbr_arg = event.inbr_args[i]
+                        value = self.get_value_from_var2value(var2value,
+                                                              inbr_arg)
+                        inbr_list.append(value)
+                    inbreeding = True
+        if inbreeding:
+            sfs = dadi.Spectrum.from_phi_inbreeding(phi, ns, [xx]*len(ns),
+                                                    inbr_list, [2]*len(ns))
+        else:
+            sfs = dadi.Spectrum.from_phi(phi, ns, [xx]*len(ns))
+
         return sfs
 
     def draw_schematic_model_plot(self, values, save_file=None,

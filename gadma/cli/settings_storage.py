@@ -108,7 +108,7 @@ class SettingsStorage(object):
                       'no_migrations', 'silence', 'test', 'random_n_a',
                       'relative_parameters', 'only_models',
                       'symmetric_migrations', 'split_fractions',
-                      'generate_x_transform']
+                      'generate_x_transform', 'inbreeding']
         int_list_attrs = ['pts', 'initial_structure', 'final_structure',
                           'projections']
         float_list_attrs = ['lower_bound', 'upper_bound']
@@ -1006,12 +1006,13 @@ class SettingsStorage(object):
             sym_migs = self.symmetric_migrations
             split_f = self.split_fractions
             migs_mask = self.migration_masks
+            create_inbr = self.inbreeding
             model = StructureDemographicModel(self.initial_structure,
                                               self.final_structure,
                                               create_migs, create_sels,
                                               create_dyns, sym_migs, split_f,
-                                              migs_mask,
-                                              gen_time, theta0, mut_rate)
+                                              migs_mask, gen_time, theta0,
+                                              mut_rate, create_inbr)
             constrain = self.get_linear_constrain_for_model(model)
             model.linear_constrain = constrain
             return model

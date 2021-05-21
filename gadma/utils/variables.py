@@ -279,6 +279,22 @@ class FractionVariable(ContinuousVariable):
         return value
 
 
+class InbreedingVariable(ContinuousVariable):
+    """
+    Variable for keepeing inbreeding parameter of the demographic model.
+
+    * :attr:`default_domain` = array([0, 1])
+
+    * :attr:`default_rand_gen` = random uniform distribution over domain.
+    """
+    default_domain = np.array([1e-3, 1-1e-3])
+    default_rand_gen = uniform_generator
+
+    @staticmethod
+    def translate_units(value, Nanc):
+        return value
+
+
 class Dynamic(object):
     """
     Abstract class for Dynamic value.
