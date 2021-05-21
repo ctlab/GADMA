@@ -129,6 +129,8 @@ class ContinuousVariable(Variable):
             raise ValueError("The lower bound of variable's domain must be "
                              "greater than upper bound. Got domain: "
                              f"{self.domain}.")
+        # for logarithm transform
+        self._true_domain = self.domain
 
     def get_bounds(self):
         """
@@ -148,9 +150,7 @@ class ContinuousVariable(Variable):
         """
         Check that value is correct for this variable.
         """
-        return (self.domain[0] < value < self.domain[1] or
-                np.isclose(value, self.domain[0]) or
-                np.isclose(value, self.domain[1]))
+        return self.domain[0] <= value <= self.domain[1]
 
     def apply_logarithm(self, back=False):
         """
@@ -158,8 +158,10 @@ class ContinuousVariable(Variable):
         generator are changed.
         """
         if back:
-            self.domain = np.exp(self.domain).tolist()
-        self.domain = np.log(self.domain).tolist()
+            self.domain = self._true_domain
+        else:
+            self._true_domain = self.domain
+            self.domain = np.log(self.domain).tolist()
 
 
 class DiscreteVariable(Variable):
