@@ -277,6 +277,15 @@ class TestCLI(unittest.TestCase):
             settings.engine = engine.id
             settings.pts = [20, 30, 40]
             settings.engine = engine.id
+        # check errors for bad engines
+        settings.model_plot_engine = "demes"
+        settings.sfs_plot_engine = "dadi"
+        self.assertRaises(ValueError,  settings.__setattr__,
+                          'engine', 'demes')
+        self.assertRaises(ValueError,  settings.__setattr__,
+                          'sfs_plot_engine', 'demes')
+        self.assertRaises(ValueError,  settings.__setattr__,
+                          'model_plot_engine', 'dadi')
 
         # units of time in drawing
         settings.time_for_generation = 1.0
@@ -307,6 +316,15 @@ class TestCLI(unittest.TestCase):
         settings.min_m = 0
         settings.max_m = 5
         self.assertTrue(list(MigrationVariable('v').domain) == [0, 5])
+
+        no_lin = [0, "Exp"]
+        settings.dynamics = no_lin
+        self.assertRaises(ValueError, settings.__setattr__,
+                          'dynamics', [-1, "Exp"])
+        self.assertEqual(list(DynamicVariable('d').domain), no_lin)
+        settings.dynamics = "0, Exp"
+        self.assertEqual(list(DynamicVariable('d').domain), no_lin)
+        settings.dynamics = ["Sud", "Lin", "Exp"]
 
         # get model with parameters when there is no pop ids
         settings = SettingsStorage()

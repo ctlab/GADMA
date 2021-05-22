@@ -4,13 +4,14 @@ import numpy as np
 from . import settings
 from ..data import SFSDataHolder
 from ..engines import get_engine, MomentsEngine
+from ..engines import all_engines, all_drawing_engines
 from ..models import StructureDemographicModel, CustomDemographicModel
 from ..optimizers import get_local_optimizer, get_global_optimizer
 from ..optimizers import LinearConstrain
 from ..utils import check_dir_existence, check_file_existence, abspath,\
     module_name_from_path, custom_generator
 from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable,\
-    ContinuousVariable
+    ContinuousVariable, DynamicVariable
 import warnings
 import importlib.util
 import sys
@@ -125,13 +126,15 @@ class SettingsStorage(object):
         empty_dir_attrs = ['output_directory']
         data_holder_attrs = ['projections', 'outgroup',
                              'population_labels', 'sequence_length']
-        bounds_attrs = ['min_n', 'max_n', 'min_t', 'max_t', 'min_m', 'max_m']
+        bounds_attrs = ['min_n', 'max_n', 'min_t', 'max_t', 'min_m', 'max_m',
+                        'dynamics']
         bounds_lists = ['lower_bound', 'upper_bound', 'parameter_identifiers']
         missed_attrs = ['engine', 'global_optimizer', 'local_optimizer',
                         '_inner_data', '_bootstrap_data', 'X_init', 'Y_init',
                         'model_func', 'get_engine_args', 'data_holder',
                         'units_of_time_in_drawing', 'resume_from_settings',
-                        'dadi_available', 'moments_available']
+                        'dadi_available', 'moments_available',
+                        'model_plot_engine', 'sfs_plot_engine']
 
         super_hasattr = True
         setattr_at_the_end = True
@@ -344,7 +347,22 @@ class SettingsStorage(object):
                 setattr(self.data_holder, name, value)
         # 3.3 For engine we need check it exists
         elif name == 'engine':
-            get_engine(value)
+            engine = get_engine(value)
+            if not engine.can_evaluate:
+                raise ValueError(f"Engine {value} cannot evaluate "
+                                 f"log-likelihood. Available engines are: "
+                                 f"{[engine.id in all_engines()]}")
+        elif name == 'model_plot_engine':
+            engine = get_engine(value)
+            if not engine.can_draw:
+                raise ValueError(f"Engine {value} cannot draw model plots. "
+                                 f"Available engines are: "
+                                 f"{[engine.id in all_drawing_engines()]}")
+        elif name == 'sfs_plot_engine' and value is not None:
+            engine = get_engine(value)
+            if not hasattr(engine, "draw_sfs_plots"):
+                raise ValueError(f"Engine {value} cannot draw sfs plots. "
+                                 f"Available engines are: dadi, moments")
         # 3.4 For local and global optimizer we need check existence
         elif name == 'global_optimizer':
             get_global_optimizer(value)
@@ -444,6 +462,13 @@ class SettingsStorage(object):
                 cls = TimeVariable
             elif name.endswith('m'):
                 cls = MigrationVariable
+            elif name == "dynamics":
+                cls = DynamicVariable
+                if isinstance(value, str):
+                    value = [x.strip() for x in value.split(",")]
+                    for i in range(len(value)):
+                        if value[i].isdigit():
+                            value[i] = int(value[i])
             else:
                 raise AttributeError("Check for supported variables")
 
@@ -452,8 +477,17 @@ class SettingsStorage(object):
                 cls.default_domain = [value, cls.default_domain[1]]
             elif name.startswith('max'):
                 cls.default_domain = [cls.default_domain[0], value]
+            else:
+                assert name == "dynamics"
+                for dyn in value:
+                    if dyn not in cls._help_dict:
+                        raise ValueError(f"Unknown dynamic {value}. Available "
+                                         "dynamics are: "
+                                         f"{list(cls._help_dict.keys())}")
+                cls.default_domain = value
 
-            domain_changed = np.any(old_domain != np.array(cls.default_domain))
+            domain_changed = len(old_domain) != len(cls.default_domain) or\
+                np.any(old_domain != np.array(cls.default_domain))
             if domain_changed:
                 if name.endswith('n'):
                     warnings.warn(f"Domain of PopulationSizeVariable changed "
@@ -463,6 +497,9 @@ class SettingsStorage(object):
                                   f"{cls.default_domain}")
                 if name.endswith('m'):
                     warnings.warn(f"Domain of MigrationVariable changed to "
+                                  f"{cls.default_domain}")
+                if name == "dynamics":
+                    warnings.warn(f"Domain of DynamicVariable changed to "
                                   f"{cls.default_domain}")
 
         # 3.10 If we set custom filename with model we should check it is
@@ -966,8 +1003,10 @@ class SettingsStorage(object):
             engine_id = self.engine
         if engine_id == 'dadi':
             args = (self.pts,)
-        else:
+        elif engine_id == "moments":
             args = (MomentsEngine.default_dt_fac,)
+        else:
+            args = ()
         return args
 
     def get_linear_constrain_for_model(self, model):

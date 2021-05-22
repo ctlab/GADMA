@@ -158,7 +158,7 @@ class TestModelStructure(unittest.TestCase):
                                       bad_structure)
 
                 check_ll = np.random.choice([True, False], p=[1/6, 5/6])
-                for engine in all_engines():
+                for engine in all_simulation_engines():
                     engine.set_model(dm)
                     if engine.id == 'dadi':
                         sizes = [8 for _ in range(len(structure))]

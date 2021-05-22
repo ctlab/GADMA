@@ -1,4 +1,5 @@
 import unittest
+import gadma
 from gadma import *
 from gadma.engines import register_engine, Engine
 from gadma.models import Model
@@ -12,12 +13,18 @@ DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
 class TestEngines(unittest.TestCase):
     def test_existence(self):
         self.assertTrue(len(list(all_engines())) > 0)
+        self.assertTrue(len(list(all_available_engines())) > 0)
+        self.assertTrue(len(list(all_simulation_engines())) > 0)
+        self.assertTrue(len(list(all_drawing_engines())) > 0)
         for engine in all_engines():
             options = {}
             if engine.id == 'dadi':
                 options['pts'] = [10, 20, 30]
-            with self.assertRaises(ValueError):
-                engine.evaluate([], **options)
+            if engine.can_evaluate:
+                self.assertRaises(ValueError, engine.evaluate, [], **options)
+            else:
+                self.assertRaises(NotImplementedError,
+                                  engine.evaluate, [], **options)
 
         self.assertRaises(ValueError, register_engine,
                           get_engine("dadi"))
@@ -202,3 +209,47 @@ class TestEngines(unittest.TestCase):
         engine.model.linear_constrain.lb = [51, -1]
         engine.set_model(engine.model)
         self.assertRaises(ValueError, engine.get_theta, values)
+
+    def test_demes_engine(self):
+        data_holder = DataHolder(
+            filename=None,
+            projections=[10],
+            outgroup=False,
+            population_labels=["YRI", "CEU", "CHB"],
+            sequence_length=None
+        )
+
+        nu1F = PopulationSizeVariable('nu1F')
+        nu2B = PopulationSizeVariable('nu2B')
+        nu2F = PopulationSizeVariable('nu2F')
+        m = MigrationVariable('m')
+        m13 = MigrationVariable('m13')
+        Tp = TimeVariable('Tp')
+        T = TimeVariable('T')
+        Dyn = DynamicVariable('Dyn')
+
+        dm = EpochDemographicModel(Nanc_size=1000)
+        dm.add_epoch(T, [nu1F])
+        dm.add_split(0, [nu1F, nu2B])
+        dm.add_epoch(Tp, [nu1F, nu2F], dyn_args=['Sud', Dyn])
+        dm.add_split(1, [nu2F, nu2F])
+        migs = [[0, m, m13], [m, 0, 0], [0, 0, 0]]
+        dm.add_epoch(T, [nu1F, nu2F, nu2F], mig_args=migs)
+
+        values = {'nu1F': 1.880, nu2B: 0.0724, 'f': 0.9, 'nu2F': 1.764,
+               'm': 0.930, 'Tp':  0.363, 'T': 0.112, 'Dyn': 'Exp',
+               'SudDyn': 'Sud', 's': 0.1, 'dom': 0.5, 'm13': 1.5}
+
+        engine = gadma.engines.demes_engine.DemesEngine()
+        engine.data = data_holder
+        engine.model = dm
+
+        engine.generate_code(values=values)
+        engine.draw_schematic_model_plot(values, save_file="plot.png")
+
+        engine.generate_code(values=values,
+                             gen_time=25, gen_time_units="years")
+        engine.draw_schematic_model_plot(values, save_file="plot.png",
+                                         gen_time=25, gen_time_units="years")
+        values["Dyn"] = "Lin"
+        self.assertRaises(ValueError, engine.generate_code, values=values)

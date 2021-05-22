@@ -10,5 +10,6 @@ pip3 install Cython
 pip3 install networkx
 pip3 install pandas
 pip3 install demes
+pip3 install demesdraw
 pip3 install git+https://bitbucket.org/simongravel/moments.git@moments
 pip3 install .

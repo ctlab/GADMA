@@ -401,23 +401,25 @@ class TestModels(unittest.TestCase):
                   m: 0.1, s: 0.1, d1: 'Exp', d2: 'Lin', f: 0.5, h: 0.3,
                   Nanc: 10000, Nu2: 5000, T3: 4000}
 
-        for engine in all_engines():
-            customfile = os.path.join(
-                EXAMPLE_FOLDER, "MODELS",
-                f"demographic_model_{engine.id}_3pops.py")
+        for engine in all_available_engines():
+            models = [model1, model2, model3, model5]
+            if engine.can_evaluate:
+                customfile = os.path.join(
+                    EXAMPLE_FOLDER, "MODELS",
+                    f"demographic_model_{engine.id}_3pops.py")
 
-            spec = importlib.util.spec_from_file_location(
-                f"module_{engine.id}", customfile)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            sys.modules[f'module_{engine.id}'] = module
-            func = module.model_func
-            variables = [nu1, nu2, nu3, m, t, t2]
+                spec = importlib.util.spec_from_file_location(
+                    f"module_{engine.id}", customfile)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                sys.modules[f'module_{engine.id}'] = module
+                func = module.model_func
+                variables = [nu1, nu2, nu3, m, t, t2]
 
-            model4 = CustomDemographicModel(func, variables)
+                model6 = CustomDemographicModel(func, variables)
+                models.append(model6)
 
-            for ind, model in enumerate([model1, model2,
-                                         model3, model4, model5]):
+            for ind, model in enumerate(models):
                 for description, data in self._sfs_datasets():
                     msg = f"for model {ind + 1} and {description} data and "\
                           f"{engine.id} engine"
@@ -427,16 +429,26 @@ class TestModels(unittest.TestCase):
                     else:
                         options = {}
                         args = ()
-                    model.mu = 1e-8
-                    data.sequence_length = 1e10
 
-                    true_ll = engine.set_and_evaluate(values, model,
-                                                      data, options)
-                    cmd = engine.generate_code(values, None, *args)
+                    engine.data = data
+                    engine.model = model
+                    Nanc = None
+                    if engine.id == "demes":
+                        Nanc = 10000
+                        n_pop = len(model.events[-1].size_args)
+                        labels = [f"Pop_{i}" for i in range(n_pop)]
+                        engine.data_holder.population_labels = labels
+                        values[d2] = "Sud"
+                    else:
+                        values[d2] = "Lin"
 
-                    d = {}
-                    exec(cmd, d)
+                    cmd = engine.generate_code(values, None, *args, nanc=Nanc)
 
-                    msg += f": {true_ll} != {d['ll_model']}"
-                    self.assertTrue(np.allclose(true_ll, d['ll_model']),
-                                    msg=msg)
+                    if engine.can_evaluate:
+                        true_ll = engine.evaluate(values, **options)
+                        d = {}
+                        exec(cmd, d)
+
+                        msg += f": {true_ll} != {d['ll_model']}"
+                        self.assertTrue(np.allclose(true_ll, d['ll_model']),
+                                        msg=msg)

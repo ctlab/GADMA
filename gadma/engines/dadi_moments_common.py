@@ -24,6 +24,9 @@ class DadiOrMomentsEngine(Engine):
                         CustomDemographicModel]  #:
     supported_data = [SFSDataHolder]  #:
     inner_data_type = None  # base_module.Spectrum  #:
+    can_evaluate = True
+    can_draw = False  # dadi cannot
+    can_simulate = True
 
     @classmethod
     def read_data(cls, data_holder):
@@ -286,6 +289,8 @@ class DadiOrMomentsEngine(Engine):
             raise AttributeError("Engine was initialized with inner "
                                  "data. Need gadma.DataHolder for "
                                  "generation of code.")
+        if filename is not None and not filename.endswith("py"):
+            filename = filename + ".py"
         return id2printfunc[self.id](self, values,
                                      grid_sizes, filename, nanc, gen_time,
                                      gen_time_units)

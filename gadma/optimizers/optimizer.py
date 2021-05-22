@@ -10,7 +10,6 @@ from ..utils import ensure_file_existence, check_file_existence,\
 from ..utils import logarithm_transform, exponent_transform, ident_transform
 from ..utils import apply_transform
 from ..utils import serialize_meta_array, deserialize_meta_array
-from ..utils import DiscreteVariable
 from ..utils.utils import _is_valid_for_log
 from .optimizer_result import OptimizerResult
 import pickle
