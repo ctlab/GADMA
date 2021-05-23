@@ -387,7 +387,7 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
 
         def callback(x, y):
             if np.any([not var.correct_value(el)
-                    for el, var in zip(x, variables)]):
+                       for el, var in zip(x, variables)]):
                 return
             # y is translated back by *(-1) we want correct comparison
             y = self.optimizer.sign * y
