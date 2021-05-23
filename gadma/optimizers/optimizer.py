@@ -543,7 +543,7 @@ class Optimizer(object):
             self.save(self.run_info, save_file)
             # Call callback
             if callback is not None:
-                callback(x, y)
+                callback(x_best, y_best)
 
         self._optimize(f=f_in_opt,
                        variables=vars_in_opt,
