@@ -20,7 +20,7 @@ def _print_dadi_func(model, values):
     """
     from ..engines import DadiEngine  # to avoid cross import
     if isinstance(model, CustomDemographicModel):
-        path_repr = os.path.abspath(inspect.getfile(model.function))
+        path_repr = repr(os.path.abspath(inspect.getfile(model.function)))
         ret_str = "import importlib.util\n\n"
         ret_str += "spec = importlib.util.spec_from_file_location('module', "\
                    f"{path_repr})\n"
