@@ -2,7 +2,9 @@ from ..models import CustomDemographicModel, EpochDemographicModel,\
     Epoch, Split, BinaryOperation
 from ..utils import Variable, DiscreteVariable, DynamicVariable
 import sys
+import os
 import copy
+import inspect
 
 FUNCTION_NAME = 'model_func'
 
@@ -18,7 +20,7 @@ def _print_dadi_func(model, values):
     """
     from ..engines import DadiEngine  # to avoid cross import
     if isinstance(model, CustomDemographicModel):
-        path_repr = repr(sys.modules[model.function.__module__].__file__)
+        path_repr = os.path.abspath(inspect.getfile(model.function))
         ret_str = "import importlib.util\n\n"
         ret_str += "spec = importlib.util.spec_from_file_location('module', "\
                    f"{path_repr})\n"
