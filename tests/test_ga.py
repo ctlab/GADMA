@@ -225,8 +225,8 @@ class TestGeneticAlg(unittest.TestCase):
         eval_file = 'eval_file'
 
         for opt in all_global_optimizers():
-            if not_bayesopt and opt.id == 'Bayesian_optimization':
-                continue  # TODO
+            # if not_bayesopt and opt.id == 'GPyOpt_Bayesian_optimization':
+            #     continue  # TODO
             with self.subTest(optimizer=opt.id):
                 open(report_file, 'w').close()
                 open(eval_file, 'w').close()

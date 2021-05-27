@@ -12,7 +12,7 @@ from .. import GPy
 from .. import smac_available
 
 
-class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
+class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
     """
     Class for Bayesian optimization
     """
@@ -22,7 +22,7 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         self.kernel_name = kernel
         self.ARD = ARD
         self.acquisition_type = acquisition_type
-        super(BayesianOptimizer, self).__init__(
+        super(GPyOptBayesianOptimizer, self).__init__(
             random_type=random_type,
             custom_rand_gen=custom_rand_gen,
             log_transform=log_transform,
@@ -89,7 +89,7 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
           `n_iter`==-1.
         * `bo_obj` - Object of BO from GpyOpt.
         """
-        run_info = super(BayesianOptimizer, self)._create_run_info()
+        run_info = super(GPyOptBayesianOptimizer, self)._create_run_info()
         run_info.bo_obj = None
         return run_info
 
@@ -110,7 +110,7 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         # also change X_out to be equal to X_total. For good restore
         info.result.X_out = info.result.X
         info.result.Y_out = info.result.Y
-        super(BayesianOptimizer, self).save(info, save_file)
+        super(GPyOptBayesianOptimizer, self).save(info, save_file)
 
     def _optimize(self, f, variables, X_init, Y_init, maxiter, maxeval,
                   iter_callback):
@@ -187,10 +187,10 @@ class BayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         return self.run_info.result
 
 
-register_global_optimizer('Bayesian_optimization', BayesianOptimizer)
+register_global_optimizer('GPyOpt_Bayesian_optimization', GPyOptBayesianOptimizer)
 
 
-class SMACOptimizer(GlobalOptimizer, ConstrainedOptimizer):
+class SMACSquirellOptimizer(GlobalOptimizer, ConstrainedOptimizer):
     """
     Class for Bayesian optimization with SMAC from Black Box challenge.
     """
@@ -198,7 +198,7 @@ class SMACOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                  random_type='resample', custom_rand_gen=None,
                  log_transform=False, maximize=False):
         self.n_suggestions = n_suggestions
-        super(SMACOptimizer, self).__init__(
+        super(SMACSquirellOptimizer, self).__init__(
             random_type=random_type,
             custom_rand_gen=custom_rand_gen,
             log_transform=log_transform,
@@ -316,4 +316,4 @@ class SMACOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
 
 if smac_available:
-    register_global_optimizer('SMAC_optimization', SMACOptimizer)
+    register_global_optimizer('SMAC_squirell_optimization', SMACSquirellOptimizer)
