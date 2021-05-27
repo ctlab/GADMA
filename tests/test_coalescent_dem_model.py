@@ -43,12 +43,12 @@ class TestCoalescentDemModel(unittest.TestCase):
             't1': 1,
             't2': 5
         }
-        m = CoalescentDemographicModel(sequence_length=1e6, gen_time=29, mu=1.25e-8)
+        m = CoalescentDemographicModel(gen_time=29, mu=1.25e-8)
         m.add_leaf(0, size_pop=nu1)
         m.add_leaf(1, size_pop=nu2F)
         m.change_pop_size(1, t=t1, size_pop=nu2)
         m.move_lineages(1, 0, t=t2, size_pop=N_a)
-        translated_model = m.translate_into(EpochDemographicModel, var2values)
+        translated_model = m.translate_to(EpochDemographicModel, var2values)
         em = EpochDemographicModel(gen_time=29, mu=1.25e-8)
         em.add_split(0, [nu1, nu2])
         em.add_epoch(operation_creation(Subtraction, t2, t1), [nu1, nu2])
@@ -79,7 +79,7 @@ class TestCoalescentDemModel(unittest.TestCase):
             't1': 1,
             't2': 5
         }
-        m = CoalescentDemographicModel(sequence_length=1e6, gen_time=29, mu=1.25e-8)
+        m = CoalescentDemographicModel(gen_time=29, mu=1.25e-8)
         m.add_leaf(0, size_pop=nu1)
         m.add_leaf(1, size_pop=nu2F)
         m.change_pop_size(1, t=t1, size_pop=nu2, dyn="Exp", g=0.9)
@@ -109,7 +109,7 @@ class TestCoalescentDemModel(unittest.TestCase):
         em.add_epoch(operation_creation(Subtraction, t2, t1), [nu1, nu2], dyn_args=['Sud', "Exp"])
         em.add_epoch(operation_creation(Subtraction, t1, 0), [nu1, nu2F])
         print(em.as_custom_string(values=var2values))
-        translated_model = m.translate_into(EpochDemographicModel, var2values)
+        translated_model = m.translate_to(EpochDemographicModel, var2values)
         print(translated_model.as_custom_string(values=var2values))
 
     def test_model3_translation(self):
@@ -125,14 +125,14 @@ class TestCoalescentDemModel(unittest.TestCase):
             't2': 4,
             't3': 5
         }
-        m = CoalescentDemographicModel(sequence_length=1e6, gen_time=29, mu=1.25e-8)
+        m = CoalescentDemographicModel(gen_time=29, mu=1.25e-8)
         m.add_leaf(0, size_pop=nu1F)
         m.add_leaf(1, size_pop=nu2F)
         m.change_pop_size(0, t=t1, size_pop=nu1)
         m.change_pop_size(0, t=t2, size_pop=nu1B)
         m.change_pop_size(1, t=t2, size_pop=nu2B)
         m.move_lineages(1, 0, t=t3, size_pop=N_a)
-        translated_model = m.translate_into(EpochDemographicModel, var2values)
+        translated_model = m.translate_to(EpochDemographicModel, var2values)
         em = EpochDemographicModel(gen_time=29, mu=1.25e-8)
         em.add_split(0, [nu1B, nu2B])
         em.add_epoch(operation_creation(Subtraction, t3, t2), [nu1B, nu2B])
@@ -154,14 +154,14 @@ class TestCoalescentDemModel(unittest.TestCase):
             't2': 4,
             't3': 5
         }
-        m = CoalescentDemographicModel(sequence_length=1e6, gen_time=29, mu=1.25e-8)
+        m = CoalescentDemographicModel(gen_time=29, mu=1.25e-8)
         m.add_leaf(0, size_pop=nu1F)
         m.add_leaf(1, size_pop=nu2F)
         m.change_pop_size(0, t=t1, size_pop=nu1)
         m.change_pop_size(0, t=t2, size_pop=nu1B)
         m.change_pop_size(1, t=t1, size_pop=nu2B)
         m.move_lineages(1, 0, t=t3, size_pop=N_a)
-        translated_model = m.translate_into(EpochDemographicModel, var2values)
+        translated_model = m.translate_to(EpochDemographicModel, var2values)
         em = EpochDemographicModel(gen_time=29, mu=1.25e-8)
         em.add_split(0, [nu1B, nu2B])
         em.add_epoch(operation_creation(Subtraction, t3, t2), [nu1B, nu2B])
@@ -185,14 +185,14 @@ class TestCoalescentDemModel(unittest.TestCase):
             't3': 4,
             't4': 5
         }
-        m = CoalescentDemographicModel(sequence_length=1e6, gen_time=29, mu=1.25e-8)
+        m = CoalescentDemographicModel(gen_time=29, mu=1.25e-8)
         m.add_leaf(0, size_pop=nu1F)
         m.add_leaf(1, size_pop=nu2F)
         m.change_pop_size(0, t=t1, size_pop=nu1)
         m.change_pop_size(0, t=t3, size_pop=nu1B)
         m.change_pop_size(1, t=t2, size_pop=nu2B)
         m.move_lineages(1, 0, t=t4, size_pop=N_a)
-        translated_model = m.translate_into(EpochDemographicModel, var2values)
+        translated_model = m.translate_to(EpochDemographicModel, var2values)
         em = EpochDemographicModel(gen_time=29, mu=1.25e-8)
         em.add_split(0, [nu1B, nu2B])
         em.add_epoch(operation_creation(Subtraction, t4, t3), [nu1B, nu2B])
@@ -202,3 +202,4 @@ class TestCoalescentDemModel(unittest.TestCase):
         self.assertEqual(2, translated_model.number_of_populations())
         self.assertEqual(translated_model.as_custom_string(values=var2values),
                          em.as_custom_string(values=var2values))
+

@@ -1,6 +1,7 @@
 from ..utils import Variable, TimeVariable, DemographicVariable
 from ..utils import PopulationSizeVariable, VariablePool, variables_values_repr
 from . import Model, Epoch, Split
+from .variables_combinations import operation_creation, Addition
 import copy
 import numpy as np
 
@@ -25,6 +26,7 @@ class DemographicModel(Model):
     :param linear_constrain: linear constrain on parameters.
     :type linear_constrain: :class:`gadma.optimizers.LinearConstrain`
     """
+
     def __init__(self, gen_time=None, theta0=None, mu=None, Nref=None,
                  has_anc_size=False, linear_constrain=None):
         super(DemographicModel, self).__init__(raise_excep=False)
@@ -162,6 +164,7 @@ class EpochDemographicModel(DemographicModel):
                       multinom inference and get best Nanc_size for the model.
     :type Nanc_size: float or :class:`gadma.utils.PopulationSizeVariable`
     """
+
     def __init__(self, gen_time=None, theta0=None, mu=None, Nref=None,
                  has_anc_size=None, Nanc_size=None, linear_constrain=None):
         if has_anc_size is None:
@@ -386,5 +389,55 @@ class EpochDemographicModel(DemographicModel):
                     b += time_arg
         return [], 0
 
-    def translate_to(self, ModelClass):
-        pass
+    @classmethod
+    def create_from(cls, model, values=None):
+        from .coalescent_demographic_model import CoalescentDemographicModel
+        if isinstance(model, CoalescentDemographicModel):
+            if values is None:
+                raise ValueError(
+                    f"Cannot translate to CoalescentDemographicModel without values"
+                )
+            model.translate_to(cls, values)
+        raise ValueError(
+            f"Cannot translate to {model.__class__}"
+        )
+
+    def get_summary_duration(self):
+        time = 0
+        for event in self.events:
+            if isinstance(event, Epoch):
+                time = operation_creation(Addition, event.time_arg, time)
+        return time
+
+    def translate_to(self, ModelClass, values):
+        # TODO linear (?)
+        from .coalescent_demographic_model import CoalescentDemographicModel
+        if issubclass(ModelClass, CoalescentDemographicModel):
+            model = CoalescentDemographicModel(
+                mu=self.mu,
+                gen_time=self.gen_time,
+                theta0=self.theta0,
+                linear_constrain=self.linear_constrain
+            )
+            current_time = self.get_summary_duration()
+            current_sizes = [self.Nanc_size]
+            current_dyn = ["Sud"]
+            # (a + b) * c и c * a + c * b
+            for event in self.events:
+                if isinstance(event, Epoch):
+                    for i in range(len(current_sizes)):
+                        if event.size_args[i] != current_sizes[i]:
+                            pass
+                    #                      model.change_pop_size(pop=i,
+                    #                                           t=current_time,
+                    #                                          size_pop=current_sizes[i],
+                    #                                         dyn=current_dyn[i])
+
+                    pass
+                # elif isinstance(event, Split):
+                #   model.move_lineages(pop_from=event.n_pop,
+                #                      pop=event.pop_to_div)
+            return model
+        raise ValueError(
+            f"Cannot translate to {ModelClass}"
+        )

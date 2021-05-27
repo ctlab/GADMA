@@ -18,8 +18,6 @@ class CoalescentDemographicModel(DemographicModel):
     :type mu: float
     :param gen_time: Time of one generation.
     :type gen_time: float
-    :param sequence_length: Length of sequence.
-    :type sequence_length: float
     :param rec_rate: Recombination rate per generation per base
     :type rec_rate: float
     :param linear_constrain: linear constrain on parameters.
@@ -33,16 +31,12 @@ class CoalescentDemographicModel(DemographicModel):
     def __init__(self,
                  mu=None,
                  gen_time=None,
-                 sequence_length=None,
                  rec_rate=None,
+                 theta0=None,
                  linear_constrain=None):
         self.events = list()
         self.rec_rate = rec_rate
         self.gen_time = gen_time
-        self.sequence_length = sequence_length
-        theta0 = None
-        if sequence_length is not None:
-            theta0 = 4 * mu * sequence_length
 
         super(CoalescentDemographicModel, self).__init__(
             gen_time=gen_time,
@@ -234,8 +228,7 @@ class CoalescentDemographicModel(DemographicModel):
                 )[0]
                 epoch_model.add_split(
                     pop_to_div=epoch_event.pop,
-                    size_args=[size_args[pop2pos[epoch_event.pop]],
-                               size_args[pop2pos[epoch_event.pop_from]]]
+                    size_args=list.copy(size_args)
                 )
         for pop, pos in pop2pos.items():
             size, dyn = self._get_size_pop(pop=pop,
@@ -254,7 +247,7 @@ class CoalescentDemographicModel(DemographicModel):
             dyn_args=list.copy(dyn_args)
         )
 
-    def translate_into(self, ModelClass, values):
+    def translate_to(self, ModelClass, values):
 
         """
         Translate this model into its representation in `ModelClass`.

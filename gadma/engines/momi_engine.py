@@ -117,5 +117,8 @@ class MomiEngine(Engine):
                                 sampled_n_dict=sampled_n_dict)
         return snp_counts.extract_sfs(n_blocks=100)
 
+    def generate_code(self, values, filename=None):
+        pass
+
 # if momi_available:
 # register_engine(MomiEngine)

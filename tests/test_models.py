@@ -3,7 +3,8 @@ import unittest
 from gadma import *
 from gadma import ContinuousVariable
 from gadma.models import *
-from gadma.models.variables_combinations import BinaryOperation
+from gadma.models.variables_combinations import BinaryOperation, operation_creation
+from gadma.models.coalescent_demographic_model import CoalescentDemographicModel
 from gadma.engines import DadiEngine
 
 from .test_data import YRI_CEU_DATA
@@ -440,3 +441,27 @@ class TestModels(unittest.TestCase):
                     msg += f": {true_ll} != {d['ll_model']}"
                     self.assertTrue(np.allclose(true_ll, d['ll_model']),
                                     msg=msg)
+
+    def test_binary_operation_eq(self):
+        a = PopulationSizeVariable("a")
+        b = PopulationSizeVariable("b")
+        comb1 = operation_creation(Addition, a, b)
+        comb2 = operation_creation(Addition, b, a)
+
+        self.assertEqual(comb1, comb2)
+
+        comb2 = operation_creation(Addition, a, b)
+        self.assertEqual(comb1, comb2)
+        c = TimeVariable("c")
+        comb1 = Addition(c, Multiplication(a, b))
+        comb2 = Addition(Multiplication(b, a), c)
+        self.assertEqual(comb1, comb2)
+
+        self.assertFalse(Division(a, b) == Division(b, a))
+        self.assertFalse(Subtraction(a, b) == Subtraction(b, a))
+        self.assertEqual(Addition(a, b), Addition(b, a))
+        self.assertEqual(Multiplication(a, b), Multiplication(b, a))
+
+    def test_translation_from_epoch_to_coalescent(self):
+        em = EpochDemographicModel()
+        cm = em.translate_to(CoalescentDemographicModel)

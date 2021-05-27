@@ -1,3 +1,6 @@
+import math
+from abc import ABC
+
 import numpy as np
 
 from ..utils import Variable
@@ -16,7 +19,72 @@ class VariablesCombination(Model):
         return f"VariablesCombination of {self.variables} variables"
 
 
-class BinaryOperation(VariablesCombination):
+class Operation(VariablesCombination):
+
+    def name(self):
+        raise NotImplementedError
+
+    def get_value(self, values):
+        raise NotImplementedError
+
+    def string_repr(self, values):
+        raise NotImplementedError
+
+
+class UnaryOperation(Operation):
+
+    def __init__(self, arg):
+        super(UnaryOperation, self).__init__()
+        self.arg = arg
+        self.add_variable(arg)
+        assert len(self.variables) > 0
+
+    def __eq__(self, other):
+        if not isinstance(other, UnaryOperation):
+            return False
+        return self.operation_str() == other.operation_str() and self.arg == other.arg
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def name(self):
+        if isinstance(self.arg, (Variable, Operation)):
+            arg_name = self.arg.name
+            if isinstance(self.arg, Operation):
+                arg_name = f"({arg_name})"
+        else:
+            arg_name = self.arg
+        return f"{self.operation_str()} {arg_name}"
+
+    def get_value(self, values):
+        var2value = self.var2value(values)
+        if isinstance(self.arg, BinaryOperation):
+            vals = [var2value[var] for var in self.arg.variables]
+            val = self.arg.get_value(vals)
+        else:
+            val = var2value.get(self.arg, self.arg)
+        return self.operation(val)
+
+    def string_repr(self, values):
+        val = self.get_value(values)
+        return f"{self.name}={val}"
+
+    @staticmethod
+    def operation(val):
+        """
+        Returns the result of unary operation from value.
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def operation_str():
+        """
+        Returns string representation of unary operation.
+        """
+        raise NotImplementedError
+
+
+class BinaryOperation(Operation):
     """
     Combination of two variables.
 
@@ -35,21 +103,34 @@ class BinaryOperation(VariablesCombination):
         self.add_variables([arg1, arg2])
         assert len(self.variables) > 0
 
+    def __eq__(self, other):
+
+        if not isinstance(other, BinaryOperation):
+            return False
+        return self.operation_str() == other.operation_str() and (
+                self.arg1 == other.arg1 and self.arg2 == other.arg2
+                or
+                self.is_commutative() and self.arg1 == other.arg2 and self.arg2 == other.arg1
+        )
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     @property
     def name(self):
         """
         Generates name from variables names like:
         `self.arg1.name operation self.arg1.name`
         """
-        if isinstance(self.arg1, (Variable, BinaryOperation)):
+        if isinstance(self.arg1, (Variable, Operation)):
             arg1_name = self.arg1.name
-            if isinstance(self.arg1, BinaryOperation):
+            if isinstance(self.arg1, Operation):
                 arg1_name = f"({arg1_name})"
         else:
             arg1_name = self.arg1
-        if isinstance(self.arg2, (Variable, BinaryOperation)):
+        if isinstance(self.arg2, (Variable, Operation)):
             arg2_name = self.arg2.name
-            if isinstance(self.arg2, BinaryOperation):
+            if isinstance(self.arg2, Operation):
                 arg2_name = f"({arg2_name})"
         else:
             arg2_name = self.arg2
@@ -63,12 +144,12 @@ class BinaryOperation(VariablesCombination):
         :type values: list of dict
         """
         var2value = self.var2value(values)
-        if isinstance(self.arg1, BinaryOperation):
+        if isinstance(self.arg1, Operation):
             vals = [var2value[var] for var in self.arg1.variables]
             val1 = self.arg1.get_value(vals)
         else:
             val1 = var2value.get(self.arg1, self.arg1)
-        if isinstance(self.arg2, BinaryOperation):
+        if isinstance(self.arg2, Operation):
             vals = [var2value[var] for var in self.arg2.variables]
             val2 = self.arg2.get_value(vals)
         else:
@@ -84,6 +165,9 @@ class BinaryOperation(VariablesCombination):
         """
         val = self.get_value(values)
         return f"{self.name}={val}"
+
+    def is_commutative(self):
+        raise NotImplementedError
 
     @staticmethod
     def operation(val1, val2):
@@ -105,6 +189,9 @@ class Addition(BinaryOperation):
     The sum of two variables.
     """
 
+    def is_commutative(self):
+        return True
+
     @staticmethod
     def operation(val1, val2):
         return val1 + val2
@@ -118,6 +205,9 @@ class Subtraction(BinaryOperation):
     """
     The subtraction of two variables.
     """
+
+    def is_commutative(self):
+        return False
 
     @staticmethod
     def operation(val1, val2):
@@ -133,6 +223,9 @@ class Multiplication(BinaryOperation):
     The multiplication of two variables.
     """
 
+    def is_commutative(self):
+        return True
+
     @staticmethod
     def operation(val1, val2):
         return val1 * val2
@@ -147,6 +240,9 @@ class Division(BinaryOperation):
     The division of one variable by another.
     """
 
+    def is_commutative(self):
+        return False
+
     @staticmethod
     def operation(val1, val2):
         return val1 / val2
@@ -158,6 +254,9 @@ class Division(BinaryOperation):
 
 class Pow(BinaryOperation):
 
+    def is_commutative(self):
+        return False
+
     @staticmethod
     def operation(val1, val2):
         return val1 ** val2
@@ -167,28 +266,26 @@ class Pow(BinaryOperation):
         return "**"
 
 
-class Exp(BinaryOperation):
-
-    def __init__(self, arg1):
-        super(Exp, self).__init__(arg1, None)
-
-    @property
-    def name(self):
-        if isinstance(self.arg1, (Variable, BinaryOperation)):
-            arg1_name = self.arg1.name
-            if isinstance(self.arg1, BinaryOperation):
-                arg1_name = f"({arg1_name})"
-        else:
-            arg1_name = self.arg1
-        return f"exp{arg1_name}"
+class Exp(UnaryOperation):
 
     @staticmethod
-    def operation(val1, val2=None):
-        return round(np.exp(val1), 3)
+    def operation(val):
+        return round(np.exp(val), 3)
 
     @staticmethod
     def operation_str():
-        raise NotImplementedError
+        return "exp"
+
+
+class Log(UnaryOperation):
+
+    @staticmethod
+    def operation(val):
+        return round(math.log(val), 3)
+
+    @staticmethod
+    def operation_str():
+        return "log"
 
 
 def operation_creation(operation, arg1, arg2=None):
@@ -207,7 +304,7 @@ def operation_creation(operation, arg1, arg2=None):
         if operation is Multiplication:
             return create_multiplication(arg1, arg2)
         if operation is Exp:
-            return Exp(arg1)
+            return create_exp(arg1)
         raise ValueError(
             f"Can not create operation {operation}"
         )
@@ -261,3 +358,10 @@ def create_multiplication(arg1, arg2):
         if np.isclose(arg2, 1):
             return arg1
     return Multiplication(arg1, arg2)
+
+
+def create_exp(arg):
+    if not isinstance(arg, (Model, Variable)):
+        if np.isclose(arg, 0):
+            return 1
+    return Exp(arg)
