@@ -131,7 +131,8 @@ class SettingsStorage(object):
                         '_inner_data', '_bootstrap_data', 'X_init', 'Y_init',
                         'model_func', 'get_engine_args', 'data_holder',
                         'units_of_time_in_drawing', 'resume_from_settings',
-                        'dadi_available', 'moments_available']
+                        'dadi_available', 'moments_available',
+                        'kernel', 'acquisition_function']
 
         super_hasattr = True
         setattr_at_the_end = True
@@ -900,6 +901,10 @@ class SettingsStorage(object):
             opt.const_mut_strength = self.const_for_mutation_strength
             opt.eps = self.eps
             opt.n_stuck_gen = self.stuck_generation_number
+        if (self.global_optimizer.lower() == "gpyopt_bayesian_optimization" or
+                self.global_optimizer.lower() == "smac_bo_optimization"):
+            opt.kernel_name = self.kernel
+            opt.acquisition_type = self.acquisition_function
 
         opt.log_transform = self.global_log_transform
         opt.maximize = True

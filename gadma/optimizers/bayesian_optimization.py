@@ -390,8 +390,23 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             log_transform=log_transform,
             maximize=maximize
         )
-        # checks
+
+    @property
+    def kernel_name(self):
+        return self._kernel_name
+
+    @kernel_name.setter
+    def kernel_name(self, value):
+        self._kernel_name = value
         self._get_kernel_class_and_nu()
+
+    @property
+    def acquisition_type(self):
+        return self._acquisition_type
+
+    @acquisition_type.setter
+    def acquisition_type(self, value):
+        self._acquisition_type = value
         self.get_acquisition_function_class()
 
     def _get_kernel_class_and_nu(self):

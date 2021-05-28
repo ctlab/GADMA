@@ -69,6 +69,10 @@ const_for_mutation_rate = 1.068062
 stuck_generation_number = 100
 eps = 1e-2
 
+# BO options
+kernel = "Matern52"
+acquisition_function = "EI"
+
 # just for logging evaluations
 # output_log_file = None
 # max_num_of_eval = None # maximum number of logll eval.
