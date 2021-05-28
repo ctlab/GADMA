@@ -361,7 +361,6 @@ class EpochDemographicModel(DemographicModel):
             for var in variables:
                 if var not in all_variables and var not in self.fixed_values:
                     all_variables.append(var)
-        #     Нужно ли тут добавить учёт инбридинга?
         return len(all_variables)
 
     def as_custom_string(self, values):
