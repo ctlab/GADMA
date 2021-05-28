@@ -317,14 +317,14 @@ class CoreRun(object):
             draw_plots_to_file(x, self.engine, self.settings,
                                save_plot_file, fig_title)
         except Exception as e:
-            print(f"{bcolors.WARNING}Run {self.index}: failed to draw model due "
-                  f"to the following exception: {e}{bcolors.ENDC}")
+            print(f"{bcolors.WARNING}Run {self.index}: failed to draw model "
+                  f"due to the following exception: {e}{bcolors.ENDC}")
         try:
             generate_code_to_file(x, self.engine,
                                   self.settings, save_code_file)
         except Exception as e:
-            print(f"{bcolors.WARNING}Run {self.index}: failed to generate code "
-                  f"due to the following exception: {e}{bcolors.ENDC}")
+            print(f"{bcolors.WARNING}Run {self.index}: failed to generate code"
+                  f" due to the following exception: {e}{bcolors.ENDC}")
 
     def draw_model_in_output_dir(self, x, y,
                                  best_by='log-likelihood', final=True):

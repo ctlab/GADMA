@@ -16,7 +16,8 @@ if smac_available:
     import skopt
     skopt.__version__  # somehow it fixes import errors in smac
     import skopt.learning.gaussian_process.kernels as kernels
-    from smac.epm.gp_kernels import ConstantKernel, Matern, RBF, WhiteKernel, HammingKernel
+    from smac.epm.gp_kernels import ConstantKernel, Matern, RBF
+    from smac.epm.gp_kernels import WhiteKernel, HammingKernel
     from smac.optimizer.acquisition import LogEI, EI, PI, LCB
     from smac.scenario.scenario import Scenario
     from smac.epm.gaussian_process_mcmc import GaussianProcess
@@ -36,7 +37,6 @@ if smac_available:
         RunHistory2EPM4LogScaledCost,
     )
     from smac.optimizer.ei_optimization import LocalAndSortedRandomSearch
-
 
 
 def get_maxeval_for_bo(maxeval, maxiter):
@@ -123,7 +123,6 @@ class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         if hasattr(run_info, "iter_times"):
             print("Total time of iteration:",
                   run_info.iter_times[n_iter], file=stream)
-
 
         print('=============================================================',
               end="\n\n", file=stream)
@@ -233,7 +232,11 @@ class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         return self.run_info.result
 
 
-register_global_optimizer('GPyOpt_Bayesian_optimization', GPyOptBayesianOptimizer)
+if GPyOpt_available:
+    register_global_optimizer(
+        'GPyOpt_Bayesian_optimization',
+        GPyOptBayesianOptimizer
+    )
 
 
 class SMACSquirellOptimizer(GlobalOptimizer, ConstrainedOptimizer):
@@ -363,7 +366,10 @@ class SMACSquirellOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
 
 if smac_available:
-    register_global_optimizer('SMAC_squirell_optimization', SMACSquirellOptimizer)
+    register_global_optimizer(
+        'SMAC_squirell_optimization',
+        SMACSquirellOptimizer
+    )
 
 
 class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
@@ -562,7 +568,11 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
     @staticmethod
     def _write_report_to_stream(variables, run_info, stream):
         run_info.bo_obj = None
-        GPyOptBayesianOptimizer._write_report_to_stream(variables, run_info, stream)
+        GPyOptBayesianOptimizer._write_report_to_stream(
+            variables=variables,
+            run_info=run_info,
+            stream=stream
+        )
 
     def valid_restore_file(self, save_file):
         try:
