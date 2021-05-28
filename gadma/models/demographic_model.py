@@ -163,11 +163,13 @@ class EpochDemographicModel(DemographicModel):
     :type Nanc_size: float or :class:`gadma.utils.PopulationSizeVariable`
     """
     def __init__(self, gen_time=None, theta0=None, mu=None, Nref=None,
-                 has_anc_size=None, Nanc_size=None, linear_constrain=None):
+                 has_anc_size=None, Nanc_size=None, linear_constrain=None,
+                 inbreeding_args=None):
         if has_anc_size is None:
             has_anc_size = Nanc_size is not None
         if Nanc_size is None:
             Nanc_size = 1.0
+        self.inbreeding_args = inbreeding_args
         self.events = list()
         super(EpochDemographicModel, self).__init__(
             gen_time=gen_time,
@@ -211,8 +213,17 @@ class EpochDemographicModel(DemographicModel):
         """
         return len(self._get_current_pop_sizes())
 
+    @property
+    def has_inbreeding(self):
+        return self.inbreeding_args is not None
+
+    def add_inbreeding(self, inbr_args=None):
+        self.inbreeding_args = inbr_args
+        self.add_variables(inbr_args)
+            
     def add_epoch(self, time_arg, size_args, mig_args=None,
-                  dyn_args=None, sel_args=None, dom_args=None):
+                  dyn_args=None, sel_args=None,
+                  dom_args=None):
         """
         Adds new epoch to the demographic model events.
 
@@ -228,9 +239,13 @@ class EpochDemographicModel(DemographicModel):
                class as well as different constants/values including\
                :class:`gadma.models.BinaryOperation` instances.
         """
+        if self.has_inbreeding:
+            raise ValueError("Model already has inbreeding."
+                             " You can't add new Epoch")
+
         sizes = self._get_current_pop_sizes()
-        new_epoch = Epoch(time_arg, sizes, size_args,
-                          mig_args, dyn_args, sel_args, dom_args)
+        new_epoch = Epoch(time_arg, sizes, size_args, mig_args,
+                          dyn_args, sel_args, dom_args)
         self.events.append(new_epoch)
         self.add_variables(new_epoch.variables)
 
@@ -242,6 +257,9 @@ class EpochDemographicModel(DemographicModel):
         :param size_args: population sizes of two subpopulations after the
                           split.
         """
+        if self.has_inbreeding:
+            raise ValueError("Model already has inbreeding. "
+                             " Split is impossible.")
         sizes = self._get_current_pop_sizes()
         sizes[pop_to_div] = size_args[0]
         sizes.append(size_args[1])
@@ -343,6 +361,7 @@ class EpochDemographicModel(DemographicModel):
             for var in variables:
                 if var not in all_variables and var not in self.fixed_values:
                     all_variables.append(var)
+        #     Нужно ли тут добавить учёт инбридинга?
         return len(all_variables)
 
     def as_custom_string(self, values):
