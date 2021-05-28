@@ -49,11 +49,9 @@ class Epoch(Event):
     :type dyn_args: list of values and/or  :class:`gadma.DynamicVariable`
     :param sel_args: Selection rates for each population during the epoch.
     :type sel_args: list of values and/or :class:`gadma.SelectionVariable`
-    :param inbr_args: Inbreeding values for each population during the epoch.
-    :type inbr_args: list of values and/or :class:`gadma.FractionVariable`
     """
     def __init__(self, time_arg, init_size_args, size_args, mig_args=None,
-                 dyn_args=None, sel_args=None, dom_args=None, inbr_args=None):
+                 dyn_args=None, sel_args=None, dom_args=None):
         # Simple checks
         assert(len(init_size_args) == len(size_args))
         if mig_args is not None:
@@ -68,8 +66,6 @@ class Epoch(Event):
             assert (len(sel_args) == len(size_args))
         if dom_args is not None:
             assert (len(dom_args) == len(size_args))
-        if inbr_args is not None:
-            assert (len(inbr_args) == len(size_args))
 
         self.n_pop = len(init_size_args)
         self.time_arg = time_arg
@@ -82,7 +78,6 @@ class Epoch(Event):
                              " selection coefficients.")
         self.mig_args = mig_args
         self.dyn_args = dyn_args
-        self.inbr_args = inbr_args
         super(Epoch, self).__init__()
 
         self.add_variable(time_arg)
@@ -92,7 +87,6 @@ class Epoch(Event):
         self.add_variables(dom_args)
         self.add_variables(dyn_args)
         self.add_variables(mig_args)
-        self.add_variables(inbr_args)
 
 #    def set_value(self, variable, value):
 #        # check dynamics first as they are more probable in our situation

@@ -80,17 +80,15 @@ def _print_dadi_func(model, values):
                 ret_str += "\tphi = dadi.PhiManip.phi_%dD_to_%dD_split_%d" %\
                            (event.n_pop, event.n_pop+1, event.pop_to_div + 1)
             ret_str += "(xx, phi)\n"
-        if event.__class__ is Epoch:
-            if event.inbr_args is not None:
-                inbr_names = []
-                for i in range(event.n_pop):
-                    inbr_arg = event.inbr_args[i]
-                    inbr_names.append(inbr_arg.name)
-                inbreeding = True
-                ret_str += "\tsfs = dadi.Spectrum.from_phi_inbreeding(phi, ns, " \
-                           "[xx]*len(ns), [{}], [2]*len(ns))\n".format(", ".join(inbr_names))
+    if model.has_inbreeding:
+        inbr_names = []
+        for var in model.inbreeding_args:
+            if isinstance(var, Variable):
+                inbr_names.append(var.name)
             else:
-                inbreeding = False
+                inbr_names.append(var)
+        ret_str += "\tsfs = dadi.Spectrum.from_phi_inbreeding(phi, ns, " \
+                   "[xx]*len(ns), [{}], [2]*len(ns))\n".format(", ".join(inbr_names))
     if not inbreeding:
         ret_str += "\tsfs = dadi.Spectrum.from_phi(phi, ns, [xx]*len(ns))\n"
     ret_str += "\treturn sfs\n"

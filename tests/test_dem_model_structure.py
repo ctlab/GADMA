@@ -67,10 +67,12 @@ class TestModelStructure(unittest.TestCase):
                             n_migs /= 2
                         n_par += str_val * (n_pop * (1 + int(create_dyns)\
                                  + int(create_sels)) + n_migs + 1)
+                n_par += int(inbr) * len(structure)
                 msg = f"Parameters are not equal for dem model with structure "\
                       f"{structure} and create_migs ({create_migs}), "\
                       f"create_sels ({create_sels}), create_dyns ({create_dyns}), "\
-                      f"sym_migs ({sym_migs}), fracs ({fracs}) {dm.variables}"
+                      f"sym_migs ({sym_migs}), fracs ({fracs}) {dm.variables}," \
+                      f"inbr ({inbr})"
                 self.assertEqual(len(dm.variables), n_par, msg=msg)
 
                 if len(structure) > 1:
