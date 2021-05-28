@@ -46,6 +46,11 @@ jobs:
           pip3 install pytest-cov
           pip3 install pytest-timeout
 
+      - name: Upgrade NumPy for Python 3.8.
+        run: |
+          pip3 install --upgrade numpy
+        if: matrix.python-version == 3.8
+
       - name: Install GADMA and its dependencies (Linux and MacOS).
         run: |
           ./install
@@ -58,9 +63,17 @@ jobs:
         shell: cmd
         if: matrix.os == 'windows-2019'
 
+      - name: Install SMAC (Linux and Windows).
+        run: |
+          pip3 install scikit-optimize
+          pip3 install smac==0.12.4
+          pip3 install bayesmark
+          pip3 install configspace
+        if: matrix.os != 'macos-10.15'
+
       - name: Run tests and codecov.
         run: |
-          python -m pytest --timeout=300 --cov=gadma --cov-report=xml -v tests
+          python -m pytest --timeout=300 --cov=gadma --cov-report=xml -v tests --disable-warnings
         
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1

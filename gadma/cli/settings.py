@@ -138,7 +138,11 @@ Y_init = None
 mutation_rate = None
 
 global_maxiter = None
+global_maxeval = None
+global_log_transform = False
 local_maxiter = None
+local_maxeval = None
+local_log_transform = True
 
 # Additional constants
 P_IDS = {'n': PopulationSizeVariable, 't': TimeVariable,

@@ -18,7 +18,7 @@ Output directory: tests/output_dir
 #!!!
 #	Input file can be sfs file (should end with .fs) or 
 #	file of SNP's in dadi format (should end with .txt).
-Input file: tests/test_data/small_1pop.fs
+Input file: tests/test_data/DATA/sfs/small_1pop.fs
 
 #	'Population labels' is sequence of population names (the same
 #	names as in input file)
@@ -57,7 +57,7 @@ Linked SNP's: True
 #	the directory with bootstrapped data. 
 #	Bootstrap should be done over the regions of genome.
 #	Default: None
-Directory with bootstrap: tests/test_data/small_1_pop_bootstrap
+Directory with bootstrap: tests/test_data/DATA/sfs/small_1_pop_bootstrap
 
 
 #!!!

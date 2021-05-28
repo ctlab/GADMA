@@ -36,7 +36,10 @@ class OptimizerResult(object):
     """
     def __init__(self, x, y, success: bool, status: int, message: str,
                  X, Y, n_eval: int, n_iter: int, X_out=[], Y_out=[]):
-        self.x = np.array(x, dtype=get_correct_dtype(x))
+        if x is None:
+            self.x = None
+        else:
+            self.x = np.array(x, dtype=get_correct_dtype(x))
         self.y = y
         self.success = success
         self.status = status
@@ -47,6 +50,19 @@ class OptimizerResult(object):
         self.n_iter = n_iter
         self.X_out = copy.deepcopy(X_out)
         self.Y_out = Y_out
+
+    def apply_transforms(self, x_transform, y_transform):
+        """
+        Apply x_transform on all x's and y_transform on all y's
+        """
+        if self.x is not None:
+            self.x = x_transform(self.x)
+        if self.y is not None:
+            self.y = y_transform(self.y)
+        self.X = [x_transform(x) for x in self.X]
+        self.Y = [y_transform(y) for y in self.Y]
+        self.X_out = [x_transform(x) for x in self.X_out]
+        self.Y_out = [y_transform(y) for y in self.Y_out]
 
     @staticmethod
     def from_SciPy_OptimizeResult(

@@ -37,6 +37,14 @@ try:
     import GPyOpt
 except ImportError:
     GPyOpt = None
+try:
+    import smac
+    import ConfigSpace
+    import bayesmark
+    smac_available = True
+except ImportError:
+    smac_available = False
+
 import warnings
 
 PIL_available = PIL is not None
@@ -59,7 +67,7 @@ from .utils import warning_format, get_aic_score  # NOQA
 from .utils import Variable, ContinuousVariable, DiscreteVariable  # NOQA
 from .utils import TimeVariable, PopulationSizeVariable, MigrationVariable  # NOQA
 from .utils import SelectionVariable, DynamicVariable, FractionVariable  # NOQA
-from .utils import VariablePool  # NOQA
+from .utils import DemographicVariable, VariablePool  # NOQA
 from .utils import abspath, check_file_existence, check_dir_existence  # NOQA
 from .utils import ensure_file_existence, ensure_dir_existence  # NOQA
 

@@ -1,12 +1,13 @@
 from . import Optimizer, ConstrainedOptimizer, UnconstrainedOptimizer
+from . import ContinuousOptimizer
 from .optimizer_result import OptimizerResult
-from ..utils import eval_wrapper, ensure_file_existence, fix_args, cache_func
+from ..utils import ContinuousVariable, apply_transform
 
 import warnings
 import copy
 import numpy as np
 import scipy
-from functools import partial, wraps
+from functools import wraps
 
 _registered_local_optimizers = {}
 
@@ -16,7 +17,40 @@ class LocalOptimizer(Optimizer):
     Base class for local optimization.
     See :class:`gadma.optimizers.Optimizer` for more information.
     """
-    def optimize(self, f, variables, x0, args=(), options={}, maxiter=None,
+    def process_optimize_kwargs(self, f, variables, x0, options):
+        """
+        Returns kwargs to run :meth:`_optimize` method. Transforms `x0`
+        according to `log_transform`.
+
+        :param f: Objective function.
+        :param variables: Variables of `f`.
+        :param x0: Initial point of local optimization.
+        :param options: Some additional options of run.
+        """
+        # restore
+        if self.run_info.result.x is not None:
+            x0 = self.run_info.result.x
+        return {"x0": apply_transform(variables, self.transform, x0),
+                "options": options}
+
+    def _optimize(self, f, variables, x0, options,
+                  maxiter, maxeval, iter_callback):
+        raise NotImplementedError
+
+    @staticmethod
+    def _write_report_to_stream(variables, run_info, stream):
+        assert len(run_info.result.X_out) > 0
+        y_best_iter = min(run_info.result.Y_out)
+        idx = run_info.result.Y_out.index(y_best_iter)
+        x_best_iter = run_info.result.X_out[idx]
+        string = Optimizer._n_iter_string(n_iter=run_info.result.n_iter,
+                                          variables=variables,
+                                          x=x_best_iter,
+                                          y=y_best_iter)
+        print(string, file=stream)
+
+    def optimize(self, f, variables, x0, args=(), options={},
+                 linear_constrain=None, maxiter=None,
                  maxeval=None, verbose=0, callback=None,
                  report_file=None, eval_file=None, save_file=None,
                  restore_file=None, restore_points_only=False,
@@ -61,7 +95,24 @@ class LocalOptimizer(Optimizer):
                                     usage in this run.
         :type restore_x_transform: function
         """
-        raise NotImplementedError
+        optimize_kwargs = {"x0": x0, "options": options}
+        return super(LocalOptimizer, self).optimize(
+            f=f,
+            variables=variables,
+            args=args,
+            linear_constrain=linear_constrain,
+            maxiter=maxiter,
+            maxeval=maxeval,
+            verbose=verbose,
+            callback=callback,
+            report_file=report_file,
+            eval_file=eval_file,
+            save_file=save_file,
+            restore_file=restore_file,
+            restore_points_only=restore_points_only,
+            restore_x_transform=restore_x_transform,
+            **optimize_kwargs
+        )
 
 
 def register_local_optimizer(id, optimizer):
@@ -104,48 +155,21 @@ class NoneOptimizer(LocalOptimizer):
     Class that inherits :class:`gadma.optimizers.LocalOptimizer` but do not
     run any optimization.
     """
-    def save(self, x0, y, save_file):
-        info = (x0, y)
-        super(NoneOptimizer, self).save(info, save_file)
-
-    def valid_restore_file(self, save_file):
-        try:
-            info = self.load(save_file)
-        except Exception:
-            return False
-        if not isinstance(info, tuple):
-            return False
-        if not len(info) == 2:
-            return False
-        return True
-
-    def optimize(self, f, variables, x0, args=(), options={},
-                 linear_constrain=None, maxiter=None, maxeval=None,
-                 verbose=0, callback=None, eval_file=None, report_file=None,
-                 save_file=None, restore_file=None, restore_points_only=False,
-                 restore_x_transform=None):
-        prepared_f = self.prepare_f_for_opt(f, args, cache=True)
-        wrapped_f = eval_wrapper(prepared_f, eval_file)
-        finally_wrapped_f = self.wrap_for_report(wrapped_f, variables,
-                                                 verbose, report_file)
-        if restore_file is not None and self.valid_restore_file(restore_file):
-            x0, y = self.load(restore_file)
-            if restore_x_transform is not None:
-                x0 = restore_x_transform(x0)
-                y = None
-        if restore_file is None or restore_points_only or y is None:
-            y = finally_wrapped_f(x0)
-        self.save(x0, y, save_file)
-        result = OptimizerResult(x0, y, True, 1, message="SUCCESS",
-                                 X=[x0], Y=[y], n_eval=1, n_iter=0)
-        return result
+    def _optimize(self, f, variables, x0, options,
+                  maxiter, maxeval, iter_callback):
+        y = f(x0)
+        iter_callback(x0, y, [x0], [y])
+        self.run_info.result.success = True
+        self.run_info.result.status = 1
+        self.run_info.result.message = "SUCCESS"
+        return self.run_info.result
 
 
 register_local_optimizer(None, NoneOptimizer())
 register_local_optimizer("None", _registered_local_optimizers[None])
 
 
-class ScipyOptimizer(LocalOptimizer):
+class ScipyOptimizer(LocalOptimizer, ContinuousOptimizer):
     """
     Class of Scipy local search algorithms.
 
@@ -173,161 +197,49 @@ class ScipyOptimizer(LocalOptimizer):
         self.method = method
         super(ScipyOptimizer, self).__init__(log_transform, maximize)
 
-    def save(self, x_best, y_best, n_iter, n_eval, is_finished, save_file):
+    def check_variables(self, variables):
         """
-        Save current achievement in optimization. Dumps `x_best`, `y_best` and
-        `is_finished` to `save_file` using :mod:`pickle`.
-
-        :param x_best: Values of best configuration.
-        :param y_best: Value of target function on `x_best`.
-        :param is_finished: If True then optimization was finished.
-        :param save_file: Filename to save data.
+        Checks that all `variables` are instances of
+        :class:`gadma.utils.ContinuousVariable` class.
         """
-        info = (x_best, y_best, int(n_iter), n_eval, is_finished)
-        super(ScipyOptimizer, self).save(info, save_file)
+        for var in variables:
+            assert isinstance(var, ContinuousVariable)
 
-    def valid_restore_file(self, save_file):
-        try:
-            info = self.load(save_file)
-        except Exception:
-            return False
-        if not isinstance(info, tuple):
-            return False
-        if not len(info) == 5:
-            return False
-        if not isinstance(info[2], int):
-            return False
-        if not isinstance(info[4], bool):
-            return False
-        return True
-
-    def prepare_callback(self, f, callback, save_file=None):
-        new_callback = super(ScipyOptimizer, self).prepare_callback(callback)
-
-        @wraps(new_callback)
-        def wrapper(xk, result_obj=None):
+    def _get_scipy_callback(self, f, iter_callback):
+        """
+        Returns callback function that calls iter_callback but has notation
+        for scipy methods.
+        """
+        @wraps(iter_callback)
+        def wrapper_for_scipy(xk, result_obj=None):
             yk = f(xk)
-            r = new_callback(xk, yk)
-            if wrapper.x_best is None or wrapper.y_best > yk:
-                wrapper.x_best = xk
-                wrapper.y_best = yk
-            n_eval = None
-            if hasattr(f, 'cache_info'):
-                n_eval = f.cache_info.misses
-            self.save(self.inv_transform(wrapper.x_best),
-                      self.sign * wrapper.y_best, wrapper.n_iter, n_eval,
-                      False, save_file)
-            wrapper.n_iter += 1
-            return r
-
-        wrapper.x_best = None
-        wrapper.n_iter = 0
-        return wrapper
+            # Correct X_iter and Y_iter will be updated by each call of f
+            iter_callback(xk, yk, X_iter=[xk], Y_iter=[yk])
+        return wrapper_for_scipy
 
     def get_addit_scipy_kwargs(self, variables):
         raise NotImplementedError
 
-    def optimize(self, f, variables, x0, args=(), options={},
-                 linear_constrain=None, maxiter=None, maxeval=None,
-                 verbose=0, callback=None, eval_file=None, report_file=None,
-                 save_file=None, restore_file=None, restore_points_only=False,
-                 restore_x_transform=None):
+    def _optimize(self, f, variables, x0, options,
+                  maxiter, maxeval, iter_callback):
         """
         Run Scipy optimization.
-
-
-        :param f: Target function to optimize.
-        :type f: func
-        :param variables: Variables of `f` which values should be optimized.
-        :type variables: :class:`gadma.utils.VariablePool`
-        :param x0: Initial point to start optimization.
-        :type x0: list
-        :param args: Additional arguments of target function.
-        :type args: tuple
-        :param options: Additional options kwargs for scipy optimization.
-        :type options: dict
-        :param maxiter: Maximum number of iterations to run.
-        :type maxiter: int
-        :param maxeval: Maximum number of evaluations to run. If None then run
-                        until converge.
-        :type maxeval: int
-        :param verbose: Verbosity of the output. If 0 then no reports.
-        :type verbose: int
-        :param callback: Callback to run after each iteration of optimization.
-                         Should be called as `callback(x, y)`
-        :type callback: function
-        :param report_file: File to save report. Check option `verbose`.
-        :type report_file: str
-        :param eval_file: File to save all evaluations of the function `f`.
-        :type eval_file: str
-        :param save_file: File to save information during optimization for its
-                          reconstruction.
-        :type save_file: str
-        :param restore_file: File to restore previous run.
-        :type restore_file: str
-        :param restore_points_only: Restore point/points from previous run and
-                                    run optimization from them once more. If
-                                    False then previous run will be resumed.
-        :type restore_points_only: bool
-        :param restore_x_transform: Restore points but transform them before
-                                    usage in this run.
-        :type restore_x_transform: function
         """
-        self.check_variables(variables)
-        # Create logging files
-        if eval_file is not None:
-            ensure_file_existence(eval_file)
-        if report_file is not None:
-            ensure_file_existence(report_file)
-        if save_file is not None:
-            ensure_file_existence(save_file)
-
-        is_finished = False
-        if restore_file is not None and self.valid_restore_file(restore_file):
-            x0, _y, _n_iter, _n_eval, is_finished = self.load(restore_file)
-            if restore_x_transform is not None:
-                x0 = restore_x_transform(x0)
-            if restore_points_only:
-                if maxiter is not None:
-                    maxiter -= _n_iter
-                if maxeval is not None and _n_eval is not None:
-                    maxeval -= _n_eval
-                is_finished = False
-
         x0 = np.array(x0, dtype=np.float)
+        y = f(x0)
+        iter_callback(x0, y, [x0], [y])
 
-        # Fix args in function f and cache it.
-        # TODO: not intuitive solution, think more about it.
-        # Fix args (cache we did at the end)
-        prepared_f = self.prepare_f_for_opt(f, args, cache=False)
-        # Wrap for automatic evaluation log
-        wrapped_f = eval_wrapper(prepared_f, eval_file)
-        wrapped_f = cache_func(wrapped_f)
-        # Wrap for writing report
-        finally_wrapped_f = self.wrap_for_report(wrapped_f, variables,
-                                                 verbose, report_file)
+        if maxiter == 0 or maxeval == 0:
+            self.run_info.result.success = True
+            self.run_info.result.status = 0
+            self.run_info.result.message = "maxiter or maxeval is 0"
 
-        f_in_opt = partial(self.evaluate, finally_wrapped_f)
-        f_in_opt = fix_args(f_in_opt, (), linear_constrain)
+        if len(variables) == 0:
+            self.run_info.result.success = True
+            self.run_info.result.status = 0
+            self.run_info.result.message = "Zero parameters to optimize."
+            return self.run_info.result
 
-        # Cache our final version of function
-#        f_in_opt = cache_func(f_in_opt)
-#        print(f_in_opt.cache_info)
-
-        x0_in_opt = self.transform(x0)
-
-        if is_finished or maxiter == 0 or maxeval == 0:
-            success = True
-            status = 0
-            message = "maxiter or maxeval is 0"
-            x = x0
-            y = self.sign * f_in_opt(x0_in_opt)
-            if callback is not None:
-                callback(x, y)
-            return OptimizerResult(x, y, success, status, message,
-                                   [x], [y], 1, 0, X_out=[], Y_out=[])
-
-        self.check_variables(variables)
         options = copy.copy(options)
         if maxiter is not None:
             options['maxiter'] = int(maxiter)
@@ -350,54 +262,34 @@ class ScipyOptimizer(LocalOptimizer):
                     options[kwarg] = min(maxeval, maxiter)
 
         # Create callback for scipy
-        if callback is not None:
-            if 'callback' in options:
-                raise ValueError("You have set two callbacks - first in "
-                                 "options and second via callback. Please "
-                                 "specify one callback.")
-            callback = self.prepare_callback(f_in_opt, callback)
+        if 'callback' in options:
+            raise ValueError("You have set callback in options. Please "
+                             "specify callback via optimize method.")
+        callback = self._get_scipy_callback(f, iter_callback)
 
-        # IMPORTANT we cannot run scipy optimization for search of 0 params
-        if len(variables) == 0:
-            x = []
-            y = self.sign * f_in_opt(x)
-            callback(x, y)
-            success = True
-            status = 0
-            message = "Zero parameters to optimize."
-            result = OptimizerResult(x, y, success, status, message,
-                                     [x], [y], 1, 1)
-            return result
+        # We want to wrap f in order to update result.X and result.Y
+        def f_in_scipy(x):
+            y = f(x)
+            iter_callback(x, y, [x], [y])
+            # we need to fix n_iter as it is not an iteration but evaluation
+            self.run_info.result.n_iter -= 1
+            return y
 
         # Run optimization of SciPy
         addit_kw = self.get_addit_scipy_kwargs(variables)
-        res_obj = scipy.optimize.minimize(f_in_opt, x0_in_opt, args=(),
+        res_obj = scipy.optimize.minimize(f_in_scipy, x0, args=(),
                                           method=self.method, options=options,
                                           callback=callback, **addit_kw)
+        # Call callback after the last iteration
+        callback(res_obj.x)
         # Construct OptimizerResult object to return
         result = OptimizerResult.from_SciPy_OptimizeResult(res_obj)
+        assert self.sign * self.run_info.result.y <= result.y
+        self.run_info.result.success = result.success
+        self.run_info.result.message = result.message
+        self.run_info.result.status = result.status
 
-        # check if our initial point was good
-        y_on_x0 = f_in_opt(x0_in_opt)
-        if callback is not None:
-            callback(x0_in_opt, y_on_x0)
-        if y_on_x0 <= result.y:
-            result.x = x0_in_opt
-            result.y = y_on_x0
-        result.x = self.inv_transform(result.x)
-        result.y = self.sign * result.y
-
-        result.X = [np.array(_x) for _x, _ in wrapped_f.cache_info.all_calls]
-        result.Y = [self.sign * _y
-                    for _, _y in wrapped_f.cache_info.all_calls]
-
-        result.n_eval = wrapped_f.cache_info.misses
-#        print(str(prepared_f.cache_info))
-
-        self.save(result.x, result.y, result.n_iter, result.n_eval,
-                  True, save_file)
-
-        return result
+        return self.run_info.result
 
 
 class ScipyUnconstrOptimizer(ScipyOptimizer, UnconstrainedOptimizer):
@@ -422,7 +314,7 @@ class ScipyConstrOptimizer(ScipyOptimizer, ConstrainedOptimizer):
     opt_type = 'constrained'
 
     def get_addit_scipy_kwargs(self, variables):
-        return {'bounds': [self.transform(var.domain) for var in variables]}
+        return {'bounds': [var.domain for var in variables]}
 
 
 register_local_optimizer('L-BFGS-B', ScipyConstrOptimizer('L-BFGS-B'))
@@ -469,73 +361,51 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
     def maximize(self, new_value):
         self.optimizer.maximize = new_value
 
-    def evaluate_inner(self, f, x, bounds, args=()):
-        # Returns 'true' values of function.
-        for val, domain in zip(x, bounds):
-            if val < domain[0] or val > domain[1]:
-                # we have translate inf to 'true' value
-                return self.sign * self.out_of_bounds
-        y = f(self.inv_transform(x), *args)
-        if y is None or np.isnan(y):
-            return self.sign * np.inf
-        return y
+    def evaluate(self, f, variables, x, args=(), linear_constrain=None):
+        if np.any([not var.correct_value(el)
+                   for el, var in zip(x, variables)]):
+            return self.sign * self.out_of_bounds
+        # we multiply by sign to avoid double * by -1 and for correct optim.
+        return self.sign * super(ManuallyConstrOptimizer, self).evaluate(
+            f=f,
+            variables=variables,
+            x=x, args=args,
+            linear_constrain=linear_constrain
+        )
 
-    def prepare_callback(self, callback):
-        @wraps(callback)
-        def wrapper(x, y):
-            return callback(self.inv_transform(x), y)
-        return wrapper
-
-    def valid_restore_file(self, save_file):
-        return self.optimizer.valid_restore_file(save_file)
-
-    def optimize(self, f, variables, x0, args=(), options={},
-                 linear_constrain=None, maxiter=None, maxeval=None,
-                 verbose=0, callback=None, eval_file=None, report_file=None,
-                 save_file=None, restore_file=None, restore_points_only=False,
-                 restore_x_transform=None):
-        self.check_variables(variables)
-        x0 = np.array(x0, dtype=np.float)
-        x0_in_opt = self.optimizer.transform(self.transform(x0))
-        bounds = self.transform([var.domain for var in variables])
+    def _optimize(self, f, variables, x0, options,
+                  maxiter, maxeval, iter_callback):
         vars_in_opt = copy.deepcopy(variables)
         if isinstance(self.optimizer, UnconstrainedOptimizer):
-            for var in vars_in_opt:
-                var.domain = np.array([-np.inf, np.inf])
-        # Fix args in function f and cache it.
-        # TODO: not intuitive solution, think more about it.
-        # Fix args
-        prepared_f = self.prepare_f_for_opt(f, args, cache=True)
-        # Write automatix evaluation log. Incide optimizer it could different
-        # x in function as there can be extra logarithm.
-        wrapped_f = eval_wrapper(prepared_f, eval_file)
-        # The same with report_file
-        f_in_opt = partial(self.evaluate_inner, wrapped_f)
-        f_in_opt = self.wrap_for_report(f_in_opt, variables,
-                                        verbose, report_file)
-#        f_in_opt = fix_args(f_in_opt, (linear_constrain,))
+            for i in range(len(vars_in_opt)):
+                vars_in_opt[i].domain = [-np.inf, np.inf]
 
-        if callback is not None:
-            callback = self.prepare_callback(callback)
-        points_only = restore_points_only
-        x_transf = restore_x_transform
-        result = self.optimizer.optimize(f_in_opt, vars_in_opt, x0_in_opt,
-                                         args=(bounds,), options=options,
-                                         verbose=0,
-                                         linear_constrain=linear_constrain,
-                                         maxiter=maxiter,
-                                         maxeval=maxeval, callback=callback,
-                                         eval_file=None,
-                                         report_file=None,
-                                         save_file=save_file,
-                                         restore_file=restore_file,
-                                         restore_points_only=points_only,
-                                         restore_x_transform=x_transf)
-        # TODO: need to check result.X as they should be transformed somehow.
-        result.x = self.inv_transform(result.x)
-        result.X = [self.inv_transform(x) for x in result.X]
-        result.n_eval = prepared_f.cache_info.misses
-        return result
+        def callback(x, y):
+            # y is translated back by *(-1) we want correct comparison
+            y = self.optimizer.sign * y
+            iter_callback(x, y, [x], [y])
+            opt_run_info = self.optimizer.run_info.result.X
+            self.run_info.result.X = [apply_transform(variables,
+                                                      self.inv_transform,
+                                                      x)
+                                      for x in opt_run_info]
+            self.run_info.result.Y = self.optimizer.run_info.result.Y
+            self.run_info.result.n_iter = self.optimizer.run_info.result.n_iter
+
+        # Dadi and moments use eps equal to 1e-3. It turned out to be good
+        # value. So we want to use it in our optimizers.
+        if "eps" not in options:
+            options["eps"] = 1e-3
+
+        self.optimizer.optimize(f=f,
+                                variables=vars_in_opt,
+                                x0=x0,
+                                args=(),
+                                options=options,
+                                maxiter=maxiter,
+                                maxeval=maxeval,
+                                callback=callback)
+        return self.run_info.result
 
 
 register_local_optimizer('BFGS',

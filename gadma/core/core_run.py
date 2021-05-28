@@ -89,7 +89,9 @@ class CoreRun(object):
             self.optimize_kwargs['report_file'] = self.report_file
             self.optimize_kwargs['save_file'] = self.save_file
             self.optimize_kwargs['global_maxiter'] = settings.global_maxiter
+            self.optimize_kwargs['global_maxeval'] = settings.global_maxeval
             self.optimize_kwargs['local_maxiter'] = settings.local_maxiter
+            self.optimize_kwargs['local_maxeval'] = settings.local_maxeval
             # Create directory for pictures if needed
             if self.settings.draw_models_every_n_iteration != 0:
                 self.pictures_dir = os.path.join(self.output_dir, 'pictures')
@@ -150,7 +152,7 @@ class CoreRun(object):
         the `output_dir` of this run.
 
         :param x: Vector of values for model parameters.
-        :param y: Value of log-likelihood for this values.
+        :param y: Value of log-likelihood for this values.
         """
         best_by = 'log-likelihood'
         if self.aic_score:
@@ -549,9 +551,9 @@ class CoreRun(object):
                     copy.deepcopy(old_init_model))
                 copy_old_model = copy.deepcopy(old_init_model)
                 copy_self_model = copy.deepcopy(self.model)
-                copy_old_model.have_dyns = False
+                copy_old_model.has_dyns = False
                 copy_old_model = copy_old_model.from_structure(structure)
-                copy_self_model.have_dyns = False
+                copy_self_model.has_dyns = False
                 copy_self_model = copy_self_model.from_structure(structure)
                 ls_x_transform = partial(
                     copy_self_model.transform_values_from_other_model,

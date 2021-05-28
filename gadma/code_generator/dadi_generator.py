@@ -1,6 +1,8 @@
-from ..models import CustomDemographicModel, Epoch, Split, BinaryOperation
+from ..models import CustomDemographicModel, EpochDemographicModel,\
+    Epoch, Split, BinaryOperation
 from ..utils import Variable, DiscreteVariable, DynamicVariable
 import sys
+import copy
 
 FUNCTION_NAME = 'model_func'
 
@@ -25,10 +27,15 @@ def _print_dadi_func(model, values):
         ret_str += f"{FUNCTION_NAME} = module.model_func\n\n"
         return ret_str
 
+    assert isinstance(model, EpochDemographicModel)
+
     var2value = model.var2value(values)  # OrderedDict
 
     f_vars = [x for x in model.variables
               if not isinstance(x, DiscreteVariable)]
+    if model.has_anc_size:
+        if isinstance(model.Nanc_size, Variable):
+            f_vars.pop(f_vars.index(model.Nanc_size))
     ret_str = f"def {FUNCTION_NAME}(params, ns, pts):\n"
     ret_str += "\t%s = params\n" % ", ".join([x.name for x in f_vars])
     ret_str += "\txx = dadi.Numerics.default_grid(pts)\n"\
@@ -166,13 +173,17 @@ def _print_dadi_load_data(data_holder):
     return _print_load_data(data_holder, is_fs, mode='dadi')
 
 
-def _print_p0(values):
+def _print_p0(engine, values):
     """
     Returns code for p0 with values.
 
     :param values: Values for p0.
     """
-    return "p0 = [%s]\n" % ", ".join([str(x) for x in values])
+    p0 = copy.copy(values)
+    if not engine.multinom:
+        if isinstance(engine.model.Nanc_size, Variable):
+            p0.pop(engine.model.variables.index(engine.model.Nanc_size))
+    return "p0 = [%s]\n" % ", ".join([str(x) for x in p0])
 
 
 def _print_dadi_simulation():
@@ -182,6 +193,16 @@ def _print_dadi_simulation():
     ret_str = f"func_ex = dadi.Numerics.make_extrap_log_func"\
               f"({FUNCTION_NAME})\n"
     ret_str += "model = func_ex(p0, ns, pts)\n"
+    return ret_str
+
+
+def _print_ll(engine, mode='dadi'):
+    if engine.multinom:
+        ret_str = f"ll_model = {mode}.Inference.ll_multinom(model, data)\n"
+    else:
+        ret_str = f"ll_model = {mode}.Inference.ll(theta * model, data)\n"
+    ret_str += "print('Model log likelihood (LL(model, data)): "\
+               "{0}'.format(ll_model))\n"
     return ret_str
 
 
@@ -196,23 +217,21 @@ def _print_main(engine, values, mode='dadi', nanc=None):
                  was made by other engine and nanc from this engine will be
                  different to optimal.
     """
-    ret_str = f"ll_model = {mode}.Inference.ll_multinom(model, data)\n"
-    ret_str += "print('Model log likelihood (LL(model, data)): "\
-               "{0}'.format(ll_model))\n"
-    ret_str += f"\ntheta = {mode}.Inference.optimal_sfs_scaling"\
-               "(model, data)\n"
-
-    ret_str += "print('Optimal value of theta: {0}'.format(theta))\n"
+    ret_str = ""
+    if engine.multinom:
+        ret_str += _print_ll(engine, mode)
+        ret_str += f"\ntheta = {mode}.Inference.optimal_sfs_scaling"\
+                   "(model, data)\n"
+        ret_str += "print('Optimal value of theta: {0}'.format(theta))\n\n"
 
     if nanc is not None:
-        ret_str += f"Nanc = {nanc}  # {mode} was not used for inference\n"
-        return ret_str
+        ret_str += f"Nanc = {nanc}\n"
 
     mu_is_val = engine.model.mu is not None
     data_holder_is_val = engine.data_holder is not None
     seq_len_is_val = engine.data_holder.sequence_length is not None
 
-    mu_and_L = mu_is_val and data_holder_is_val and not seq_len_is_val
+    mu_and_L = mu_is_val and data_holder_is_val and seq_len_is_val
 
     if engine.model.theta0 is not None or mu_and_L:
         if engine.model.theta0 is not None:
@@ -221,15 +240,23 @@ def _print_main(engine, values, mode='dadi', nanc=None):
         elif mu_and_L:
             ret_str += f"mu = {engine.model.mu}\n"
             ret_str += f"L = {engine.data_holder.sequence_length}\n"
-            ret_str += "Nanc = int(theta / (4 * mu * L))\n"
-        ret_str += "print('Size of ancestral population: {0}'.format(Nanc))\n"
+            ret_str += "theta0 = 4 * mu * L\n"
     else:
-        ret_str += "Nanc = None\n"
+        ret_str += "# As no theta0 or mut. rate + seq. length are not set\n"
+        ret_str += "theta0 = 1.0\n"
+    if engine.multinom:
+        ret_str += "Nanc = int(theta / theta0)\n"
+    else:
+        ret_str += "theta = Nanc * theta0\n"
+
+    ret_str += "print('Size of ancestral population: {0}'.format(Nanc))\n"
+    if not engine.multinom:
+        ret_str += _print_ll(engine, mode)
     return ret_str
 
 
 def _print_dadi_main(engine, values, nanc=None):
-    ret_str = _print_p0(values)
+    ret_str = _print_p0(engine, values)
     ret_str += _print_dadi_simulation()
     ret_str += _print_main(engine, values, mode='dadi', nanc=nanc)
     return ret_str
@@ -253,13 +280,21 @@ def print_dadi_code(engine, values, pts, filename,
 
     :note: the last two arguments are ignored as dadi could not draw models.
     """
+    # check if multinom and we should save Nanc value
+    if not engine.multinom:
+        var2value = engine.model.var2value(values)
+        Nanc_value = engine.get_value_from_var2value(var2value,
+                                                     engine.model.Nanc_size)
+        assert nanc is None or Nanc_value == nanc, f"{nanc}, {Nanc_value}"
+        nanc = Nanc_value
+    values = engine.model.translate_values(units="genetic", values=values)
+    var2value = engine.model.var2value(values)
     ret_str = "import dadi\nimport numpy as np\n\n"
     ret_str += _print_dadi_func(engine.model, values)
     ret_str += "\n"
     ret_str += _print_dadi_load_data(engine.data_holder)
     ret_str += "pts = %s\nns = data.sample_sizes\n\n" % str(pts)
 
-    var2value = engine.model.var2value(values)
     values = [var2value[var] for var in engine.model.variables
               if not isinstance(var, DiscreteVariable)]
     ret_str += _print_dadi_main(engine, values, nanc)

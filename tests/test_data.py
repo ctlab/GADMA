@@ -26,16 +26,16 @@ except ImportError:
     MOMI_NOT_AVAILABLE = True
 
 # Test data
-DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
-YRI_CEU_DATA = os.path.join(DATA_PATH, "YRI_CEU.fs")
-YRI_CEU_NO_LABELS_DATA = os.path.join(DATA_PATH, "YRI_CEU_old.fs")
-YRI_CEU_F_DATA = os.path.join(DATA_PATH, "YRI_CEU_folded.fs")
-SNP_DATA = os.path.join(DATA_PATH, "data.txt")
-DAMAGED_SNP_DATA = os.path.join(DATA_PATH, "damaged_data.txt")
-STRANGE_DATA = os.path.join(DATA_PATH, "some_strange_data")
+DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data", "DATA")
+YRI_CEU_DATA = os.path.join(DATA_PATH, "sfs", "YRI_CEU.fs")
+YRI_CEU_NO_LABELS_DATA = os.path.join(DATA_PATH, "sfs", "YRI_CEU_old.fs")
+YRI_CEU_F_DATA = os.path.join(DATA_PATH, "sfs", "YRI_CEU_folded.fs")
+SNP_DATA = os.path.join(DATA_PATH, "sfs", "data.txt")
+DAMAGED_SNP_DATA = os.path.join(DATA_PATH, "sfs", "damaged_data.txt")
+STRANGE_DATA = os.path.join(DATA_PATH, "sfs", "some_strange_data")
 
-VCF_DATA = os.path.join(DATA_PATH, "data.vcf")
-POPMAP = os.path.join(DATA_PATH, "popmap")
+VCF_DATA = os.path.join(DATA_PATH, "vcf", "data.vcf")
+POPMAP = os.path.join(DATA_PATH, "vcf", "popmap")
 
 class TestDataHolder(unittest.TestCase):
 

@@ -16,15 +16,16 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "test_data")
 
 class TestConfidenceIntervals(unittest.TestCase):
     def test_run_boots(self):
-        dir_boot = os.path.join(DATA_DIR, "small_1_pop_bootstrap")
-        params_file = os.path.join(DATA_DIR, "ls_params")
+        dir_boot = os.path.join(DATA_DIR, "DATA", "sfs",
+                                "small_1_pop_bootstrap")
+        params_file = os.path.join(DATA_DIR, "PARAMS", "ls_params")
         if os.path.exists(params_file):
             os.remove(params_file)
 
         for engine in all_engines():
             model_name = f"small_1pop_dem_model_{engine.id}.py"
-            model_name = os.path.join(DATA_DIR, model_name)
-            no_ids_model_name = os.path.join(DATA_DIR,
+            model_name = os.path.join(DATA_DIR, "MODELS", model_name)
+            no_ids_model_name = os.path.join(DATA_DIR, "MODELS",
                                              "small_1pop_dem_model_no_ids.py")
             p0 = [2, 0.1, 0.5, 2]  # nuB, nuF, TB, TF
             output_dir = os.path.join(DATA_DIR, f"run_ls_out_{engine.id}")

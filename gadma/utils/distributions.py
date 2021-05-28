@@ -91,12 +91,43 @@ def custom_generator(variables):
     values = list()
     for var in variables:
         x = var.resample()
-        values.append(var.translate_units(x, N_A))
+        if var.log_transformed:
+            x = np.exp(x)
+        x = var._transform_value_from_gen_to_phys(value=x, Nanc=N_A)
+        if var.log_transformed:
+            x = np.log(x)
+        values.append(x)
         if isinstance(var, ContinuousVariable):
             values[-1] = max(values[-1], var.domain[0])
             values[-1] = min(values[-1], var.domain[1])
     return np.array(values, dtype=get_correct_dtype(values))
 
+
+class DemographicGenerator:
+
+    def __init__(self, genetic_generator, N_A_domain, gen_time=None):
+        self.genetic_generator = genetic_generator
+        self.gen_time = gen_time
+        self.N_A_domain = N_A_domain
+
+    def __call__(self, domain, *args, **kwargs):
+        def _correct_val(val):
+            return min(domain[1], max(domain[0], val))
+
+        N_A = uniform_generator(domain=self.N_A_domain)
+        value = self.genetic_generator.__call__(domain, *args, **kwargs)
+
+        if self.gen_time is not None:
+            return _correct_val(type(N_A)(2 * self.gen_time * N_A * value))
+        return _correct_val(type(N_A)(N_A * value))
+
+
+def rescale_generator(generator, rescale_function):
+    def wrap_generator(domain, *args, **kwargs):
+        domain = [rescale_function(x, reverse=True) for x in domain]
+        res = generator(np.array(domain), *args, **kwargs)
+        return rescale_function(res, reverse=False)
+    return wrap_generator
 
 # def multiply_generator(gen1, domain1, gen2, domain2):
 #     def generator(domain):

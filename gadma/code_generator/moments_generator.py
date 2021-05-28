@@ -1,4 +1,5 @@
-from ..models import CustomDemographicModel, Epoch, Split, BinaryOperation
+from ..models import CustomDemographicModel, EpochDemographicModel,\
+    Epoch, Split, BinaryOperation
 from ..utils import DiscreteVariable, DynamicVariable, Variable
 from .dadi_generator import FUNCTION_NAME, _print_p0, _print_main,\
                             _print_load_data
@@ -28,10 +29,15 @@ def _print_moments_func(model, values, dt_fac):
         ret_str += f"{FUNCTION_NAME} = module.model_func\n\n"
         return ret_str
 
+    assert isinstance(model, EpochDemographicModel)
+
     var2value = model.var2value(values)  # OrderedDict
 
     f_vars = [x for x in model.variables
               if not isinstance(x, DiscreteVariable)]
+    if model.has_anc_size:
+        if isinstance(model.Nanc_size, Variable):
+            f_vars.pop(f_vars.index(model.Nanc_size))
     ret_str = f"def {FUNCTION_NAME}(params, ns):\n"
     ret_str += "\t%s = params\n" % ", ".join([x.name for x in f_vars])
     ret_str += "\tsts = moments.LinearSystem_1D.steady_state_1D"\
@@ -193,7 +199,7 @@ def _print_model_plotting(engine, nanc, gen_time, gen_time_units):
 
 
 def _print_moments_main(engine, values, nanc, gen_time, gen_time_units):
-    ret_str = _print_p0(values)
+    ret_str = _print_p0(engine, values)
     ret_str += _print_moments_simulation()
     ret_str += _print_main(engine, values, mode='moments', nanc=nanc)
     ret_str += _print_model_plotting(engine, nanc, gen_time, gen_time_units)
@@ -217,14 +223,21 @@ def print_moments_code(engine, values, dt_fac, filename,
     :param gen_time_units: Units of time. String.
 
     """
-
+    # check if multinom and we should save Nanc value
+    if not engine.multinom:
+        var2value = engine.model.var2value(values)
+        Nanc_value = engine.get_value_from_var2value(var2value,
+                                                     engine.model.Nanc_size)
+        assert nanc is None or Nanc_value == nanc, f"{nanc}, {Nanc_value}"
+        nanc = Nanc_value
+    values = engine.model.translate_values(units="genetic", values=values)
+    var2value = engine.model.var2value(values)
     ret_str = "import moments\nimport numpy as np\n\n"
     ret_str += _print_moments_func(engine.model, values, dt_fac)
     ret_str += "\n"
     ret_str += _print_moments_load_data(engine.data_holder)
     ret_str += "ns = data.sample_sizes\n\n"
 
-    var2value = engine.model.var2value(values)
     values = [var2value[var] for var in engine.model.variables
               if not isinstance(var, DiscreteVariable)]
     ret_str += _print_moments_main(engine, values, nanc,
