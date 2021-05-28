@@ -117,9 +117,16 @@ class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         if hasattr(run_info, "gp_train_times"):
             print("\nTime for GP training:", run_info.gp_train_times[n_iter],
                   file=stream)
+        if hasattr(run_info, "gp_predict_times"):
+            print("Time for GP prediction:",
+                  run_info.gp_predict_times[n_iter],
+                  file=stream)
         if hasattr(run_info, "acq_opt_times"):
             print("Time for acq. optim.:",
                   run_info.acq_opt_times[n_iter], file=stream)
+        if hasattr(run_info, "eval_times"):
+            print("Time of evaluation:",
+                  run_info.eval_times[n_iter], file=stream)
         if hasattr(run_info, "iter_times"):
             print("Total time of iteration:",
                   run_info.iter_times[n_iter], file=stream)
@@ -602,13 +609,15 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
     def _create_run_info(self):
         run_info = super(SMACBayesianOptimizer, self)._create_run_info()
         run_info.gp_train_times = []
+        run_info.gp_predict_times = []
         run_info.acq_opt_times = []
+        run_info.eval_times = []
         run_info.iter_times = []
         return run_info
 
     def _update_run_info(self, run_info, x_best, y_best, X, Y,
-                         n_eval, gp_train_time=None, acq_opt_time=None,
-                         iter_time=None):
+                         n_eval, gp_train_time=None, gp_predict_time=None,
+                         acq_opt_time=None, eval_time=None, iter_time=None):
         super(SMACBayesianOptimizer, self)._update_run_info(
             run_info=run_info,
             x_best=x_best,
@@ -618,7 +627,9 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             n_eval=n_eval
         )
         run_info.gp_train_times.append(gp_train_time)
+        run_info.gp_predict_times.append(gp_predict_time)
         run_info.acq_opt_times.append(acq_opt_time)
+        run_info.eval_times.append(eval_time)
         run_info.iter_times.append(iter_time)
         return run_info
 
@@ -673,6 +684,7 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         # begin Bayesian optimization
         while self.run_info.result.n_iter <= maxeval:
             total_t_start = time.time()
+            
             X, y = rh2epm.transform(runhistory)
 
             # If all are not finite then we return nothing
@@ -687,11 +699,14 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             model.train(X, y)
             gp_train_time = time.time() - t_start
 
+            t_start = time.time()
             predictions = model.predict_marginalized_over_instances(X)[0]
             best_index = np.argmin(predictions)
             best_observation = y[best_index]
             x_best_array = X[best_index]
+            gp_predict_time = time.time() - t_start
 
+            t_start = time.time()
             acq_fun.update(
                 model=model,
                 eta=best_observation,
@@ -699,16 +714,12 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                 num_data=len(X),
                 X=X,
             )
-
-            t_start = time.time()
             new_config_iterator = acq_fun_opt.maximize(
                 runhistory=runhistory,
                 stats=stats,
                 num_points=10000,
                 random_configuration_chooser=rnd_chooser,
             )
-            acq_opt_time = time.time() - t_start
-
             accept = False
             for next_config in new_config_iterator:
                 if next_config in X:
@@ -717,16 +728,20 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                     accept = True
                     break
             assert accept
+            acq_opt_time = time.time() - t_start
 
+            t_start = time.time()
             x = [next_config[var.name] for var in variables]
             cost = f(x)
-
+            eval_time = time.time() - t_start
             add_to_runhistory(next_config, cost)
 
             total_iter_time = time.time() - total_t_start
             update_kwargs = {"gp_train_time": gp_train_time,
+                             "gp_predict_time": gp_predict_time,
                              "acq_opt_time": acq_opt_time,
-                             "iter_time": total_iter_time}
+                             "eval_time": eval_time,
+                             "iter_time": total_iter_time,}
             iter_callback(x, cost, [x], [cost], **update_kwargs)
 
         return self.run_info.result
