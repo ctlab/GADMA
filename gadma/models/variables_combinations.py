@@ -58,7 +58,7 @@ class UnaryOperation(Operation):
 
     def get_value(self, values):
         var2value = self.var2value(values)
-        if isinstance(self.arg, BinaryOperation):
+        if isinstance(self.arg, Operation):
             vals = [var2value[var] for var in self.arg.variables]
             val = self.arg.get_value(vals)
         else:
@@ -289,10 +289,16 @@ class Log(UnaryOperation):
 
 
 def operation_creation(operation, arg1, arg2=None):
-    if arg2 is None and operation is not Exp:
-        raise ValueError(
-            "All operation except Exp should take 2 arguments"
-        )
+    if issubclass(operation, UnaryOperation):
+        if arg2 is not None:
+            raise ValueError(
+                f"{operation} should take 1 arguments"
+            )
+    else:
+        if arg2 is None:
+            raise ValueError(
+                f"{operation} should take 2 arguments"
+            )
     if isinstance(arg1, (Model, Variable)) or \
             isinstance(arg2, (Model, Variable)):
         if operation is Addition:
@@ -305,12 +311,15 @@ def operation_creation(operation, arg1, arg2=None):
             return create_multiplication(arg1, arg2)
         if operation is Exp:
             return create_exp(arg1)
+        if operation is Log:
+            return create_log(arg1)
         raise ValueError(
             f"Can not create operation {operation}"
         )
     else:
-        if operation is Exp:
-            return Exp.operation(arg1)
+        if issubclass(operation, UnaryOperation):
+            return operation.operation(arg1)
+
         return operation.operation(arg1, arg2)
 
 
@@ -343,6 +352,8 @@ def create_division(arg1, arg2):
     if not isinstance(arg2, (Model, Variable)):
         if np.isclose(arg2, 0):
             raise ValueError("Can not divide by zero")
+        if np.isclose(arg2, 1):
+            return arg1
     return Division(arg1, arg2)
 
 
@@ -361,7 +372,12 @@ def create_multiplication(arg1, arg2):
 
 
 def create_exp(arg):
-    if not isinstance(arg, (Model, Variable)):
-        if np.isclose(arg, 0):
-            return 1
+    if isinstance(arg, Log):
+        return arg.arg
     return Exp(arg)
+
+
+def create_log(arg):
+    if isinstance(arg, Exp):
+        return arg.arg
+    return Log(arg)

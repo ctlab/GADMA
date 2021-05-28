@@ -3,7 +3,7 @@ import unittest
 from gadma import *
 from gadma import ContinuousVariable
 from gadma.models import *
-from gadma.models.variables_combinations import BinaryOperation, operation_creation
+from gadma.models.variables_combinations import BinaryOperation, operation_creation, Exp, Log
 from gadma.models.coalescent_demographic_model import CoalescentDemographicModel
 from gadma.engines import DadiEngine
 
@@ -13,6 +13,7 @@ import copy
 
 try:
     import dadi
+
     DADI_NOT_AVAILABLE = False
 except ImportError:
     DADI_NOT_AVAILABLE = True
@@ -35,14 +36,15 @@ class TestModels(unittest.TestCase):
         m.add_variable(var)
         self.assertRaises(ValueError, m.add_variable, 1.0)
         self.assertRaises(TypeError, m.var2value, set())
-        
+
     def dadi_wrapper(self, func):
         def wrapper(param, ns, pts):
             xx = dadi.Numerics.default_grid(pts)
             phi = dadi.PhiManip.phi_1D(xx)
             phi = func(param, xx, phi)
-            sfs = dadi.Spectrum.from_phi(phi, ns, [xx]*len(ns))
+            sfs = dadi.Spectrum.from_phi(phi, ns, [xx] * len(ns))
             return sfs
+
         return wrapper
 
     def get_variables_for_gut_2009(self):
@@ -66,7 +68,7 @@ class TestModels(unittest.TestCase):
                 spec.loader.exec_module(module)
                 sys.modules['module'] = module
                 func = getattr(module, 'model_func')
-                variables = self.get_variables_for_gut_2009()[:-1] 
+                variables = self.get_variables_for_gut_2009()[:-1]
                 dm = CustomDemographicModel(func, variables)
                 dm.as_custom_string([var.resample() for var in dm.variables])
                 dm.as_custom_string({var.name: var.resample()
@@ -155,7 +157,7 @@ class TestModels(unittest.TestCase):
         dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', 'Exp'])
 
         dic = {'nu1F': 1.880, 'nu2B': 0.0724, 'nu2F': 1.764, 'm': 0.930,
-               'Tp':  0.363, 'T': 0.112, 'Dyn': 'Exp'}
+               'Tp': 0.363, 'T': 0.112, 'Dyn': 'Exp'}
 
         data = SFSDataHolder(YRI_CEU_DATA)
         d = DadiEngine(model=dm, data=data)
@@ -174,14 +176,14 @@ class TestModels(unittest.TestCase):
         dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', Dyn])
 
         dic = {'nu1F': 1.880, nu2B: 0.0724, 'nu2F': 1.764, 'm': 0.930,
-               'Tp':  0.363, 'T': 0.112, 'Dyn': 'Exp', 'SudDyn': 'Sud'}
+               'Tp': 0.363, 'T': 0.112, 'Dyn': 'Exp', 'SudDyn': 'Sud'}
 
         data = SFSDataHolder(YRI_CEU_DATA)
         d = DadiEngine(model=dm, data=data)
-        values = dic#[dic[var.name] for var in dm.variables]
+        values = dic  # [dic[var.name] for var in dm.variables]
         ll1 = d.evaluate(values, pts=[40, 50, 60])
         n_par_before = dm.get_number_of_parameters(dic)
-        
+
         dm.fix_variable(Dyn, 'Exp')
         d.model = dm
         ll2 = d.evaluate(dic, pts=[40, 50, 60])
@@ -219,9 +221,9 @@ class TestModels(unittest.TestCase):
         self.assertRaises(ValueError, dm.fix_variable, var, 3)
         self.assertRaises(ValueError, dm.unfix_variable, var)
 
-#        dm.events[2].set_value(nu2F, 1.0)
-#        n_par_after = dm.get_number_of_parameters(dic)
-#        self.assertEqual(n_par_sud_model, n_par_after + 1)
+        #        dm.events[2].set_value(nu2F, 1.0)
+        #        n_par_after = dm.get_number_of_parameters(dic)
+        #        self.assertEqual(n_par_sud_model, n_par_after + 1)
 
         model = Model()
         model.add_variables([nu1F, m, Tp, Dyn,
@@ -243,7 +245,7 @@ class TestModels(unittest.TestCase):
         dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', Dyn])
 
         dic = {'nu1F': 1.880, nu2B: 0.0724, 'f': 0.9, 'nu2F': 1.764,
-               'm': 0.930, 'Tp':  0.363, 'T': 0.112, 'Dyn': 'Exp',
+               'm': 0.930, 'Tp': 0.363, 'T': 0.112, 'Dyn': 'Exp',
                'SudDyn': 'Sud', 's': 0.1, 'dom': 0.5}
 
         data = SFSDataHolder(YRI_CEU_DATA)
@@ -285,7 +287,7 @@ class TestModels(unittest.TestCase):
         comb.__str__()
 
         binary_classes = [Addition, Subtraction, Multiplication, Division]
-        strings = ['+', '-', '*', '/'] 
+        strings = ['+', '-', '*', '/']
         for op_f, cls, op_str in zip([op.add, op.sub, op.mul, op.truediv],
                                      binary_classes,
                                      strings):
@@ -310,7 +312,7 @@ class TestModels(unittest.TestCase):
                         op_f2 = obj2.operation
                         self.assertEqual(obj.get_value(values),
                                          op_f(values[0], op_f2(values[1],
-                                              const)))
+                                                               const)))
                         obj.string_repr(values)
                         self.assertEqual(obj.name,
                                          f'nu1 {op_str} (f {op_str2} 5)')
@@ -376,7 +378,7 @@ class TestModels(unittest.TestCase):
         model3.add_epoch(t, [nu1])
         model3.add_split(0, [nu1, nu2])
         model3.add_epoch(tf, [nu2, fxnu1], [[0, m], [0, 0]], [d1, d2],
-                         [0, s],  [0.1, 0.8])
+                         [0, s], [0.1, 0.8])
         model3.add_split(1, [nu2, nu1])
         model3.add_epoch(t, [nu1, nu2, nu1], None, [d1, 'Sud', 'Sud'],
                          [s, 0, s], [h, 0.5, 0])
@@ -420,7 +422,7 @@ class TestModels(unittest.TestCase):
             for ind, model in enumerate([model1, model2,
                                          model3, model4, model5]):
                 for description, data in self._sfs_datasets():
-                    msg = f"for model {ind + 1} and {description} data and "\
+                    msg = f"for model {ind + 1} and {description} data and " \
                           f"{engine.id} engine"
                     if engine.id == 'dadi':
                         options = {'pts': [4, 6, 8]}
@@ -442,7 +444,7 @@ class TestModels(unittest.TestCase):
                     self.assertTrue(np.allclose(true_ll, d['ll_model']),
                                     msg=msg)
 
-    def test_binary_operation_eq(self):
+    def test_operation_eq(self):
         a = PopulationSizeVariable("a")
         b = PopulationSizeVariable("b")
         comb1 = operation_creation(Addition, a, b)
@@ -457,10 +459,121 @@ class TestModels(unittest.TestCase):
         comb2 = Addition(Multiplication(b, a), c)
         self.assertEqual(comb1, comb2)
 
-        self.assertFalse(Division(a, b) == Division(b, a))
-        self.assertFalse(Subtraction(a, b) == Subtraction(b, a))
+        self.assertNotEqual(Division(a, b), Division(b, a))
+        self.assertNotEqual(Subtraction(a, b), Subtraction(b, a))
         self.assertEqual(Addition(a, b), Addition(b, a))
         self.assertEqual(Multiplication(a, b), Multiplication(b, a))
+
+        self.assertEqual(Exp(a), Exp(a))
+        self.assertNotEqual(Exp(b), Exp(a))
+
+    def test_operation_creation(self):
+        self.test_creation_exp()
+        self.test_creation_log()
+        self.test_creation_add()
+        self.test_creation_subtract()
+        self.test_creation_multiplication()
+        self.test_creation_division()
+
+    def test_creation_exp(self):
+        a = PopulationSizeVariable("a")
+        b = PopulationSizeVariable("b")
+        e1 = operation_creation(Exp, a)
+
+        self.assertIsInstance(e1, Exp)
+        log_b = Log(b)
+        self.assertEqual(operation_creation(Exp, log_b), b)
+        self.assertEqual(operation_creation(Exp, 0), 1)
+
+        self.assertRaises(ValueError, operation_creation, Exp, 0, 0)
+
+    def test_creation_log(self):
+        a = PopulationSizeVariable("a")
+        b = PopulationSizeVariable("b")
+        l1 = operation_creation(Log, a)
+
+        self.assertIsInstance(l1, Log)
+        exp_b = Exp(b)
+        self.assertEqual(operation_creation(Log, exp_b), b)
+        self.assertEqual(operation_creation(Log, 1), 0)
+
+        self.assertRaises(ValueError, operation_creation, Log, 0, 0)
+
+    def test_creation_add(self):
+        a = PopulationSizeVariable("a")
+        b = PopulationSizeVariable("b")
+        self.assertEqual(operation_creation(Addition, 0, 1), 1)
+
+        self.assertEqual(operation_creation(Addition, a, 0), a)
+        self.assertEqual(operation_creation(Addition, 0, b), b)
+
+        self.assertIsInstance(operation_creation(Addition, a, 1), Addition)
+        self.assertIsInstance(operation_creation(Addition, 1, b), Addition)
+        self.assertIsInstance(operation_creation(Addition, a, b), Addition)
+        self.assertRaises(ValueError, operation_creation, Addition, 0)
+
+    def test_creation_subtract(self):
+        a = PopulationSizeVariable("a")
+        b = PopulationSizeVariable("b")
+        self.assertEqual(operation_creation(Subtraction, 1, 0), 1)
+
+        self.assertEqual(operation_creation(Subtraction, a, 0), a)
+        # (1 + a * b) - ((b * a) + 1) = 0
+        self.assertEqual(
+            operation_creation(
+                Subtraction,
+                operation_creation(
+                    Addition,
+                    1,
+                    operation_creation(
+                        Multiplication,
+                        a,
+                        b
+                    )
+                ),
+                operation_creation(
+                    Addition,
+                    operation_creation(
+                        Multiplication,
+                        b,
+                        a
+                    ),
+                    1
+                )
+            ),
+            0
+        )
+
+        self.assertRaises(ValueError, operation_creation, Subtraction, 0)
+
+    def test_creation_multiplication(self):
+        a = PopulationSizeVariable("a")
+        b = PopulationSizeVariable("b")
+
+        self.assertEqual(operation_creation(Multiplication, 2, 4), 8)
+
+        self.assertEqual(operation_creation(Multiplication, 1, a), a)
+        self.assertEqual(operation_creation(Multiplication, a, 1), a)
+
+        self.assertEqual(operation_creation(Multiplication, 0, b), 0)
+        self.assertEqual(operation_creation(Multiplication, b, 0), 0)
+
+        self.assertIsInstance(operation_creation(Multiplication, a, b), Multiplication)
+
+        self.assertRaises(ValueError, operation_creation, Multiplication, a)
+
+    def test_creation_division(self):
+        a = PopulationSizeVariable("a")
+        b = PopulationSizeVariable("b")
+
+        self.assertEqual(operation_creation(Division, 8, 2), 4)
+
+        self.assertEqual(operation_creation(Division, a, 1), a)
+        self.assertRaises(ValueError, operation_creation, Division, a, 0)
+
+        self.assertEqual(operation_creation(Division, b, b), 1)
+
+        self.assertRaises(ValueError, operation_creation, Division, a)
 
     def test_translation_from_epoch_to_coalescent(self):
         em = EpochDemographicModel()
