@@ -1,6 +1,7 @@
 import operator as op
 import numpy as np
 import copy
+import time
 
 from .optimizer import ConstrainedOptimizer
 from .global_optimizer import GlobalOptimizer, register_global_optimizer
@@ -10,6 +11,32 @@ from ..utils import ContinuousVariable, WeightedMetaArray, get_correct_dtype
 from .. import GPyOpt_available, GPyOpt
 from .. import GPy_available, GPy
 from .. import smac_available, smac, ConfigSpace
+
+if smac_available:
+    import skopt
+    skopt.__version__  # somehow it fixes import errors in smac
+    import skopt.learning.gaussian_process.kernels as kernels
+    from smac.epm.gp_kernels import ConstantKernel, Matern, RBF, WhiteKernel, HammingKernel
+    from smac.optimizer.acquisition import LogEI, EI, PI, LCB
+    from smac.scenario.scenario import Scenario
+    from smac.epm.gaussian_process_mcmc import GaussianProcess
+    from smac.epm.util_funcs import get_types
+    from smac.epm.gp_base_prior import HorseshoePrior, LognormalPrior
+    from ConfigSpace import ConfigurationSpace, Configuration
+    from ConfigSpace.hyperparameters import UniformFloatHyperparameter
+    from ConfigSpace.hyperparameters import CategoricalHyperparameter
+    from smac.facade.smac_bo_facade import SMAC4BO
+    from smac.utils.constants import MAXINT
+    from smac.tae.execute_ta_run import StatusType
+    from smac.stats.stats import Stats
+    from smac.optimizer.random_configuration_chooser import ChooserProb
+    from smac.runhistory.runhistory import RunHistory
+    from smac.runhistory.runhistory2epm import (
+        RunHistory2EPM4Cost,
+        RunHistory2EPM4LogScaledCost,
+    )
+    from smac.optimizer.ei_optimization import LocalAndSortedRandomSearch
+
 
 
 def get_maxeval_for_bo(maxeval, maxiter):
@@ -72,14 +99,14 @@ class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         print('====================== Iteration %05d ======================' %
               n_iter, file=stream)
 
-        if bo_obj is None:
+        if n_iter == 0:
             print("Initial design:", file=stream)
         else:
             print("Got points:", file=stream)
 
         print("Fitness function\tParameters", file=stream)
         for x, y in zip(run_info.result.X_out, run_info.result.Y_out):
-            print(f"{y}\t{x}", file=stream)
+            print(f"{y}\t{list(x)}", file=stream)
 
         if bo_obj is not None:
             print('\nCurrent state of the model:', file=stream)
@@ -87,12 +114,23 @@ class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             print(str(bo_obj.model), file=stream)
             print(bo_obj.model.model.kern.lengthscale, file=stream)
 
+        if hasattr(run_info, "gp_train_times"):
+            print("\nTime for GP training:", run_info.gp_train_times[n_iter],
+                  file=stream)
+        if hasattr(run_info, "acq_opt_times"):
+            print("Time for acq. optim.:",
+                  run_info.acq_opt_times[n_iter], file=stream)
+        if hasattr(run_info, "iter_times"):
+            print("Total time of iteration:",
+                  run_info.iter_times[n_iter], file=stream)
+
+
         print('=============================================================',
               end="\n\n", file=stream)
         print('*************************************************************',
               file=stream)
         print('Current optimum: %0.3f' % y_best, file=stream)
-        print(f'On parameters: {x_best}', file=stream)
+        print(f'On parameters: {list(x_best)}', file=stream)
         print('*************************************************************',
               file=stream)
 
@@ -214,9 +252,6 @@ class SMACSquirellOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         )
 
     def get_configs(self, variables):
-        from ConfigSpace import ConfigurationSpace
-        from ConfigSpace.hyperparameters import UniformFloatHyperparameter
-        from ConfigSpace.hyperparameters import CategoricalHyperparameter
         api_config = {}
         cs = ConfigurationSpace()
         hp_list = []
@@ -343,7 +378,7 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         self.kernel_name = kernel
         self.ARD = ARD
         self.acquisition_type = acquisition_type
-        super(SMACSquirellOptimizer, self).__init__(
+        super(SMACBayesianOptimizer, self).__init__(
             random_type=random_type,
             custom_rand_gen=custom_rand_gen,
             log_transform=log_transform,
@@ -354,7 +389,7 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         self.get_acquisition_function_class()
 
     def _get_kernel_class_and_nu(self):
-        kernel_cls = smac.epm.gp_kernels.Matern  # The most common case
+        kernel_cls = Matern  # The most common case
         if self.kernel_name.lower() == "exponential":
             nu = 0.5
         elif self.kernel_name.lower() == "matern32":
@@ -362,26 +397,30 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         elif self.kernel_name.lower() == "matern52":
             nu = 2.5
         elif self.kernel_name.lower() == "rbf":
-            kernel_cls = smac.epm.gp_kernels.RBF
+            kernel_cls = RBF
             nu = None
         else:
             raise ValueError(f"Unknown name of kernel: {self.kernel_name}.")
         return kernel_cls, nu
 
-    def get_kernel_for_configuration_space(self, configuration_space):
+    def _get_random_state(self):
+        return np.random.RandomState(seed=0)
+
+    def get_kernel(self, config_space):
         """
         Code is very similar to those from :class:`smac.SMAC4BO`.
         Length scale were chosen from SMAC where they were obtained by
         hyperparameter optimization made in https://arxiv.org/abs/1908.06674.
 
-        :params configuration_space: SMAC configuration space with parameters.
-        :type configuration_space: :class:`smac.configspace.ConfigurationSpace`
+        :params config_space: SMAC configuration space with parameters.
+        :type config_space: :class:`smac.configspace.ConfigurationSpace`
         """
         # First of all get type of kernel
         kernel_cls, nu = self._get_kernel_class_and_nu()
-
-        types, bounds = smac.epm.util_funcs.get_types(configuration_space,
-                                                      instance_features=None)
+        # get types and bounds for config_space
+        types, bounds = get_types(config_space, instance_features=None)
+        # get random state for priors
+        rng = self._get_random_state()
 
         # create kernel to hold variance
         cov_amp = smac.epm.gp_kernels.ConstantKernel(
@@ -395,66 +434,90 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         cat_dims = np.where(np.array(types) != 0)[0]
 
         # bounds for length scale from https://arxiv.org/abs/1908.06674
-        bounds = (np.exp(-6.754111155189306), np.exp(0.0858637988771976))
+        lslims = (np.exp(-6.754111155189306), np.exp(0.0858637988771976))
 
         # create kernel for continuous parameters
         if len(cont_dims) > 0:
-            kwargs = {
+            exp_kwargs = {
                 "length_scale": np.ones([len(cont_dims)]),
-                "length_scale_bounds": [bounds for _ in range(len(cont_dims))],
+                "length_scale_bounds": [lslims for _ in range(len(cont_dims))],
                 "operate_on": cont_dims,
                 "prior": None,
                 "has_conditions": False,
             }
             if nu is not None:
-                kwargs["nu"] = nu
-            exp_kernel = kernel_cls(**kwargs)
+                exp_kwargs["nu"] = nu
+            exp_kernel = kernel_cls(**exp_kwargs)
 
         # kernel for categorical parameters
         if len(cat_dims) > 0:
             ham_kernel = smac.epm.gp_kernels.HammingKernel(
                 length_scale=np.ones([len(cat_dims)]),
-                length_scale_bounds=[bounds for _ in range(len(cat_dims))],
+                length_scale_bounds=[lslims for _ in range(len(cat_dims))],
                 operate_on=cat_dims,
             )
 
-        assert (len(cont_dims) + len(cat_dims)) == len(scenario.cs.get_hyperparameters())
-
+        # create noise kernel
         noise_kernel = smac.epm.gp_kernels.WhiteKernel(
             noise_level=1e-8,
             noise_level_bounds=(np.exp(-25), np.exp(2)),
             prior=HorseshoePrior(scale=0.1, rng=rng),
         )
 
+        # create final kernel as combination
         if len(cont_dims) > 0 and len(cat_dims) > 0:
             # both
             kernel = cov_amp * (exp_kernel * ham_kernel) + noise_kernel
         elif len(cont_dims) > 0 and len(cat_dims) == 0:
-            # only cont
+            # only continuous parameters
             kernel = cov_amp * exp_kernel + noise_kernel
         elif len(cont_dims) == 0 and len(cat_dims) > 0:
-            # only cont
+            # only categorical parameters
             kernel = cov_amp * ham_kernel + noise_kernel
 
         return kernel
 
+    def get_model(self, config_space):
+        kernel = self.get_kernel(config_space)
+        types, bounds = get_types(config_space, instance_features=None)
+        return GaussianProcess(
+            configspace=config_space,
+            types=types,
+            bounds=bounds,
+            seed=self._get_random_state().randint(MAXINT),
+            kernel=kernel,
+            normalize_y=True,
+        )
+
     def get_acquisition_function_class(self):
         if self.acquisition_type.lower() == "logei":
-            return smac.optimizer.acquisition.LogEI
+            return LogEI
         elif self.acquisition_type.lower() == "ei":
-            return smac.optimizer.acquisition.EI
+            return EI
         elif self.acquisition_type.lower() in ["pi", "mpi"]:
-            return smac.optimizer.acquisition.PI
+            return PI
         elif self.acquisition_type.lower() == "lcb":
-            return smac.optimizer.acquisition.LCB
+            return LCB
         else:
             raise ValueError("Unknown name of acquisition function: "
                              f"{self.acquisition_type}")
 
+    def get_acquisition_function(self, model):
+        return self.get_acquisition_function_class()(model=model)
 
-    def get_smac_configuration_space(self, variables):
-        from ConfigSpace.hyperparameters import UniformFloatHyperparameter
-        from ConfigSpace.hyperparameters import CategoricalHyperparameter
+    def get_acquisition_function_optimizer(self,
+                                           config_space,
+                                           acquisition_function):
+        return LocalAndSortedRandomSearch(
+            config_space=config_space,
+            rng=self._get_random_state(),
+            max_steps=5,
+            n_steps_plateau_walk=5,
+            n_sls_iterations=5,
+            acquisition_function=acquisition_function,
+        )
+
+    def get_config_space(self, variables):
         api_config = {}
         cs = ConfigSpace.ConfigurationSpace()
         hp_list = []
@@ -470,21 +533,36 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         cs.add_hyperparameters(hp_list)
         return cs
 
-    def get_smac_scenario(self, maxeval, configuration_space):
+    def get_scenario(self, maxeval, config_space):
         scenario = Scenario({
             "run_obj": "quality",  # we optimize quality
             "runcount-limit": maxeval,  # max. number of function evaluations;
-            "cs": configuration_space,  # configuration space
-            "deterministic": "true"
+            "cs": config_space,  # configuration space
+            "deterministic": "true",
+            "limit_resources": False,
         })
         if self.acquisition_type.lower() == "logei":
             scenario.transform_y = "LOG"
         return scenario
 
+    def get_runhistory2epm(self, scenario):
+        if self.acquisition_type.lower() == "logei":
+            rh2epm_cls = RunHistory2EPM4LogScaledCost
+        else:
+            rh2epm_cls = RunHistory2EPM4Cost
+
+        return rh2epm_cls(
+            scenario=scenario,
+            num_params=len(scenario.cs.get_hyperparameters()),
+            success_states=[StatusType.SUCCESS],
+            impute_censored_data=False,
+            scale_perc=5
+        )
+
     @staticmethod
     def _write_report_to_stream(variables, run_info, stream):
         run_info.bo_obj = None
-        BayesianOptimizer._write_report_to_stream(variables, run_info, stream)
+        GPyOptBayesianOptimizer._write_report_to_stream(variables, run_info, stream)
 
     def valid_restore_file(self, save_file):
         try:
@@ -496,49 +574,137 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             return False
         return True
 
+    def _create_run_info(self):
+        run_info = super(SMACBayesianOptimizer, self)._create_run_info()
+        run_info.gp_train_times = []
+        run_info.acq_opt_times = []
+        run_info.iter_times = []
+        return run_info
+
+    def _update_run_info(self, run_info, x_best, y_best, X, Y,
+                         n_eval, gp_train_time=None, acq_opt_time=None,
+                         iter_time=None):
+        super(SMACBayesianOptimizer, self)._update_run_info(
+            run_info=run_info,
+            x_best=x_best,
+            y_best=y_best,
+            X=X,
+            Y=Y,
+            n_eval=n_eval
+        )
+        run_info.gp_train_times.append(gp_train_time)
+        run_info.acq_opt_times.append(acq_opt_time)
+        run_info.iter_times.append(iter_time)
+        return run_info
+
     def _optimize(self, f, variables, X_init, Y_init, maxiter, maxeval,
                   iter_callback):
+        maxeval = get_maxeval_for_bo(maxeval, maxiter)
 
-        maxeval = get_maxeval_for_bo(maxeval, maxxiter)
+        iter_callback(X_init[0], Y_init[0], X_init, Y_init)
 
-        configuration_space = self.get_smac_configuration_space(variables)
+        # Get config space
+        config_space = self.get_config_space(variables)
+        # get scenario, runhistory and stats
+        scenario = self.get_scenario(maxeval, config_space)
+        runhistory = RunHistory()
+        stats = Stats(scenario)
+        # for acq function optimizer
+        rnd_chooser = ChooserProb(rng=self._get_random_state(), prob=0.0)
+        # get class to get valid train data from run history
+        rh2epm = self.get_runhistory2epm(scenario)
 
-        scenario = self.get_smac_scenario(maxeval, configuration_space)
+        # we will add configs to run history by using the following function
+        def add_to_runhistory(config, cost):
+            runhistory.add(
+                config=config,
+                cost=cost,
+                time=0,
+                status=StatusType.SUCCESS
+            )
 
-        model = smac.epm.gaussian_process_mcmc.GaussianProcess
-        kernel = self.get_kernel_for_configuration_space(configuration_space)
-        model_kwargs = {
-            "kernel": kernel,
-            "normalize_y": True,
-            "seed": rng.randint(0, 2 ** 20),
-        }
-
-        acquisition_function = self.get_acquisition_function_class()
-
-        init_configs = []
-        for x in X_init:
-            init_configs.append(Configuration(
-                configuration_space=configuration_space,
-                vector=x
-            ))
-
-        def f_in_smac(x):
-            y = f([x[var.name] for var in variables])
-            iter_callback(x, y, [x], [y])
-
-
-        smac_opt = smac.facade.smac_bo_facade.SMAC4BO(
-            scenario=scenario,
-            tae_runner=f_in_smac,
-            model=model,
-            model_kwargs=model_kwargs,
-            acquisition_function=acquisition_function,
-            initial_configurations=config_space,
+        # create gp and other stuff
+        model = self.get_model(config_space)
+        acq_fun = self.get_acquisition_function(model)
+        acq_fun_opt = self.get_acquisition_function_optimizer(
+            config_space,
+            acq_fun
         )
 
-        smac_opt.optimize()
+        # transform our X_init for valid configurations
+        # we create random valid configs and then fill them with our values
+        X_init_configs = config_space.sample_configuration(len(X_init))
+        for x in X_init:
+            for i, x in enumerate(X_init):
+                for ind, (var, par) in enumerate(zip(variables, x)):
+                    if isinstance(variables[ind], ContinuousVariable):
+                        par = float(par)
+                    X_init_configs[i][var.name] = par
+
+        # add our initial design to run history
+        for x, y in zip(X_init_configs, Y_init):
+            add_to_runhistory(x, y)
+
+        # begin Bayesian optimization
+        while self.run_info.result.n_iter <= maxeval:
+            total_t_start = time.time()
+            X, y = rh2epm.transform(runhistory)
+
+            # If all are not finite then we return nothing
+            if np.all(~np.isfinite(y)):
+                return self.run_info.result
+
+            # Safeguard, just in case...
+            if np.any(~np.isfinite(y)):
+                y[~np.isfinite(y)] = np.max(y[np.isfinite(y)])
+
+            t_start = time.time()
+            model.train(X, y)
+            gp_train_time = time.time() - t_start
+
+            predictions = model.predict_marginalized_over_instances(X)[0]
+            best_index = np.argmin(predictions)
+            best_observation = y[best_index]
+            x_best_array = X[best_index]
+
+            acq_fun.update(
+                model=model,
+                eta=best_observation,
+                incumbent_array=x_best_array,
+                num_data=len(X),
+                X=X,
+            )
+
+            t_start = time.time()
+            new_config_iterator = acq_fun_opt.maximize(
+                runhistory=runhistory,
+                stats=stats,
+                num_points=10000,
+                random_configuration_chooser=rnd_chooser,
+            )
+            acq_opt_time = time.time() - t_start
+
+            accept = False
+            for next_config in new_config_iterator:
+                if next_config in X:
+                    continue
+                else:
+                    accept = True
+                    break
+            assert accept
+
+            x = [next_config[var.name] for var in variables]
+            cost = f(x)
+
+            add_to_runhistory(next_config, cost)
+
+            total_iter_time = time.time() - total_t_start
+            update_kwargs = {"gp_train_time": gp_train_time,
+                             "acq_opt_time": acq_opt_time,
+                             "iter_time": total_iter_time}
+            iter_callback(x, cost, [x], [cost], **update_kwargs)
 
         return self.run_info.result
 
 
-#register_global_optimizer("SMAC_BO_optimization", SMACBayesianOptimizer)
+register_global_optimizer("SMAC_BO_optimization", SMACBayesianOptimizer)
