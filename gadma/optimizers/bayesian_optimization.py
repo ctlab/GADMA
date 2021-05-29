@@ -11,6 +11,7 @@ from ..utils import ContinuousVariable, WeightedMetaArray, get_correct_dtype
 from .. import GPyOpt_available, GPyOpt
 from .. import GPy_available, GPy
 from .. import smac_available, smac, ConfigSpace
+from .. import bayesmark_available
 
 if smac_available:
     import skopt
@@ -253,6 +254,12 @@ class SMACSquirellOptimizer(GlobalOptimizer, ConstrainedOptimizer):
     def __init__(self, n_suggestions=4,
                  random_type='resample', custom_rand_gen=None,
                  log_transform=False, maximize=False):
+        if not smac_available:
+            raise ValueError("Install SMAC to use it in SMAC squirell "
+                             "optimization")
+        if not bayesmark_available:
+            raise ValueError("Install bayesmark to use it in SMAC squirell "
+                             "optimization")
         self.n_suggestions = n_suggestions
         super(SMACSquirellOptimizer, self).__init__(
             random_type=random_type,

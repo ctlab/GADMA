@@ -40,10 +40,16 @@ except ImportError:
 try:
     import smac
     import ConfigSpace
-    import bayesmark
     smac_available = True
 except ImportError:
+    smac = None
+    ConfigSpace = None
     smac_available = False
+
+try:
+    import bayesmark
+except ImportError:
+    bayesmark = None
 
 import warnings
 
@@ -53,6 +59,7 @@ moments_available = moments is not None
 dadi_available = dadi is not None
 GPy_available = GPy is not None
 GPyOpt_available = GPyOpt is not None
+bayesmark_available = bayesmark is not None
 
 from .data import DataHolder, SFSDataHolder, VCFDataHolder  # NOQA
 from .engines import get_engine, all_engines  # NOQA
