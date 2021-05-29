@@ -689,7 +689,7 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             add_to_runhistory(x, y)
 
         # begin Bayesian optimization
-        while self.run_info.result.n_iter <= maxeval:
+        while self.run_info.result.n_eval <= maxeval:
             total_t_start = time.time()
             
             X, y = rh2epm.transform(runhistory)
