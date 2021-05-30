@@ -439,6 +439,54 @@ class TestCLI(unittest.TestCase):
                 gadma.PIL_available = True
                 gadma.moments_available = True
 
+    def test_inbreeding_run(self):
+        params_file = 'params'
+        outdir = os.path.join(DATA_PATH, 'inbreed_dir')
+        if check_dir_existence(outdir):
+            shutil.rmtree(outdir)
+        with open(params_file, 'w') as fl:
+            fl.write("Input file: tests/test_data/DATA/sfs/YRI_CEU.fs\n"
+                     "Linked SNP's: False\n"
+                     "Silence: True\n"
+                     "global_maxiter: 2\n"
+                     "local_maxiter: 1\n"
+                     "inbreeding: True\n"
+                     "engine: dadi")
+        sys.argv = ['gadma', '-p', params_file, '--output', outdir]
+        try:
+            gadma.matplotlib_available = False
+            core.main()
+        finally:
+            if check_dir_existence(outdir):
+                shutil.rmtree(outdir)
+            os.remove(params_file)
+            gadma.matplotlib_available = True
+
+    def test_inbreeding_fail_run_with_moments(self):
+        params_file = 'params'
+        outdir = os.path.join(DATA_PATH, 'resume_dir')
+        if check_dir_existence(outdir):
+            shutil.rmtree(outdir)
+        with open(params_file, 'w') as fl:
+            fl.write("Input file: tests/test_data/DATA/sfs/YRI_CEU.fs\n"
+                     "Linked SNP's: False\n"
+                     "Silence: True\n"
+                     "global_maxiter: 2\n"
+                     "local_maxiter: 1\n"
+                     "inbreeding: True\n"
+                     "engine: moments")
+        sys.argv = ['gadma', '-p', params_file,
+                    '--output', outdir]
+        try:
+            gadma.matplotlib_available = False
+            self.assertRaises(ValueError, core.main)
+        finally:
+            if check_dir_existence(outdir):
+                shutil.rmtree(outdir)
+            os.remove(params_file)
+            gadma.matplotlib_available = True
+
+
     def test_logging_to_stderr(self):
         saved_stderr = sys.stderr
         sys.stderr = StdAndFileLogger("log_file", stderr=True)

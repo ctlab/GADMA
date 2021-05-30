@@ -373,8 +373,17 @@ class EpochDemographicModel(DemographicModel):
         strings = []
         values = {var.name: val
                   for var, val in self.var2value(values).items()}
+
         for event in self.events:
             strings.append(event.as_custom_string(values))
+
+        inbr_coefficients = []
+        for inbreeding in self.inbreeding_args:
+            inbr_value = round(values[inbreeding.name], 3)
+            inbr_coefficients.append(f"{inbr_value} ({inbreeding.name})")
+
+        strings.append(f"inbr: {inbr_coefficients}")
+
         return "[ " + ",\t".join(strings) + " ]"
 
     def get_involved_for_split_time_vars(self, n_split):
