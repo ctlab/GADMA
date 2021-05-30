@@ -377,12 +377,13 @@ class EpochDemographicModel(DemographicModel):
         for event in self.events:
             strings.append(event.as_custom_string(values))
 
-        inbr_coefficients = []
-        for inbreeding in self.inbreeding_args:
-            inbr_value = round(values[inbreeding.name], 3)
-            inbr_coefficients.append(f"{inbr_value} ({inbreeding.name})")
+        if self.has_inbreeding:
+            inbr_coefficients = []
+            for inbreeding in self.inbreeding_args:
+                inbr_value = round(values[inbreeding.name], 3)
+                inbr_coefficients.append(f"{inbr_value} ({inbreeding.name})")
 
-        strings.append(f"inbr: {inbr_coefficients}")
+            strings.append(f"inbr: {inbr_coefficients}")
 
         return "[ " + ",\t".join(strings) + " ]"
 
