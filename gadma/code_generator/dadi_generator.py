@@ -96,8 +96,9 @@ def _print_dadi_func(model, values):
                 inbr_names.append(var.name)
             else:
                 inbr_names.append(var)
-        ret_str += "\tsfs = dadi.Spectrum.from_phi_inbreeding(phi, ns, " \
-                   "[xx]*len(ns), [{}], [2]*len(ns))\n".format(", ".join(inbr_names))
+        ret_str += "\tsfs = dadi.Spectrum.from_phi_inbreeding(" \
+                   "phi, ns, [xx]*len(ns), [{}], [2]*len(ns)" \
+                   ")\n".format(", ".join(inbr_names))
     if not model.has_inbreeding:
         ret_str += "\tsfs = dadi.Spectrum.from_phi(phi, ns, [xx]*len(ns))\n"
     ret_str += "\treturn sfs\n"

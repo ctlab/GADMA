@@ -477,7 +477,8 @@ class StructureDemographicModel(EpochDemographicModel):
             elif isinstance(var, DynamicVariable):
                 assert self.has_dyns and not model.has_dyns
                 var2value[var] = 'Sud'
-            elif isinstance(var, FractionVariable) and var.name.startswith('s'):
+            elif isinstance(var, FractionVariable) \
+                    and var.name.startswith('s'):
                 assert self.frac_split and not model.frac_split
                 n_split = int(var.name[1:])
                 ind_before_split = sum(self.get_structure()[:n_split]) - 1
@@ -496,7 +497,8 @@ class StructureDemographicModel(EpochDemographicModel):
                 fraction = max(fraction, var.domain[0])
                 fraction = min(fraction, var.domain[1])
                 var2value[var] = fraction
-            elif isinstance(var, FractionVariable) and var.name.startswith('F'):
+            elif isinstance(var, FractionVariable) \
+                    and var.name.startswith('F'):
                 assert self.has_inbr and not model.has_inbr
                 var2value[var] = 0
             elif isinstance(var, PopulationSizeVariable):

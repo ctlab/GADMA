@@ -285,8 +285,8 @@ def get_settings():
 
     if settings_storage.inbreeding:
         if settings_storage.engine != "dadi":
-            raise ValueError("Please check your engine. If you want to calculate "
-                             "Inbreeding change engine to dadi")
+            raise ValueError("Please check your engine. If you want to "
+                             "calculate Inbreeding change engine to dadi")
     return settings_storage, args
 
 
