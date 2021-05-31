@@ -220,7 +220,7 @@ class EpochDemographicModel(DemographicModel):
     def add_inbreeding(self, inbr_args=None):
         self.inbreeding_args = inbr_args
         self.add_variables(inbr_args)
-            
+
     def add_epoch(self, time_arg, size_args, mig_args=None,
                   dyn_args=None, sel_args=None,
                   dom_args=None):
