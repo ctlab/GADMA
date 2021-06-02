@@ -23,6 +23,8 @@ class StructureDemographicModel(EpochDemographicModel):
     :type has_migs: bool
     :param has_sels: If True then model will have selection coefficients.
     :type has_sels: bool
+    :param has_inbr: If True then model will have inbreeding.
+    :type has_inbr: bool
     :param has_dyns: If True then model will create dynamics of size
                       change different to Sudden change.
     :type has_dyns: bool
@@ -52,7 +54,7 @@ class StructureDemographicModel(EpochDemographicModel):
     def __init__(self, initial_structure, final_structure,
                  has_migs, has_sels, has_dyns, sym_migs, frac_split,
                  migs_mask=None, has_anc_size=False,
-                 gen_time=None, theta0=None, mu=None):
+                 gen_time=None, theta0=None, mu=None, has_inbr=None):
         if has_anc_size:
             Nanc_size = PopulationSizeVariable("Nanc", units="physical")
         else:
@@ -77,6 +79,7 @@ class StructureDemographicModel(EpochDemographicModel):
         self.sym_migs = sym_migs
         self.frac_split = frac_split
         self.migs_mask = migs_mask
+        self.has_inbr = has_inbr
         # check that mask is correct
         if len(self.initial_structure) == 1 and self.migs_mask is not None:
             warnings.warn("Migration mask is used only when more than one "
@@ -149,8 +152,6 @@ class StructureDemographicModel(EpochDemographicModel):
             raise ValueError(f"Elements of model structure ({structure}) "
                              "should be positive (> 0).")
 
-        if list(structure) == [1]:
-            return self
         i_int = 0
         if self.frac_split:
             size_vars = [1.0]
@@ -199,8 +200,10 @@ class StructureDemographicModel(EpochDemographicModel):
                     for i in range(n_pop):
                         var = DynamicVariable('dyn%d%d' % (i_int, i+1))
                         dyn_vars.append(var)
-                self.add_epoch(time_var, size_vars,
-                               mig_vars, dyn_vars, sel_vars)
+                assert not self.has_inbreeding
+                self.add_epoch(time_arg=time_var, size_args=size_vars,
+                               mig_args=mig_vars, dyn_args=dyn_vars,
+                               sel_args=sel_vars)
             if n_pop < len(structure):
                 if self.frac_split:
                     frac_var = FractionVariable(f"s{n_pop}")
@@ -213,7 +216,16 @@ class StructureDemographicModel(EpochDemographicModel):
                     name = size_vars[-1].name
                     size_vars = [PopulationSizeVariable(name + '_1'),
                                  PopulationSizeVariable(name + '_2')]
+                assert not self.has_inbreeding
                 self.add_split(n_pop - 1, size_vars)
+
+        if self.has_inbr:
+            inbr_args = list()
+            for n_pop in range(1, len(structure) + 1):
+                var = FractionVariable('F%d' % n_pop)
+                inbr_args.append(var)
+            self.add_inbreeding(inbr_args)
+
         return self
 
     def get_structure(self):
@@ -343,6 +355,11 @@ class StructureDemographicModel(EpochDemographicModel):
             for old_var, new_var in zip(old_vars, new_vars):
                 assert type(old_var) == type(new_var)  # addit. check for types
                 oldvar2newvar[old_var] = new_var
+        if old_model.has_inbreeding:
+            assert self.has_inbreeding
+            for old_inbr_arg, new_inbr_arg in zip(old_model.inbreeding_args,
+                                                  self.inbreeding_args):
+                oldvar2newvar[old_inbr_arg] = new_inbr_arg
     #    print(oldvar2newvar)
         new_X = []
         for x in X:
@@ -424,7 +441,11 @@ class StructureDemographicModel(EpochDemographicModel):
                 if self.has_dyns == model.has_dyns:
                     var2value[var] = other_varname2value[var.name]
             elif isinstance(var, FractionVariable):
-                if self.frac_split == model.frac_split:
+                if self.frac_split == model.frac_split \
+                        and var.name.startswith('s'):
+                    var2value[var] = other_varname2value[var.name]
+                if self.has_inbr == model.has_inbr \
+                        and var.name.startswith('F'):
                     var2value[var] = other_varname2value[var.name]
             elif var.name in other_varname2value:
                 var2value[var] = other_varname2value[var.name]
@@ -456,7 +477,8 @@ class StructureDemographicModel(EpochDemographicModel):
             elif isinstance(var, DynamicVariable):
                 assert self.has_dyns and not model.has_dyns
                 var2value[var] = 'Sud'
-            elif isinstance(var, FractionVariable):
+            elif isinstance(var, FractionVariable) \
+                    and var.name.startswith('s'):
                 assert self.frac_split and not model.frac_split
                 n_split = int(var.name[1:])
                 ind_before_split = sum(self.get_structure()[:n_split]) - 1
@@ -475,6 +497,10 @@ class StructureDemographicModel(EpochDemographicModel):
                 fraction = max(fraction, var.domain[0])
                 fraction = min(fraction, var.domain[1])
                 var2value[var] = fraction
+            elif isinstance(var, FractionVariable) \
+                    and var.name.startswith('F'):
+                assert self.has_inbr and not model.has_inbr
+                var2value[var] = 0
             elif isinstance(var, PopulationSizeVariable):
                 assert not self.frac_split and model.frac_split
                 assert len(var.name.split("_")) > 1
