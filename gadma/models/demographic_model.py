@@ -25,6 +25,7 @@ class DemographicModel(Model):
     :param linear_constrain: linear constrain on parameters.
     :type linear_constrain: :class:`gadma.optimizers.LinearConstrain`
     """
+
     def __init__(self, gen_time=None, theta0=None, mu=None, Nref=None,
                  has_anc_size=False, linear_constrain=None):
         super(DemographicModel, self).__init__(raise_excep=False)
@@ -162,6 +163,7 @@ class EpochDemographicModel(DemographicModel):
                       multinom inference and get best Nanc_size for the model.
     :type Nanc_size: float or :class:`gadma.utils.PopulationSizeVariable`
     """
+
     def __init__(self, gen_time=None, theta0=None, mu=None, Nref=None,
                  has_anc_size=None, Nanc_size=None, linear_constrain=None,
                  inbreeding_args=None):
@@ -383,7 +385,9 @@ class EpochDemographicModel(DemographicModel):
                 inbr_value = round(values[inbreeding.name], 3)
                 inbr_coefficients.append(f"{inbr_value} ({inbreeding.name})")
 
-            strings.append(f"inbr: {inbr_coefficients}")
+            inbr_string = ", ".join(inbr_coefficients)
+
+            strings.append(f"[inbr: {inbr_string}]")
 
         return "[ " + ",\t".join(strings) + " ]"
 
