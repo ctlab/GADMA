@@ -12,6 +12,7 @@ import copy
 
 try:
     import dadi
+
     DADI_NOT_AVAILABLE = False
 except ImportError:
     DADI_NOT_AVAILABLE = True
@@ -34,14 +35,15 @@ class TestModels(unittest.TestCase):
         m.add_variable(var)
         self.assertRaises(ValueError, m.add_variable, 1.0)
         self.assertRaises(TypeError, m.var2value, set())
-        
+
     def dadi_wrapper(self, func):
         def wrapper(param, ns, pts):
             xx = dadi.Numerics.default_grid(pts)
             phi = dadi.PhiManip.phi_1D(xx)
             phi = func(param, xx, phi)
-            sfs = dadi.Spectrum.from_phi(phi, ns, [xx]*len(ns))
+            sfs = dadi.Spectrum.from_phi(phi, ns, [xx] * len(ns))
             return sfs
+
         return wrapper
 
     def get_variables_for_gut_2009(self):
@@ -65,7 +67,7 @@ class TestModels(unittest.TestCase):
                 spec.loader.exec_module(module)
                 sys.modules['module'] = module
                 func = getattr(module, 'model_func')
-                variables = self.get_variables_for_gut_2009()[:-1] 
+                variables = self.get_variables_for_gut_2009()[:-1]
                 dm = CustomDemographicModel(func, variables)
                 dm.as_custom_string([var.resample() for var in dm.variables])
                 dm.as_custom_string({var.name: var.resample()
@@ -140,6 +142,39 @@ class TestModels(unittest.TestCase):
         self.assertEqual(dm.number_of_populations(), 1)
         dm.as_custom_string(param)
 
+    def test_dadi_1pop_1_with_inbreeding(self):
+        def inner(param, ns, pts):
+            T, nu, sel, F = param
+
+            xx = dadi.Numerics.default_grid(pts)
+            phi = dadi.PhiManip.phi_1D(xx)
+            phi = dadi.Integration.one_pop(phi, xx, T=T, gamma=sel, nu=nu)
+
+            sfs = dadi.Spectrum.from_phi_inbreeding(phi, ns, (xx,), (F,), (2,))
+
+            return sfs
+
+        ns = (20,)
+        pts = [40, 50, 60]
+        param = [1., 0.5, 1.5, 0.5]
+        func_ex = dadi.Numerics.make_extrap_log_func(inner)
+        real = func_ex(param, ns, pts)
+
+        T = TimeVariable('T1')
+        nu = PopulationSizeVariable('nu2')
+        sl = SelectionVariable('sel')
+        F = FractionVariable("F")
+        dm = EpochDemographicModel()
+        dm.add_epoch(T, [nu], sel_args=[sl])
+        dm.add_inbreeding(inbr_args=[F])
+        d = get_engine('dadi')
+        d.set_model(dm)
+        got = d.simulate(param, ns, pts)
+
+        self.assertTrue(np.allclose(got, real))
+        self.assertEqual(dm.number_of_populations(), 1)
+        dm.as_custom_string(param)
+
     @unittest.skipIf(DADI_NOT_AVAILABLE, "Dadi module is not installed")
     def test_dadi_gut_2pop(self):
         """
@@ -154,7 +189,7 @@ class TestModels(unittest.TestCase):
         dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', 'Exp'])
 
         dic = {'nu1F': 1.880, 'nu2B': 0.0724, 'nu2F': 1.764, 'm': 0.930,
-               'Tp':  0.363, 'T': 0.112, 'Dyn': 'Exp'}
+               'Tp': 0.363, 'T': 0.112, 'Dyn': 'Exp'}
 
         data = SFSDataHolder(YRI_CEU_DATA)
         d = DadiEngine(model=dm, data=data)
@@ -173,14 +208,14 @@ class TestModels(unittest.TestCase):
         dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', Dyn])
 
         dic = {'nu1F': 1.880, nu2B: 0.0724, 'nu2F': 1.764, 'm': 0.930,
-               'Tp':  0.363, 'T': 0.112, 'Dyn': 'Exp', 'SudDyn': 'Sud'}
+               'Tp': 0.363, 'T': 0.112, 'Dyn': 'Exp', 'SudDyn': 'Sud'}
 
         data = SFSDataHolder(YRI_CEU_DATA)
         d = DadiEngine(model=dm, data=data)
-        values = dic#[dic[var.name] for var in dm.variables]
+        values = dic  # [dic[var.name] for var in dm.variables]
         ll1 = d.evaluate(values, pts=[40, 50, 60])
         n_par_before = dm.get_number_of_parameters(dic)
-        
+
         dm.fix_variable(Dyn, 'Exp')
         d.model = dm
         ll2 = d.evaluate(dic, pts=[40, 50, 60])
@@ -218,9 +253,9 @@ class TestModels(unittest.TestCase):
         self.assertRaises(ValueError, dm.fix_variable, var, 3)
         self.assertRaises(ValueError, dm.unfix_variable, var)
 
-#        dm.events[2].set_value(nu2F, 1.0)
-#        n_par_after = dm.get_number_of_parameters(dic)
-#        self.assertEqual(n_par_sud_model, n_par_after + 1)
+        #        dm.events[2].set_value(nu2F, 1.0)
+        #        n_par_after = dm.get_number_of_parameters(dic)
+        #        self.assertEqual(n_par_sud_model, n_par_after + 1)
 
         model = Model()
         model.add_variables([nu1F, m, Tp, Dyn,
@@ -242,7 +277,7 @@ class TestModels(unittest.TestCase):
         dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', Dyn])
 
         dic = {'nu1F': 1.880, nu2B: 0.0724, 'f': 0.9, 'nu2F': 1.764,
-               'm': 0.930, 'Tp':  0.363, 'T': 0.112, 'Dyn': 'Exp',
+               'm': 0.930, 'Tp': 0.363, 'T': 0.112, 'Dyn': 'Exp',
                'SudDyn': 'Sud', 's': 0.1, 'dom': 0.5}
 
         data = SFSDataHolder(YRI_CEU_DATA)
@@ -284,7 +319,7 @@ class TestModels(unittest.TestCase):
         comb.__str__()
 
         binary_classes = [Addition, Subtraction, Multiplication, Division]
-        strings = ['+', '-', '*', '/'] 
+        strings = ['+', '-', '*', '/']
         for op_f, cls, op_str in zip([op.add, op.sub, op.mul, op.truediv],
                                      binary_classes,
                                      strings):
@@ -309,7 +344,7 @@ class TestModels(unittest.TestCase):
                         op_f2 = obj2.operation
                         self.assertEqual(obj.get_value(values),
                                          op_f(values[0], op_f2(values[1],
-                                              const)))
+                                                               const)))
                         obj.string_repr(values)
                         self.assertEqual(obj.name,
                                          f'nu1 {op_str} (f {op_str2} 5)')
@@ -375,7 +410,7 @@ class TestModels(unittest.TestCase):
         model3.add_epoch(t, [nu1])
         model3.add_split(0, [nu1, nu2])
         model3.add_epoch(tf, [nu2, fxnu1], [[0, m], [0, 0]], [d1, d2],
-                         [0, s],  [0.1, 0.8])
+                         [0, s], [0.1, 0.8])
         model3.add_split(1, [nu2, nu1])
         model3.add_epoch(t, [nu1, nu2, nu1], None, [d1, 'Sud', 'Sud'],
                          [s, 0, s], [h, 0.5, 0])
@@ -421,7 +456,7 @@ class TestModels(unittest.TestCase):
 
             for ind, model in enumerate(models):
                 for description, data in self._sfs_datasets():
-                    msg = f"for model {ind + 1} and {description} data and "\
+                    msg = f"for model {ind + 1} and {description} data and " \
                           f"{engine.id} engine"
                     if engine.id == 'dadi':
                         options = {'pts': [4, 6, 8]}
