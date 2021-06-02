@@ -1,4 +1,6 @@
 import unittest
+import pytest
+
 
 from gadma import *
 from gadma import ContinuousVariable
@@ -338,6 +340,34 @@ class TestModels(unittest.TestCase):
                SFSDataHolder(os.path.join(EXAMPLE_FOLDER, 'DATA', 'sfs',
                                           'dadi_snp_file.txt')))
 
+    def test_add_split_after_inbreeding(self):
+        nu1 = PopulationSizeVariable('nu1')
+        nu2 = PopulationSizeVariable('nu2')
+        f1 = FractionVariable('f1')
+        Dyn2 = DynamicVariable('SudDyn')
+        Tp = TimeVariable('Tp')
+
+        dm = EpochDemographicModel()
+        dm.add_epoch(Tp, [nu1], dyn_args=[Dyn2])
+        dm.add_inbreeding([f1])
+        with pytest.raises(ValueError):
+            dm.add_split(0, [nu1, nu2])
+
+    def test_add_epoch_after_inbreeding(self):
+        nu1 = PopulationSizeVariable('nu1')
+        nu2 = PopulationSizeVariable('nu2')
+        f1 = FractionVariable('f1')
+        Dyn2 = DynamicVariable('SudDyn')
+        T = TimeVariable('T')
+        m = MigrationVariable('m')
+        Tp = TimeVariable('Tp')
+
+        dm = EpochDemographicModel()
+        dm.add_epoch(Tp, [nu1], dyn_args=[Dyn2])
+        dm.add_inbreeding([f1])
+        with pytest.raises(ValueError):
+            dm.add_epoch(T, [nu1, nu2], [[None, m], [m, None]], ['Sud', 'Exp'])
+
     def test_code_generation(self):
         nu1 = PopulationSizeVariable('nu1')
         nu2 = PopulationSizeVariable('nu2')
@@ -350,6 +380,8 @@ class TestModels(unittest.TestCase):
         d2 = DynamicVariable('d2')
         f = FractionVariable('f')
         h = FractionVariable('h')
+        f1 = FractionVariable('f1')
+        f2 = FractionVariable('f2')
         fxnu1 = Multiplication(f, nu1)
         tf = Multiplication(f, t)
         t_copy = copy.deepcopy(t)
@@ -397,12 +429,21 @@ class TestModels(unittest.TestCase):
         model5.add_split(1, [nu2, nu1])
         model5.add_epoch(t, [nu1, nu2, nu1], None, None)
 
-        values = {nu1: 2, nu2: 0.5, nu3: 0.5, t_copy: 0.3, t2: 0.5,
-                  m: 0.1, s: 0.1, d1: 'Exp', d2: 'Lin', f: 0.5, h: 0.3,
+        model6 = EpochDemographicModel(Nanc_size=Nanc)
+        model6.add_epoch(t, [nu1])
+        model6.add_split(0, [nu1, nu2])
+        model6.add_epoch(T3, [Nu2, fxnu1], [[0, m], [0, 0]], [d1, d2])
+        model6.add_split(1, [nu2, nu1])
+        model6.add_epoch(t, [nu1, nu2, nu1], None, None)
+        model6.add_inbreeding([f1, f2, 0.5])
+
+        values = {nu1: 2, nu2: 0.5, nu3: 0.5, t_copy: 0.3,
+                  t2: 0.5, m: 0.1, s: 0.1, d1: 'Exp', d2: 'Lin',
+                  f: 0.5, h: 0.3, f1: 0.1, f2: 0.3,
                   Nanc: 10000, Nu2: 5000, T3: 4000}
 
         for engine in all_available_engines():
-            models = [model1, model2, model3, model5]
+            models = [model1, model2, model3, model5, model6]
             if engine.can_evaluate:
                 customfile = os.path.join(
                     EXAMPLE_FOLDER, "MODELS",
@@ -416,8 +457,8 @@ class TestModels(unittest.TestCase):
                 func = module.model_func
                 variables = [nu1, nu2, nu3, m, t, t2]
 
-                model6 = CustomDemographicModel(func, variables)
-                models.append(model6)
+                model7 = CustomDemographicModel(func, variables)
+                models.append(model7)
 
             for ind, model in enumerate(models):
                 for description, data in self._sfs_datasets():

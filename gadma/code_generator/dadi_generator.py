@@ -95,7 +95,7 @@ def _print_dadi_func(model, values):
             if isinstance(var, Variable):
                 inbr_names.append(var.name)
             else:
-                inbr_names.append(var)
+                inbr_names.append(str(var))
         ret_str += "\tsfs = dadi.Spectrum.from_phi_inbreeding(" \
                    "phi, ns, [xx]*len(ns), [{}], [2]*len(ns)" \
                    ")\n".format(", ".join(inbr_names))
