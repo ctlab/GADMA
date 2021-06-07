@@ -69,7 +69,6 @@ jobs:
           pip3 install configspace
           pip3 install smac==0.12.4
           pip3 install bayesmark
-          python -c "import smac"
 
       - name: Run tests and codecov.
         run: |

@@ -41,14 +41,16 @@ if smac_available:
 
 
 def get_maxeval_for_bo(maxeval, maxiter):
-    if maxiter is None:
+    maxit = maxiter
+    maxev = maxeval
+    if maxit is None:
         if maxeval is not None:
-            maxiter = maxeval
+            maxit = maxeval
         else:
-            maxiter = 100
-    if maxeval is None:
-        maxeval = maxiter
-    return min(maxiter, maxeval)
+            maxit = 100
+    if maxev is None:
+        maxev = maxit
+    return min(maxit, maxev)
 
 
 class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
@@ -312,13 +314,9 @@ class SMACSquirellOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                   iter_callback):
         from .smac_optim import SMAC4EPMOpimizer
 
-        if maxiter is None:
-            if maxeval is not None:
-                maxiter = maxeval
-            else:
-                maxiter = 100
+        min_maxiter = get_maxeval_for_bo(maxeval, maxiter)
         if maxeval is None:
-            maxeval = (maxiter * self.n_suggestions +
+            maxeval = (min_maxiter * self.n_suggestions +
                        self.run_info.result.n_eval)
         x_best = X_init[0]
         y_best = Y_init[0]
@@ -689,7 +687,8 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             add_to_runhistory(x, y)
 
         # begin Bayesian optimization
-        while self.run_info.result.n_eval <= maxeval:
+        while self.run_info.result.n_eval < maxeval and \
+                (maxiter is not None and self.run_info.result.n_iter < maxiter):
             total_t_start = time.time()
 
             X, y = rh2epm.transform(runhistory)
@@ -754,4 +753,5 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         return self.run_info.result
 
 
-register_global_optimizer("SMAC_BO_optimization", SMACBayesianOptimizer)
+if smac_available:
+    register_global_optimizer("SMAC_BO_optimization", SMACBayesianOptimizer)
