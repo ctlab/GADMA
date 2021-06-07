@@ -168,6 +168,8 @@ class TestModelStructure(unittest.TestCase):
                     engine.set_model(dm)
                     if engine.id == 'dadi':
                         sizes = [8 for _ in range(len(structure))]
+                        if len(structure) == 1:
+                            sizes = [20]
                         args = ([4, 6, 8],)  # pts
                     else:
                         sizes = [4 for _ in range(len(structure))]
