@@ -691,7 +691,7 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         # begin Bayesian optimization
         while self.run_info.result.n_eval <= maxeval:
             total_t_start = time.time()
-            
+
             X, y = rh2epm.transform(runhistory)
 
             # If all are not finite then we return nothing
@@ -748,7 +748,7 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                              "gp_predict_time": gp_predict_time,
                              "acq_opt_time": acq_opt_time,
                              "eval_time": eval_time,
-                             "iter_time": total_iter_time,}
+                             "iter_time": total_iter_time}
             iter_callback(x, cost, [x], [cost], **update_kwargs)
 
         return self.run_info.result
