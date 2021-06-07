@@ -167,7 +167,12 @@ class TestEngines(unittest.TestCase):
         model = engine.simulate(vals, ns, pts)
         self.assertTrue(np.allclose(model, data), msg="Simulations differs in"
                                                       " engine and in dadi.")
-        self.assertEqual(engine.evaluate(vals, pts), ll)
+        self.assertEqual(engine.set_and_evaluate(
+            data=data,
+            model=dm,
+            values=vals,
+            options={"pts": pts}
+        ), ll)
 
     def test_moments_engine(self):
         engine = get_engine('moments')
@@ -184,7 +189,12 @@ class TestEngines(unittest.TestCase):
         model = engine.simulate(vals, ns, dt_fac)
         self.assertTrue(np.allclose(model, data), msg="Simulations differs in"
                                                       " engine and in dadi.")
-        eng_ll = engine.evaluate(vals, dt_fac)
+        eng_ll = engine.set_and_evaluate(
+            data=data,
+            model=dm,
+            values=vals,
+            options={"dt_fac": dt_fac}
+        )
         self.assertTrue(np.allclose(eng_ll, ll),
                         msg=f"{eng_ll} != {ll}")
 
@@ -213,7 +223,7 @@ class TestEngines(unittest.TestCase):
     def test_demes_engine(self):
         data_holder = DataHolder(
             filename=None,
-            projections=[10],
+            projections=[10, 10, 10],
             outgroup=False,
             population_labels=["YRI", "CEU", "CHB"],
             sequence_length=None
@@ -251,5 +261,48 @@ class TestEngines(unittest.TestCase):
                              gen_time=25, gen_time_units="years")
         engine.draw_schematic_model_plot(values, save_file="plot.png",
                                          gen_time=25, gen_time_units="years")
+
+        dm = EpochDemographicModel(Nanc_size=1000)
+        dm.add_split(0, [nu1F, nu2B])
+        dm.add_epoch(Tp, [nu1F, nu2F], dyn_args=['Sud', Dyn])
+        dm.add_split(1, [nu2F, nu2F])
+        migs = [[0, m, m13], [m, 0, 0], [0, 0, 0]]
+        dm.add_epoch(T, [nu1F, nu2F, nu2F], mig_args=migs)
+
+        engine.model = dm
+        engine.generate_code(values=values,
+                             gen_time=25, gen_time_units="years")
+        engine.draw_schematic_model_plot(values, save_file="plot.png",
+                                         gen_time=25, gen_time_units="years")
+
+
         values["Dyn"] = "Lin"
         self.assertRaises(ValueError, engine.generate_code, values=values)
+
+        # error when no nanc is set
+        dm = EpochDemographicModel()
+        self.assertRaises(ValueError, engine.build_demes_graph,
+                          values=values, nanc=None)
+
+    def test_moments_drawing(self):
+        data_holder = SFSDataHolder(
+            os.path.join(DATA_PATH, "DATA", "sfs", "YRI_CEU.fs"),
+        )
+
+        engine = get_engine("moments")
+
+        nu = PopulationSizeVariable('nu')
+        T = TimeVariable('T')
+        Dyn = DynamicVariable('Dyn')
+
+        dm = EpochDemographicModel(Nanc_size=1000)
+        dm.add_split(0, [nu, nu])
+        dm.add_epoch(T, [nu, nu], dyn_args=['Sud', Dyn])
+
+        values = {'nu': 1.880, 'T': 0.112, 'Dyn': 'Exp'}
+
+        engine.data = engine.read_data(data_holder)
+        assert engine.data_holder is None
+        engine.model = dm
+
+        engine.draw_schematic_model_plot(values, save_file="plot.png")

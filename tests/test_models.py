@@ -38,6 +38,9 @@ class TestModels(unittest.TestCase):
         self.assertRaises(ValueError, m.add_variable, 1.0)
         self.assertRaises(TypeError, m.var2value, set())
 
+        m = DemographicModel()
+        self.assertRaises(NotImplementedError, m._get_Nanc_size, values=[])
+
     def dadi_wrapper(self, func):
         def wrapper(param, ns, pts):
             xx = dadi.Numerics.default_grid(pts)
@@ -294,6 +297,8 @@ class TestModels(unittest.TestCase):
                 Nanc = engine.get_theta(dic, *args)
                 tr = dm.translate_values("physical", dic, Nanc)
                 _tr = dm.translate_values("genetic", dic, Nanc)
+                dm.Nref = 1
+                dm.translate_values("physical", dic, Nanc, rescale_back=True)
                 dm_copy = copy.deepcopy(dm)
                 # raise error if not demographic parameters
                 # dm_copy.add_variable(ContinuousVariable("some", [-1, 10]))
@@ -303,6 +308,11 @@ class TestModels(unittest.TestCase):
                 dm.as_custom_string(dic)
 
         # test failures
+        # hack
+        phys_var = PopulationSizeVariable("nu", units="physical")
+        super(DemographicModel, dm).add_variable(phys_var)
+        self.assertRaises(ValueError, dm.translate_values, "genetic", dic, Nanc=None)
+        # other stuff
         event = Event()
         x = [var.resample() for var in event.variables]
         self.assertRaises(NotImplementedError, event.as_custom_string, x)
@@ -460,7 +470,7 @@ class TestModels(unittest.TestCase):
         model5 = EpochDemographicModel(Nanc_size=Nanc)
         model5.add_epoch(t, [nu1])
         model5.add_split(0, [nu1, nu2])
-        model5.add_epoch(T3, [Nu2, fxnu1], [[0, m], [0, 0]], [d1, d2])
+        model5.add_epoch(T3, [0.5, fxnu1], [[0, m], [0, 0]], ["Sud", d2])
         model5.add_split(1, [nu2, nu1])
         model5.add_epoch(t, [nu1, nu2, nu1], None, None)
 
@@ -528,3 +538,11 @@ class TestModels(unittest.TestCase):
                         msg += f": {true_ll} != {d['ll_model']}"
                         self.assertTrue(np.allclose(true_ll, d['ll_model']),
                                         msg=msg)
+
+                        if description == "dadi snp file":
+                            engine.data_holder.population_labels = None                        
+                            self.assertRaises(ValueError, engine.generate_code,
+                                              values, None, *args, nanc=Nanc)
+                        if description == "fs without pop labels":
+                            engine.data_holder.population_labels = None
+                            engine.generate_code(values, None, *args, nanc=Nanc)

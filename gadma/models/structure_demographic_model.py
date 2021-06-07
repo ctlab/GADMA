@@ -322,7 +322,7 @@ class StructureDemographicModel(EpochDemographicModel):
             new_X = []
             for x in X:
                 new_X.append([])
-                # if we have anc size than we should put after first variable
+                # if we have anc size then we should put after first variable
                 if self.has_anc_size:
                     new_X[-1].extend([x[0]])
                     x = x[1:]
@@ -355,6 +355,9 @@ class StructureDemographicModel(EpochDemographicModel):
             for old_var, new_var in zip(old_vars, new_vars):
                 assert type(old_var) == type(new_var)  # addit. check for types
                 oldvar2newvar[old_var] = new_var
+        if self.has_anc_size:
+            assert self.has_anc_size
+            oldvar2newvar[old_model.Nanc_size] = self.Nanc_size
         if old_model.has_inbreeding:
             assert self.has_inbreeding
             for old_inbr_arg, new_inbr_arg in zip(old_model.inbreeding_args,

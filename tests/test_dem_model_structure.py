@@ -8,7 +8,7 @@ TEST_STRUCTURES = [(1,), (2,),
                    (1,1), (2,1), (1,2),
                    (1,1,1)]
 
-BASE_TEST_STRUCTURES = [(2,), (2,1), (1, 1, 1)]
+BASE_TEST_STRUCTURES = [(1,), (2,), (2,1), (1, 1, 1)]
 
 import warnings
 warnings.filterwarnings(action='ignore', category=UserWarning,
@@ -49,8 +49,13 @@ class TestModelStructure(unittest.TestCase):
                                                has_inbr=inbr)
                 self.assertRaises(ValueError, dm.increase_structure)
                 struct = dm.get_structure()
-                struct[np.random.choice(range(len(struct)))] += 2
+                ind = np.random.choice(range(len(struct)))
+                struct[ind] += 2
                 self.assertRaises(ValueError, dm.increase_structure, struct)
+                dm.final_structure = struct
+                self.assertRaises(ValueError, dm.increase_structure, struct)
+                dm.final_structure = structure
+
                 # for splits variables
                 n_par = (1 + int(not fracs)) * (len(structure) - 1)
                 for i, str_val in enumerate(structure):
@@ -95,6 +100,9 @@ class TestModelStructure(unittest.TestCase):
                             has_sels=create_sels, has_dyns=create_dyns,
                             sym_migs=sym_migs, migs_mask=masks,
                             frac_split=fracs, has_inbr=inbr)
+                dm.events.append(1.0)
+                self.assertRaises(ValueError, dm.get_structure)
+
 
     def test_migration_masks_failures(self):
         for structure in TEST_STRUCTURES:
@@ -137,8 +145,8 @@ class TestModelStructure(unittest.TestCase):
 
     def test_likelihood_after_increase(self):
         for structure in BASE_TEST_STRUCTURES:
-            for create_migs, create_sels, create_dyns, sym_migs, fracs, inbr in\
-                    list(itertools.product([False, True],repeat=6)):
+            for create_migs, create_sels, create_dyns, sym_migs, fracs, has_anc, inbr in\
+                    list(itertools.product([False, True],repeat=7)):
                 if not create_migs:
                     sym_migs = False
                 def model_generator(structure):
@@ -149,12 +157,12 @@ class TestModelStructure(unittest.TestCase):
                                                      has_dyns=create_dyns,
                                                      sym_migs=sym_migs,
                                                      frac_split=fracs,
+                                                     has_anc_size=has_anc,
                                                      has_inbr=inbr)
  
                 dm = model_generator(structure)
                 variables = dm.variables
                 x = [var.resample() for var in variables]
-
                 bad_structure = list(structure)
                 for i in range(len(bad_structure)):
                     if bad_structure[i] == 1:
@@ -164,6 +172,8 @@ class TestModelStructure(unittest.TestCase):
                                       bad_structure)
 
                 check_ll = np.random.choice([True, False], p=[1/6, 5/6])
+                if has_anc:
+                    check_ll = False
                 for engine in all_simulation_engines():
                     engine.set_model(dm)
                     if engine.id == 'dadi':
@@ -197,7 +207,8 @@ class TestModelStructure(unittest.TestCase):
                               f"create_sels: {create_sels}, "\
                               f"create_dyns: {create_dyns}, "\
                               f"sym_migs: {sym_migs}, "\
-                              f"fracs: {fracs}," \
+                              f"fracs: {fracs}, " \
+                              f"has_anc: {has_anc}, "\
                               f"inbr: {inbr}"
 #                        print(msg)
                         new_dm = copy.deepcopy(dm)

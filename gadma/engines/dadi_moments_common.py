@@ -389,7 +389,13 @@ def _get_default_from_snp_format(filename):
         appr_size = np.zeros(n_pop, dtype=int)
         for line in f:
             info = line.split()
-            if info[1][1].lower() not in ['a', 't', 'c', 'g']:
+            nucleotides = ['a', 't', 'c', 'g']
+            assert len(info[0]) % 2 == 1
+            assert len(info[1]) % 2 == 1
+            info_0_char = info[0][len(info[0]) // 2].lower()
+            info_1_char = info[1][len(info[1]) // 2].lower()
+            if (info_0_char not in nucleotides or
+                    info_1_char not in nucleotides):
                 has_outgroup = False
             for num in range(n_pop):
                 cur_size = int(info[3 + num]) + int(info[4 + n_pop + num])
