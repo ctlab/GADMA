@@ -11,12 +11,14 @@ from ..utils import ContinuousVariable, WeightedMetaArray, get_correct_dtype
 from .. import GPyOpt_available, GPyOpt
 from .. import GPy_available, GPy
 from .. import smac_available, smac, ConfigSpace
+from .. import bayesmark_available
 
 if smac_available:
     import skopt
     skopt.__version__  # somehow it fixes import errors in smac
     import skopt.learning.gaussian_process.kernels as kernels
-    from smac.epm.gp_kernels import ConstantKernel, Matern, RBF, WhiteKernel, HammingKernel
+    from smac.epm.gp_kernels import ConstantKernel, Matern, RBF
+    from smac.epm.gp_kernels import WhiteKernel, HammingKernel
     from smac.optimizer.acquisition import LogEI, EI, PI, LCB
     from smac.scenario.scenario import Scenario
     from smac.epm.gaussian_process_mcmc import GaussianProcess
@@ -36,7 +38,6 @@ if smac_available:
         RunHistory2EPM4LogScaledCost,
     )
     from smac.optimizer.ei_optimization import LocalAndSortedRandomSearch
-
 
 
 def get_maxeval_for_bo(maxeval, maxiter):
@@ -117,13 +118,19 @@ class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         if hasattr(run_info, "gp_train_times"):
             print("\nTime for GP training:", run_info.gp_train_times[n_iter],
                   file=stream)
+        if hasattr(run_info, "gp_predict_times"):
+            print("Time for GP prediction:",
+                  run_info.gp_predict_times[n_iter],
+                  file=stream)
         if hasattr(run_info, "acq_opt_times"):
             print("Time for acq. optim.:",
                   run_info.acq_opt_times[n_iter], file=stream)
+        if hasattr(run_info, "eval_times"):
+            print("Time of evaluation:",
+                  run_info.eval_times[n_iter], file=stream)
         if hasattr(run_info, "iter_times"):
             print("Total time of iteration:",
                   run_info.iter_times[n_iter], file=stream)
-
 
         print('=============================================================',
               end="\n\n", file=stream)
@@ -233,7 +240,11 @@ class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         return self.run_info.result
 
 
-register_global_optimizer('GPyOpt_Bayesian_optimization', GPyOptBayesianOptimizer)
+if GPyOpt_available:
+    register_global_optimizer(
+        'GPyOpt_Bayesian_optimization',
+        GPyOptBayesianOptimizer
+    )
 
 
 class SMACSquirellOptimizer(GlobalOptimizer, ConstrainedOptimizer):
@@ -243,6 +254,12 @@ class SMACSquirellOptimizer(GlobalOptimizer, ConstrainedOptimizer):
     def __init__(self, n_suggestions=4,
                  random_type='resample', custom_rand_gen=None,
                  log_transform=False, maximize=False):
+        if not smac_available:
+            raise ValueError("Install SMAC to use it in SMAC squirell "
+                             "optimization")
+        if not bayesmark_available:
+            raise ValueError("Install bayesmark to use it in SMAC squirell "
+                             "optimization")
         self.n_suggestions = n_suggestions
         super(SMACSquirellOptimizer, self).__init__(
             random_type=random_type,
@@ -363,7 +380,10 @@ class SMACSquirellOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
 
 if smac_available:
-    register_global_optimizer('SMAC_squirell_optimization', SMACSquirellOptimizer)
+    register_global_optimizer(
+        'SMAC_squirell_optimization',
+        SMACSquirellOptimizer
+    )
 
 
 class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
@@ -384,8 +404,23 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             log_transform=log_transform,
             maximize=maximize
         )
-        # checks
+
+    @property
+    def kernel_name(self):
+        return self._kernel_name
+
+    @kernel_name.setter
+    def kernel_name(self, value):
+        self._kernel_name = value
         self._get_kernel_class_and_nu()
+
+    @property
+    def acquisition_type(self):
+        return self._acquisition_type
+
+    @acquisition_type.setter
+    def acquisition_type(self, value):
+        self._acquisition_type = value
         self.get_acquisition_function_class()
 
     def _get_kernel_class_and_nu(self):
@@ -562,7 +597,11 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
     @staticmethod
     def _write_report_to_stream(variables, run_info, stream):
         run_info.bo_obj = None
-        GPyOptBayesianOptimizer._write_report_to_stream(variables, run_info, stream)
+        GPyOptBayesianOptimizer._write_report_to_stream(
+            variables=variables,
+            run_info=run_info,
+            stream=stream
+        )
 
     def valid_restore_file(self, save_file):
         try:
@@ -577,13 +616,15 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
     def _create_run_info(self):
         run_info = super(SMACBayesianOptimizer, self)._create_run_info()
         run_info.gp_train_times = []
+        run_info.gp_predict_times = []
         run_info.acq_opt_times = []
+        run_info.eval_times = []
         run_info.iter_times = []
         return run_info
 
     def _update_run_info(self, run_info, x_best, y_best, X, Y,
-                         n_eval, gp_train_time=None, acq_opt_time=None,
-                         iter_time=None):
+                         n_eval, gp_train_time=None, gp_predict_time=None,
+                         acq_opt_time=None, eval_time=None, iter_time=None):
         super(SMACBayesianOptimizer, self)._update_run_info(
             run_info=run_info,
             x_best=x_best,
@@ -593,7 +634,9 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             n_eval=n_eval
         )
         run_info.gp_train_times.append(gp_train_time)
+        run_info.gp_predict_times.append(gp_predict_time)
         run_info.acq_opt_times.append(acq_opt_time)
+        run_info.eval_times.append(eval_time)
         run_info.iter_times.append(iter_time)
         return run_info
 
@@ -646,8 +689,9 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             add_to_runhistory(x, y)
 
         # begin Bayesian optimization
-        while self.run_info.result.n_iter <= maxeval:
+        while self.run_info.result.n_eval <= maxeval:
             total_t_start = time.time()
+            
             X, y = rh2epm.transform(runhistory)
 
             # If all are not finite then we return nothing
@@ -662,11 +706,14 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             model.train(X, y)
             gp_train_time = time.time() - t_start
 
+            t_start = time.time()
             predictions = model.predict_marginalized_over_instances(X)[0]
             best_index = np.argmin(predictions)
             best_observation = y[best_index]
             x_best_array = X[best_index]
+            gp_predict_time = time.time() - t_start
 
+            t_start = time.time()
             acq_fun.update(
                 model=model,
                 eta=best_observation,
@@ -674,16 +721,12 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                 num_data=len(X),
                 X=X,
             )
-
-            t_start = time.time()
             new_config_iterator = acq_fun_opt.maximize(
                 runhistory=runhistory,
                 stats=stats,
                 num_points=10000,
                 random_configuration_chooser=rnd_chooser,
             )
-            acq_opt_time = time.time() - t_start
-
             accept = False
             for next_config in new_config_iterator:
                 if next_config in X:
@@ -692,16 +735,20 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                     accept = True
                     break
             assert accept
+            acq_opt_time = time.time() - t_start
 
+            t_start = time.time()
             x = [next_config[var.name] for var in variables]
             cost = f(x)
-
+            eval_time = time.time() - t_start
             add_to_runhistory(next_config, cost)
 
             total_iter_time = time.time() - total_t_start
             update_kwargs = {"gp_train_time": gp_train_time,
+                             "gp_predict_time": gp_predict_time,
                              "acq_opt_time": acq_opt_time,
-                             "iter_time": total_iter_time}
+                             "eval_time": eval_time,
+                             "iter_time": total_iter_time,}
             iter_callback(x, cost, [x], [cost], **update_kwargs)
 
         return self.run_info.result
