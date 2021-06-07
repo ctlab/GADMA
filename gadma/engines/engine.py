@@ -33,10 +33,40 @@ def get_engine(id):
 def all_engines():
     """
     Returns an iterator over all registered engines of the demographic
-    inference.
+    inference that can evaluate log-likelihood.
+    """
+    for engine in _registered_engines.values():
+        if engine.can_evaluate:
+            yield engine()
+
+
+def all_available_engines():
+    """
+    Returns an iterator over all registered engines
+    for the demographic inference.
     """
     for engine in _registered_engines.values():
         yield engine()
+
+
+def all_simulation_engines():
+    """
+    Returns an iterator over all registered engines that can simulate
+    log-likelihood for the demographic inference.
+    """
+    for engine in _registered_engines.values():
+        if engine.can_simulate:
+            yield engine()
+
+
+def all_drawing_engines():
+    """
+    Returns an iterator over all registered engines that can simulate
+    log-likelihood for the demographic inference.
+    """
+    for engine in _registered_engines.values():
+        if engine.can_draw:
+            yield engine()
 
 
 class Engine(object):
@@ -58,6 +88,9 @@ class Engine(object):
     supported_models = []
     supported_data = []
     inner_data_type = None
+    can_evaluate = False
+    can_draw = False
+    can_simulate = False
 
     def __init__(self, data=None, model=None):
         self.data = data
@@ -128,7 +161,8 @@ class Engine(object):
             self.saved_add_info = {}
             return
         cls = data.__class__
-        if cls not in self.supported_data and \
+        if self.supported_data is not None and \
+                cls not in self.supported_data and \
                 not isinstance(data, self.inner_data_type):
             try:
                 transformed_data = self.inner_data_type(data)
@@ -143,10 +177,12 @@ class Engine(object):
             self.inner_data = self.read_data(data)
             self.data_holder = copy.deepcopy(data)
             # TODO valid for dadi and moments
-            self.data_holder.projections = self.inner_data.sample_sizes
-            self.data_holder.population_labels = self.inner_data.pop_ids
-            self.data_holder.outgroup = not self.inner_data.folded
-        elif isinstance(data, self.inner_data_type):
+            if self.inner_data is not None:
+                self.data_holder.projections = self.inner_data.sample_sizes
+                self.data_holder.population_labels = self.inner_data.pop_ids
+                self.data_holder.outgroup = not self.inner_data.folded
+        elif (self.inner_data_type is not None and
+                isinstance(data, self.inner_data_type)):
             self.inner_data = data
             self.data_holder = None
         self.saved_add_info = {}
@@ -195,7 +231,8 @@ class Engine(object):
 
         return self.evaluate(values, **options)
 
-    def generate_code(self, values, filename=None):
+    def generate_code(self, values, filename=None, nanc=None,
+                      gen_time=None, gen_time_units="years"):
         """
         Prints nice formated code in the format of engine to file or returns
         it as string if no file is set.

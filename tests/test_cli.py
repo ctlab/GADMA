@@ -277,6 +277,15 @@ class TestCLI(unittest.TestCase):
             settings.engine = engine.id
             settings.pts = [20, 30, 40]
             settings.engine = engine.id
+        # check errors for bad engines
+        settings.model_plot_engine = "demes"
+        settings.sfs_plot_engine = "dadi"
+        self.assertRaises(ValueError,  settings.__setattr__,
+                          'engine', 'demes')
+        self.assertRaises(ValueError,  settings.__setattr__,
+                          'sfs_plot_engine', 'demes')
+        self.assertRaises(ValueError,  settings.__setattr__,
+                          'model_plot_engine', 'dadi')
 
         # units of time in drawing
         settings.time_for_generation = 1.0
@@ -307,6 +316,15 @@ class TestCLI(unittest.TestCase):
         settings.min_m = 0
         settings.max_m = 5
         self.assertTrue(list(MigrationVariable('v').domain) == [0, 5])
+
+        no_lin = [0, "Exp"]
+        settings.dynamics = no_lin
+        self.assertRaises(ValueError, settings.__setattr__,
+                          'dynamics', [-1, "Exp"])
+        self.assertEqual(list(DynamicVariable('d').domain), no_lin)
+        settings.dynamics = "0, Exp"
+        self.assertEqual(list(DynamicVariable('d').domain), no_lin)
+        settings.dynamics = ["Sud", "Lin", "Exp"]
 
         # get model with parameters when there is no pop ids
         settings = SettingsStorage()
@@ -420,6 +438,54 @@ class TestCLI(unittest.TestCase):
                 os.remove(params_file)
                 gadma.PIL_available = True
                 gadma.moments_available = True
+
+    def test_inbreeding_run(self):
+        params_file = 'params'
+        outdir = os.path.join(DATA_PATH, 'inbreed_dir')
+        if check_dir_existence(outdir):
+            shutil.rmtree(outdir)
+        with open(params_file, 'w') as fl:
+            fl.write("Input file: tests/test_data/DATA/sfs/YRI_CEU.fs\n"
+                     "Linked SNP's: False\n"
+                     "Silence: True\n"
+                     "global_maxiter: 2\n"
+                     "local_maxiter: 1\n"
+                     "inbreeding: True\n"
+                     "engine: dadi")
+        sys.argv = ['gadma', '-p', params_file, '--output', outdir]
+        try:
+            gadma.matplotlib_available = False
+            core.main()
+        finally:
+            if check_dir_existence(outdir):
+                shutil.rmtree(outdir)
+            os.remove(params_file)
+            gadma.matplotlib_available = True
+
+    def test_inbreeding_fail_run_with_moments(self):
+        params_file = 'params'
+        outdir = os.path.join(DATA_PATH, 'resume_dir')
+        if check_dir_existence(outdir):
+            shutil.rmtree(outdir)
+        with open(params_file, 'w') as fl:
+            fl.write("Input file: tests/test_data/DATA/sfs/YRI_CEU.fs\n"
+                     "Linked SNP's: False\n"
+                     "Silence: True\n"
+                     "global_maxiter: 2\n"
+                     "local_maxiter: 1\n"
+                     "inbreeding: True\n"
+                     "engine: moments")
+        sys.argv = ['gadma', '-p', params_file,
+                    '--output', outdir]
+        try:
+            gadma.matplotlib_available = False
+            self.assertRaises(ValueError, core.main)
+        finally:
+            if check_dir_existence(outdir):
+                shutil.rmtree(outdir)
+            os.remove(params_file)
+            gadma.matplotlib_available = True
+
 
     def test_logging_to_stderr(self):
         saved_stderr = sys.stderr

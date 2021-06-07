@@ -41,7 +41,7 @@ jobs:
           pip3 install GPy
           pip3 install GPyOpt
           pip3 install pandas
-          pip3 install ruamel.yaml
+          pip3 install ruamel.yaml==0.16.12
           pip3 install pytest
           pip3 install pytest-cov
           pip3 install pytest-timeout
@@ -73,7 +73,7 @@ jobs:
 
       - name: Run tests and codecov.
         run: |
-          python -m pytest --timeout=300 --cov=gadma --cov-report=xml -v tests --disable-warnings
+          python -m pytest --timeout=400 --cov=gadma --cov-report=xml -v tests --disable-warnings
         
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1

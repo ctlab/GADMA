@@ -25,11 +25,14 @@ if moments_available:
     engine = 'moments'
 elif dadi_available:
     engine = 'dadi'
+model_plot_engine = "moments"
+sfs_plot_engine = None  # None means the same as engine
 relative_parameters = False
 no_migrations = False
 symmetric_migrations = False
 split_fractions = True
 migration_masks = None
+inbreeding = False
 
 # Custom model
 custom_filename = None
@@ -101,6 +104,7 @@ min_t = TimeVariable.default_domain[0]
 max_t = TimeVariable.default_domain[1]
 min_m = MigrationVariable.default_domain[0]
 max_m = MigrationVariable.default_domain[1]
+dynamics = list(DynamicVariable.default_domain)
 
 # Parameters for local search alg
 # ls_verbose = None

@@ -1,4 +1,4 @@
-from . import register_engine, get_engine
+from . import register_engine
 from .dadi_moments_common import DadiOrMomentsEngine
 from ..models import CustomDemographicModel, Epoch, Split
 from ..utils import DynamicVariable
@@ -39,7 +39,7 @@ class DadiEngine(DadiOrMomentsEngine):
             if event.n_pop == 1:
                 arg_name = 'nu'
             else:
-                arg_name = 'nu%d' % (i+1)
+                arg_name = 'nu%d' % (i + 1)
 
             if event.dyn_args is not None:
                 dyn_arg = event.dyn_args[i]
@@ -47,7 +47,7 @@ class DadiEngine(DadiOrMomentsEngine):
                 if dyn == 'Sud':
                     ret_dict[arg_name] = event.size_args[i]
                 else:
-                    ret_dict[arg_name] = 'nu%d_func' % (i+1)
+                    ret_dict[arg_name] = 'nu%d_func' % (i + 1)
             else:
                 ret_dict[arg_name] = event.size_args[i]
 
@@ -56,19 +56,19 @@ class DadiEngine(DadiOrMomentsEngine):
                 for j in range(event.n_pop):
                     if i == j:
                         continue
-                    ret_dict['m%d%d' % (i+1, j+1)] = event.mig_args[i][j]
+                    ret_dict['m%d%d' % (i + 1, j + 1)] = event.mig_args[i][j]
         if event.sel_args is not None:
             if event.n_pop == 1:
                 arg_name = 'gamma'
             else:
-                arg_name = 'gamma%d' % (i+1)
+                arg_name = 'gamma%d' % (i + 1)
             for i in range(event.n_pop):
                 ret_dict[arg_name] = event.sel_args[i]
         if event.dom_args is not None:
             if event.n_pop == 1:
                 arg_name = 'h'
             else:
-                arg_name = 'h%d' % (i+1)
+                arg_name = 'h%d' % (i + 1)
             for i in range(event.n_pop):
                 ret_dict[arg_name] = event.dom_args[i]
         return ret_dict
@@ -108,7 +108,7 @@ class DadiEngine(DadiOrMomentsEngine):
                                 var2value, event.size_args[i])
                             x_diff = self.get_value_from_var2value(
                                 var2value, event.time_arg)
-                            addit_values['nu%d_func' % (i+1)] = func(
+                            addit_values['nu%d_func' % (i + 1)] = func(
                                 y1=y1,
                                 y2=y2,
                                 x_diff=x_diff)
@@ -130,48 +130,21 @@ class DadiEngine(DadiOrMomentsEngine):
                     func_name = "phi_%dD_to_%dD_split_%d" % (
                         event.n_pop, event.n_pop + 1, event.pop_to_div + 1)
                     phi = getattr(dadi.PhiManip, func_name)(xx, phi)
-        sfs = dadi.Spectrum.from_phi(phi, ns, [xx]*len(ns))
+
+        if self.model.has_inbreeding:
+            inbr_list = []
+            for i in range(len(self.model.inbreeding_args)):
+                inbr_arg = self.model.inbreeding_args[i]
+                value = self.get_value_from_var2value(var2value,
+                                                      inbr_arg)
+                inbr_list.append(value)
+
+            sfs = dadi.Spectrum.from_phi_inbreeding(phi, ns, [xx] * len(ns),
+                                                    inbr_list, [2] * len(ns))
+        else:
+            sfs = dadi.Spectrum.from_phi(phi, ns, [xx] * len(ns))
+
         return sfs
-
-    def draw_schematic_model_plot(self, values, save_file=None,
-                                  fig_title="Demographic Model from GADMA",
-                                  nref=None, gen_time=1,
-                                  gen_time_units="Generations"):
-        """
-        Draws schematic plot of the model with values with
-        :class:`MomentsEngine` (!).
-        See moments manual for more information.
-
-        :param values: Values of the model parameters, it could be list of
-                       values or dictionary {variable name: value}.
-        :type values: list or dict
-        :param save_file: File to save picture. If None then picture will be
-                          displayed to the screen.
-        :type save_file: str
-        :param fig_title: Title of the figure.
-        :type fig_title: str
-        :param nref: An ancestral population size. If None then parameters
-                     will be drawn in genetic units.
-        :type nref: int
-        :param gen_type: Time of one generation.
-        :type gen_type: float
-        :param gen_time_units: Units of `gen_type`. For example, it
-                               could be Years, Generations, Thousand Years and
-                               so on.
-        """
-        if isinstance(self.model, CustomDemographicModel):
-            raise RuntimeError("Could not draw model plot for dadi's "
-                               "custom file.")
-        try:
-            moments_engine = get_engine('moments')
-        except AttributeError:
-            raise RuntimeError("Moments Engine is requiered to draw schematic"
-                               " model plot.")
-        moments_engine.set_data(self.data)
-        moments_engine.set_model(self.model)
-        moments_engine.draw_schematic_model_plot(values, save_file, fig_title,
-                                                 nref, gen_time,
-                                                 gen_time_units)
 
     def simulate(self, values, ns, pts):
         """
@@ -184,7 +157,7 @@ class DadiEngine(DadiOrMomentsEngine):
         """
         dadi = self.base_module
         func_ex = dadi.Numerics.make_extrap_log_func(self._inner_func)
-#        print(values, ns, pts)
+        # print(values, ns, pts)
         model = func_ex(values, ns, pts)
         # TODO: Nref
         return model
