@@ -688,7 +688,8 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
         # begin Bayesian optimization
         while self.run_info.result.n_eval < maxeval and \
-                (maxiter is not None and self.run_info.result.n_iter < maxiter):
+                (maxiter is not None and
+                 self.run_info.result.n_iter < maxiter):
             total_t_start = time.time()
 
             X, y = rh2epm.transform(runhistory)
