@@ -138,7 +138,7 @@ class DemographicModel(Model):
             # If our physical units are scaled then we should rescale them back
             if rescale_back:
                 if (self.Nref is not None and
-                        isinstance(var, DemographicModel) and
+                        isinstance(var, DemographicVariable) and
                         var.units == "physical"):
                     tr_value = var.rescale_value(tr_value, reverse=True)
             translated_values.append(tr_value)

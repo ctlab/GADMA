@@ -197,6 +197,13 @@ class TestEngines(unittest.TestCase):
         )
         self.assertTrue(np.allclose(eng_ll, ll),
                         msg=f"{eng_ll} != {ll}")
+        # check that multinom and constrain lead to error
+        dm = EpochDemographicModel(Nanc_size=10000)
+        dm.add_epoch(TimeVariable("t"), [PopulationSizeVariable("nu")])
+        engine.model = dm
+        engine.data = engine.simulate(values=[1, 1], ns=(10,))
+        engine.model.linear_constrain = optimizers.LinearConstrain([[0, 1], [1, -1]], [0, 0], [1, 1])
+        self.assertRaises(ValueError, engine.evaluate, values=[1, 1])
 
     def test_upper_bounds_on_split_time(self):
         import dadi
@@ -274,13 +281,15 @@ class TestEngines(unittest.TestCase):
                              gen_time=25, gen_time_units="years")
         engine.draw_schematic_model_plot(values, save_file="plot.png",
                                          gen_time=25, gen_time_units="years")
-
+        engine.draw_schematic_model_plot(values, save_file=None,
+                                         gen_time=25, gen_time_units="years")
 
         values["Dyn"] = "Lin"
         self.assertRaises(ValueError, engine.generate_code, values=values)
 
         # error when no nanc is set
         dm = EpochDemographicModel()
+        engine.model = dm
         self.assertRaises(ValueError, engine.build_demes_graph,
                           values=values, nanc=None)
 
@@ -306,3 +315,10 @@ class TestEngines(unittest.TestCase):
         engine.model = dm
 
         engine.draw_schematic_model_plot(values, save_file="plot.png")
+        engine.draw_sfs_plots(values=values, grid_sizes=0.01, save_file=None)
+
+        dm = EpochDemographicModel()
+        dm.add_epoch(T, [nu])
+        engine.model = dm
+        engine.data = engine.simulate(values=values, ns=[20])
+        engine.draw_sfs_plots(values=values, grid_sizes=0.01, save_file=None)

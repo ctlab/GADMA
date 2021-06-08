@@ -63,12 +63,13 @@ jobs:
         shell: cmd
         if: matrix.os == 'windows-2019'
 
-      - name: Install SMAC.
+      - name: Install SMAC (Linux).
         run: |
           pip3 install scikit-optimize
           pip3 install configspace
           pip3 install smac==0.12.4
           pip3 install bayesmark
+        if: matrix.os == 'ubuntu-18.04'
 
       - name: Run tests and codecov.
         run: |

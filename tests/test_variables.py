@@ -89,6 +89,22 @@ class TestVariables(unittest.TestCase):
                 self.assertEqual(func(t / 2), y2)
             self.assertEqual(func(t), y2)
 
+    def test_log_trasform(self):
+        for var_cls in test_classes:
+            var = var_cls("name")
+            if var_cls == DynamicVariable:
+                self.assertRaises(NotImplementedError, var.apply_logarithm)
+                continue
+            var.log_transformed = False
+            self.assertFalse(var.log_transformed)
+            old_domain = list(var.domain)
+            var.log_transformed = True
+            self.assertTrue(var.log_transformed)
+            var.resample()
+            var.log_transformed = False
+            self.assertFalse(var.log_transformed)
+            self.assertEqual(list(var.domain), old_domain)
+
     def test_demographic_variables(self):
         var = DemographicVariable("dem")
         self.assertRaises(NotImplementedError,
@@ -115,6 +131,8 @@ class TestVariables(unittest.TestCase):
             if (issubclass(var_cls, ContinuousVariable) and 
                     var_cls is not FractionVariable):
                 var = var_cls("name", units="genetic")
+                var._transform_value_from_gen_to_phys(value=0, Nanc=10)
+                var._transform_value_from_phys_to_gen(value=0, Nanc=10)
                 self.assertEqual(list(var.domain),
                                  list(var_cls.default_domain))
                 var.translate_units_to(units="physical")
@@ -125,7 +143,6 @@ class TestVariables(unittest.TestCase):
                 var = var_cls("name", units="physical")
                 self.assertNotEqual(list(var.domain),
                                     list(var_cls.default_domain))
-                print(var.__class__.__name__, var.domain)
                 for i in range(1000):
                     self.assertTrue(var.domain[0] <= var.resample() \
                                     <= var.domain[1])
@@ -166,6 +183,8 @@ class TestVariables(unittest.TestCase):
                 var_orig = copy.deepcopy(var)
                 for units in ["physical", "genetic"]:
                     var.translate_units_to(units)
+                    var._transform_value_from_gen_to_phys(value=0, Nanc=10)
+                    var._transform_value_from_phys_to_gen(value=0, Nanc=10)
                     self.assertEqual(var.units, "universal")
                     self.assertEqual(list(var_orig.domain), list(var.domain))
             self.assertRaises(ValueError, var.translate_value_into,

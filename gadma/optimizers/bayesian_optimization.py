@@ -182,15 +182,6 @@ class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
         ndim = len(variables)
 
-        if ndim == 0:
-            x_best = []
-            y_best = f([x_best])
-            iter_callback(x_best, y_best, [x_best], [y_best])
-            self.run_info.result.success = True
-            self.run_info.result.status = 0
-            self.run_info.result.message = "Number of variables == 0"
-            return self.run_info.result
-
         if len(Y_init) > 0:
             x_best = X_init[0]
             y_best = Y_init[0]
@@ -729,7 +720,7 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             )
             accept = False
             for next_config in new_config_iterator:
-                if next_config in X:
+                if next_config in runhistory.get_all_configs():
                     continue
                 else:
                     accept = True
