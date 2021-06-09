@@ -15,6 +15,18 @@ Relative parameters
 
 Sometimes it is more important to see parameters scaled to ``Nref = N_A``. To tell GADMA to show models with scaled parameters, option ``Relative parameters`` should be set to ``True``. By default, it is ``False``. It is convenient when ``Theta0`` is unknown.
 
+Inbreeding
+----------
+
+GADMA can estimate inbreeding coefficients for demographic models with structure using ``dadi`` engine. To enable inbreeding coefficients one should set the following:
+
+.. code-block:: none
+
+    # param file
+    ...
+    Inbreeding: True
+    ...
+
 No migrations and symmetric migrations
 -----------------------------------------
 
