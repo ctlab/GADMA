@@ -106,7 +106,7 @@ class DemographicModel(Model):
                      E.g. has_anc_size could be False.
         :param time_in_generations: If False then time is translated to
                                     years according to gen_time of model.
-                                    Valid only if `units`=="physical".
+                                    Valid only if `units` == "physical".
         :param rescale_back: If True then values are rescaled back according
                              to Nref factor of the model.
         """

@@ -256,3 +256,4 @@ Resume from: Null
 #	mutation rate and strength will be initial.
 #	Default: None
 Only models: False
+model_plot_engine: demes

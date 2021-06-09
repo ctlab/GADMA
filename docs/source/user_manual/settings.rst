@@ -27,7 +27,6 @@ GADMA can estimate inbreeding coefficients for demographic models with structure
     Inbreeding: True
     ...
 
-
 No migrations and symmetric migrations
 -----------------------------------------
 
