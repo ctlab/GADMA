@@ -3,6 +3,7 @@ from gadma import *
 import itertools
 import copy
 import numpy as np
+import pytest
 
 TEST_STRUCTURES = [(1,), (2,),
                    (1,1), (2,1), (1,2),
@@ -143,6 +144,7 @@ class TestModelStructure(unittest.TestCase):
                 has_sels=True, has_dyns=True, sym_migs=False,
                 migs_mask=masks, frac_split=True, has_inbr=False)
 
+    @pytest.mark.timeout(0)
     def test_likelihood_after_increase(self):
         for structure in BASE_TEST_STRUCTURES:
             for create_migs, create_sels, create_dyns, sym_migs, fracs, has_anc, inbr in\
