@@ -524,9 +524,6 @@ class TestModels(unittest.TestCase):
                         n_pop = len(model.events[-1].size_args)
                         labels = [f"Pop_{i}" for i in range(n_pop)]
                         engine.data_holder.population_labels = labels
-                        values[d2] = "Sud"
-                    else:
-                        values[d2] = "Lin"
 
                     cmd = engine.generate_code(values, None, *args, nanc=Nanc)
 

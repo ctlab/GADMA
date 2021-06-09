@@ -254,7 +254,7 @@ class TestEngines(unittest.TestCase):
         dm.add_epoch(T, [nu1F, nu2F, nu2F], mig_args=migs)
 
         values = {'nu1F': 1.880, nu2B: 0.0724, 'f': 0.9, 'nu2F': 1.764,
-               'm': 0.930, 'Tp':  0.363, 'T': 0.112, 'Dyn': 'Exp',
+               'm': 0.930, 'Tp':  0.363, 'T': 0.112, 'Dyn': 'Lin',
                'SudDyn': 'Sud', 's': 0.1, 'dom': 0.5, 'm13': 1.5}
 
         engine = gadma.engines.demes_engine.DemesEngine()
@@ -283,9 +283,6 @@ class TestEngines(unittest.TestCase):
                                          gen_time=25, gen_time_units="years")
         engine.draw_schematic_model_plot(values, save_file=None,
                                          gen_time=25, gen_time_units="years")
-
-        values["Dyn"] = "Lin"
-        self.assertRaises(ValueError, engine.generate_code, values=values)
 
         # error when no nanc is set
         dm = EpochDemographicModel()

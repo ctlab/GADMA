@@ -49,13 +49,6 @@ class DemesEngine(Engine):
         # useful function
         def get_value(entity):
             return self.model.get_value_from_var2value(var2value, entity)
-        # If model has Linear growth it is not possible to draw it
-        for event in self.model.events:
-            if not isinstance(event, Split) and event.dyn_args is not None:
-                for arg in event.dyn_args:
-                    if get_value(arg) == "Lin":
-                        raise ValueError("Demes does not support linear "
-                                         "change of size.")
         if self.model.has_anc_size:
             Nanc_size = get_value(self.model.Nanc_size)
         else:
@@ -105,11 +98,12 @@ class DemesEngine(Engine):
                     end_size = get_value(event.size_args[i_pop])
                     if event.dyn_args is not None:
                         dynamic = get_value(event.dyn_args[i_pop])
-                        assert dynamic in ["Sud", "Exp"]
                         if dynamic == "Sud":
                             # we should put valid values
                             start_size = end_size
                             size_function = "constant"
+                        elif dynamic == "Lin":
+                            size_function = "linear"
                         else:
                             assert dynamic == "Exp"
                             size_function = "exponential"
