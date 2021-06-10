@@ -28,6 +28,7 @@ elif dadi_available:
 model_plot_engine = "moments"
 sfs_plot_engine = None  # None means the same as engine
 relative_parameters = False
+ancestral_size_as_parameter = False
 no_migrations = False
 symmetric_migrations = False
 split_fractions = True

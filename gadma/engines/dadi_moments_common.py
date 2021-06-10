@@ -221,7 +221,7 @@ class DadiOrMomentsEngine(Engine):
             theta = self._get_theta_from_sfs(values_gen, model_sfs)
         ll_model = self.base_module.Inference.ll(theta * model_sfs, self.data)
         # Save simulated data
-        key = self._get_key(values_gen, grid_sizes)
+        key = self._get_key(values, grid_sizes)
         self.saved_add_info[key] = theta
         return ll_model
 

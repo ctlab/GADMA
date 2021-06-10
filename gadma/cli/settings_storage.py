@@ -30,9 +30,10 @@ CHANGED_IDENTIFIERS = {"use_moments_or_dadi": "engine",
                        "stop_iteration": "stuck_generation_number",
                        "name_of_local_optimization": "local_optimizer",
                        "lower_bounds": "lower_bound",
-                       "upper_bounds": "upper_bound"}
+                       "upper_bounds": "upper_bound",
+                       "multinom": "ancestral_size_as_parameter"}
 
-DEPRECATED_IDENTIFIERS = ["multinom", "flush_delay",
+DEPRECATED_IDENTIFIERS = ["flush_delay",
                           "epsilon_for_ls", "gtol", "maxiter",
                           "multinomial_mutation", "multinomial_crossing",
                           "distribution", "std",
@@ -111,7 +112,8 @@ class SettingsStorage(object):
                       'relative_parameters', 'only_models',
                       'symmetric_migrations', 'split_fractions',
                       'generate_x_transform', 'global_log_transform',
-                      'local_log_transform', 'inbreeding']
+                      'local_log_transform', 'inbreeding',
+                      'ancestral_size_as_parameter']
         int_list_attrs = ['pts', 'initial_structure', 'final_structure',
                           'projections']
         float_list_attrs = ['lower_bound', 'upper_bound']
@@ -810,9 +812,14 @@ class SettingsStorage(object):
             if attr_name in CHANGED_IDENTIFIERS:
                 attr_name = CHANGED_IDENTIFIERS[attr_name]
                 setting_name = attr_name.replace("_", " ").capitalize()
+                msg = ""
+                if attr_name == "ancestral_size_as_parameter":
+                    msg = f" (`{setting_name}` = not `key`)"
+                    assert isinstance(loaded_dict[key], bool)
+                    loaded_dict[key] = not loaded_dict[key]
                 warnings.warn(f"Setting `{key}` is renamed in 2 version of "
                               f"GADMA to `{setting_name}`. It is successfully"
-                              " read.")
+                              f" read.{msg}")
 
             if not hasattr(self, attr_name):
                 if attr_name in DEPRECATED_IDENTIFIERS:
@@ -1051,18 +1058,21 @@ class SettingsStorage(object):
             split_f = self.split_fractions
             migs_mask = self.migration_masks
             create_inbr = self.inbreeding
-            model = StructureDemographicModel(self.initial_structure,
-                                              self.final_structure,
-                                              has_migs=create_migs,
-                                              has_sels=create_sels,
-                                              has_dyns=create_dyns,
-                                              sym_migs=sym_migs,
-                                              frac_split=split_f,
-                                              migs_mask=migs_mask,
-                                              gen_time=gen_time,
-                                              theta0=theta0,
-                                              mu=mut_rate,
-                                              has_inbr=create_inbr)
+            model = StructureDemographicModel(
+                self.initial_structure,
+                self.final_structure,
+                has_anc_size=self.ancestral_size_as_parameter,
+                has_migs=create_migs,
+                has_sels=create_sels,
+                has_dyns=create_dyns,
+                sym_migs=sym_migs,
+                frac_split=split_f,
+                migs_mask=migs_mask,
+                gen_time=gen_time,
+                theta0=theta0,
+                mu=mut_rate,
+                has_inbr=create_inbr
+            )
             constrain = self.get_linear_constrain_for_model(model)
             model.linear_constrain = constrain
             return model
