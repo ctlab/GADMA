@@ -249,7 +249,7 @@ class EpochDemographicModel(DemographicModel):
         new_epoch = Epoch(time_arg, sizes, size_args, mig_args,
                           dyn_args, sel_args, dom_args)
         self.events.append(new_epoch)
-        self.add_variables(new_epoch.variables)
+        self.add_variable(new_epoch)
 
     def add_split(self, pop_to_div, size_args):
         """
@@ -399,6 +399,8 @@ class EpochDemographicModel(DemographicModel):
         It will return A, b: Ax + b = time of `n_split` split.
         """
         var2value = self.var2value(np.zeros(len(self.variables)))
+        var2value = {var: value for var, value in var2value.items()
+                     if var not in self.fixed_values}
         n_sp = 0
         b = 0
         total_n_split = 0
