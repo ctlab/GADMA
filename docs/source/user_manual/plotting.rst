@@ -1,6 +1,20 @@
 Plotting model
 ==============
 
+.. admonition:: Related options
+
+    * **Base options**:
+
+      * ``Model plot engine`` indicates what engine will be used to draw model plots.
+      * ``SFS plot engine`` indicates what engine will be used to draw SFS plots.
+
+    * **Additional options**:
+
+      * ``Draw models every N iteration`` enables model plotting in subruns (`0`).
+      * ``Units of time in drawing`` - units of time in model plots (`generations`).
+      * ``Time for generation`` - time per one generation (`None`).
+      * ``Vmin`` - minimum value that is colored in SFS plots (`1`).
+
 *Example of demographic model plot that GADMA draws during run:*
 
 .. image:: example_model_plot_moments.png
@@ -55,6 +69,9 @@ Time units on model plot
 ---------------------------
 
 Time on the demographic model plot can be drawn in units of years,  thousand years or in genetic units. By default, the choice depends on the ``Time for generation`` option in the parameter file: if it is set to some value (in years) then time will be shown in years, otherwise it will be in genetic units.
+
+.. note::
+    If ``Time for generation`` is specified, it should be consistent with another option: ``Theta0``, which is described the :ref:`corresponding section<theta>`.
 
 But, of course, it is possible to tell GADMA which units are preferable. For example, if one wants time to be in thousands of years on the pictures, as it is a big value in years:
 

@@ -219,7 +219,7 @@ Silence: False
 
 #	How many times launch GADMA with this parameters.
 #	Default: 1
-Number of repeats: 3
+Number of repeats: 1
 
 #	How many processes to use for this repeats.
 #	Note that one repeat isn't parallelized, so increasing the number
@@ -239,7 +239,7 @@ Number of processes: 3
 #
 #	Upper bound for split 1 (in case of 2 or 3 populations).
 #	Default: None
-Upper bound of first split: 3000
+Upper bound of first split: None
 
 #	Upper bound for split 2 (in case of 3 populations).
 #	Default: None
@@ -257,3 +257,5 @@ Resume from: Null
 #	Default: None
 Only models: False
 model_plot_engine: demes
+dynamics: [Exp]
+ancestral_size_as_parameter: True

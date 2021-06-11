@@ -20,23 +20,35 @@ A parameter file is a simple text file (created in a text editor, such as Notepa
 
 
 .. toctree::
-   :maxdepth: 2
-   :caption: User documentation
+   :maxdepth: 1
+   :caption: Getting started
 
    user_manual/installation
    user_manual/hands_on
-   user_manual/user_manual
-   user_manual/example_params_file
    examples/examples
    faq
-   getting_help
-   changelogs
 
+.. toctree::
+   :maxdepth: 2
+   :caption: User manual
+
+   user_manual/input_data/input_data
+   user_manual/set_engine
+   user_manual/set_model/set_model
+   user_manual/inference
+   user_manual/run_parallel
+   user_manual/output
+   user_manual/plotting
+   user_manual/extra_params_file
+   user_manual/units
+   user_manual/confidence_intervals
+   user_manual/example_params_file
 
 .. toctree::
    :maxdepth: 2
    :caption: Development documentation
 
+   changelogs
    api/gadma
    api_examples/api_examples
 

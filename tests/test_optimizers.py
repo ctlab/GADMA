@@ -682,7 +682,7 @@ class TestSMACOptimizations(unittest.TestCase):
             return
         import smac
         from smac.tae.execute_ta_run import StatusType
-        opt = get_global_optimizer("SMAC_squirell_optimization")
+        opt = get_global_optimizer("SMAC_squirrel_optimization")
         variables = [DiscreteVariable("d1", domain=[1, 2, 3])]
         api_config, config_space = opt.get_configs(variables)
         self.assertRaises(ValueError, optimizers.smac_optim.SMAC4EPMOpimizer,

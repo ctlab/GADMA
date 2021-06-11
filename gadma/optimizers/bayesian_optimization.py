@@ -240,7 +240,7 @@ if GPyOpt_available:
     )
 
 
-class SMACSquirellOptimizer(GlobalOptimizer, ConstrainedOptimizer):
+class SMACSquirrelOptimizer(GlobalOptimizer, ConstrainedOptimizer):
     """
     Class for Bayesian optimization with SMAC from Black Box challenge.
     """
@@ -248,13 +248,13 @@ class SMACSquirellOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                  random_type='resample', custom_rand_gen=None,
                  log_transform=False, maximize=False):
         if not smac_available:
-            raise ValueError("Install SMAC to use it in SMAC squirell "
+            raise ValueError("Install SMAC to use it in SMAC squirrel "
                              "optimization")
         if not bayesmark_available:
-            raise ValueError("Install bayesmark to use it in SMAC squirell "
+            raise ValueError("Install bayesmark to use it in SMAC squirrel "
                              "optimization")
         self.n_suggestions = n_suggestions
-        super(SMACSquirellOptimizer, self).__init__(
+        super(SMACSquirrelOptimizer, self).__init__(
             random_type=random_type,
             custom_rand_gen=custom_rand_gen,
             log_transform=log_transform,
@@ -370,8 +370,8 @@ class SMACSquirellOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
 if smac_available:
     register_global_optimizer(
-        'SMAC_squirell_optimization',
-        SMACSquirellOptimizer
+        'SMAC_squirrel_optimization',
+        SMACSquirrelOptimizer
     )
 
 
