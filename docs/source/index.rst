@@ -10,6 +10,7 @@ GADMA [Noskova2020]_ implements methods for automatic inference of the joint dem
 
 **GADMA is a command-line tool**. It presents a series of launches of the genetic algorithm and infers demographic history from the Allele Frequency Spectrum of multiple populations (up to three).
 
+GADMA features variuos optimization methods (`global <https://gadma.readthedocs.io/en/latest/api/gadma.optimizers.html#global-optimizers-list>`_ and `local <https://gadma.readthedocs.io/en/latest/api/gadma.optimizers.html#local-optimizers-list>`_ search algorithms) which may be used for `any general optimization problem <https://gadma.readthedocs.io/en/latest/api_examples/optimization_example.html>`_.
 
 GADMA provides choice of several engines of demographic inference:
 
