@@ -331,7 +331,7 @@ class SettingsStorage(object):
                                  "and 2.")
         # 2.2 Vmin
         if name == 'vmin':
-            if value <= 0:
+            if value is not None and value <= 0:
                 raise ValueError(f"Setting {name} ({value}) must be > 0.")
 
         # 3. Now change some other attributes according to new one
