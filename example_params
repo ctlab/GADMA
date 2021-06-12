@@ -33,7 +33,7 @@ Input file: examples/changing_theta/YRI_CEU.fs
 #	then we can write YRI, CEU, CHB or YRI, CHB, CEU 
 #	(YRI must be at the first place)
 #	Default: from input file
-Population labels: [YRI, CEU]
+Population labels: [Pop1, Pop2]
 
 #	Also one can project your spectrum to less size.
 #	For example, we have 80 individuals in each of three 
@@ -41,7 +41,7 @@ Population labels: [YRI, CEU]
 #	project it to 21x21x21 by set 'Projections' parameter 
 #	to 20, 20, 20.
 #	Default: from input file
-Projections: None  # will be [20, 20]
+Projections: [20, 20]
 
 #!!!
 #	Are SNP's linked or unlinked?
@@ -219,10 +219,10 @@ Silence: False
 
 #	How many times launch GADMA with this parameters.
 #	Default: 1
-Number of repeats: 1
+Number of repeats: 3
 
 #	How many processes to use for this repeats.
-#	Note that one repeat isn't parallelized, so increasing the number
+#	Note that one repeat isn't parallelized, so increasing number
 #	of processes will not affect the time of one repeat.
 #	It is desirable that the number of repeats is a multiple of 
 #	the number of processes.
@@ -239,7 +239,7 @@ Number of processes: 3
 #
 #	Upper bound for split 1 (in case of 2 or 3 populations).
 #	Default: None
-Upper bound of first split: None
+Upper bound of first split: Null
 
 #	Upper bound for split 2 (in case of 3 populations).
 #	Default: None
@@ -256,6 +256,3 @@ Resume from: Null
 #	mutation rate and strength will be initial.
 #	Default: None
 Only models: False
-model_plot_engine: demes
-dynamics: [Exp]
-ancestral_size_as_parameter: True
