@@ -92,7 +92,7 @@ GADMA can be launched with a parameter file in the following way:
 Unlinked SNPs, AIC and CLAIC
 -----------------------------
 
-By default, SNP's that were used to build AFS are considered to be linked. In this case it is possible to compare demographic models with different number of parameters by Composite Likelihood Akaike Information Criterion (CLAIC). This procedure can be necessary as a model with a large number of parameters will be better able to find parameter values corresponding to the observed data than a model with a smaller number of parameters, but at the same time it will correspond less to reality, for example, due to data errors. It is called overfitting and we do not want it to happen.
+By default, SNP's that were used to build AFS are considered to be linked. In this case it is possible to compare demographic models with different number of parameters by Composite Likelihood Akaike Information Criterion (CLAIC) [Coffman2016]_. This procedure can be necessary as a model with a large number of parameters will be better able to find parameter values corresponding to the observed data than a model with a smaller number of parameters, but at the same time it will correspond less to reality, for example, due to data errors. It is called overfitting and we do not want it to happen.
 
 Actually, CLAIC is modification of usual Akaike Information Criterion (AIC), but AIC can be used only for AFS built from unlinked SNP's. The smaller the AIC or CLAIC score is, the better the model fits the observed data.
 

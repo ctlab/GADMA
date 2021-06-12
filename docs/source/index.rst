@@ -6,17 +6,49 @@
 Welcome to GADMA's documentation!
 =================================
 
-GADMA implements methods for automatic inference of the joint demographic history of multiple populations from genetic data.
+GADMA [Noskova2020]_ implements methods for automatic inference of the joint demographic history of multiple populations from genetic data.
 
-GADMA is based on two open source packages: `dadi <https://bitbucket.org/gutenkunstlab/dadi/>`_ developed by Ryan Gutenkunst and `moments <https://bitbucket.org/simongravel/moments/>`_ developed by Simon Gravel.
+**GADMA is a command-line tool**. It presents a series of launches of the genetic algorithm and infers demographic history from the Allele Frequency Spectrum of multiple populations (up to three).
 
-In contrast to these packages, **GADMA is a command-line tool**. It presents a series of launches of the genetic algorithm and infers demographic history from the Allele Frequency Spectrum of multiple populations (up to three).
 
-Parameter file
---------------
+GADMA provides choice of several engines of demographic inference:
 
-A parameter file is a simple text file (created in a text editor, such as Notepad), which contains a list of parameters and variables with their assigned values. Create a parameter file that reflects your particular parameters. Hereinafter, as an example, the name of your parameter file will be defined as ``param_file``
+* `dadi <https://bitbucket.org/gutenkunstlab/dadi/>`_  developed by Ryan Gutenkunst [Gutenkunst2009]_
+* `moments <https://bitbucket.org/simongravel/moments/>`_  developed by Simon Gravel [Jouganous2017]_
 
+Base usage of GADMA via command-line:
+
+.. code-block:: console
+
+    $ gadma --help
+    
+    GADMA version 2.0.0	by Ekaterina Noskova (ekaterina.e.noskova@gmail.com)
+    Usage: 
+        	gadma	-p/--params <params_file>
+            		-e/--extra <extra_params_file>
+
+
+    Instead/With -p/--params and -e/--extra option you can set:
+        	-o/--output <output_dir>	output directory.
+        	-i/--input <in.fs>/<in.txt>	input file with AFS or in dadi format.
+        	--resume <resume_dir>		resume another launch from <resume_dir>.
+        	--only_models			flag to take models only from another launch (--resume option).
+
+        	-h/--help		show this help message and exit.
+        	-v/--version		show version and exit.
+        	--test			run test case.
+
+        In case of any questions or problems, please contact: ekaterina.e.noskova@gmail.com
+
+What is parameter file of GADMA?
+---------------------------------
+
+A parameter file is a simple text file (created in a text editor, such as Notepad), which contains a list of parameters/options/settings with their assigned values. Create a parameter file that reflects your particular options. Hereinafter, as an example, the name of your parameter file will be defined as ``param_file``.
+ 
+.. note::
+    Each section of user manual contain list of related options for parameter file with small description.
+
+    Full example of parameter file could be found in a section :ref:`param_file`.
 
 
 .. toctree::
@@ -27,6 +59,7 @@ A parameter file is a simple text file (created in a text editor, such as Notepa
    user_manual/hands_on
    examples/examples
    faq
+   citations
 
 .. toctree::
    :maxdepth: 2

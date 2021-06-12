@@ -188,6 +188,7 @@ When all GA are executed, the codes are saved in the root directory.
         	best_aic_model_moments_code.py
         	best_aic_model_demes_code.yml
 
+.. _generated_code:
 
 Generated code of models
 --------------------------
