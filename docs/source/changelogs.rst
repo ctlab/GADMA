@@ -1,7 +1,7 @@
 Changelogs
 ==============
 
-[2.0.0rc14] - 2021-06-12
+[2.0.0rc15] - 2021-06-13
 ------------------------
 
 1. Add Bayesian optimizations to GADMA. There are three versions of it:

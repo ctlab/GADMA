@@ -12,13 +12,13 @@
 #	If it is resumed from other directory and output directory 
 #	isn't set, GADMA will add '_resumed' for previous output 
 #	directory.
-Output directory: my_example_run
+Output directory: /home/katenos/Workspace/popgen/temp/GADMA/my_example_run
 
 
 #!!!
 #	Input file can be sfs file (should end with .fs) or 
 #	file of SNP's in dadi format (should end with .txt).
-Input file: examples/changing_theta/YRI_CEU.fs
+Input file: /home/katenos/Workspace/popgen/temp/GADMA/examples/changing_theta/YRI_CEU.fs
 
 #	'Population labels' is sequence of population names (the same
 #	names as in input file)
@@ -35,13 +35,25 @@ Input file: examples/changing_theta/YRI_CEU.fs
 #	Default: from input file
 Population labels: [Pop1, Pop2]
 
-#	Also one can project your spectrum to less size.
+#	Also one can project spectrum to less size.
 #	For example, we have 80 individuals in each of three 
 #	populations, then spectrum will be 81x81x81 and one can 
 #	project it to 21x21x21 by set 'Projections' parameter 
 #	to 20, 20, 20.
 #	Default: from input file
 Projections: [20, 20]
+
+#   To indicate if outgroup information is included in SFS data
+#   one can set Outgroup option.
+#   If outgroup is False then SFS will be folded.
+#   Default: from input file
+Outgroup: True
+
+#   Effective length of sequence that was used to build SFS data.
+#   Should be used together with Mutation rate and can be replaced
+#   be Thera0 setting.
+#   Default: None
+Sequence length: Null
 
 #!!!
 #	Are SNP's linked or unlinked?
@@ -63,7 +75,7 @@ Directory with bootstrap: Null
 #!!!
 #	Now all main parameters:
 #
-#	Use moments or dadi
+#	Use moments or dadi as engine of demographic inference.
 #	Default: moments
 Engine: moments
 
@@ -89,20 +101,16 @@ Relative parameters: False
 #	Default: 1.0
 Theta0: 0.37976
 
+#   Instead of Theta0 mutation rate can be set independently.
+#   Should be used together with Sequence length option.
+#   Default: None
+Mutation rate: Null
+
 #	Time (years) for one generation. Can be float. 
 #	Is important for drawing models. If one don't want to draw, 
 #	one can pass it.
 #	Default: 1.0
 Time for generation: Null
-
-#	Use sudden changes of population sizes only. Decreases 
-#	the number of parameters.
-#	Default: False
-Only sudden: False
-
-#	Disable migrations in demographic models.
-#	Default: False
-No migrations: False
 
 
 #!!!
@@ -156,6 +164,57 @@ Initial structure: [1, 1]
 #	Default: equals to initial structure
 Final structure: [2, 1]
 
+#!!!
+#	Additional settings for demographic model with structure.
+#
+#	Use sudden changes of population sizes only. Decreases 
+#	the number of parameters.
+#	Default: False
+Only sudden: False
+
+#	Disable migrations in demographic models.
+#	Default: False
+No migrations: False
+
+#   Makes all migrations symmetrical.
+#   Default: False
+Symmetric migrations: False
+
+#   Enable/disable migrations selectively.
+#   Default: None
+Migration masks: Null
+
+#   Estimate fraction of ancestral population as parameter of split.
+#   If False then population splits and each of new populations
+#   has its own size as parameter of the model.
+#   Default: True
+Split fractions: True
+
+#   Estimate inbreeding coefficients as model parameters.
+#   Can be used only for dadi engine.
+#   Default: False
+Inbreeding: False
+
+#   If False then multinomial approach is used in dadi and moments.
+#   In multinomial approach ancestral size is inferred implicitly.
+#   Default: False
+Ancestral size as parameter: False
+
+#	It is possible to limit the time of splits.
+#	Split 1 is the most ancient split.
+#	!Note that time is in genetic units (2 * time for 1 generation):
+#	e.g. we want to limit by 150 kya, time for one generation is 
+#	25 years, then bound will be 150000 / (2*25) = 3000.
+#
+#	Upper bound for split 1 (in case of 2 or 3 populations).
+#	Default: None
+Upper bound of first split: Null
+
+#	Upper bound for split 2 (in case of 3 populations).
+#	Default: None
+Upper bound of second split: Null
+
+
 
 #!!!
 #	Local optimization.
@@ -192,12 +251,6 @@ Local optimizer: BFGS_log
 
 #	Parameters of pipeline
 #
-#	One can automatically draw models every N iteration. 
-#	If 0 then never.
-#	Pictures are saved in GA's directory in the picture folder.
-#	Default: 0
-Draw models every N iteration: 100
-
 #	One can automatically generate dadi and moments code for models.
 #	If 0 then only current best model will be printed in GA's 
 #	working directory.
@@ -207,15 +260,39 @@ Draw models every N iteration: 100
 #	Default: 0
 Print models' code every N iteration: 100
 
+#   Engine that will draw demographic model plots.
+#   Could be moments or demes.
+#   Default: moments
+Model plot engine: moments
+
+#   Engine that will draw SFS plots.
+#   If None then it will be the same as engine that is used for inference.
+#   Default: None
+SFS plot engine: Null
+
+#	One can automatically draw models every N iteration. 
+#	If 0 then never.
+#	Pictures are saved in GA's directory in the picture folder.
+#	Default: 0
+Draw models every N iteration: 100
+
 #	One can choose time units in models' plots: years or thousand 
 #	years (kya, KYA). If time for one generation isn't specified 
 #	then time is in genetic units.
 #	Default: years
 Units of time in drawing: generations
 
+#   Minimum value that will be drawn in SFS plots.
+#   Default: 1
+Vmin: 1
+
 #	No std output.
 #	Default: False
 Silence: False
+
+#   Verbosity of optimizations output.
+#   Default: 1
+Verbose: 1
 
 #	How many times launch GADMA with this parameters.
 #	Default: 1
@@ -229,21 +306,6 @@ Number of repeats: 3
 #	Default: 1
 Number of processes: 3
 
-
-
-#	It is possible to limit the time of splits.
-#	Split 1 is the most ancient split.
-#	!Note that time is in genetic units (2 * time for 1 generation):
-#	e.g. we want to limit by 150 kya, time for one generation is 
-#	25 years, then bound will be 150000 / (2*25) = 3000.
-#
-#	Upper bound for split 1 (in case of 2 or 3 populations).
-#	Default: None
-Upper bound of first split: Null
-
-#	Upper bound for split 2 (in case of 3 populations).
-#	Default: None
-Upper bound of second split: Null
 
 
 #	One can resume from some other launch of GADMA by setting

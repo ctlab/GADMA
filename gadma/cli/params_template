@@ -188,7 +188,7 @@ Migration masks :
 #   If False then population splits and each of new populations
 #   has its own size as parameter of the model.
 #   Default: True
-Split fraction : 
+Split fractions : 
 
 #   Estimate inbreeding coefficients as model parameters.
 #   Can be used only for dadi engine.
