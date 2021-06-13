@@ -446,6 +446,8 @@ class TestCLI(unittest.TestCase):
             shutil.rmtree(outdir)
         with open(params_file, 'w') as fl:
             fl.write("Input file: tests/test_data/DATA/sfs/YRI_CEU.fs\n"
+                     "Projections: 4,4\n"
+                     "No migrations: True\n"
                      "Linked SNP's: False\n"
                      "Silence: True\n"
                      "global_maxiter: 2\n"

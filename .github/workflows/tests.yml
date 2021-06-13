@@ -51,6 +51,11 @@ jobs:
           pip3 install pytest-faulthandler
           pip3 install gdb
 
+      - name: Install dependencies for tests (Windows).
+        run: |
+          pip3 install pyserial==2.7
+        if: matrix.os == 'windows-2019'
+
       - name: Upgrade NumPy for Python 3.8.
         run: |
           pip3 install --upgrade numpy
