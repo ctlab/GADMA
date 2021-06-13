@@ -614,7 +614,7 @@ class DynamicVariable(DemographicVariable, DiscreteVariable):
     """
 
     _help_dict = {'Sud': Sud, 'Lin': Lin, 'Exp': Exp, 0: Sud, 1: Lin, 2: Exp}
-    default_domain = np.array(['Sud', 'Lin', 'Exp'])
+    default_domain = ['Sud', 'Lin', 'Exp']
     default_rand_gen = dynamic_generator
 
     def __init__(self, name, domain=None, rand_gen=None):
@@ -625,7 +625,8 @@ class DynamicVariable(DemographicVariable, DiscreteVariable):
         if not all(dom in self.__class__._help_dict for dom in self.domain):
             raise ValueError("Domain of DynamicVariable must be a subset "
                              "of the following general domain: "
-                             f"{self._help_dict.keys()}")
+                             f"{self._help_dict.keys()}. "
+                             f"Got domain: {self.domain}")
 
     @staticmethod
     def get_func_from_value(value):

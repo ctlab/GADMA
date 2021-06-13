@@ -10,7 +10,6 @@ from ..utils import ensure_file_existence, check_file_existence,\
 from ..utils import logarithm_transform, exponent_transform, ident_transform
 from ..utils import apply_transform
 from ..utils import serialize_meta_array, deserialize_meta_array
-from ..utils import DiscreteVariable
 from ..utils.utils import _is_valid_for_log
 from .optimizer_result import OptimizerResult
 import pickle
@@ -546,6 +545,15 @@ class Optimizer(object):
             if callback is not None:
                 callback(x, y)
 
+        if len(variables) == 0:
+            x_best = []
+            y_best = f_in_opt(x_best)
+            iter_callback(x_best, y_best, [x_best], [y_best])
+            self.run_info.result.success = True
+            self.run_info.result.status = 0
+            self.run_info.result.message = "Number of variables == 0"
+            return self.run_info.result
+
         self._optimize(f=f_in_opt,
                        variables=vars_in_opt,
                        maxiter=maxiter,
@@ -569,9 +577,9 @@ class ContinuousOptimizer(Optimizer):
         Returns True if all variables are instances of
         :class:`gadma.utils.ContinousVariable` class.
         """
+        super(ContinuousOptimizer, self).check_variables(variables)
         for var in variables:
             assert isinstance(var, ContinuousVariable)
-        super(ContinuousOptimizer, self).check_variables(variables)
 
 
 class UnconstrainedOptimizer(Optimizer):

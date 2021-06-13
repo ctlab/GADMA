@@ -167,7 +167,3 @@ def main():
     finally:
         sys.stdout = saved_stdout
         sys.stderr = saved_stderr
-
-
-if __name__ == '__main__':
-    main()

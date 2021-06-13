@@ -302,7 +302,6 @@ class SMAC4EPMOpimizer(AbstractOptimizer):
         # we will save our info
         info_list = []
         if len(self.next_evaluations) < n_suggestions:
-
             n_new = n_suggestions - len(self.next_evaluations)
 
             # import time
@@ -321,7 +320,7 @@ class SMAC4EPMOpimizer(AbstractOptimizer):
                 elif model.__class__ == GaussianProcess:
                     info += "GP"
                 else:
-                    raise ValueError(model.__class__.name)
+                    raise ValueError(model.__class__.__name__)
                 info += f" {acq.__class__.__name__}"
                 if rh2epm.__class__ == RunHistory2EPM4Cost:
                     info += " cost"
@@ -330,7 +329,7 @@ class SMAC4EPMOpimizer(AbstractOptimizer):
                 elif rh2epm.__class__ == RunHistory2EPM4GaussianCopulaCorrect:
                     info += " copula"
                 else:
-                    raise ValueError(rh2epm.__classs__.name__)
+                    raise ValueError(rh2epm.__class__.__name__)
 
                 # print(model.__class__.__name__,
                 #       acq.__class__.__name__,
@@ -453,7 +452,6 @@ class SMAC4EPMOpimizer(AbstractOptimizer):
                 self.next_evaluations.append(next_config)
                 info_list.append(info)
                 # print(time.time() - start_time)
-
         next_guess = [{} for _ in range(n_suggestions)]
         while len(self.next_evaluations) < len(range(n_suggestions)):
             self.next_evaluations.append(self.cs.sample_configuration())
@@ -463,18 +461,18 @@ class SMAC4EPMOpimizer(AbstractOptimizer):
             next_guess[i] = (eval_next.get_dictionary(), info_list[i])
         return next_guess
 
-    def init_with_rh(self, rh, iteration):
-        self.runhistory.empty()
-        for rh_value in rh:
-            configuration = Configuration(
-                configuration_space=self.cs, values=rh_value[0]
-            )
-            self.runhistory.add(
-                config=configuration,
-                cost=rh_value[1],
-                time=0,
-                status=StatusType.SUCCESS,
-            )
+#    def init_with_rh(self, rh, iteration):
+#        self.runhistory.empty()
+#        for rh_value in rh:
+#            configuration = Configuration(
+#                configuration_space=self.cs, values=rh_value[0]
+#            )
+#            self.runhistory.add(
+#                config=configuration,
+#                cost=rh_value[1],
+#                time=0,
+#                status=StatusType.SUCCESS,
+#            )
 
     def observe(self, X, y):
         """Feed an observation back.

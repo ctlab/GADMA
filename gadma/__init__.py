@@ -40,6 +40,15 @@ try:
 except ImportError:
     dadi = None
 try:
+    import demes
+except ImportError:
+    demes = None
+try:
+    import demesdraw
+except ImportError:
+    demesdraw = None
+
+try:
     import GPy
 except ImportError:
     GPy = None
@@ -48,27 +57,42 @@ try:
 except ImportError:
     GPyOpt = None
 try:
-    import smac
-    import ConfigSpace
-    import bayesmark
+    import smac  # NOQA
+    import ConfigSpace  # NOQA
     smac_available = True
 except ImportError:
+    smac = None
+    ConfigSpace = None
     smac_available = False
+
+try:
+    import bayesmark
+except ImportError:
+    bayesmark = None
+
+import warnings
 
 PIL_available = PIL is not None
 matplotlib_available = matplotlib is not None
 moments_available = moments is not None
 dadi_available = dadi is not None
+demes_available = demes is not None
+demesdraw_available = demesdraw is not None
 dical2_available = dical2_path is not None
+
 try:
     from .engines import DiCal2Engine
 except Exception:
     dical2_available = False
+
 GPy_available = GPy is not None
 GPyOpt_available = GPyOpt is not None
+bayesmark_available = bayesmark is not None
 
 from .data import DataHolder, SFSDataHolder, VCFDataHolder  # NOQA
 from .engines import get_engine, all_engines  # NOQA
+from .engines import all_available_engines, all_simulation_engines  # NOQA
+from .engines import all_drawing_engines  # NOQA
 
 from .models import DemographicModel, EpochDemographicModel  # NOQA
 from .models import CustomDemographicModel, StructureDemographicModel  # NOQA

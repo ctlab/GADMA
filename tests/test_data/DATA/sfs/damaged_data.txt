@@ -1,5 +1,5 @@
 # This data is a subset of the EGP data used in the original dadi paper.
-Human	Chimp	Allele1	ASW	YRI	
+Human	Chimp	Allele1	ASW	YRI	Something	Allele2	Gene	Position	
 TTA	TTA	T	27	22	43	42	23	22	G	3	2	1	2	1	2	abcb1	77
 GCT	GCT	C	27	22	43	42	23	22	T	3	2	1	2	1	2	abcb1	145
 ACG	ATG	C	29	24	44	44	24	24	T	1	0	0	0	0	0	abcb1	289

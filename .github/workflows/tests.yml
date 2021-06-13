@@ -44,7 +44,7 @@ jobs:
           pip3 install GPy
           pip3 install GPyOpt
           pip3 install pandas
-          pip3 install ruamel.yaml
+          pip3 install ruamel.yaml==0.16.12
           pip3 install pytest
           pip3 install pytest-cov
           pip3 install pytest-timeout
@@ -68,17 +68,21 @@ jobs:
         shell: cmd
         if: matrix.os == 'windows-2019'
 
-      - name: Install SMAC (Linux and Windows).
+      - name: Install SMAC (Linux).
         run: |
           pip3 install scikit-optimize
+          pip3 install configspace
           pip3 install smac==0.12.4
           pip3 install bayesmark
-          pip3 install configspace
-        if: matrix.os != 'macos-10.15'
+        if: matrix.os == 'ubuntu-18.04'
 
       - name: Run tests and codecov.
         run: |
+<<<<<<< HEAD
           gdb --args python -m pytest --timeout=700 --cov=gadma --cov-report=xml -vs tests --disable-warnings
+=======
+          python -m pytest --timeout=400 --cov=gadma --cov-report=xml -v tests --disable-warnings
+>>>>>>> devel
         
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1

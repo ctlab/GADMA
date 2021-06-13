@@ -283,6 +283,10 @@ def get_settings():
             warnings.warn("Option `only models`/--only_models  must be used "
                           " --resume option only. It would be ignored.")
 
+    if settings_storage.inbreeding:
+        if settings_storage.engine != "dadi":
+            raise ValueError("Please check your engine. If you want to "
+                             "calculate Inbreeding change engine to dadi")
     return settings_storage, args
 
 

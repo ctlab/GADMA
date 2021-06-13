@@ -24,6 +24,9 @@ class DadiOrMomentsEngine(Engine):
                         CustomDemographicModel]  #:
     supported_data = [SFSDataHolder]  #:
     inner_data_type = None  # base_module.Spectrum  #:
+    can_evaluate = True
+    can_draw = False  # dadi cannot
+    can_simulate = True
 
     @classmethod
     def read_data(cls, data_holder):
@@ -220,7 +223,7 @@ class DadiOrMomentsEngine(Engine):
             theta = self._get_theta_from_sfs(values_gen, model_sfs)
         ll_model = self.base_module.Inference.ll(theta * model_sfs, self.data)
         # Save simulated data
-        key = self._get_key(values_gen, grid_sizes)
+        key = self._get_key(values, grid_sizes)
         self.saved_add_info[key] = theta
         return ll_model
 
@@ -288,6 +291,8 @@ class DadiOrMomentsEngine(Engine):
             raise AttributeError("Engine was initialized with inner "
                                  "data. Need gadma.DataHolder for "
                                  "generation of code.")
+        if filename is not None and not filename.endswith("py"):
+            filename = filename + ".py"
         return id2printfunc[self.id](self, values,
                                      grid_sizes, filename, nanc, gen_time,
                                      gen_time_units)
@@ -386,7 +391,13 @@ def _get_default_from_snp_format(filename):
         appr_size = np.zeros(n_pop, dtype=int)
         for line in f:
             info = line.split()
-            if info[1][1].lower() not in ['a', 't', 'c', 'g']:
+            nucleotides = ['a', 't', 'c', 'g']
+            assert len(info[0]) % 2 == 1
+            assert len(info[1]) % 2 == 1
+            info_0_char = info[0][len(info[0]) // 2].lower()
+            info_1_char = info[1][len(info[1]) // 2].lower()
+            if (info_0_char not in nucleotides or
+                    info_1_char not in nucleotides):
                 has_outgroup = False
             for num in range(n_pop):
                 cur_size = int(info[3 + num]) + int(info[4 + n_pop + num])

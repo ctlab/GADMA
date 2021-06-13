@@ -4,13 +4,14 @@ import numpy as np
 from . import settings
 from ..data import SFSDataHolder
 from ..engines import get_engine, MomentsEngine
+from ..engines import all_engines, all_drawing_engines
 from ..models import StructureDemographicModel, CustomDemographicModel
 from ..optimizers import get_local_optimizer, get_global_optimizer
 from ..optimizers import LinearConstrain
 from ..utils import check_dir_existence, check_file_existence, abspath,\
     module_name_from_path, custom_generator
 from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable,\
-    ContinuousVariable
+    ContinuousVariable, DynamicVariable
 import warnings
 import importlib.util
 import sys
@@ -29,9 +30,10 @@ CHANGED_IDENTIFIERS = {"use_moments_or_dadi": "engine",
                        "stop_iteration": "stuck_generation_number",
                        "name_of_local_optimization": "local_optimizer",
                        "lower_bounds": "lower_bound",
-                       "upper_bounds": "upper_bound"}
+                       "upper_bounds": "upper_bound",
+                       "multinom": "ancestral_size_as_parameter"}
 
-DEPRECATED_IDENTIFIERS = ["multinom", "flush_delay",
+DEPRECATED_IDENTIFIERS = ["flush_delay",
                           "epsilon_for_ls", "gtol", "maxiter",
                           "multinomial_mutation", "multinomial_crossing",
                           "distribution", "std",
@@ -110,7 +112,8 @@ class SettingsStorage(object):
                       'relative_parameters', 'only_models',
                       'symmetric_migrations', 'split_fractions',
                       'generate_x_transform', 'global_log_transform',
-                      'local_log_transform']
+                      'local_log_transform', 'inbreeding',
+                      'ancestral_size_as_parameter']
         int_list_attrs = ['pts', 'initial_structure', 'final_structure',
                           'projections']
         float_list_attrs = ['lower_bound', 'upper_bound']
@@ -125,13 +128,16 @@ class SettingsStorage(object):
         empty_dir_attrs = ['output_directory']
         data_holder_attrs = ['projections', 'outgroup',
                              'population_labels', 'sequence_length']
-        bounds_attrs = ['min_n', 'max_n', 'min_t', 'max_t', 'min_m', 'max_m']
+        bounds_attrs = ['min_n', 'max_n', 'min_t', 'max_t', 'min_m', 'max_m',
+                        'dynamics']
         bounds_lists = ['lower_bound', 'upper_bound', 'parameter_identifiers']
         missed_attrs = ['engine', 'global_optimizer', 'local_optimizer',
                         '_inner_data', '_bootstrap_data', 'X_init', 'Y_init',
                         'model_func', 'get_engine_args', 'data_holder',
                         'units_of_time_in_drawing', 'resume_from_settings',
-                        'dadi_available', 'moments_available']
+                        'dadi_available', 'moments_available',
+                        'model_plot_engine', 'sfs_plot_engine',
+                        'kernel', 'acquisition_function']
 
         super_hasattr = True
         setattr_at_the_end = True
@@ -325,7 +331,7 @@ class SettingsStorage(object):
                                  "and 2.")
         # 2.2 Vmin
         if name == 'vmin':
-            if value <= 0:
+            if value is not None and value <= 0:
                 raise ValueError(f"Setting {name} ({value}) must be > 0.")
 
         # 3. Now change some other attributes according to new one
@@ -344,7 +350,22 @@ class SettingsStorage(object):
                 setattr(self.data_holder, name, value)
         # 3.3 For engine we need check it exists
         elif name == 'engine':
-            get_engine(value)
+            engine = get_engine(value)
+            if not engine.can_evaluate:
+                raise ValueError(f"Engine {value} cannot evaluate "
+                                 f"log-likelihood. Available engines are: "
+                                 f"{[engine.id in all_engines()]}")
+        elif name == 'model_plot_engine':
+            engine = get_engine(value)
+            if not engine.can_draw:
+                raise ValueError(f"Engine {value} cannot draw model plots. "
+                                 f"Available engines are: "
+                                 f"{[engine.id in all_drawing_engines()]}")
+        elif name == 'sfs_plot_engine' and value is not None:
+            engine = get_engine(value)
+            if not hasattr(engine, "draw_sfs_plots"):
+                raise ValueError(f"Engine {value} cannot draw sfs plots. "
+                                 f"Available engines are: dadi, moments")
         # 3.4 For local and global optimizer we need check existence
         elif name == 'global_optimizer':
             get_global_optimizer(value)
@@ -444,6 +465,13 @@ class SettingsStorage(object):
                 cls = TimeVariable
             elif name.endswith('m'):
                 cls = MigrationVariable
+            elif name == "dynamics":
+                cls = DynamicVariable
+                if isinstance(value, str):
+                    value = [x.strip() for x in value.split(",")]
+                    for i in range(len(value)):
+                        if value[i].isdigit():
+                            value[i] = int(value[i])
             else:
                 raise AttributeError("Check for supported variables")
 
@@ -452,8 +480,17 @@ class SettingsStorage(object):
                 cls.default_domain = [value, cls.default_domain[1]]
             elif name.startswith('max'):
                 cls.default_domain = [cls.default_domain[0], value]
+            else:
+                assert name == "dynamics"
+                for dyn in value:
+                    if dyn not in cls._help_dict:
+                        raise ValueError(f"Unknown dynamic {value}. Available "
+                                         "dynamics are: "
+                                         f"{list(cls._help_dict.keys())}")
+                cls.default_domain = value
 
-            domain_changed = np.any(old_domain != np.array(cls.default_domain))
+            domain_changed = len(old_domain) != len(cls.default_domain) or\
+                np.any(old_domain != np.array(cls.default_domain))
             if domain_changed:
                 if name.endswith('n'):
                     warnings.warn(f"Domain of PopulationSizeVariable changed "
@@ -463,6 +500,9 @@ class SettingsStorage(object):
                                   f"{cls.default_domain}")
                 if name.endswith('m'):
                     warnings.warn(f"Domain of MigrationVariable changed to "
+                                  f"{cls.default_domain}")
+                if name == "dynamics":
+                    warnings.warn(f"Domain of DynamicVariable changed to "
                                   f"{cls.default_domain}")
 
         # 3.10 If we set custom filename with model we should check it is
@@ -772,9 +812,14 @@ class SettingsStorage(object):
             if attr_name in CHANGED_IDENTIFIERS:
                 attr_name = CHANGED_IDENTIFIERS[attr_name]
                 setting_name = attr_name.replace("_", " ").capitalize()
+                msg = ""
+                if attr_name == "ancestral_size_as_parameter":
+                    msg = f" (`{setting_name}` = not `key`)"
+                    assert isinstance(loaded_dict[key], bool)
+                    loaded_dict[key] = not loaded_dict[key]
                 warnings.warn(f"Setting `{key}` is renamed in 2 version of "
                               f"GADMA to `{setting_name}`. It is successfully"
-                              " read.")
+                              f" read.{msg}")
 
             if not hasattr(self, attr_name):
                 if attr_name in DEPRECATED_IDENTIFIERS:
@@ -900,6 +945,10 @@ class SettingsStorage(object):
             opt.const_mut_strength = self.const_for_mutation_strength
             opt.eps = self.eps
             opt.n_stuck_gen = self.stuck_generation_number
+        if (self.global_optimizer.lower() == "gpyopt_bayesian_optimization" or
+                self.global_optimizer.lower() == "smac_bo_optimization"):
+            opt.kernel_name = self.kernel
+            opt.acquisition_type = self.acquisition_function
 
         opt.log_transform = self.global_log_transform
         opt.maximize = True
@@ -969,6 +1018,8 @@ class SettingsStorage(object):
             args = (self.pts,)
         elif engine_id == 'moments':
             args = (MomentsEngine.default_dt_fac,)
+        else:
+            args = ()
         return args
 
     def get_linear_constrain_for_model(self, model):
@@ -1007,17 +1058,22 @@ class SettingsStorage(object):
             sym_migs = self.symmetric_migrations
             split_f = self.split_fractions
             migs_mask = self.migration_masks
-            model = StructureDemographicModel(self.initial_structure,
-                                              self.final_structure,
-                                              has_migs=create_migs,
-                                              has_sels=create_sels,
-                                              has_dyns=create_dyns,
-                                              sym_migs=sym_migs,
-                                              frac_split=split_f,
-                                              migs_mask=migs_mask,
-                                              gen_time=gen_time,
-                                              theta0=theta0,
-                                              mu=mut_rate)
+            create_inbr = self.inbreeding
+            model = StructureDemographicModel(
+                self.initial_structure,
+                self.final_structure,
+                has_anc_size=self.ancestral_size_as_parameter,
+                has_migs=create_migs,
+                has_sels=create_sels,
+                has_dyns=create_dyns,
+                sym_migs=sym_migs,
+                frac_split=split_f,
+                migs_mask=migs_mask,
+                gen_time=gen_time,
+                theta0=theta0,
+                mu=mut_rate,
+                has_inbr=create_inbr
+            )
             constrain = self.get_linear_constrain_for_model(model)
             model.linear_constrain = constrain
             return model

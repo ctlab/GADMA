@@ -225,8 +225,8 @@ class TestGeneticAlg(unittest.TestCase):
         eval_file = 'eval_file'
 
         for opt in all_global_optimizers():
-            if not_bayesopt and opt.id == 'Bayesian_optimization':
-                continue  # TODO
+            if not_bayesopt and opt.id == 'GPyOpt_Bayesian_optimization':
+                continue  # TODO categorical parameters
             with self.subTest(optimizer=opt.id):
                 open(report_file, 'w').close()
                 open(eval_file, 'w').close()
@@ -423,7 +423,7 @@ class TestInference(unittest.TestCase):
                 time = 2 * timeit.timeit(f, number=1) / num_init
                 optimize_ga(data, func, engine.id, args=args,
                     p_ids = p_ids, maxtime_per_eval=0.1,
-                    num_init=num_init, X_init=X_init, Y_init=Y_init,
+                    num_init=num_init, X_init=X_init, Y_init=None,
                     gen_size=10, ga_maxiter=5, ls_maxiter=1,
                     verbose=1, callback=None,
                     save_file='save_file', eval_file='eval_file',)

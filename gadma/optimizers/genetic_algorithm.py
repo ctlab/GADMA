@@ -3,7 +3,7 @@ from .global_optimizer import GlobalOptimizer, register_global_optimizer
 from ..utils import sort_by_other_list, choose_by_weight
 from ..utils import trunc_normal_3_sigma_rule, DiscreteVariable,\
                     WeightedMetaArray, get_correct_dtype
-from ..utils import update_by_one_fifth_rule, apply_transform
+from ..utils import update_by_one_fifth_rule
 
 import numpy as np
 import copy
@@ -382,12 +382,15 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                 p = [1 / len(Y_gen) for _ in Y_gen]
             else:
                 is_not_inf = np.logical_not(np.isinf(Y_gen))
-                p = Y_gen / np.sum(Y_gen[is_not_inf])
-                p[np.isinf(p)] = 1  # will be inversed to 0
-                p[np.isnan(p)] = 1  # will be inversed to 0
-                # We need to reverse probs as we have minimization problem
-                p = 1 - p
-                p /= np.sum(p)
+                if np.sum(is_not_inf) == 1:  # special case
+                    p = [float(x) for x in is_not_inf]
+                else:
+                    p = Y_gen / np.sum(Y_gen[is_not_inf])
+                    p[np.isinf(p)] = 1  # will be inversed to 0
+                    p[np.isnan(p)] = 1  # will be inversed to 0
+                    # We need to reverse probs as we have minimization problem
+                    p = 1 - p
+                    p /= np.sum(p)
         elif selection_type == 'rank':
             n = len(X_gen)
             p = np.arange(1, n+1) / (n * (n - 1))

@@ -34,6 +34,7 @@ YRI_CEU_DATA = os.path.join(DATA_PATH, "sfs", "YRI_CEU.fs")
 YRI_CEU_NO_LABELS_DATA = os.path.join(DATA_PATH, "sfs", "YRI_CEU_old.fs")
 YRI_CEU_F_DATA = os.path.join(DATA_PATH, "sfs", "YRI_CEU_folded.fs")
 SNP_DATA = os.path.join(DATA_PATH, "sfs", "data.txt")
+NO_OUT_SNP_DATA = os.path.join(DATA_PATH, "sfs", "data_no_outgroup.txt")
 DAMAGED_SNP_DATA = os.path.join(DATA_PATH, "sfs", "damaged_data.txt")
 STRANGE_DATA = os.path.join(DATA_PATH, "sfs", "some_strange_data")
 
@@ -58,7 +59,6 @@ def run_dical2_reading(q, er_q, data):
 
 
 class TestDataHolder(unittest.TestCase):
-
     def _check_data(self, data, pop_labels, outgroup, sample_sizes):
         self.assertTrue(all(data.sample_sizes == sample_sizes),
                         msg=f"{data.sample_sizes} != {sample_sizes}")
@@ -119,7 +119,7 @@ class TestDataHolder(unittest.TestCase):
         outgroup = [None, True, False]
         labels = [None, ["YRI", "CEU"], ["CEU", "YRI"], ["CEU"]]
         seq_lens = [None, 1e6]
-        data = [YRI_CEU_DATA, YRI_CEU_NO_LABELS_DATA, SNP_DATA]
+        data = [YRI_CEU_DATA, YRI_CEU_NO_LABELS_DATA, SNP_DATA, NO_OUT_SNP_DATA]
         for dat, siz, lab, seq, out in itertools.product(data, sizes, labels,
                                                          seq_lens, outgroup):
             if lab is not None and siz is not None and len(lab) != len(siz):
@@ -129,6 +129,8 @@ class TestDataHolder(unittest.TestCase):
             if dat == YRI_CEU_NO_LABELS_DATA:
                 if lab is not None and len(lab) == 1:
                     continue
+            if dat == NO_OUT_SNP_DATA and out:
+                continue
             with self.subTest(data=dat, size=siz, labels=lab,
                               seq_len=seq, outgroup=out):
                 sfs_holder = SFSDataHolder(dat, projections=siz, outgroup=out,
@@ -136,7 +138,7 @@ class TestDataHolder(unittest.TestCase):
                                            sequence_length=seq)
                 data = get_engine(id).read_data(sfs_holder)
                 corr_size = None
-                if dat == SNP_DATA:
+                if dat == SNP_DATA or dat == NO_OUT_SNP_DATA:
                     corr_size = (24, 44)
                 else:
                     corr_size = (20, 20)
@@ -147,6 +149,8 @@ class TestDataHolder(unittest.TestCase):
                     ["Pop 1", "Pop 2"] if dat == YRI_CEU_NO_LABELS_DATA
                     else ["YRI", "CEU"])
                 out = True if out is None else out
+                if dat == NO_OUT_SNP_DATA:
+                    out = False
                 self._check_data(data, lab, out, siz)
                 sfs = self._load_with_dadi(dat, siz, lab, out)
                 self.assertTrue(np.allclose(data, sfs))
@@ -163,6 +167,11 @@ class TestDataHolder(unittest.TestCase):
         data_holder = SFSDataHolder(STRANGE_DATA)
         self.assertRaises(SyntaxError, get_engine(id).read_data, data_holder)
         data_holder = SFSDataHolder(DAMAGED_SNP_DATA)
+        self.assertRaises(
+            ValueError,
+            engines.dadi_moments_common._get_default_from_snp_format,
+            DAMAGED_SNP_DATA
+        )
         self.assertRaises(SyntaxError, get_engine(id).read_data, data_holder)
         vcf_data = VCFDataHolder(VCF_DATA, POPMAP, (4, 2), True)
         self.assertRaises(ValueError, get_engine(id).read_data, vcf_data)

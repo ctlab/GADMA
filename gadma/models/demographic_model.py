@@ -25,6 +25,7 @@ class DemographicModel(Model):
     :param linear_constrain: linear constrain on parameters.
     :type linear_constrain: :class:`gadma.optimizers.LinearConstrain`
     """
+
     def __init__(self, gen_time=None, theta0=None, mu=None, Nref=None,
                  has_anc_size=False, linear_constrain=None):
         super(DemographicModel, self).__init__(raise_excep=False)
@@ -105,7 +106,7 @@ class DemographicModel(Model):
                      E.g. has_anc_size could be False.
         :param time_in_generations: If False then time is translated to
                                     years according to gen_time of model.
-                                    Valid only if `units`=="physical".
+                                    Valid only if `units` == "physical".
         :param rescale_back: If True then values are rescaled back according
                              to Nref factor of the model.
         """
@@ -137,7 +138,7 @@ class DemographicModel(Model):
             # If our physical units are scaled then we should rescale them back
             if rescale_back:
                 if (self.Nref is not None and
-                        isinstance(var, DemographicModel) and
+                        isinstance(var, DemographicVariable) and
                         var.units == "physical"):
                     tr_value = var.rescale_value(tr_value, reverse=True)
             translated_values.append(tr_value)
@@ -162,12 +163,15 @@ class EpochDemographicModel(DemographicModel):
                       multinom inference and get best Nanc_size for the model.
     :type Nanc_size: float or :class:`gadma.utils.PopulationSizeVariable`
     """
+
     def __init__(self, gen_time=None, theta0=None, mu=None, Nref=None,
-                 has_anc_size=None, Nanc_size=None, linear_constrain=None):
+                 has_anc_size=None, Nanc_size=None, linear_constrain=None,
+                 inbreeding_args=None):
         if has_anc_size is None:
             has_anc_size = Nanc_size is not None
         if Nanc_size is None:
             Nanc_size = 1.0
+        self.inbreeding_args = inbreeding_args
         self.events = list()
         super(EpochDemographicModel, self).__init__(
             gen_time=gen_time,
@@ -211,8 +215,17 @@ class EpochDemographicModel(DemographicModel):
         """
         return len(self._get_current_pop_sizes())
 
+    @property
+    def has_inbreeding(self):
+        return self.inbreeding_args is not None
+
+    def add_inbreeding(self, inbr_args=None):
+        self.inbreeding_args = inbr_args
+        self.add_variables(inbr_args)
+
     def add_epoch(self, time_arg, size_args, mig_args=None,
-                  dyn_args=None, sel_args=None, dom_args=None):
+                  dyn_args=None, sel_args=None,
+                  dom_args=None):
         """
         Adds new epoch to the demographic model events.
 
@@ -228,11 +241,15 @@ class EpochDemographicModel(DemographicModel):
                class as well as different constants/values including\
                :class:`gadma.models.BinaryOperation` instances.
         """
+        if self.has_inbreeding:
+            raise ValueError("Model already has inbreeding."
+                             " You can't add new Epoch")
+
         sizes = self._get_current_pop_sizes()
-        new_epoch = Epoch(time_arg, sizes, size_args,
-                          mig_args, dyn_args, sel_args, dom_args)
+        new_epoch = Epoch(time_arg, sizes, size_args, mig_args,
+                          dyn_args, sel_args, dom_args)
         self.events.append(new_epoch)
-        self.add_variables(new_epoch.variables)
+        self.add_variable(new_epoch)
 
     def add_split(self, pop_to_div, size_args):
         """
@@ -242,6 +259,9 @@ class EpochDemographicModel(DemographicModel):
         :param size_args: population sizes of two subpopulations after the
                           split.
         """
+        if self.has_inbreeding:
+            raise ValueError("Model already has inbreeding. "
+                             " Split is impossible.")
         sizes = self._get_current_pop_sizes()
         sizes[pop_to_div] = size_args[0]
         sizes.append(size_args[1])
@@ -355,8 +375,20 @@ class EpochDemographicModel(DemographicModel):
         strings = []
         values = {var.name: val
                   for var, val in self.var2value(values).items()}
+
         for event in self.events:
             strings.append(event.as_custom_string(values))
+
+        if self.has_inbreeding:
+            inbr_coefficients = []
+            for inbreeding in self.inbreeding_args:
+                inbr_value = round(values[inbreeding.name], 3)
+                inbr_coefficients.append(f"{inbr_value} ({inbreeding.name})")
+
+            inbr_string = ", ".join(inbr_coefficients)
+
+            strings.append(f"[inbr: {inbr_string}]")
+
         return "[ " + ",\t".join(strings) + " ]"
 
     def get_involved_for_split_time_vars(self, n_split):
@@ -367,6 +399,8 @@ class EpochDemographicModel(DemographicModel):
         It will return A, b: Ax + b = time of `n_split` split.
         """
         var2value = self.var2value(np.zeros(len(self.variables)))
+        var2value = {var: value for var, value in var2value.items()
+                     if var not in self.fixed_values}
         n_sp = 0
         b = 0
         total_n_split = 0

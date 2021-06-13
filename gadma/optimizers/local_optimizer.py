@@ -234,12 +234,6 @@ class ScipyOptimizer(LocalOptimizer, ContinuousOptimizer):
             self.run_info.result.status = 0
             self.run_info.result.message = "maxiter or maxeval is 0"
 
-        if len(variables) == 0:
-            self.run_info.result.success = True
-            self.run_info.result.status = 0
-            self.run_info.result.message = "Zero parameters to optimize."
-            return self.run_info.result
-
         options = copy.copy(options)
         if maxiter is not None:
             options['maxiter'] = int(maxiter)
@@ -274,6 +268,11 @@ class ScipyOptimizer(LocalOptimizer, ContinuousOptimizer):
             # we need to fix n_iter as it is not an iteration but evaluation
             self.run_info.result.n_iter -= 1
             return y
+
+        # Good values from dadi
+        if (self.method != "Nelder-Mead" and self.method != "Powell" and
+                "eps" not in options):
+            options["eps"] = 1e-3
 
         # Run optimization of SciPy
         addit_kw = self.get_addit_scipy_kwargs(variables)
@@ -342,7 +341,7 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
         self.optimizer = optimizer
         super(ManuallyConstrOptimizer, self).__init__(log_transform,
                                                       self.optimizer.maximize)
-        self.out_of_bounds = np.inf
+        self.out_of_bounds = 1e8  # np.inf
 
     @property
     def id(self):
@@ -381,6 +380,9 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
                 vars_in_opt[i].domain = [-np.inf, np.inf]
 
         def callback(x, y):
+            if np.any([not var.correct_value(el)
+                       for el, var in zip(x, variables)]):
+                return
             # y is translated back by *(-1) we want correct comparison
             y = self.optimizer.sign * y
             iter_callback(x, y, [x], [y])

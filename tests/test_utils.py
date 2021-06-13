@@ -32,6 +32,7 @@ class TestUtils(unittest.TestCase):
         p = PopulationSizeVariable('p')
         d = DynamicVariable('d')
         m = MigrationVariable('m')
+        m.log_transform = True
         s = SelectionVariable('s')
         f = FractionVariable('f')
         variables = [p, d, m, s, f]
@@ -39,6 +40,15 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(len(v), 5)
         for el, var in zip(v, variables):
             self.assertTrue(var.correct_value(el))
+
+        def gen_gen(domain):
+            return np.random.uniform(domain[0], domain[1])
+        gen = DemographicGenerator(
+            genetic_generator=gen_gen,
+            N_A_domain=[1, 100],
+            gen_time=20
+        )
+        v = gen(domain=[1e-2, 100])
 
         trunc_lognormal_sigma_generator([0, 0.1])
         trunc_lognormal_sigma_generator([10, 20])
