@@ -222,6 +222,10 @@ class DiCal2Engine(Engine):
 
     base_module = jpype.JPackage("edu.berkeley.diCal2")
 
+    can_evaluate = True
+    can_draw = False
+    can_simulate = False
+
     def __init__(self, data=None, model=None, loci_per_HMM_step=32000):
         super(DiCal2Engine, self).__init__(data, model)
         self.loci_per_HMM_step = loci_per_HMM_step
@@ -428,8 +432,12 @@ class DiCal2Engine(Engine):
                 epoch_ends.append(time + epoch_ends[-1])
         ret_str += "[ " + ",".join([str(x) for x in epoch_ends]) + " ]\n"
 
-        partition = [[str(pop)]
-                     for pop, _ in enumerate(self.model.events[-1].size_args)]
+        if len(self.model.events) == 0:
+            partition = [["0"]]
+        else:
+            partition = []
+            for pop, _ in enumerate(self.model.events[-1].size_args):
+                partition.append([str(pop)])
         n_epoch = 0
 
         events = list(reversed(copy.copy(self.model.events)))
