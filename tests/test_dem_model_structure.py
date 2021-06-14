@@ -4,6 +4,8 @@ import itertools
 import copy
 import numpy as np
 import pytest
+import multiprocessing
+from multiprocessing import Queue, Process
 
 TEST_STRUCTURES = [(1,), (2,),
                    (1,1), (2,1), (1,2),
@@ -19,6 +21,21 @@ warnings.filterwarnings(action='ignore', category=UserWarning,
                         module='.*\.structure_demographic_model', lineno=77)
 warnings.filterwarnings(action='ignore', category=UserWarning,
                         module='.*\.structure_demographic_model', lineno=81)
+
+
+def func_in_separate_process(function, *args):
+    multiprocessing.set_start_method('spawn', force=True)
+    queue = Queue()
+    er_queue = Queue()
+    p = Process(target=function,
+                args=(queue, er_queue, *args))
+    p.start()
+    p.join() # this blocks until the process terminates
+    if not er_queue.empty():
+        raise RuntimeError() from er_queue.get(0)
+    if not queue.empty():
+        return queue.get(0)
+
 
 def run_dical2_eval(q, er_q, data_holder, models_pairs, vals_pairs):
     try:
@@ -170,7 +187,6 @@ class TestModelStructure(unittest.TestCase):
 
     @pytest.mark.timeout(0)
     def test_likelihood_after_increase(self):
-        from .test_engines import func_in_separate_process
         failed = 0
         for structure in BASE_TEST_STRUCTURES:
             models_pairs = []

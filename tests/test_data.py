@@ -26,7 +26,6 @@ try:
 except ImportError:
     MOMI_NOT_AVAILABLE = True
 
-from gadma import dical2_available
 
 # Test data
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data", "DATA")
@@ -45,17 +44,6 @@ CONTIG0 =  os.path.join(DATA_PATH, "vcf", "contig.0.vcf")
 CONTIG0_POPMAP = os.path.join(DATA_PATH, "vcf", "contig_0_popmap")
 REFERENCE = os.path.join(DATA_PATH, "vcf", "reference.fa")
 SMALL_REFERENCE = os.path.join(DATA_PATH, "vcf", "small_reference.fa")
-
-
-def run_dical2_reading(q, er_q, data):
-    try:
-        res = gadma.engines.DiCal2Engine.read_data(data)
-        assert isinstance(res, tuple)
-        assert len(res) == 2
-        # q.put(res)  # Not working as java objects are unpickleable
-    except Exception as e:
-        er_q.put(e)
-        raise e
 
 
 class TestDataHolder(unittest.TestCase):
@@ -191,30 +179,6 @@ class TestDataHolder(unittest.TestCase):
     @unittest.skipIf(MOMENTS_NOT_AVAILABLE, "Moments module is not installed")
     def test_moments_reading_fails(self):
         self._test_read_fails('moments')
-
-    @unittest.skipIf(dical2_available, "DiCal2 is not installed")
-    def test_dical2_reading(self):
-        from .test_engines import func_in_separate_process
-        data = VCFDataHolder(vcf_file=CONTIG0, popmap_file=CONTIG0_POPMAP,
-                             reference_file=REFERENCE)
-        func_in_separate_process(run_dical2_reading, data)  # checks are inside
-
-    @unittest.skipIf(dical2_available, "DiCal2 is not installed")
-    def test_dical2_reading_fails(self):
-        data = VCFDataHolder(vcf_file=CONTIG0, popmap_file=CONTIG0_POPMAP)
-        self.assertRaises(ValueError,
-                          gadma.engines.DiCal2Engine.read_data, data)
-
-        data = VCFDataHolder(vcf_file=CONTIG0, popmap_file=CONTIG0_POPMAP,
-                             sequence_length=10, reference_file=REFERENCE)
-        self.assertRaises(AssertionError,
-                          gadma.engines.DiCal2Engine.read_data, data)
-        
-        data = VCFDataHolder(vcf_file=CONTIG0, popmap_file=CONTIG0_POPMAP,
-                             reference_file=SMALL_REFERENCE)
-        self.assertRaises(ValueError,
-                          gadma.engines.DiCal2Engine.read_data, data)
-        gadma,engines.DiCal2Engine._startJVM()
 
     @unittest.skipIf(MOMENTS_NOT_AVAILABLE or DADI_NOT_AVAILABLE,
                      'moments and dadi are not installed')
