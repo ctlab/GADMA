@@ -35,15 +35,12 @@ def _dical2_config_info(
     numLoci,
     numAlleles
 ):
-    try:
-        return dical2_pkg.csd.DemoConfiguration.ConfigInfo(
-            multiplicities,
-            numDemes,
-            jpype.java.lang.Integer(numLoci),
-            numAlleles
-        )
-    except SystemExit:
-        raise ValueError("Creation of ConfigInfo failed")
+    return dical2_pkg.csd.DemoConfiguration.ConfigInfo(
+        multiplicities,
+        numDemes,
+        jpype.java.lang.Integer(numLoci),
+        numAlleles
+    )
 
 
 def _dical2_read_vcf(
@@ -105,40 +102,6 @@ def _extended_config_info(
         useStationaryForPartially,
         additionalHapIdx,
         csdList,
-    )
-
-
-def _create_objective_function(
-    dical2_pkg,
-    csdConfigList,
-    demoFactory,
-    demoStateFactory,
-    objectiveType,
-    startPoint,
-    estimateRecomScaling,
-    trunkFactory,
-    estimateTheta,
-    defaultTheta,
-    thetaDim,
-    lastIteration,
-    verbose,
-    useEigenCore
-):
-    base_module = dical2_pkg.maximum_likelihood.StructureEstimationEM
-    return base_module.DiCalObjectiveFunction(
-        csdConfigList,
-        demoFactory,
-        demoStateFactory,
-        objectiveType,
-        startPoint,
-        estimateRecomScaling,
-        trunkFactory,
-        estimateTheta,
-        defaultTheta,
-        thetaDim,
-        lastIteration,
-        verbose,
-        useEigenCore
     )
 
 
