@@ -535,7 +535,7 @@ def ploidy_from_vcf(path):
             # find genotype field index
             index = fields[8].split(':').index('GT')
             # we want to divide by either | or /
-            ploidy = len(re.split("\||/", fields[9].split(':')[index]))
+            ploidy = len(re.split(r"\||/", fields[9].split(':')[index]))
             return ploidy
 
 

@@ -504,6 +504,7 @@ def read_dadi_data(module, data_holder):
                                   " file type failed.\nTo get the error "
                                   "message, please, change the extension.")
 
+
 def read_vcf_data(module, data_holder):
     """
     Reads file in vcf format and returns dadi's Spectrum object.
@@ -659,7 +660,7 @@ def read_vcf_data(module, data_holder):
                              f"Labels in VCF file: {populations}"
     # evaluate maximum projections for our data
     pop2num = {}
-    for pop in population_labels: 
+    for pop in population_labels:
         pop2num[pop] = len([_sample for _sample, _pop in sample2pop.items()
                             if _sample in vcf_samples and _pop == pop])
     full_projections = [2 * pop2num[pop] for pop in population_labels]

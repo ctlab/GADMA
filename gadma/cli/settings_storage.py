@@ -357,9 +357,10 @@ class SettingsStorage(object):
                 files = [value]
                 extension = value[value.rfind('.'):].lower()
             if extension == ".vcf":
-                assert len(files) != 1, "VCF file should be set together with "\
-                                       "popmap file. Popmap file is missed, "\
-                                       "please set it as: vcf_file, popmap_file"
+                assert len(files) != 1, "VCF file should be set together with"\
+                                        " popmap file. Popmap file is missed,"\
+                                        " please set it as: vcf_file, "\
+                                        "popmap_file"
                 vcf_file, popmap_file = files
                 data_holder = VCFDataHolder(
                     vcf_file=vcf_file,

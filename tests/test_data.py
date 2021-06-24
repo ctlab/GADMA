@@ -39,8 +39,13 @@ VCF_DATA = os.path.join(DATA_PATH, "vcf", "data.vcf")
 POPMAP = os.path.join(DATA_PATH, "vcf", "popmap")
 VCF_SIM_YRI_CEU_DATA =  os.path.join(DATA_PATH, "vcf",
                                      "out_of_africa_chr22_sim.vcf")
+BAD_FILTER_VCF_DATA = os.path.join(DATA_PATH, "vcf", "bad_filter.vcf")
+NO_AA_INFO_VCF = os.path.join(DATA_PATH, "vcf", "no_aa_info.vcf")
+ONE_PLOIDY_VCF = os.path.join(DATA_PATH, "vcf", "one_ploidy.vcf")
+NOT_NUCL_VCF = os.path.join(DATA_PATH, "vcf", "not_nucl.vcf")
 POPMAP_SIM_YRI_CEU =  os.path.join(DATA_PATH, "vcf",
                                    "out_of_africa_chr22_sim.popmap")
+BAD_POPMAP = os.path.join(DATA_PATH, "vcf", "bad.popmap")
 
 
 
@@ -84,7 +89,6 @@ class TestDataHolder(unittest.TestCase):
         outgroup = True
         d = VCFDataHolder(vcf_file=VCF_DATA, popmap_file=POPMAP,
                           projections=sample_sizes, outgroup=outgroup)
-        self.assertEqual(d.population_labels, set(['Pop1', 'Pop2']))
         self.assertEqual(d.projections, sample_sizes)
         self.assertEqual(d.outgroup, outgroup)
  
@@ -201,6 +205,25 @@ class TestDataHolder(unittest.TestCase):
             DAMAGED_SNP_DATA
         )
         self.assertRaises(SyntaxError, get_engine(id).read_data, data_holder)
+
+        # VCF data
+        data_holder = VCFDataHolder(vcf_file=BAD_FILTER_VCF_DATA,
+                                    popmap_file=POPMAP_SIM_YRI_CEU)
+        self.assertRaises(ValueError, get_engine(id).read_data, data_holder)
+        data_holder = VCFDataHolder(vcf_file=ONE_PLOIDY_VCF,
+                                    popmap_file=POPMAP_SIM_YRI_CEU)
+        self.assertRaises(AssertionError, get_engine(id).read_data, data_holder)
+        data_holder = VCFDataHolder(vcf_file=VCF_SIM_YRI_CEU_DATA,
+                                    popmap_file=BAD_POPMAP)
+        self.assertRaises(ValueError, get_engine(id).read_data, data_holder)
+        data_holder = VCFDataHolder(vcf_file=NOT_NUCL_VCF,
+                                    popmap_file=POPMAP_SIM_YRI_CEU)
+        self.assertRaises(ValueError, get_engine(id).read_data, data_holder)
+        data_holder = VCFDataHolder(vcf_file=NO_AA_INFO_VCF,
+                                    popmap_file=POPMAP_SIM_YRI_CEU,
+                                    outgroup=True)
+        self.assertRaises(ValueError, get_engine(id).read_data, data_holder)
+
 
     @unittest.skipIf(DADI_NOT_AVAILABLE, "Dadi module is not installed")
     def test_dadi_reading(self):
