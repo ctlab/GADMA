@@ -579,7 +579,7 @@ def read_vcf_data(module, data_holder):
                       ") of VCF file will be ignored as FILTER "
                       f"column is not equal to `.` or `PASS`.{lines}")
     if len(lines_with_no_nucl) > 0:
-        if len(lines_with_no_nucl) + len(filtered_out_lines) == 0:
+        if len(lines_with_no_nucl) + len(filtered_out_lines) == total_snp:
             raise ValueError("Reference and alternative alleles in VCF file "
                              "are not nucleotides.")
         lines = ""
