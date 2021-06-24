@@ -31,23 +31,27 @@ class SFSDataHolder(DataHolder):
     """
     def __init__(self, sfs_file, projections=None, outgroup=None,
                  population_labels=None, sequence_length=None):
-        super(SFSDataHolder, self).__init__(sfs_file, projections,
-                                            outgroup, population_labels,
-                                            sequence_length)
+        super(SFSDataHolder, self).__init__(
+            filename=sfs_file,
+            projections=projections,
+            outgroup=outgroup,
+            population_labels=population_labels,
+            sequence_length=sequence_length
+        )
 
 
 class VCFDataHolder(DataHolder):
     """
     Class for VCF data holding.
     """
-    def __init__(self, vcf_file, popmap_file, sample_sizes, outgroup,
-                 population_labels=None, seq_len=None,  bed_file=None):
-        if population_labels is None:
-            population_labels = set()
-            with open(popmap_file) as f:
-                for line in f:
-                    population_labels.add(line.split()[-1])
-        super(VCFDataHolder, self).__init__(vcf_file, sample_sizes, outgroup,
-                                            population_labels, seq_len)
+    def __init__(self, vcf_file, popmap_file, projections, outgroup,
+                 population_labels=None, sequence_length=None,  bed_file=None):
+        super(VCFDataHolder, self).__init__(
+            filename=vcf_file,
+            projections=projections,
+            outgroup=outgroup,
+            population_labels=population_labels,
+            sequence_length=sequence_length
+        )
         self.popmap_file = popmap_file
         self.bed_file = bed_file

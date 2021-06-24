@@ -7,6 +7,7 @@ import tempfile
 import pickle
 from multiprocessing import Process, Queue, queues
 import warnings
+import re
 
 
 def logarithm_transform(x):
@@ -503,6 +504,39 @@ def get_claic_score(engine, x0, boots,
         return claic_score, eps
     else:
         return claic_score
+
+
+# function for working with VCF files
+def ploidy_from_vcf(path):
+    """
+    Calculate ploidy from .vcf file
+
+    This function was written by Artyom Ershov as part of internship test task.
+    Was taken from repository: https://github.com/iam28th/intership_test_task
+    """
+    # chrom name whose count of copies differs from ploidity
+    bad_chroms = {'Y', 'X', 'M', 'chrX', 'chrY', 'chrM'}
+
+    with open(path, 'r') as f:
+        for line in f:
+            # skip comments and heading
+            if line.startswith('#'):
+                continue
+
+            # skip bad chroms
+            fields = line.split('\t')
+            chrom = fields[0]
+            if chrom in bad_chroms:
+                continue
+
+            # .vcf contains 8 fixed columns + FORMAT + individual columns
+            # i.e. first of individual columns is the 10th
+
+            # find genotype field index
+            index = fields[8].split(':').index('GT')
+            # we want to divide by either | or /
+            ploidy = len(re.split("\||/", fields[9].split(':')[index]))
+            return ploidy
 
 
 # Printing functions
