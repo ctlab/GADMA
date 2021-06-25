@@ -442,10 +442,11 @@ class TestCLI(unittest.TestCase):
     def test_inbreeding_run(self):
         params_file = 'params'
         outdir = os.path.join(DATA_PATH, 'inbreed_dir')
+        data_file = os.path.join(DATA_PATH, "DATA", "sfs", "small_1pop.fs")
         if check_dir_existence(outdir):
             shutil.rmtree(outdir)
         with open(params_file, 'w') as fl:
-            fl.write("Input file: tests/test_data/DATA/sfs/YRI_CEU.fs\n"
+            fl.write(f"Input file: {data_file}\n"
                      "Linked SNP's: False\n"
                      "Silence: True\n"
                      "global_maxiter: 2\n"
