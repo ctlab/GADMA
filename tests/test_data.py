@@ -141,6 +141,7 @@ class TestDataHolder(unittest.TestCase):
         data = [(VCF_SIM_YRI_CEU_DATA, POPMAP_SIM_YRI_CEU)]
         for dat, siz, lab, out in itertools.product(data, sizes, labels,
                                                     outgroup):
+            print(siz, lab, out)
             seq = seq_lens[-1]
             vcf_file, popmap_file = dat
             data_holder = VCFDataHolder(

@@ -284,9 +284,14 @@ def get_settings():
                           " --resume option only. It would be ignored.")
 
     if settings_storage.inbreeding:
+        if settings_storage.projections is not None:
+            warnings.warn("For correct inference of the inbreeding SFS data "
+                          "should not be projected. Projections were taken as"
+                          f" {settings_storage.projections}, please check that"
+                          " data is not downsized.")
         if settings_storage.engine != "dadi":
-            raise ValueError("Please check your engine. If you want to "
-                             "calculate Inbreeding change engine to dadi")
+            raise ValueError("Please check your engine. If you want to infer "
+                             "inbreeding please change engine to `dadi`")
     return settings_storage, args
 
 

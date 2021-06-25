@@ -756,7 +756,7 @@ class SettingsStorage(object):
         data = engine.read_data(self.data_holder)
         self.projections = data.sample_sizes
         self.population_labels = data.pop_ids
-        self.outgroup = not data.folded  # TODO check function
+        self.outgroup = not data.folded
         if self.pts is None:
             max_n = max(self.projections)
             x = (int((max_n - 1) / 10) + 1) * 10

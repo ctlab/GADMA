@@ -505,6 +505,54 @@ def read_dadi_data(module, data_holder):
                                   "message, please, change the extension.")
 
 
+def _get_default_from_vcf_format(vcf_file, popmap_file, verbose=False):
+    """
+    Returns population labels and projections from files.
+    if verbose is True then warnings are printed.
+    """
+    # Read popmap and check samples from vcf
+    # check samples in vcf
+    vcf_samples = []
+    with open(vcf_file) as f:
+        for line in f:
+            if not line.startswith("##") and line.startswith("#"):
+                vcf_samples = line.strip().split()[9:]
+                break
+    assert len(vcf_samples) > 0, f"VCF file {vcf_file} has bad "\
+                                 "header."
+    # check popmap
+    populations = []
+    sample2pop = {}
+    with open(popmap_file) as f:
+        for line in f:
+            sample, pop = line.strip().split()
+            if sample in sample2pop and pop != sample2pop[sample]:
+                raise ValueError(f"Sample {sample} is presented in popmap "
+                                 f"{popmap_file} at least twice "
+                                 "corresponding to different populations.")
+            sample2pop[sample] = pop
+            if pop not in populations:
+                if sample in vcf_samples:
+                    populations.append(pop)
+    # check our lists
+    # samples that are in popmap but not in vcf
+    missed_samples = [smpl for smpl in sample2pop if smpl not in vcf_samples]
+    if len(missed_samples) > 0 and verbose:
+        warnings.warn("The following samples are presented in popmap file but "
+                      f"not in VCF file: {missed_samples}")
+    missed_samples = [smpl for smpl in vcf_samples if smpl not in sample2pop]
+    if len(missed_samples) > 0 and verbose:
+        warnings.warn("The following samples are presented in VCF file but "
+                      f"not in popmap file: {missed_samples}")
+    # evaluate maximum projections for our data
+    pop2num = {}
+    for pop in populations:
+        pop2num[pop] = len([_sample for _sample, _pop in sample2pop.items()
+                            if _sample in vcf_samples and _pop == pop])
+    full_projections = [2 * pop2num[pop] for pop in populations]
+    return populations, full_projections
+
+
 def read_vcf_data(module, data_holder):
     """
     Reads file in vcf format and returns dadi's Spectrum object.
@@ -522,16 +570,12 @@ def read_vcf_data(module, data_holder):
     ploidy = ploidy_from_vcf(data_holder.filename)
     assert ploidy == 2, "Only diploid VCF files could be read. "\
                         f"Ploidy of given file is: {ploidy}"
-    # Read popmap and check samples from vcf
-    # check samples in vcf
-    vcf_samples = []
-    with open(data_holder.filename) as f:
-        for line in f:
-            if not line.startswith("##") and line.startswith("#"):
-                vcf_samples = line.strip().split()[9:]
-                break
-    assert len(vcf_samples) > 0, f"VCF file {data_holder.filename} has bad "\
-                                 "header."
+    # get our info about maximal everything
+    populations, full_projections = _get_default_from_vcf_format(
+        vcf_file=data_holder.filename,
+        popmap_file=data_holder.popmap_file,
+        verbose=True
+    )
     # check our lines
     filtered_out_lines = []
     lines_with_no_nucl = []
@@ -601,30 +645,6 @@ def read_vcf_data(module, data_holder):
     snp_num -= len(filtered_out_lines)
     snp_num -= len(lines_with_no_nucl)
     snp_num -= missed_repeats
-    # check popmap
-    populations = []
-    sample2pop = {}
-    with open(data_holder.popmap_file) as f:
-        for line in f:
-            sample, pop = line.strip().split()
-            if sample in sample2pop and pop != sample2pop[sample]:
-                raise ValueError(f"Sample {sample} is presented in popmap "
-                                 f"{data_holder.popmap_file} at least twice "
-                                 "corresponding to different populations.")
-            sample2pop[sample] = pop
-            if pop not in populations:
-                if sample in vcf_samples:
-                    populations.append(pop)
-    # check our lists
-    # samples that are in popmap but not in vcf
-    missed_samples = [smpl for smpl in sample2pop if smpl not in vcf_samples]
-    if len(missed_samples) > 0:
-        warnings.warn("The following samples are presented in popmap file but "
-                      f"not in VCF file: {missed_samples}")
-    missed_samples = [smpl for smpl in vcf_samples if smpl not in sample2pop]
-    if len(missed_samples) > 0:
-        warnings.warn("The following samples are presented in VCF file but "
-                      f"not in popmap file: {missed_samples}")
 
     # Check outgroup
     outgroup = data_holder.outgroup
@@ -650,6 +670,7 @@ def read_vcf_data(module, data_holder):
                          "marked as PASS or as '.' in FILTER column.")
     assert len(dd) == snp_num, "Something went wrong and lower number of "\
                                f"SNP's were read ({len(dd)} / {snp_num})."
+    # populations labels
     population_labels = data_holder.population_labels
     if data_holder.population_labels is None:
         population_labels = list(populations)
@@ -658,19 +679,15 @@ def read_vcf_data(module, data_holder):
     assert all(corr_labels), f"Some given labels are not presented in VCF "\
                              f"file.\nGot labels: {population_labels}\n"\
                              f"Labels in VCF file: {populations}"
-    # evaluate maximum projections for our data
-    pop2num = {}
-    for pop in population_labels:
-        pop2num[pop] = len([_sample for _sample, _pop in sample2pop.items()
-                            if _sample in vcf_samples and _pop == pop])
-    full_projections = [2 * pop2num[pop] for pop in population_labels]
     # and get our projections
     projections = data_holder.projections
+    pop2proj = dict(zip(populations, full_projections))
+    projected_full_proj = [pop2proj[pop] for pop in population_labels]
     if data_holder.projections is None:
-        projections = full_projections
+        projections = projected_full_proj
     # check projections are less than in vcf file
     corr_proj = [proj1 <= proj2 for proj1, proj2 in zip(projections,
-                                                        full_projections)]
+                                                        projected_full_proj)]
     assert all(corr_proj), "Something wrong with given projections. They are "\
                            "greater than number of samples presented in VCF "\
                            "file.\nGiven pop. labels and projections: "\
