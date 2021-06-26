@@ -61,7 +61,7 @@ It is also possible to start with a simpler structure in order to get to a more 
 .. code-block:: none
 
     # param_file
-    Input file : some_2d_fs.fs
+    Input data : some_2d_fs.fs
     
     Initial structure : 1,1
     Final   structure : 2,1
