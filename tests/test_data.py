@@ -141,7 +141,7 @@ class TestDataHolder(unittest.TestCase):
         data = [(VCF_SIM_YRI_CEU_DATA, POPMAP_SIM_YRI_CEU)]
         for dat, siz, lab, out in itertools.product(data, sizes, labels,
                                                     outgroup):
-            print(siz, lab, out)
+            # print(siz, lab, out)
             seq = seq_lens[-1]
             vcf_file, popmap_file = dat
             data_holder = VCFDataHolder(
@@ -206,6 +206,10 @@ class TestDataHolder(unittest.TestCase):
             DAMAGED_SNP_DATA
         )
         self.assertRaises(SyntaxError, get_engine(id).read_data, data_holder)
+
+        # Bad data holder
+        not_data_holder = get_engine(id)
+        self.assertRaises(ValueError, get_engine(id).read_data, not_data_holder)
 
         # VCF data
         data_holder = VCFDataHolder(vcf_file=BAD_FILTER_VCF_DATA,
