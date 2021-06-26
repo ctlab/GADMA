@@ -1,7 +1,19 @@
 Changelogs
 ==============
 
-[2.0.0rc15] - 2021-06-13
+[2.0.0rc16] - 2021-06-27
+------------------------
+
+1. VCF data format was add as one of input data for GADMA! Now SFS data can be build from VCF and popmap files like:
+
+.. code-block:: none
+
+    # param_file
+    Input data: vcf_file, popmap_file
+
+2. ``Input file`` setting changed to ``Input data`` option.
+
+2.0.0rc15] - 2021-06-13
 ------------------------
 
 1. Add Bayesian optimizations to GADMA. There are three versions of it:

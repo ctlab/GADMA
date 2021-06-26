@@ -32,6 +32,8 @@ taken to SFS data if:
 4. When positions are repeated the last SNP will be taken.
 5. Ancestral allele should be put to `INFO` column as `AA=` field.
 
+.. _popmap_file:
+
 Popmap file
 ------------
 
