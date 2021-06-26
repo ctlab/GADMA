@@ -4,7 +4,7 @@ from .. import moments_available, dadi_available
 
 # Main options. Output and input.
 output_directory = None
-input_file = None
+input_data = None
 # input_data = None
 # number_of_populations = None
 population_labels = None
