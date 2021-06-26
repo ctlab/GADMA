@@ -31,7 +31,8 @@ CHANGED_IDENTIFIERS = {"use_moments_or_dadi": "engine",
                        "name_of_local_optimization": "local_optimizer",
                        "lower_bounds": "lower_bound",
                        "upper_bounds": "upper_bound",
-                       "multinom": "ancestral_size_as_parameter"}
+                       "multinom": "ancestral_size_as_parameter",
+                       "input_file": "input_data"}
 
 DEPRECATED_IDENTIFIERS = ["flush_delay",
                           "epsilon_for_ls", "gtol", "maxiter",
@@ -123,7 +124,7 @@ class SettingsStorage(object):
         special_attrs = ['const_for_mutation_strength',
                          'const_for_mutation_rate', 'vmin',
                          'parameter_identifiers', 'migration_masks']
-        exist_file_attrs = ['input_file', 'custom_filename']
+        exist_file_attrs = ['input_data', 'custom_filename']
         exist_dir_attrs = ['directory_with_bootstrap', 'resume_from']
         empty_dir_attrs = ['output_directory']
         data_holder_attrs = ['projections', 'outgroup',
@@ -341,7 +342,7 @@ class SettingsStorage(object):
 
         # 3. Now change some other attributes according to new one
         # 3.1 If new_file we need to create data_holder
-        if name == 'input_file':
+        if name == 'input_data':
             files = [name.strip() for name in value.split(",")]
             if len(files) > 1:
                 n_files = len(files)

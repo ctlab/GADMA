@@ -16,9 +16,10 @@ Output directory :
 
 
 #!!!
-#	Input file can be sfs file (should end with .fs) or 
-#	file of SNP's in dadi format (should end with .txt).
-Input file : 
+#	Input data can be sfs file (should end with .fs) or 
+#	file of SNP's in dadi format (should end with .txt) or
+#   VCF file + popmap file (sample population map).
+Input data : 
 
 #	'Population labels' is sequence of population names (the same
 #	names as in input file)

@@ -65,13 +65,13 @@ def test_args():
     settings_storage = SettingsStorage.from_file(TEST_SETTINGS)
     # Input test file
     curent_dir = os.path.dirname(os.path.abspath(__file__))
-    settings_storage.input_file = os.path.join(curent_dir,
+    settings_storage.input_data = os.path.join(curent_dir,
                                                "../test.fs")
     # There is no output_directory, we put it to temporary directory
     settings_storage.output_directory = tempfile.mkdtemp("gadma_test_dir")
     # And put path to input file
-    settings_storage.input_file = os.path.join(HOME_DIR,
-                                               settings_storage.input_file)
+    settings_storage.input_data = os.path.join(HOME_DIR,
+                                               settings_storage.input_data)
     return settings_storage
 
 
@@ -168,14 +168,14 @@ def get_settings():
         settings_storage.output_directory = args.output
 
     if args.input is not None:
-        if (settings_storage.input_file is not None and
-                settings_storage.input_file != args.input):
+        if (settings_storage.input_data is not None and
+                settings_storage.input_data != args.input):
             warnings.warn("Input file in parameters file doesn't match to one"
                           " from -i/--input option. The last is taken.")
-        settings_storage.input_file = args.input
+        settings_storage.input_data = args.input
 
     # 3. Checks that we have got all required (initial checks)
-    if (settings_storage.input_file is None and
+    if (settings_storage.input_data is None and
             settings_storage.resume_from is None):
         raise AttributeError("Input file is required. It could be set by "
                              "-i/--input option or via parameters file.")
@@ -193,7 +193,7 @@ def get_settings():
                                                  old_extra_file)
         # check what have changed and can we deal with it
         if not settings_storage == old_settings:
-            data_settings = ['input_file', 'projections', 'population_labels',
+            data_settings = ['input_data', 'projections', 'population_labels',
                              'outgroup']
             engine_settings = ['engine', 'pts', 'lower_bound', 'upper_bound',
                                'upper_bound_of_first_split',
