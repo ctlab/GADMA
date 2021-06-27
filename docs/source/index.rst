@@ -25,21 +25,23 @@ Base usage of GADMA via command-line:
     
     GADMA version 2.0.0	by Ekaterina Noskova (ekaterina.e.noskova@gmail.com)
     Usage: 
-        	gadma	-p/--params <params_file>
-            		-e/--extra <extra_params_file>
+        gadma	-p/--params	<params_file>
+                -e/--extra	<extra_params_file>
 
 
     Instead/With -p/--params and -e/--extra option you can set:
-        	-o/--output <output_dir>	output directory.
-        	-i/--input <in.fs>/<in.txt>	input file with AFS or in dadi format.
-        	--resume <resume_dir>		resume another launch from <resume_dir>.
-        	--only_models			flag to take models only from another launch (--resume option).
+        -o/--output	<output_dir>		output directory.
+        -i/--input	<in.fs>/<in.txt>/	input data for demographic inference
+        		<in.vcf>,<popmap>	(AFS or dadi format or VCF).
+        --resume	<resume_dir>		resume another launch from <resume_dir>.
+        --only_models		flag to take models only from another
+        			launch (--resume option).
 
-        	-h/--help		show this help message and exit.
-        	-v/--version		show version and exit.
-        	--test			run test case.
+        -h/--help		show this help message and exit.
+        -v/--version		show version and exit.
+        --test			run test case.
 
-        In case of any questions or problems, please contact: ekaterina.e.noskova@gmail.com
+    In case of any questions or problems, please contact: ekaterina.e.noskova@gmail.com
 
 What is parameter file of GADMA?
 ---------------------------------

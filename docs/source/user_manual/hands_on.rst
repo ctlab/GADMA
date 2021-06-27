@@ -23,7 +23,7 @@ Suppose that we have SNP data for two populations. Data is in dadi's SNP file fo
 Example 3
 ----------
 
-Assume we have VCF file. It is possible to read SFS data directly from it. `Some rules are applied for the VCF format <input_data/vcf_data_format.rst>`__. VCF file should be set along with :ref:`popmap_file` that describes how samples map to the populations:
+Assume we have VCF file. It is possible to read SFS data directly from it. `Some rules are applied to the VCF format for successful reading <input_data/vcf_data_format.rst>`__. VCF file should be set along with :ref:`popmap_file` that describes how samples map to the populations:
 
 .. code-block:: console
 

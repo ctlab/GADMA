@@ -30,17 +30,18 @@ def usage():
     Returns usage of tool.
     '''
     return version() + "" \
-        "Usage: \n\tgadma\t-p/--params <params_file>\n"\
-        "\t\t-e/--extra <extra_params_file>\n"\
+        "Usage: \n\tgadma\t-p/--params\t<params_file>\n"\
+        "\t\t-e/--extra\t<extra_params_file>\n"\
         "\n\n"\
         "Instead/With -p/--params and -e/--extra option you can set:\n"\
-        "\t-o/--output <output_dir>\toutput directory.\n"\
-        "\t-i/--input <in.fs>/<in.txt>\tinput file with AFS or in dadi "\
-        "format.\n"\
-        "\t--resume <resume_dir>\t\tresume another launch from "\
+        "\t-o/--output\t<output_dir>\t\toutput directory.\n"\
+        "\t-i/--input\t<in.fs>/<in.txt>/\tinput data for demographic "\
+        "inference\n"\
+        "\t\t\t<in.vcf>,<popmap>\t(AFS, dadi format or VCF).\n"\
+        "\t--resume\t<resume_dir>\t\tresume another launch from "\
         "<resume_dir>.\n"\
-        "\t--only_models\t\t\tflag to take models only from another launch "\
-        "(--resume option).\n\n"\
+        "\t--only_models\t\tflag to take models only from another\n"\
+        "\t\t\t\tlaunch (--resume option).\n\n"\
         "\t-h/--help\t\tshow this help message and exit.\n"\
         "\t-v/--version\t\tshow version and exit.\n"\
         "\t--test\t\t\trun test case.\n" + SUPPORT_STRING
