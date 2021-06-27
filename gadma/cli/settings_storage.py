@@ -350,7 +350,6 @@ class SettingsStorage(object):
                                      "files: SFS file or VCF file with popmap"\
                                      f" file. Got {n_files} files: {files}"
                 extension = files[0][files[0].rfind('.'):].lower()
-                print(extension)
                 assert extension == ".vcf", "Input file was set to two files "\
                                             "but the first one does not have "\
                                             f".vcf extension: {value}"
@@ -371,7 +370,6 @@ class SettingsStorage(object):
                     population_labels=self.population_labels,
                     sequence_length=self.sequence_length,
                 )
-                print(data_holder.__class__)
             else:
                 data_holder = SFSDataHolder(
                     sfs_file=value,

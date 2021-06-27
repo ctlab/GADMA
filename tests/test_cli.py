@@ -213,6 +213,19 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(settings.fractions[1], settings.p_mutation)
         settings.fractions = [0.2, 0.3, 0.3]
 
+        # input data as vcf file
+        vcf_file = os.path.join(DATA_PATH, "DATA", "vcf",
+                                "out_of_africa_chr22_sim.vcf")
+        popmap_file = os.path.join(DATA_PATH, "DATA", "vcf",
+                                   "out_of_africa_chr22_sim.popmap")
+        settings.input_data = f"{vcf_file}, {popmap_file}"
+        self.assertRaises(AssertionError, settings.__setattr__,
+                          'input_data', f"{vcf_file}, {popmap_file}, {vcf_file}")
+        self.assertRaises(AssertionError, settings.__setattr__,
+                          'input_data', f"{popmap_file}, {vcf_file}")
+        self.assertRaises(AssertionError, settings.__setattr__,
+                          'input_data', f"{vcf_file}")
+
         # number of populations and length of lists in other order
         settings = SettingsStorage()
         settings.number_of_populations = 2
@@ -447,6 +460,7 @@ class TestCLI(unittest.TestCase):
             shutil.rmtree(outdir)
         with open(params_file, 'w') as fl:
             fl.write(f"Input file: {data_file}\n"
+                     "Projections: 6\n"
                      "Linked SNP's: False\n"
                      "Silence: True\n"
                      "global_maxiter: 2\n"
