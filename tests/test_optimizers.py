@@ -484,7 +484,7 @@ class TestLocalOpt(TestBaseOptClass):
 class TestCoreRun(unittest.TestCase):
     def test_core_run(self):
         settings = test_args()
-        settings.input_file = os.path.join(DATA_PATH, "DATA", "sfs",
+        settings.input_data = os.path.join(DATA_PATH, "DATA", "sfs",
                                            'small_1pop.fs')
         settings.draw_models_every_n_iteration = 100
         settings.print_models_code_every_n_iteration = 100

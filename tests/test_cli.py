@@ -52,7 +52,7 @@ class TestCLI(unittest.TestCase):
             settings, _ = get_settings_test()
 
             self.assertEqual(settings.output_directory, abspath('some_dir'))
-            self.assertEqual(settings.input_file, abspath(another_fs))
+            self.assertEqual(settings.input_data, abspath(another_fs))
             sys.argv = ['gadma', '-p', param_file, '-o', 'tests',
                         '-i', another_fs]
             self.assertRaises(RuntimeError, get_settings_test)
@@ -253,7 +253,7 @@ class TestCLI(unittest.TestCase):
         self.assertRaises(ValueError, settings.__setattr__,
                           'directory_with_bootstrap', 'not_existing_dir')
         self.assertRaises(ValueError, settings.__setattr__,
-                          'input_file', 'not_existing_file')
+                          'input_data', 'not_existing_file')
         settings.parameter_identifiers = 'nu, t, f, s'
         self.assertRaises(ValueError, settings.__setattr__,
                           'parameter_identifiers', 'e, t')
