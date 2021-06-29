@@ -422,7 +422,20 @@ class DiCal2Engine(Engine):
                 # pop sizes
                 # TODO exponential
                 ret_str += "# population sizes\n"
-                pop_sizes = [str(get_value(arg)) for arg in event.size_args]
+                # We should be carefull about values here
+                # If we have Sud dynamic then we put our constant size that is
+                # located in size_args
+                # If we have some Exp dynamic then we put our init_size_args
+                dynamics = ["Sud" for _ in event.size_args]
+                if event.dyn_args is not None:
+                    dynamics = [get_value(arg) for arg in event.dyn_args]
+                local_size_args = []
+                for i, dyn in enumerate(dynamics):
+                    if dyn == "Sud":
+                        local_size_args.append(event.size_args[i])
+                    else:
+                        local_size_args.append(event.init_size_args[i])
+                pop_sizes = [str(get_value(arg)) for arg in local_size_args]
                 ret_str += "\t".join(pop_sizes) + "\n"
                 # TODO pulse matrix
                 # adds pop_sizes equal to None and add additional rates
@@ -455,6 +468,22 @@ class DiCal2Engine(Engine):
                 partition[pop_that_split].extend(partition[-1])
                 partition = partition[:-1]
         return ret_str
+
+    def _get_string_of_growth_rates(self, values):
+        var2value = self.model.var2value(values)
+        ret_str = ""
+        # check that we have to create that file
+        all_sud = True
+        n_epoch = 0
+        for event in list(reversed(copy.copy(self.model.events))):
+            if isinstance(event, Epoch):
+                n_epoch += 1
+                dynamics = ["Sud" for _ in event.size_args]
+                if event.dyn_args is not None:
+                    dynamics = [get_value(arg) for arg in event.dyn_args]
+                    all_sud = all_sud and all(dynamics == "Sud")
+        if all_sud:
+            return None
 
     def _create_demo_model(self, values, trunk_factory):
         """
