@@ -34,25 +34,14 @@ def ploidy_from_vcf(path):
             return ploidy
 
 
-def get_defaults_from_vcf_format(vcf_file, popmap_file, verbose=False):
+def read_popinfo(popinfo_file):
     """
-    Returns population labels and projections from files.
-    if verbose is True then warnings are printed.
+    Returns dictionary {sample_name: pop_name} from popmap file and list of
+    presented populations.
     """
-    # Read popmap and check samples from vcf
-    # check samples in vcf
-    vcf_samples = []
-    with open(vcf_file) as f:
-        for line in f:
-            if not line.startswith("##") and line.startswith("#"):
-                vcf_samples = line.strip().split()[9:]
-                break
-    assert len(vcf_samples) > 0, f"VCF file {vcf_file} has bad "\
-                                 "header."
-    # check popmap
     populations = []
     sample2pop = {}
-    with open(popmap_file) as f:
+    with open(popinfo_file) as fl:
         for line in f:
             sample, pop = line.strip().split()
             if sample in sample2pop and pop != sample2pop[sample]:
@@ -61,8 +50,48 @@ def get_defaults_from_vcf_format(vcf_file, popmap_file, verbose=False):
                                  "corresponding to different populations.")
             sample2pop[sample] = pop
             if pop not in populations:
-                if sample in vcf_samples:
-                    populations.append(pop)
+                populations.append(pop)
+    return sample2pop, populations
+
+
+def get_list_of_names_from_vcf(vcf_file):
+    """
+    Returns list of sample names from vcf file.
+    """
+    header_line = ""
+    with open(vcf_file) as fl:
+        for line in fl:
+            # Skip metainformation
+            if not line.startswith("##") and line.startswith("#")::
+                header_line = line
+                continue
+
+            # Read header
+            assert len(header_line) != 0, ("There is not header information in"
+                                           f" VCF file {vcf_file}")
+            # samples starts from 9 element
+            header_info = header_line.split()
+            assert len(header_info) > 9, ("There is no samples in VCF file "
+                                          f" {vcf_file}: {header_line}")
+            return header_info[9:]
+
+
+def get_defaults_from_vcf_format(vcf_file, popmap_file, verbose=False):
+    """
+    Returns population labels and projections from files.
+    if verbose is True then warnings are printed.
+    """
+    # Read popmap and check samples from vcf
+    # check samples in vcf
+    vcf_samples = get_list_of_names_from_vcf(vcf_file=vcf_file)
+
+    # check popmap
+    sample2pop, all_populations = read_popinfo(popinfo_file=popmap_file)
+    pop_is_pres = {pop: False for pop in all_populations}
+    for sample in sample2pop:
+        pop_is_pres[sample2pop[sample]] = True
+    populations = [pop for pop in all_populations if pop_is_pres[pop]]
+        
     # check our lists
     # samples that are in popmap but not in vcf
     missed_samples = [smpl for smpl in sample2pop if smpl not in vcf_samples]
