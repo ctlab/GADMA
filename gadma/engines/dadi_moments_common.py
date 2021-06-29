@@ -6,7 +6,8 @@ from .. import SFSDataHolder, VCFDataHolder
 from .. import dadi_available, moments_available
 from ..code_generator import id2printfunc
 from ..data.data_utils import get_defaults_from_vcf_format, ploidy_from_vcf
-from ..data.data_utils import check_population_labels_vcf, check_projections_vcf
+from ..data.data_utils import check_population_labels_vcf,\
+                              check_projections_vcf
 
 import warnings
 import os
