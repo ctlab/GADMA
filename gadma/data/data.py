@@ -48,7 +48,8 @@ class VCFDataHolder(DataHolder):
     It saves some information while it is created.
     """
     def __init__(self, vcf_file, popmap_file, projections=None, outgroup=None,
-                 population_labels=None, sequence_length=None,  bed_file=None):
+                 population_labels=None, sequence_length=None,  bed_file=None,
+                 reference_file=None):
         super(VCFDataHolder, self).__init__(
             filename=vcf_file,
             projections=projections,
@@ -58,5 +59,4 @@ class VCFDataHolder(DataHolder):
         )
         self.popmap_file = popmap_file
         self.bed_file = bed_file
-        self.ploidy = ploidy
         self.reference_file = reference_file
