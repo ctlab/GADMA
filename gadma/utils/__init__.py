@@ -14,7 +14,6 @@ from .utils import StdAndFileLogger, get_aic_score, get_claic_score   # NOQA
 from .utils import float_repr, variables_values_repr, bcolors, warning_format  # NOQA
 from .utils import read_popinfo, get_list_of_names_from_vcf  # NOQA
 from .utils import module_name_from_path, timeout, get_correct_dtype  # NOQA
-from .utils import ploidy_from_vcf  # NOQA
 from .distributions import trunc_normal, trunc_lognormal  # NOQA
 from .distributions import trunc_normal_3_sigma_rule, trunc_lognormal_3_sigma_rule  # NOQA
 from .distributions import uniform_generator, trunc_lognormal_sigma_generator  # NOQA

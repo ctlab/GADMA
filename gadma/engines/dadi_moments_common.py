@@ -1,10 +1,12 @@
 from . import Engine
 from ..models import DemographicModel, StructureDemographicModel,\
                      CustomDemographicModel
-from ..utils import DiscreteVariable, cache_func, ploidy_from_vcf, bcolors
+from ..utils import DiscreteVariable, cache_func, bcolors
 from .. import SFSDataHolder, VCFDataHolder
 from .. import dadi_available, moments_available
 from ..code_generator import id2printfunc
+from ..data.data_utils import get_defaults_from_vcf_format, ploidy_from_vcf
+from ..data.data_utils import check_population_labels_vcf, check_projections_vcf
 
 import warnings
 import os
@@ -30,7 +32,7 @@ class DadiOrMomentsEngine(Engine):
     can_simulate = True
 
     @classmethod
-    def read_data(cls, data_holder):
+    def _read_data(cls, data_holder):
         """
         Reads SFS data from `data_holder`.
 
@@ -44,11 +46,6 @@ class DadiOrMomentsEngine(Engine):
         :param data_holder: holder of the data.
         :type data_holder: :class:`SFSDataHolder`
         """
-        if data_holder.__class__ not in cls.supported_data:
-            raise ValueError(f"Data class {data_holder.__class__.__name__}"
-                             f" is not supported by {cls.id} engine.\nThe "
-                             f"supported classes are: {cls.supported_data}"
-                             f" and {cls.inner_data_type}")
         if isinstance(data_holder, SFSDataHolder):
             data = read_dadi_data(cls.base_module, data_holder)
         else:
@@ -507,54 +504,6 @@ def read_dadi_data(module, data_holder):
                                   "message, please, change the extension.")
 
 
-def _get_default_from_vcf_format(vcf_file, popmap_file, verbose=False):
-    """
-    Returns population labels and projections from files.
-    if verbose is True then warnings are printed.
-    """
-    # Read popmap and check samples from vcf
-    # check samples in vcf
-    vcf_samples = []
-    with open(vcf_file) as f:
-        for line in f:
-            if not line.startswith("##") and line.startswith("#"):
-                vcf_samples = line.strip().split()[9:]
-                break
-    assert len(vcf_samples) > 0, f"VCF file {vcf_file} has bad "\
-                                 "header."
-    # check popmap
-    populations = []
-    sample2pop = {}
-    with open(popmap_file) as f:
-        for line in f:
-            sample, pop = line.strip().split()
-            if sample in sample2pop and pop != sample2pop[sample]:
-                raise ValueError(f"Sample {sample} is presented in popmap "
-                                 f"{popmap_file} at least twice "
-                                 "corresponding to different populations.")
-            sample2pop[sample] = pop
-            if pop not in populations:
-                if sample in vcf_samples:
-                    populations.append(pop)
-    # check our lists
-    # samples that are in popmap but not in vcf
-    missed_samples = [smpl for smpl in sample2pop if smpl not in vcf_samples]
-    if len(missed_samples) > 0 and verbose:
-        warnings.warn("The following samples are presented in popmap file but "
-                      f"not in VCF file: {missed_samples}")
-    missed_samples = [smpl for smpl in vcf_samples if smpl not in sample2pop]
-    if len(missed_samples) > 0 and verbose:
-        warnings.warn("The following samples are presented in VCF file but "
-                      f"not in popmap file: {missed_samples}")
-    # evaluate maximum projections for our data
-    pop2num = {}
-    for pop in populations:
-        pop2num[pop] = len([_sample for _sample, _pop in sample2pop.items()
-                            if _sample in vcf_samples and _pop == pop])
-    full_projections = [2 * pop2num[pop] for pop in populations]
-    return populations, full_projections
-
-
 def read_vcf_data(module, data_holder):
     """
     Reads file in vcf format and returns dadi's Spectrum object.
@@ -573,7 +522,7 @@ def read_vcf_data(module, data_holder):
     assert ploidy == 2, "Only diploid VCF files could be read. "\
                         f"Ploidy of given file is: {ploidy}"
     # get our info about maximal everything
-    populations, full_projections = _get_default_from_vcf_format(
+    populations, full_projections = get_defaults_from_vcf_format(
         vcf_file=data_holder.filename,
         popmap_file=data_holder.popmap_file,
         verbose=True
@@ -677,10 +626,10 @@ def read_vcf_data(module, data_holder):
     if data_holder.population_labels is None:
         population_labels = list(populations)
     # Check that we have correct pop labels
-    corr_labels = [lab in populations for lab in population_labels]
-    assert all(corr_labels), f"Some given labels are not presented in VCF "\
-                             f"file.\nGot labels: {population_labels}\n"\
-                             f"Labels in VCF file: {populations}"
+    check_population_labels_vcf(
+        pop_labels=population_labels,
+        full_pop_labels=populations
+    )
     # and get our projections
     projections = data_holder.projections
     pop2proj = dict(zip(populations, full_projections))
@@ -688,14 +637,11 @@ def read_vcf_data(module, data_holder):
     if data_holder.projections is None:
         projections = projected_full_proj
     # check projections are less than in vcf file
-    corr_proj = [proj1 <= proj2 for proj1, proj2 in zip(projections,
-                                                        projected_full_proj)]
-    assert all(corr_proj), "Something wrong with given projections. They are "\
-                           "greater than number of samples presented in VCF "\
-                           "file.\nGiven pop. labels and projections: "\
-                           f"{population_labels}, {projections}\nPop.labels "\
-                           "and projections from VCF file: "\
-                           f"{population_labels}, {full_projections}."
+    check_projections_vcf(
+        projections=projections,
+        full_projections=projected_full_proj,
+        pop_labels=population_labels
+    )
     data = module.Spectrum.from_data_dict(
         data_dict=dd,
         pop_ids=population_labels,
