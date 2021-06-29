@@ -100,8 +100,8 @@ class Engine(object):
     def get_value_from_var2value(var2value, entity):
         return Model.get_value_from_var2value(var2value, entity)
 
-    @staticmethod
-    def read_data(data_holder):
+    @classmethod
+    def read_data(cls, data_holder):
         """
         Reads data from `data_holder.filename` in inner type.
 
@@ -110,6 +110,18 @@ class Engine(object):
 
         :returns: readed data
         :rtype: ``Engine.inner_data_type``
+        """
+        if data_holder.__class__ not in cls.supported_data:
+            raise ValueError(f"Data class {data_holder.__class__.__name__}"
+                             f" is not supported by {cls.id} engine.\nThe "
+                             f"supported classes are: {cls.supported_data}"
+                             f" and {cls.inner_data_type}")
+        return cls._read_data(data_holder)
+
+    @classmethod
+    def _read_data(cls, data_holder):
+        """
+        Inner method to read data_holder.
         """
         raise NotImplementedError
 
