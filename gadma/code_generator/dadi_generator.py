@@ -1,6 +1,7 @@
 from ..models import CustomDemographicModel, EpochDemographicModel,\
     Epoch, Split, BinaryOperation
 from ..utils import Variable, DiscreteVariable, DynamicVariable
+from ..data import SFSDataHolder, VCFDataHolder
 import sys
 import os
 import copy
@@ -131,7 +132,14 @@ def _print_load_data(data_holder, is_fs, mode='dadi'):
     ret_str = ""
     fname = data_holder.filename
     if is_fs is None:
-        ret_str += f"dd = {mode}.Misc.make_data_dict({repr(fname)})\n"
+        if isinstance(data_holder, SFSDataHolder):
+            ret_str += f"dd = {mode}.Misc.make_data_dict({repr(fname)})\n"
+        else:
+            assert isinstance(data_holder, VCFDataHolder)
+            ret_str += f"dd = {mode}.Misc.make_data_dict_vcf("
+            ret_str += f"vcf_filename={repr(data_holder.filename)}, "
+            ret_str += f"popinfo_filename={repr(data_holder.popmap_file)}, "
+            ret_str += "filter=True, flanking_info=[None, None])\n"
         ret_str += f"data = {mode}.Spectrum.from_data_dict"
         if (data_holder.population_labels is None or
                 data_holder.projections is None or
@@ -141,7 +149,9 @@ def _print_load_data(data_holder, is_fs, mode='dadi'):
         lbls = list(data_holder.population_labels)
         size = list(data_holder.projections)
         outg = data_holder.outgroup
-        ret_str += f"(dd, {lbls}, {size}, polarized={outg})\n"
+        ret_str += f"(dd, pop_ids={lbls}, "
+        ret_str += f"projections={size}, "
+        ret_str += f"polarized={outg})\n"
     else:
         data = is_fs
         ret_str += f"data = {mode}.Spectrum.from_file({repr(fname)})\n"

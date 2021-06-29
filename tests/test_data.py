@@ -39,6 +39,17 @@ STRANGE_DATA = os.path.join(DATA_PATH, "sfs", "some_strange_data")
 
 VCF_DATA = os.path.join(DATA_PATH, "vcf", "data.vcf")
 POPMAP = os.path.join(DATA_PATH, "vcf", "popmap")
+VCF_SIM_YRI_CEU_DATA =  os.path.join(DATA_PATH, "vcf",
+                                     "out_of_africa_chr22_sim.vcf")
+BAD_FILTER_VCF_DATA = os.path.join(DATA_PATH, "vcf", "bad_filter.vcf")
+NO_AA_INFO_VCF = os.path.join(DATA_PATH, "vcf", "no_aa_info.vcf")
+ONE_PLOIDY_VCF = os.path.join(DATA_PATH, "vcf", "one_ploidy.vcf")
+NOT_NUCL_VCF = os.path.join(DATA_PATH, "vcf", "not_nucl.vcf")
+POPMAP_SIM_YRI_CEU =  os.path.join(DATA_PATH, "vcf",
+                                   "out_of_africa_chr22_sim.popmap")
+BAD_POPMAP = os.path.join(DATA_PATH, "vcf", "bad.popmap")
+
+
 
 CONTIG0 =  os.path.join(DATA_PATH, "vcf", "contig.0.vcf")
 CONTIG0_POPMAP = os.path.join(DATA_PATH, "vcf", "contig_0_popmap")
@@ -50,7 +61,7 @@ class TestDataHolder(unittest.TestCase):
     def _check_data(self, data, pop_labels, outgroup, sample_sizes):
         self.assertTrue(all(data.sample_sizes == sample_sizes),
                         msg=f"{data.sample_sizes} != {sample_sizes}")
-        self.assertEqual(data.pop_ids, pop_labels,
+        self.assertEqual(list(data.pop_ids), list(pop_labels),
                          msg=f"{data.pop_ids} != {pop_labels}")
         self.assertEqual(not data.folded, outgroup,
                           msg=f"{not data.folded} != {outgroup}")
@@ -85,8 +96,7 @@ class TestDataHolder(unittest.TestCase):
         sample_sizes = [4,2]
         outgroup = True
         d = VCFDataHolder(vcf_file=VCF_DATA, popmap_file=POPMAP,
-                          sample_sizes=sample_sizes, outgroup=outgroup)
-        self.assertEqual(d.population_labels, ['Pop1', 'Pop2'])
+                          projections=sample_sizes, outgroup=outgroup)
         self.assertEqual(d.projections, sample_sizes)
         self.assertEqual(d.outgroup, outgroup)
 
@@ -143,6 +153,61 @@ class TestDataHolder(unittest.TestCase):
                 sfs = self._load_with_dadi(dat, siz, lab, out)
                 self.assertTrue(np.allclose(data, sfs))
 
+    def _test_vcf_reading(self, id):
+        sizes = [None, (4, 6), (4, 2), (4,), (3,)]
+        outgroup = [None, True, False]
+        labels = [None, ["YRI", "CEU"], ["CEU", "YRI"], ["CEU"]]
+        seq_lens = [None, 51304566]
+        data = [(VCF_SIM_YRI_CEU_DATA, POPMAP_SIM_YRI_CEU)]
+        for dat, siz, lab, out in itertools.product(data, sizes, labels,
+                                                    outgroup):
+            # print(siz, lab, out)
+            seq = seq_lens[-1]
+            vcf_file, popmap_file = dat
+            data_holder = VCFDataHolder(
+                vcf_file=vcf_file,
+                popmap_file=popmap_file,
+                population_labels=lab,
+                projections=siz,
+                sequence_length=seq,
+                outgroup=out,
+            )
+            if lab is not None and siz is not None and len(lab) != len(siz):
+                self.assertRaises(ValueError,
+                                  get_engine(id).read_data, data_holder)
+                continue
+            if lab == ["CEU", "YRI"] and siz is not None and list(siz) == [4, 6]:
+                self.assertRaises(AssertionError,
+                                  get_engine(id).read_data, data_holder)
+                continue
+            if lab is None and siz is not None and len(siz) != 2:
+                self.assertRaises(ValueError,
+                                  get_engine(id).read_data, data_holder)
+                continue
+            sfs = get_engine(id).read_data(data_holder)
+            if lab is None:
+                lab = ["YRI", "CEU"]
+            if siz is None:
+                if len(lab) == 2:
+                    siz = (4, 6)
+                    if lab == ["CEU", "YRI"]:
+                        siz = [6, 4]
+                else:
+                    assert lab == ["CEU"]
+                    siz = (6,)
+            if out is None:
+                out = True
+            self._check_data(sfs, lab, out, siz)
+
+        data_holder = VCFDataHolder(
+            vcf_file=VCF_DATA,
+            popmap_file=POPMAP,
+            projections=None,
+            outgroup=None,
+        )
+        sfs = get_engine(id).read_data(data_holder)
+        self.assertEqual(sfs.S(), 1)
+
     def _test_read_fails(self, id):
         warnings.filterwarnings(action="ignore", message="unclosed", 
                          category=ResourceWarning)
@@ -164,9 +229,34 @@ class TestDataHolder(unittest.TestCase):
         vcf_data = VCFDataHolder(VCF_DATA, POPMAP, (4, 2), True)
         self.assertRaises(ValueError, get_engine(id).read_data, vcf_data)
 
+        # Bad data holder
+        not_data_holder = get_engine(id)
+        self.assertRaises(ValueError, get_engine(id).read_data, not_data_holder)
+
+        # VCF data
+        data_holder = VCFDataHolder(vcf_file=BAD_FILTER_VCF_DATA,
+                                    popmap_file=POPMAP_SIM_YRI_CEU)
+        self.assertRaises(ValueError, get_engine(id).read_data, data_holder)
+        data_holder = VCFDataHolder(vcf_file=ONE_PLOIDY_VCF,
+                                    popmap_file=POPMAP_SIM_YRI_CEU)
+        self.assertRaises(AssertionError, get_engine(id).read_data, data_holder)
+        data_holder = VCFDataHolder(vcf_file=VCF_SIM_YRI_CEU_DATA,
+                                    popmap_file=BAD_POPMAP)
+        self.assertRaises(ValueError, get_engine(id).read_data, data_holder)
+        data_holder = VCFDataHolder(vcf_file=NOT_NUCL_VCF,
+                                    popmap_file=POPMAP_SIM_YRI_CEU)
+        self.assertRaises(ValueError, get_engine(id).read_data, data_holder)
+        data_holder = VCFDataHolder(vcf_file=NO_AA_INFO_VCF,
+                                    popmap_file=POPMAP_SIM_YRI_CEU,
+                                    outgroup=True)
+        self.assertRaises(ValueError, get_engine(id).read_data, data_holder)
+
+>>>>>>> devel
+
     @unittest.skipIf(DADI_NOT_AVAILABLE, "Dadi module is not installed")
     def test_dadi_reading(self):
         self._test_sfs_reading('dadi')
+        self._test_vcf_reading('dadi')
 
     @unittest.skipIf(DADI_NOT_AVAILABLE, "Dadi module is not installed")
     def test_dadi_reading_fails(self):
@@ -175,6 +265,8 @@ class TestDataHolder(unittest.TestCase):
     @unittest.skipIf(MOMENTS_NOT_AVAILABLE, "Moments module is not installed")
     def test_moments_reading(self):
         self._test_sfs_reading('moments')
+        self._test_vcf_reading('moments')
+
 
     @unittest.skipIf(MOMENTS_NOT_AVAILABLE, "Moments module is not installed")
     def test_moments_reading_fails(self):

@@ -5,7 +5,7 @@ Input data
 
     * **Base options**:
 
-      * ``Input file`` holds path to file with AFS data.
+      * ``Input data`` holds path(s) to file(s) with data (AFS).
 
     * **Additional options**:
 
@@ -23,16 +23,15 @@ Data formats
 .. toctree::
    :hidden:
 
+   vcf_data_format
    fs_data_format
    snp_data_format
 
 GADMA supports several types of input data, which are familiar to anyone who has used ``dadi`` or ``moments`` in the past:
 
+   * `VCF file format (.vcf + popmap file) <vcf_data_format.rst>`__
    * `Frequency spectrum file format (.fs or .sfs) <fs_data_format.rst>`__
    * `SNP data format (.txt) <snp_data_format.rst>`__
-
-.. note::
-   To convert a VCF (.vcf) file into a SFS (.sfs) file use `easySFS <https://github.com/isaacovercast/easySFS>`_.
 
 Input file can be specified to GADMA in two ways:
 
@@ -48,14 +47,24 @@ Input file can be specified to GADMA in two ways:
 
       $ gadma --input snp_file.txt -o out_dir
 
-2) Use a parameter ``Input file`` in the parameter file:
+.. note::
+    If VCF file is set as input data then popmap file should be given as well. 
+    Files should be separated by comma, however,
+    **do not use space between two files if files are set via command line**:
+
+    .. code-block:: console
+
+        $ gadma --input vcf_file.vcf,popmap_file -o out_dir
+
+
+2) Use a parameter ``Input data`` in the parameter file:
 
    .. code-block:: none
 
       # param_file
 
       # Input file path
-      Input file : fs_file.fs 
+      Input data : fs_file.fs 
       ...
 
 Extra information about data
@@ -68,7 +77,7 @@ Extra information about input AFS can also be put in the parameter file. For exa
    # param_file
 
    # Input file path
-   Input file : fs_file.fs
+   Input data : fs_file.fs
     
    # (New) size of the AFS
    Projections : 20,20

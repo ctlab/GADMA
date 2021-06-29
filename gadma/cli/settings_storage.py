@@ -2,7 +2,7 @@ import os
 import ruamel.yaml
 import numpy as np
 from . import settings
-from ..data import SFSDataHolder
+from ..data import SFSDataHolder, VCFDataHolder
 from ..engines import get_engine, MomentsEngine
 from ..engines import all_engines, all_drawing_engines
 from ..models import StructureDemographicModel, CustomDemographicModel
@@ -31,7 +31,8 @@ CHANGED_IDENTIFIERS = {"use_moments_or_dadi": "engine",
                        "name_of_local_optimization": "local_optimizer",
                        "lower_bounds": "lower_bound",
                        "upper_bounds": "upper_bound",
-                       "multinom": "ancestral_size_as_parameter"}
+                       "multinom": "ancestral_size_as_parameter",
+                       "input_file": "input_data"}
 
 DEPRECATED_IDENTIFIERS = ["flush_delay",
                           "epsilon_for_ls", "gtol", "maxiter",
@@ -123,7 +124,7 @@ class SettingsStorage(object):
         special_attrs = ['const_for_mutation_strength',
                          'const_for_mutation_rate', 'vmin',
                          'parameter_identifiers', 'migration_masks']
-        exist_file_attrs = ['input_file', 'custom_filename']
+        exist_file_attrs = ['input_data', 'custom_filename']
         exist_dir_attrs = ['directory_with_bootstrap', 'resume_from']
         empty_dir_attrs = ['output_directory']
         data_holder_attrs = ['projections', 'outgroup',
@@ -297,15 +298,20 @@ class SettingsStorage(object):
         if (value is not None and
                 (name in empty_dir_attrs or
                  name in exist_file_attrs or name in exist_dir_attrs)):
-            value = abspath(value)
+            abspath_value = []
+            for val in value.split(","):
+                abspath_value.append(abspath(val.strip()))
+            value = ", ".join(abspath_value)
         # 1.8 Check for empty dirs (NOW IN ARG_PARSER)
         # if name in empty_dir_attrs and value is not None:
         #     value = ensure_dir_existence(value, check_emptiness=True)
         # 1.9 Check file and dir exist
         if name in exist_file_attrs and value is not None:
-            if not check_file_existence(value):
-                raise ValueError(f"Setting {name} should be set to existed "
-                                 f"file. File {value} does not exist.")
+            for val in value.split(","):
+                val = val.strip()
+                if not check_file_existence(val):
+                    raise ValueError(f"Setting {name} should be set to existed"
+                                     f" file. File {val} does not exist.")
         if name in exist_dir_attrs and value is not None:
             if not check_dir_existence(value):
                 raise ValueError(f"Setting {name} should be set to existed "
@@ -336,12 +342,42 @@ class SettingsStorage(object):
 
         # 3. Now change some other attributes according to new one
         # 3.1 If new_file we need to create data_holder
-        if name == 'input_file':
-            data_holder = SFSDataHolder(value,
-                                        self.projections,
-                                        self.outgroup,
-                                        self.population_labels,
-                                        self.sequence_length)
+        if name == 'input_data':
+            files = [name.strip() for name in value.split(",")]
+            if len(files) > 1:
+                n_files = len(files)
+                assert n_files <= 2, "Input file could take maximum two "\
+                                     "files: SFS file or VCF file with popmap"\
+                                     f" file. Got {n_files} files: {files}"
+                extension = files[0][files[0].rfind('.'):].lower()
+                assert extension == ".vcf", "Input file was set to two files "\
+                                            "but the first one does not have "\
+                                            f".vcf extension: {value}"
+            else:
+                files = [value]
+                extension = value[value.rfind('.'):].lower()
+            if extension == ".vcf":
+                assert len(files) != 1, "VCF file should be set together with"\
+                                        " popmap file. Popmap file is missed,"\
+                                        " please set it as: vcf_file, "\
+                                        "popmap_file"
+                vcf_file, popmap_file = files
+                data_holder = VCFDataHolder(
+                    vcf_file=vcf_file,
+                    popmap_file=popmap_file,
+                    projections=self.projections,
+                    outgroup=self.outgroup,
+                    population_labels=self.population_labels,
+                    sequence_length=self.sequence_length,
+                )
+            else:
+                data_holder = SFSDataHolder(
+                    sfs_file=value,
+                    projections=self.projections,
+                    outgroup=self.outgroup,
+                    population_labels=self.population_labels,
+                    sequence_length=self.sequence_length
+                )
             super(SettingsStorage, self).__setattr__('data_holder',
                                                      data_holder)
         # 3.2 If we change some attributes of data_holder we need update it
@@ -719,7 +755,7 @@ class SettingsStorage(object):
         data = engine.read_data(self.data_holder)
         self.projections = data.sample_sizes
         self.population_labels = data.pop_ids
-        self.outgroup = not data.folded  # TODO check function
+        self.outgroup = not data.folded
         if self.pts is None:
             max_n = max(self.projections)
             x = (int((max_n - 1) / 10) + 1) * 10

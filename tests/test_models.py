@@ -388,6 +388,11 @@ class TestModels(unittest.TestCase):
         yield ("dadi snp file",
                SFSDataHolder(os.path.join(EXAMPLE_FOLDER, 'DATA', 'sfs',
                                           'dadi_snp_file.txt')))
+        yield ("vcf data",
+               VCFDataHolder(
+                    vcf_file=os.path.join(EXAMPLE_FOLDER, "DATA", "vcf", "out_of_africa_chr22_sim.vcf"),
+                    popmap_file=os.path.join(EXAMPLE_FOLDER, "DATA", "vcf", "out_of_africa_chr22_sim_3pop.popmap")
+               ))
 
     def test_add_split_after_inbreeding(self):
         nu1 = PopulationSizeVariable('nu1')

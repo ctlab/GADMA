@@ -21,7 +21,6 @@ class MomentsEngine(DadiOrMomentsEngine):
     if moments_available:
         import moments as base_module
         inner_data_type = base_module.Spectrum  #:
-    supported_data = [SFSDataHolder]  # , VCFDataHolder]  #:
     default_dt_fac = 0.01  #:
     can_draw = True
 

@@ -33,9 +33,13 @@ class SFSDataHolder(DataHolder):
     """
     def __init__(self, sfs_file, projections=None, outgroup=None,
                  population_labels=None, sequence_length=None):
-        super(SFSDataHolder, self).__init__(sfs_file, projections,
-                                            outgroup, population_labels,
-                                            sequence_length)
+        super(SFSDataHolder, self).__init__(
+            filename=sfs_file,
+            projections=projections,
+            outgroup=outgroup,
+            population_labels=population_labels,
+            sequence_length=sequence_length
+        )
 
 
 class VCFDataHolder(DataHolder):
@@ -43,43 +47,15 @@ class VCFDataHolder(DataHolder):
     Class for VCF data holding.
     It saves some information while it is created.
     """
-    def __init__(self, vcf_file, popmap_file, sample_sizes=None, outgroup=None,
-                 ploidy=2, population_labels=None, sequence_length=None,
-                 bed_file=None, reference_file=None):
-        sample2pop = read_popinfo(popmap_file)
-        samples = get_list_of_names_from_vcf(vcf_file)
-        wrong_samples = list()
-        for sample in sample2pop:
-            if sample not in samples:
-                wrong_samples.append(sample)
-        if len(wrong_samples) > 0:
-            warnings.warn(f"Some samples from popmap file are not presented "
-                          f"in VCF file: {wrong_samples}. They were ignored.")
-            for sample in wrong_samples:
-                del sample2pop[sample]
-        # Check pop labels
-        pop_labels = list()
-        for sample in samples:
-            if sample in sample2pop:
-                if sample2pop[sample] not in pop_labels:
-                    pop_labels.append(sample2pop[sample])
-        if population_labels is None:
-            population_labels = pop_labels
-        if set(population_labels) != set(pop_labels):
-            raise AssertionError("Population labels are different in popmap "
-                                 f"file: {population_labels} != {pop_labels}")
-
-        # Check sample sizes
-        sizes = [sum([x == pop for x in sample2pop.values()])
-                 for pop in population_labels]
-        sizes = [x * ploidy for x in sizes]
-        if sample_sizes is None:
-            sample_sizes = sizes
-        sample_sizes = list(sample_sizes)
-        assert sample_sizes == sizes, ("Sizes are not equal: "
-                                       f"{sample_sizes} != {sizes}")
-        super(VCFDataHolder, self).__init__(vcf_file, sample_sizes, outgroup,
-                                            population_labels, sequence_length)
+    def __init__(self, vcf_file, popmap_file, projections=None, outgroup=None,
+                 population_labels=None, sequence_length=None,  bed_file=None):
+        super(VCFDataHolder, self).__init__(
+            filename=vcf_file,
+            projections=projections,
+            outgroup=outgroup,
+            population_labels=population_labels,
+            sequence_length=sequence_length
+        )
         self.popmap_file = popmap_file
         self.bed_file = bed_file
         self.ploidy = ploidy

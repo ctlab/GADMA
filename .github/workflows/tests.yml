@@ -80,6 +80,10 @@ jobs:
           pip3 install smac==0.12.4
           pip3 install bayesmark
         if: matrix.os == 'ubuntu-18.04'
+      - name: Downgrade scipy for SMAC (Linux).
+        run: |
+          pip3 install scipy==1.6.3
+        if: matrix.os == 'ubuntu-18.04' && matrix.python-version == '3.8'
 
       - name: Run tests and codecov.
         run: |

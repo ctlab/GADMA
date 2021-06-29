@@ -30,17 +30,18 @@ def usage():
     Returns usage of tool.
     '''
     return version() + "" \
-        "Usage: \n\tgadma\t-p/--params <params_file>\n"\
-        "\t\t-e/--extra <extra_params_file>\n"\
+        "Usage: \n\tgadma\t-p/--params\t<params_file>\n"\
+        "\t\t-e/--extra\t<extra_params_file>\n"\
         "\n\n"\
         "Instead/With -p/--params and -e/--extra option you can set:\n"\
-        "\t-o/--output <output_dir>\toutput directory.\n"\
-        "\t-i/--input <in.fs>/<in.txt>\tinput file with AFS or in dadi "\
-        "format.\n"\
-        "\t--resume <resume_dir>\t\tresume another launch from "\
+        "\t-o/--output\t<output_dir>\t\toutput directory.\n"\
+        "\t-i/--input\t<in.fs>/<in.txt>/\tinput data for demographic "\
+        "inference\n"\
+        "\t\t\t<in.vcf>,<popmap>\t(AFS, dadi format or VCF).\n"\
+        "\t--resume\t<resume_dir>\t\tresume another launch from "\
         "<resume_dir>.\n"\
-        "\t--only_models\t\t\tflag to take models only from another launch "\
-        "(--resume option).\n\n"\
+        "\t--only_models\t\tflag to take models only from another\n"\
+        "\t\t\t\tlaunch (--resume option).\n\n"\
         "\t-h/--help\t\tshow this help message and exit.\n"\
         "\t-v/--version\t\tshow version and exit.\n"\
         "\t--test\t\t\trun test case.\n" + SUPPORT_STRING
@@ -65,13 +66,13 @@ def test_args():
     settings_storage = SettingsStorage.from_file(TEST_SETTINGS)
     # Input test file
     curent_dir = os.path.dirname(os.path.abspath(__file__))
-    settings_storage.input_file = os.path.join(curent_dir,
+    settings_storage.input_data = os.path.join(curent_dir,
                                                "../test.fs")
     # There is no output_directory, we put it to temporary directory
     settings_storage.output_directory = tempfile.mkdtemp("gadma_test_dir")
     # And put path to input file
-    settings_storage.input_file = os.path.join(HOME_DIR,
-                                               settings_storage.input_file)
+    settings_storage.input_data = os.path.join(HOME_DIR,
+                                               settings_storage.input_data)
     return settings_storage
 
 
@@ -168,14 +169,14 @@ def get_settings():
         settings_storage.output_directory = args.output
 
     if args.input is not None:
-        if (settings_storage.input_file is not None and
-                settings_storage.input_file != args.input):
+        if (settings_storage.input_data is not None and
+                settings_storage.input_data != args.input):
             warnings.warn("Input file in parameters file doesn't match to one"
                           " from -i/--input option. The last is taken.")
-        settings_storage.input_file = args.input
+        settings_storage.input_data = args.input
 
     # 3. Checks that we have got all required (initial checks)
-    if (settings_storage.input_file is None and
+    if (settings_storage.input_data is None and
             settings_storage.resume_from is None):
         raise AttributeError("Input file is required. It could be set by "
                              "-i/--input option or via parameters file.")
@@ -193,7 +194,7 @@ def get_settings():
                                                  old_extra_file)
         # check what have changed and can we deal with it
         if not settings_storage == old_settings:
-            data_settings = ['input_file', 'projections', 'population_labels',
+            data_settings = ['input_data', 'projections', 'population_labels',
                              'outgroup']
             engine_settings = ['engine', 'pts', 'lower_bound', 'upper_bound',
                                'upper_bound_of_first_split',
@@ -284,9 +285,14 @@ def get_settings():
                           " --resume option only. It would be ignored.")
 
     if settings_storage.inbreeding:
+        if settings_storage.projections is not None:
+            warnings.warn("For correct inference of the inbreeding SFS data "
+                          "should not be projected. Projections were taken as"
+                          f" {settings_storage.projections}, please check that"
+                          " data is not downsized.")
         if settings_storage.engine != "dadi":
-            raise ValueError("Please check your engine. If you want to "
-                             "calculate Inbreeding change engine to dadi")
+            raise ValueError("Please check your engine. If you want to infer "
+                             "inbreeding please change engine to `dadi`")
     return settings_storage, args
 
 
