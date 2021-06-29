@@ -251,7 +251,6 @@ class TestDataHolder(unittest.TestCase):
                                     outgroup=True)
         self.assertRaises(ValueError, get_engine(id).read_data, data_holder)
 
->>>>>>> devel
 
     @unittest.skipIf(DADI_NOT_AVAILABLE, "Dadi module is not installed")
     def test_dadi_reading(self):
