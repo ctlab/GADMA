@@ -505,6 +505,14 @@ def get_claic_score(engine, x0, boots,
         return claic_score
 
 
+def get_growth_rate(initial_size, final_size, time):
+    """
+    Evaluates  growth rate so that:
+    final_size = initial_size * exp(g * time)
+    """
+    return np.log(final_size / initial_size) / time
+
+
 # Printing functions
 def float_repr(value, precision=5):
     if value < 10**(-precision):

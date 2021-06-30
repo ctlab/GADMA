@@ -2,6 +2,7 @@ from . import Engine
 from ..models import DemographicModel, StructureDemographicModel,\
                      CustomDemographicModel, Epoch, Split
 from ..utils import DiscreteVariable, MigrationVariable, cache_func
+from ..utils import get_growth_rate
 from ..data.data_utils import read_popinfo, get_list_of_names_from_vcf
 from ..data.data_utils import get_defaults_from_vcf_format, ploidy_from_vcf
 from .. import VCFDataHolder
@@ -474,8 +475,6 @@ class DiCal2Engine(Engine):
                         else:
                             mig_matrix[-1].append(str(get_value(mig)))
                     ret_str += "\t".join(mig_matrix[-1]) + "\n"
-                # Exponential rates
-                # TODO
             elif isinstance(event, Split):
                 # fix partition
                 pop_that_split = event.pop_to_div
@@ -485,7 +484,9 @@ class DiCal2Engine(Engine):
 
     def _get_string_of_growth_rates(self, values):
         var2value = self.model.var2value(values)
-        ret_str = ""
+        def get_value(entity):
+            return self.model.get_value_from_var2value(var2value, entity)
+        ret_str = "EXP_GROWTH.RATES:\n\n"
         # check that we have to create that file
         all_sud = True
         n_epoch = 0
@@ -496,8 +497,25 @@ class DiCal2Engine(Engine):
                 if event.dyn_args is not None:
                     dynamics = [get_value(arg) for arg in event.dyn_args]
                     all_sud = all_sud and all(dynamics == "Sud")
+                ret_str += f"# GROWTH RATE EPOCH {n_epoch}\n"
+                rates = []
+                for i, dyn in enumerate(dynamics):
+                    if dyn == "Sud":
+                        rates.append(0)
+                    else:
+                        assert dyn == "Exp"
+                        initial_size = get_value(event.init_size_args[i])
+                        final_size = get_value(event.size_args[i])
+                        time = get_value(event.time_arg)
+                        rates.append(get_growth_rate(
+                            initial_size=initial_size,
+                            final_size=final_size,
+                            time=time,
+                        ))
+                ret_str += " ".join([str(g) for g in rates])
         if all_sud:
             return None
+        return ret_str
 
     def _create_demo_model(self, values, trunk_factory):
         """
@@ -510,9 +528,14 @@ class DiCal2Engine(Engine):
         import tempfile
         demo_module = self.base_module.demography
         demo_string = self._get_string_of_model(values)
+        g_rates_string = self._get_string_of_growth_rates(values)
+        if g_rates_string is None:
+            growth_rates_reader = None
+        else:
+            growth_rates_reader = jpype.java.io.StringReader(g_rates_string)
         demo_factory = demo_module.DemographyFactory.ParamFileDemoFactory(
             jpype.java.io.StringReader(demo_string),
-            None,
+            growth_rates_reader,
             self.base_module.csd.UberDemographyCore.DEMO_FACTORY_EPSILON,
             trunk_factory.halfMigrationRate(),
             None,
@@ -598,7 +621,7 @@ class DiCal2Engine(Engine):
         """
         Evaluation of the objective function of the engine.
 
-        :param values: values of variables of setted demographic model.
+        :param values: values of variables of set demographic model.
         """
         if self.data is None or self.model is None:
             raise ValueError("Please set data and model for the engine or"
