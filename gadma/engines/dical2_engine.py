@@ -3,6 +3,7 @@ from ..models import DemographicModel, StructureDemographicModel,\
                      CustomDemographicModel, Epoch, Split
 from ..utils import DiscreteVariable, MigrationVariable, cache_func
 from ..data.data_utils import read_popinfo, get_list_of_names_from_vcf
+from ..data.data_utils import get_defaults_from_vcf_format, ploidy_from_vcf
 from .. import VCFDataHolder
 from .. import dadi_available, moments_available
 from . import register_engine
@@ -228,9 +229,10 @@ class DiCal2Engine(Engine):
         DiCal2Engine._startJVM()
         # 1. create config_info - information from config file of dical2
         # It contains information from popmap
-        sample2pop = read_popinfo(data_holder.popmap_file)
+        sample2pop, _ = read_popinfo(data_holder.popmap_file)
+        print(sample2pop)
         sample_list = get_list_of_names_from_vcf(data_holder.filename)
-        # Get population_labels and sample_sizes from VCF data holder 
+        # Get population_labels and sample_sizes from VCF data holder
         populations, projections = get_defaults_from_vcf_format(
             vcf_file=data_holder.filename,
             popmap_file=data_holder.popmap_file,
@@ -243,11 +245,12 @@ class DiCal2Engine(Engine):
             )
             populations = data_holder.population_labels
         num_demes = len(populations)
+        ploidy = ploidy_from_vcf(data_holder.filename)
         # create matrix of 0 and 1 where M[i][j]==1 means that sample i is
         # from population j
         multiplicities = jpype.java.util.ArrayList()
         for sample in sample_list:
-            for _ in range(data_holder.ploidy):
+            for _ in range(ploidy):
                 mult = [0]*num_demes
                 if sample in sample2pop:
                     pop = sample2pop[sample]
