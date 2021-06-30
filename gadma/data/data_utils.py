@@ -1,6 +1,7 @@
 import re
 import warnings
 
+
 # function for working with VCF files
 def ploidy_from_vcf(path):
     """
@@ -42,11 +43,11 @@ def read_popinfo(popinfo_file):
     populations = []
     sample2pop = {}
     with open(popinfo_file) as fl:
-        for line in f:
+        for line in fl:
             sample, pop = line.strip().split()
             if sample in sample2pop and pop != sample2pop[sample]:
                 raise ValueError(f"Sample {sample} is presented in popmap "
-                                 f"{popmap_file} at least twice "
+                                 f"{popinfo_file} at least twice "
                                  "corresponding to different populations.")
             sample2pop[sample] = pop
             if pop not in populations:
@@ -62,12 +63,14 @@ def get_list_of_names_from_vcf(vcf_file):
     with open(vcf_file) as fl:
         for line in fl:
             # Skip metainformation
-            if not line.startswith("##") and line.startswith("#")::
+            if line.startswith("#"):
+                if line.startswith("##"):
+                    continue
                 header_line = line
                 continue
 
             # Read header
-            assert len(header_line) != 0, ("There is not header information in"
+            assert len(header_line) != 0, ("There is no header information in"
                                            f" VCF file {vcf_file}")
             # samples starts from 9 element
             header_info = header_line.split()
@@ -91,7 +94,7 @@ def get_defaults_from_vcf_format(vcf_file, popmap_file, verbose=False):
     for sample in sample2pop:
         pop_is_pres[sample2pop[sample]] = True
     populations = [pop for pop in all_populations if pop_is_pres[pop]]
-        
+
     # check our lists
     # samples that are in popmap but not in vcf
     missed_samples = [smpl for smpl in sample2pop if smpl not in vcf_samples]

@@ -1,5 +1,4 @@
 from ..utils import check_file_existence, ensure_file_existence
-from ..utils import read_popinfo, get_list_of_names_from_vcf
 import warnings
 
 

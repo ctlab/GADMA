@@ -34,7 +34,7 @@ class TestEngines(unittest.TestCase):
         self.assertRaises(ValueError, get_engine, "some_strange_name")
 
         engine = Engine()
-        self.assertRaises(NotImplementedError, engine.read_data, "some")
+        self.assertRaises(NotImplementedError, engine._read_data, "some")
         self.assertRaises(NotImplementedError, engine.evaluate, [])
         self.assertRaises(NotImplementedError, engine.generate_code, [])
 

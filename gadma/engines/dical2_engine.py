@@ -2,7 +2,7 @@ from . import Engine
 from ..models import DemographicModel, StructureDemographicModel,\
                      CustomDemographicModel, Epoch, Split
 from ..utils import DiscreteVariable, MigrationVariable, cache_func
-from ..utils import read_popinfo, get_list_of_names_from_vcf
+from ..data.data_utils import read_popinfo, get_list_of_names_from_vcf
 from .. import VCFDataHolder
 from .. import dadi_available, moments_available
 from . import register_engine
@@ -210,8 +210,8 @@ class DiCal2Engine(Engine):
     def _stopJVM():
         jpype.shutdownJVM()
 
-    @staticmethod
-    def read_data(data_holder):
+    @classmethod
+    def _read_data(cls, data_holder):
         """
         Reads data from `data_holder.filename` in inner type.
 
@@ -230,8 +230,18 @@ class DiCal2Engine(Engine):
         # It contains information from popmap
         sample2pop = read_popinfo(data_holder.popmap_file)
         sample_list = get_list_of_names_from_vcf(data_holder.filename)
-        # VCF data holder always has population_labels and sample_sizes
-        populations = data_holder.population_labels
+        # Get population_labels and sample_sizes from VCF data holder 
+        populations, projections = get_defaults_from_vcf_format(
+            vcf_file=data_holder.filename,
+            popmap_file=data_holder.popmap_file,
+            verbose=False
+        )
+        if data_holder.population_labels is not None:
+            check_population_labels_vcf(
+                pop_labels=data_holder.population_labels,
+                full_pop_labels=populations
+            )
+            populations = data_holder.population_labels
         num_demes = len(populations)
         # create matrix of 0 and 1 where M[i][j]==1 means that sample i is
         # from population j
@@ -241,7 +251,8 @@ class DiCal2Engine(Engine):
                 mult = [0]*num_demes
                 if sample in sample2pop:
                     pop = sample2pop[sample]
-                    mult[populations.index(pop)] = 1
+                    if pop in populations:
+                        mult[populations.index(pop)] = 1
                 multiplicities.add(jpype.JInt[:](mult))
         config_info = _dical2_config_info(
             dical2_pkg=DiCal2Engine.base_module,
