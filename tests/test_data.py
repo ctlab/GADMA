@@ -92,17 +92,6 @@ class TestDataHolder(unittest.TestCase):
         self.assertEqual(d.projections, sample_sizes)
         self.assertEqual(d.outgroup, outgroup)
 
-        data = VCFDataHolder(vcf_file=CONTIG0, popmap_file=CONTIG0_POPMAP)
-        pop_labels, proj = gadma.data.data_utils.get_defaults_from_vcf_format(
-            vcf_file=data.filename,
-            popmap_file=data.popmap_file,
-        )
-        self.assertEqual(pop_labels, ["pop1", "pop2"])
-        self.assertEqual(proj, [4, 2])
-
-        data = VCFDataHolder(vcf_file=CONTIG0, popmap_file=CONTIG0_POPMAP,
-                             reference_file=REFERENCE)
- 
     def _test_sfs_reading(self, id):
         sizes = [None, (20,20), (10, 10), (10, 5), (5,), (10,)]
         outgroup = [None, True, False]
