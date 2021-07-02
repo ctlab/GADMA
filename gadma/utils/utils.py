@@ -320,6 +320,12 @@ class WeightedMetaArray(np.ndarray):
             return super_str + '\t' + self.metadata
         return super_str
 
+    def str_as_list(self):
+        super_str = str(list(self))
+        if hasattr(self, 'metadata'):
+            return super_str + '\t' + self.metadata
+        return super_str
+
     def __repr__(self):
         super_str = super(WeightedMetaArray, self).__repr__()
         if hasattr(self, 'metadata'):
