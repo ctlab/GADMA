@@ -2,6 +2,7 @@ import operator as op
 import numpy as np
 import copy
 import time
+import random
 
 from .optimizer import ConstrainedOptimizer
 from .global_optimizer import GlobalOptimizer, register_global_optimizer
@@ -904,6 +905,9 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
             iter_configs = []
             iter_X = []
             iter_y = []
+
+            # shuffle our list in-place
+            random.shuffle(combinations)
             for mark, gp, acq, acq_opt, rh2epm in combinations:
                 X, y = rh2epm.transform(runhistory)
 
@@ -956,7 +960,8 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
                 cost = f(x)
                 eval_time += time.time() - t_eval
 
-                iter_configs.append(next_config)
+                iter_configs.append((next_config, cost))
+
                 x = WeightedMetaArray(x)
                 x.metadata = mark
                 iter_X.append(x)
@@ -965,7 +970,7 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
                     x_best = x
                     y_best = cost
 
-            for config in iter_configs:
+            for config, cost in iter_configs:
                 add_to_runhistory(config, cost)
 
             total_iter_time = time.time() - total_t_start
