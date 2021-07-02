@@ -45,6 +45,8 @@ def run_dical2_eval(q, er_q, data_holder, models_pairs, vals_pairs):
         for model_pair, vals_pair in zip(models_pairs, vals_pairs):
             model_1, model_2 = model_pair
             vals_1, vals_2 = vals_pair
+            print(model_1.as_custom_string(vals_1))
+            print(model_2.as_custom_string(vals_2))
             engine.model = model_1
             ll1 = engine.evaluate(vals_1)
             engine.model = model_2
@@ -214,6 +216,8 @@ class TestModelStructure(unittest.TestCase):
 
                 variables = dm.variables
                 x = [var.resample() for var in variables]
+                if has_anc:
+                    x[0] = np.random.uniform(1000, 20000)
                 bad_structure = list(structure)
                 for i in range(len(bad_structure)):
                     if bad_structure[i] == 1:
@@ -226,8 +230,12 @@ class TestModelStructure(unittest.TestCase):
 
                 for engine in all_engines():
                     print(engine.id)
-                    if engine.id == "diCal2" and not has_anc:
+                    if (engine.id == "diCal2" and
+                            (not has_anc or inbr or create_sels)):
                         continue
+                    if engine.id == "diCal2":
+                        original_x = list(x)
+                        x = ["Exp" if el == "Lin" else el for el in x]
                     engine.set_model(dm)
                     if engine.id == 'dadi':
                         sizes = [8 for _ in range(len(structure))]
@@ -302,6 +310,9 @@ class TestModelStructure(unittest.TestCase):
                                 models_pairs.append([copy.deepcopy(dm), copy.deepcopy(new_dm)])
                                 values_pairs.append([x, new_X[0]])
                                 messages.append(msg)
+                    # we must return original value with Lin to x
+                    if engine.id == "diCal2":
+                        x = original_x
 
                 dm.final_structure = dm.get_structure()
                 self.assertRaises(ValueError, dm.increase_structure)

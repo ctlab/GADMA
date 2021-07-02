@@ -231,7 +231,6 @@ class DiCal2Engine(Engine):
         # 1. create config_info - information from config file of dical2
         # It contains information from popmap
         sample2pop, _ = read_popinfo(data_holder.popmap_file)
-        print(sample2pop)
         sample_list = get_list_of_names_from_vcf(data_holder.filename)
         # Get population_labels and sample_sizes from VCF data holder
         populations, projections = get_defaults_from_vcf_format(
@@ -376,13 +375,19 @@ class DiCal2Engine(Engine):
         assert trunk_factory is not None
         return trunk_factory
 
-    def _get_string_of_model(self, values):
+    def _get_correct_var2value(self, values):
         var2value = self.model.var2value(values)
         values_list = [var2value[var] for var in self.model.variables]
         values_phys = self.model.translate_values(units="physical",
                                                   values=values_list,
                                                   time_in_generations=False)
         var2value = self.model.var2value(values_phys)
+        return var2value
+
+    def _get_string_of_model(self, values):
+        print(self.model.as_custom_string(values))
+        var2value = self._get_correct_var2value(values)
+        print(self.model.as_custom_string(var2value))
 
         for var in var2value:
             var2value[var] = var.rescale_value(
@@ -480,13 +485,14 @@ class DiCal2Engine(Engine):
                 pop_that_split = event.pop_to_div
                 partition[pop_that_split].extend(partition[-1])
                 partition = partition[:-1]
+        print(ret_str)
         return ret_str
 
     def _get_string_of_growth_rates(self, values):
-        var2value = self.model.var2value(values)
+        var2value = self._get_correct_var2value(values)
         def get_value(entity):
             return self.model.get_value_from_var2value(var2value, entity)
-        ret_str = "EXP_GROWTH.RATES:\n\n"
+        ret_str = ""
         # check that we have to create that file
         all_sud = True
         n_epoch = 0
@@ -496,7 +502,7 @@ class DiCal2Engine(Engine):
                 dynamics = ["Sud" for _ in event.size_args]
                 if event.dyn_args is not None:
                     dynamics = [get_value(arg) for arg in event.dyn_args]
-                    all_sud = all_sud and all(dynamics == "Sud")
+                    all_sud = all_sud and all(dyn == "Sud" for dyn in dynamics)
                 ret_str += f"# GROWTH RATE EPOCH {n_epoch}\n"
                 rates = []
                 for i, dyn in enumerate(dynamics):
@@ -512,9 +518,13 @@ class DiCal2Engine(Engine):
                             final_size=final_size,
                             time=time,
                         ))
-                ret_str += " ".join([str(g) for g in rates])
+                ret_str += " ".join([str(g) for g in rates]) + "\n"
+        # the last epoch is ancestral epoch
+        n_epoch += 1
+        ret_str += f"# GROWTH RATE EPOCH {n_epoch}\n0\n"
         if all_sud:
             return None
+        print(ret_str)
         return ret_str
 
     def _create_demo_model(self, values, trunk_factory):
@@ -628,7 +638,9 @@ class DiCal2Engine(Engine):
                              " use set_and_evaluate function instead.")
         try:
             return self._evaluate(values, **options)
-        except jpype.JException as e:
+        except jpype.java.lang.RuntimeException as e:
+            if e.message() != "Evaluation of log likelihood failed.":
+                raise e
             # print(e.message())
             # print(e.stackTrace())
             return None
