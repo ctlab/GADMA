@@ -382,13 +382,6 @@ class DiCal2Engine(Engine):
                                                   values=values_list,
                                                   time_in_generations=False)
         var2value = self.model.var2value(values_phys)
-        return var2value
-
-    def _get_string_of_model(self, values):
-        print(self.model.as_custom_string(values))
-        var2value = self._get_correct_var2value(values)
-        print(self.model.as_custom_string(var2value))
-
         for var in var2value:
             var2value[var] = var.rescale_value(
                 value=var2value[var],
@@ -398,6 +391,10 @@ class DiCal2Engine(Engine):
             # in dical2 migrations are in 1/4Nref units instead of 1/2Nref
             if isinstance(var, MigrationVariable):
                 var2value[var] *= 2
+        return var2value
+
+    def _get_string_of_model(self, values):
+        var2value = self._get_correct_var2value(values)
 
         def get_value(entity):
             return self.model.get_value_from_var2value(var2value, entity)
@@ -485,11 +482,11 @@ class DiCal2Engine(Engine):
                 pop_that_split = event.pop_to_div
                 partition[pop_that_split].extend(partition[-1])
                 partition = partition[:-1]
-        print(ret_str)
         return ret_str
 
     def _get_string_of_growth_rates(self, values):
         var2value = self._get_correct_var2value(values)
+
         def get_value(entity):
             return self.model.get_value_from_var2value(var2value, entity)
         ret_str = ""
@@ -524,7 +521,6 @@ class DiCal2Engine(Engine):
         ret_str += f"# GROWTH RATE EPOCH {n_epoch}\n0\n"
         if all_sud:
             return None
-        print(ret_str)
         return ret_str
 
     def _create_demo_model(self, values, trunk_factory):

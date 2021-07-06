@@ -45,13 +45,10 @@ def run_dical2_eval(q, er_q, data_holder, models_pairs, vals_pairs):
         for model_pair, vals_pair in zip(models_pairs, vals_pairs):
             model_1, model_2 = model_pair
             vals_1, vals_2 = vals_pair
-            print(model_1.as_custom_string(vals_1))
-            print(model_2.as_custom_string(vals_2))
             engine.model = model_1
             ll1 = engine.evaluate(vals_1)
             engine.model = model_2
             ll2 = engine.evaluate(vals_2)
-            print(ll1, ll2)
             result_list.append([ll1, ll2])
         engine._stopJVM()
         q.put(result_list)
@@ -229,7 +226,7 @@ class TestModelStructure(unittest.TestCase):
                 check_ll = np.random.choice([True, False], p=[1/6, 5/6])
 
                 for engine in all_engines():
-                    print(engine.id)
+                    #print(engine.id)
                     if (engine.id == "diCal2" and
                             (not has_anc or inbr or create_sels)):
                         continue
@@ -282,7 +279,7 @@ class TestModelStructure(unittest.TestCase):
                               f"fracs: {fracs}, " \
                               f"has_anc: {has_anc}, "\
                               f"inbr: {inbr}"
-                        print(msg)
+                        #print(msg)
                         new_dm = copy.deepcopy(dm)
                         new_dm, new_X = new_dm.increase_structure(
                             new_structure, [x])
@@ -305,6 +302,11 @@ class TestModelStructure(unittest.TestCase):
                                 except AttributeError:
                                     assert engine.id == "dadi"
                                     failed += 1
+                                except AssertionError as e:
+                                    if not str(e).startswith("masked is not true"):
+                                        raise e
+                                    assert engine.id == "dadi"
+                                    failed += 1
                             else:
                                 assert engine.id == "diCal2"
                                 models_pairs.append([copy.deepcopy(dm), copy.deepcopy(new_dm)])
@@ -325,7 +327,7 @@ class TestModelStructure(unittest.TestCase):
                 ll1, ll2 = ll_pair
                 if ll1 is None or ll2 is None:
                     continue
-                self.assertTrue(np.allclose(ll1, ll2),
+                self.assertTrue(np.isclose(ll1, ll2, rtol=1e-3),
                                 msg=f"{ll1} != {ll2} : {msg}")
         self.assertTrue(failed <= 5)
 
