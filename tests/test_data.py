@@ -1,5 +1,7 @@
 import unittest
+import pytest
 import itertools
+from collections import namedtuple
 import os
 import numpy as np
 from gadma import *
@@ -7,6 +9,7 @@ import warnings # we ignore warning of unclosed files in dadi
 
 warnings.filterwarnings(action='ignore', category=UserWarning,
                         module='.*\.dadi_moments_common', lineno=284)
+
 try:
     import dadi
     DADI_NOT_AVAILABLE = False
@@ -47,7 +50,11 @@ POPMAP_SIM_YRI_CEU =  os.path.join(DATA_PATH, "vcf",
                                    "out_of_africa_chr22_sim.popmap")
 BAD_POPMAP = os.path.join(DATA_PATH, "vcf", "bad.popmap")
 
+# FSC_DATA_JOINT_DAF = os.path.join(DATA_PATH, 'fsc', 'data_jointDAFpop1_0.obs')
+FSC_DATA_JOINT_MAF = os.path.join(DATA_PATH, 'fsc', 'data_jointMAFpop1_0.obs')
 
+VCF_DATA = os.path.join(DATA_PATH, "vcf", "data.vcf")
+POPMAP = os.path.join(DATA_PATH, "vcf", "popmap")
 
 class TestDataHolder(unittest.TestCase):
     def _check_data(self, data, pop_labels, outgroup, sample_sizes):
@@ -59,7 +66,7 @@ class TestDataHolder(unittest.TestCase):
                           msg=f"{not data.folded} != {outgroup}")
 
     def _load_with_dadi(self, data_file, size, labels, outgroup):
-        warnings.filterwarnings(action="ignore", message="unclosed", 
+        warnings.filterwarnings(action="ignore", message="unclosed",
                          category=ResourceWarning)
         if data_file.split('.')[-1] == 'txt':
             d = dadi.Misc.make_data_dict(data_file)
@@ -103,7 +110,7 @@ class TestDataHolder(unittest.TestCase):
             if lab is not None and siz is not None and len(lab) != len(siz):
                 continue
             if lab is None and siz is not None and len(siz) == 1:
-                continue 
+                continue
             if dat == YRI_CEU_NO_LABELS_DATA:
                 if lab is not None and len(lab) == 1:
                     continue
@@ -189,7 +196,7 @@ class TestDataHolder(unittest.TestCase):
         self.assertEqual(sfs.S(), 1)
 
     def _test_read_fails(self, id):
-        warnings.filterwarnings(action="ignore", message="unclosed", 
+        warnings.filterwarnings(action="ignore", message="unclosed",
                          category=ResourceWarning)
         data_holder = SFSDataHolder(YRI_CEU_DATA, population_labels=[1, 2])
         self.assertRaises(ValueError, get_engine(id).read_data, data_holder)
@@ -260,3 +267,76 @@ class TestDataHolder(unittest.TestCase):
         dadi_eng.set_data(moments_eng.data)
         moments_eng.set_data(np.array([[1, 2], [2, 3]]))
         self.assertRaises(ValueError, moments_eng.set_data, set())
+
+
+def test_fsc_reading():
+
+    TestInfo = namedtuple('TestInfo',
+        'file population_labels projections outgroup')
+
+    vcf = os.path.join(DATA_PATH, 'fsc', 'test_data.vcf')
+
+    tests = [
+        # joint SFSs for 2 demes; minor and derived allele
+        TestInfo('jointMAFpop1_0', ('YRI', 'CEU'), None, False),
+        TestInfo('jointDAFpop1_0', ('YRI', 'CEU'), None, True),
+        # SFS for single population; minor and derived allele
+        TestInfo('YRI_DAFpop0', ('YRI',), None, True),
+        TestInfo('YRI_MAFpop0', ('YRI',), None, False),
+        # multi-SFS for minor and derived allele
+        TestInfo('MSFS', ('dwarves', 'elves', 'orcs'), None, False),
+        TestInfo('DSFS', ('dwarves', 'elves', 'orcs'), None, True)
+    ]
+
+    for test in tests:
+        obs, popmap = (os.path.join(DATA_PATH,'fsc', f'{test.file}.{ext}')
+            for ext in ['obs', 'popmap'])
+
+        fsc_data_holder = FSCDataHolder(
+            filename=obs,
+            population_labels=test.population_labels,
+            projections=test.projections,
+            sequence_length=None,
+            outgroup=test.outgroup
+        )
+
+        vcf_data_holder = VCFDataHolder(
+            vcf_file=vcf,
+            popmap_file=popmap,
+            population_labels=test.population_labels,
+            projections=test.projections,
+            sequence_length=None,
+            outgroup=test.outgroup
+        )
+
+        engine = get_engine('dadi')
+        fsc_data = engine.read_data(fsc_data_holder)
+        vcf_data = engine.read_data(vcf_data_holder)
+
+        debug = True
+        if debug:
+            print(test.file, np.sum(np.abs(fsc_data - vcf_data)))
+            print('from fsc:')
+            print(fsc_data)
+            print('from vcf:')
+            print(vcf_data)
+
+            print('difference:')
+            print(fsc_data - vcf_data)
+            diff = fsc_data - vcf_data
+            print('mask')
+            print(fsc_data.mask)
+            print(vcf_data.mask)
+
+        assert np.all(fsc_data.mask == vcf_data.mask), \
+                test.file + ": mask did not match"
+
+        assert fsc_data.folded == vcf_data.folded, \
+                test.file + ": folded did not match"
+
+        # on current test data SFSs read from vcf and fsc across all elements
+        # differ by (max) 4 total, probably because easySFS implementation
+        # deviates from dadi somehow
+        delta = np.sum(np.abs(fsc_data - vcf_data))
+        assert delta <= 4, "difference between SFSs is larger than expected"
+
