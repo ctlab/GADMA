@@ -144,6 +144,7 @@ verbose = 1
 X_init = None
 Y_init = None
 mutation_rate = None
+recombination_rate = None
 
 global_maxiter = None
 global_maxeval = None

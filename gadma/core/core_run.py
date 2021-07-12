@@ -105,8 +105,8 @@ class CoreRun(object):
                 # all engines.
                 if isinstance(self.model, EpochDemographicModel):
                     demes_will_not_work = False
-                    mu_is_None =  self.engine.model.mutation_rate is None
-                    L_is_None = self.settings.sequence_length is not None
+                    mu_is_None = self.engine.model.mutation_rate is None
+                    L_is_None = self.settings.sequence_length is None
                     mu_and_L = not mu_is_None and not L_is_None
                     if not (self.engine.model.has_anc_size or
                             self.engine.model.theta0 is not None or mu_and_L):

@@ -136,6 +136,7 @@ class TestRestore(unittest.TestCase):
             settings.local_optimizer = ls_opt #.id
             settings.local_maxiter = 1
             settings.silence = True
+            settings.recombination_rate = 1e-8
             core_run = CoreRun(0, shared_dict, settings)
             res1 = core_run.run()
 
