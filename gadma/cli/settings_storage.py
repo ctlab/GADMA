@@ -1106,7 +1106,7 @@ class SettingsStorage(object):
                 migs_mask=migs_mask,
                 gen_time=gen_time,
                 theta0=theta0,
-                mu=mut_rate,
+                mutation_rate=mut_rate,
                 has_inbr=create_inbr
             )
             constrain = self.get_linear_constrain_for_model(model)
@@ -1123,7 +1123,7 @@ class SettingsStorage(object):
                                               variables=variables,
                                               gen_time=gen_time,
                                               theta0=theta0,
-                                              mu=mut_rate)
+                                              mutation_rate=mut_rate)
             module_name = module_name_from_path(self.custom_filename)
             spec = importlib.util.spec_from_file_location(module_name,
                                                           self.custom_filename)
@@ -1133,14 +1133,14 @@ class SettingsStorage(object):
                                           variables=variables,
                                           gen_time=gen_time,
                                           theta0=theta0,
-                                          mu=mut_rate)
+                                          mutation_rate=mut_rate)
 
         elif self.custom_filename is None and self.model_func is not None:
             return CustomDemographicModel(function=self.model_func,
                                           variables=None,
                                           gen_time=gen_time,
                                           theta0=theta0,
-                                          mu=mut_rate)
+                                          mutation_rate=mut_rate)
         else:
             raise ValueError("Some settings are missed so no model is "
                              "generated")

@@ -135,9 +135,11 @@ class DadiOrMomentsEngine(Engine):
     def get_N_ancestral_from_theta(self, theta):
         if self.model.theta0 is not None:
             theta0 = self.model.theta0
-        elif (self.model.mu is not None and self.data_holder is not None and
+        elif (self.model.mutation_rate is not None and
+                self.data_holder is not None and
                 self.data_holder.sequence_length is not None):
-            theta0 = 4 * self.model.mu * self.data_holder.sequence_length
+            theta0 = 4 * self.model.mutation_rate *\
+                     self.data_holder.sequence_length
         else:
             return None
         return theta / theta0

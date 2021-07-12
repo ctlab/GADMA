@@ -13,17 +13,23 @@ class CustomDemographicModel(DemographicModel):
     :param gen_time: Time of one generation.
     :param theta0: Mutation flux. See :class:`gadma.models.DemographicModel`
                    for more information.
-    :param mu: Mutation rate. See :class:`gadma.models.DemographicModel`
-               for more information.
+    :param mutation_rate: Mutation rate. See
+                          :class:`gadma.models.DemographicModel` for more
+                          information.
+    :param recombination_rate: Recombination rate.
     """
     def __init__(self, function, variables,
-                 gen_time=None, theta0=None, mu=None):
+                 gen_time=None, theta0=None,
+                 mutation_rate=None, recombination_rate=None):
         self.function = function
-        super(CustomDemographicModel, self).__init__(gen_time=gen_time,
-                                                     theta0=theta0,
-                                                     mu=mu,
-                                                     Nref=None,
-                                                     has_anc_size=False)
+        super(CustomDemographicModel, self).__init__(
+            gen_time=gen_time,
+            theta0=theta0,
+            mutation_rate=mutation_rate,
+            recombination_rate=recombination_rate,
+            Nref=None,
+            has_anc_size=False
+        )
         if variables is None:
             variables = VariablePool()
         self.variables = VariablePool(variables)
