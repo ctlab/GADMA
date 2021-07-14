@@ -1,5 +1,6 @@
 from ..data import DataHolder
 from ..models import Model
+from ..data import update_data_holder_with_inner_data
 import copy
 
 _registered_engines = {}
@@ -188,11 +189,10 @@ class Engine(object):
         if isinstance(data, DataHolder):
             self.inner_data = self.read_data(data)
             self.data_holder = copy.deepcopy(data)
-            # TODO valid for dadi and moments
-            if self.inner_data is not None:
-                self.data_holder.projections = self.inner_data.sample_sizes
-                self.data_holder.population_labels = self.inner_data.pop_ids
-                self.data_holder.outgroup = not self.inner_data.folded
+            self.data_holder = update_data_holder_with_inner_data(
+                data_holder=self.data_holder,
+                inner_data=self.inner_data
+            )
         elif (self.inner_data_type is not None and
                 isinstance(data, self.inner_data_type)):
             self.inner_data = data

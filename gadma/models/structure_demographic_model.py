@@ -57,7 +57,7 @@ class StructureDemographicModel(EpochDemographicModel):
                  has_migs, has_sels, has_dyns, sym_migs, frac_split,
                  migs_mask=None, has_anc_size=False,
                  gen_time=None, theta0=None, mutation_rate=None,
-                 recombination_rate=None, has_inbr=None):
+                 recombination_rate=None, Nref=None, has_inbr=None):
         if has_anc_size:
             Nanc_size = PopulationSizeVariable("Nanc", units="physical")
         else:
@@ -69,6 +69,7 @@ class StructureDemographicModel(EpochDemographicModel):
             recombination_rate=recombination_rate,
             has_anc_size=has_anc_size,
             Nanc_size=Nanc_size,
+            Nref=Nref,
         )
         if np.any(np.array(initial_structure) > np.array(final_structure)):
             raise ValueError(f"Elements of the initial structure "
@@ -140,6 +141,7 @@ class StructureDemographicModel(EpochDemographicModel):
             gen_time=self.gen_time,
             theta0=self.theta0,
             mutation_rate=self.mutation_rate,
+            recombination_rate=self.recombination_rate,
             has_anc_size=self.has_anc_size,
             Nanc_size=self.Nanc_size
         )
