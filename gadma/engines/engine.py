@@ -207,6 +207,18 @@ class Engine(object):
     def data(self, new_data):
         self.set_data(new_data)
 
+    def get_N_ancestral(self, values):
+        """
+        Returns size of ancestral population. Is implemented for models with
+        ancestral size as parameter. For dadi and moments it is not always
+        True.
+        """
+        if hasattr(self.model, "has_anc_size") and self.model.has_anc_size:
+            var2value = self.model.var2value(values)
+            return self.model.get_value_from_var2value(var2value,
+                                                       self.model.Nanc_size)
+        raise NotImplementedError
+
     def evaluate(self, values, **options):
         """
         Evaluation of the objective function of the engine.

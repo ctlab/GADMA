@@ -48,6 +48,10 @@ class TestEngines(unittest.TestCase):
         self.assertRaises(ValueError,
                           dadi_engine.set_and_evaluate, [], model, None)
 
+        engine.supported_models.append(EpochDemographicModel)
+        engine.model = EpochDemographicModel()
+        self.assertRaises(NotImplementedError, engine.get_N_ancestral, [])
+
     def model_3pop_dadi(self, ns, pts):
         import dadi
         def dadi_func(params, ns, pts):
