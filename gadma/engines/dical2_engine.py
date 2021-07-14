@@ -349,7 +349,7 @@ class DiCal2Engine(Engine):
             preConfigInfo=local_config_info,
             numPerDeme=None,  # looks like it is null
             theta=4*self.model.Nref*self.model.mutation_rate,
-            rho= 4*self.model.Nref*self.model.recombination_rate,
+            rho=4*self.model.Nref*self.model.recombination_rate,
             mutMatrix=mut_matrix,
             useLocusSkipping=False,
             lociPerHmmStep=self.loci_per_HMM_step,
