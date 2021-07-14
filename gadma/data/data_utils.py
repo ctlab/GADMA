@@ -138,6 +138,7 @@ def check_projections_vcf(projections, full_projections, pop_labels):
                            "and projections from VCF file: "\
                            f"{pop_labels}, {full_projections}."
 
+
 def check_and_return_projections_and_labels(data_holder):
     """
     Takes VCF data holder and checks that its info is okay for vcf and popmap.
