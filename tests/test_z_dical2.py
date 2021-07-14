@@ -147,7 +147,7 @@ class TestDiCal2(unittest.TestCase):
         # evaluate with dical2 cmd
         cmd_ll = self._run_dical2_cmd()
         # check
-        self.assertEqual(ll, cmd_ll)
+        self.assertTrue(np.isclose(ll, cmd_ll))
 
         # 3. Set model with same and different mu
         engine.model = model
