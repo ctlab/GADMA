@@ -18,7 +18,6 @@ class TestDiCal2(unittest.TestCase):
             return  os.path.join(DATA_PATH, "MODELS", "dical2_models", p)
         def data_path(p):
             return os.path.join(DATA_PATH, "DATA", 'vcf', p)
-        dical_args = ['--paramFile', path('mutRec.param'),
                       '--vcfFile', data_path('contig.0.vcf'),
                       '--vcfFilterPassString', 'PASS',
                       '--vcfReferenceFile', data_path('reference.fa'),
@@ -107,10 +106,12 @@ class TestDiCal2(unittest.TestCase):
                              reference_file=REFERENCE)
         # 0. set model and change it before JAVA is launched
         dm1 = EpochDemographicModel(Nanc_size=1000)
-        dm1.mu = 1e-8
+        dm1.mutation_rate = 1e-8
+        dm1.recombination_rate = 1e-8
         engine.model = dm1
         dm2 = EpochDemographicModel(Nanc_size=100)
-        dm2.mu = 1e-10
+        dm2.mutation_rate = 1e-10
+        dm2.recombination_rate = 1e-8
         engine.model = dm2
         engine.model = dm2
 
@@ -130,7 +131,8 @@ class TestDiCal2(unittest.TestCase):
         # model
         model = EpochDemographicModel(has_anc_size=True, Nanc_size=Nanc)
         model.Nref = 10000
-        model.mu = 1.25e-8
+        model.mutation_rate = 1.25e-8
+        model.recombination_rate = 1e-8
         model.add_epoch(time_arg=T, size_args=[N1])
         model.add_split(pop_to_div=0, size_args=[N1, N2])
         migs = [[0, m12],[0, 0]]
@@ -149,7 +151,8 @@ class TestDiCal2(unittest.TestCase):
         # 3. Set model with same and different mu
         engine.model = model
         model = copy.deepcopy(model)
-        model.mu = 1e-5
+        model.mutation_rate = 1e-5
+        model.recombination_rate = 1e-8
         engine.model = model
 
         # 4. fails
@@ -167,7 +170,8 @@ class TestDiCal2(unittest.TestCase):
 
         # 5. Empty model
         model = EpochDemographicModel(Nanc_size=100)
-        model.mu = 1e-8
+        model.mutation_rate = 1e-8
+        model.recombination_rate = 1e-8
         model.Nref = 100
         engine.model = model
         engine._get_string_of_model(values=[])

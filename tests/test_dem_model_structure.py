@@ -208,7 +208,8 @@ class TestModelStructure(unittest.TestCase):
                 dm = model_generator(structure)
 
                 # for dical2
-                dm.mu = 1.25e-8
+                dm.mutation_rate = 1.25e-8
+                dm.recombination_rate = 1e-8
                 dm.Nref = 10000
 
                 variables = dm.variables
