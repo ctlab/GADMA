@@ -13,8 +13,10 @@ class DemographicModel(Model):
     :type gen_time: float
     :param theta0: Mutation flux (4 * mu * L, where L - length of sequence).
     :type theta0: float
-    :param mu: Mutation rate per base per generation.
-    :type mu: float
+    :param mutation_rate: Mutation rate per base per generation.
+    :type mutation_rate: float
+    :param recombination_rate: Recombination rate per base per generation.
+    :type recombination_rate: float
     :param Nref: rescaling factor of the parameters values.
     :type Nref: float
     :param has_anc_size: If True then model does not have size of ancestral
@@ -26,13 +28,15 @@ class DemographicModel(Model):
     :type linear_constrain: :class:`gadma.optimizers.LinearConstrain`
     """
 
-    def __init__(self, gen_time=None, theta0=None, mu=None, Nref=None,
+    def __init__(self, gen_time=None, theta0=None, mutation_rate=None,
+                 recombination_rate=None, Nref=None,
                  has_anc_size=False, linear_constrain=None):
         super(DemographicModel, self).__init__(raise_excep=False)
         self.gen_time = gen_time
         self.Nref = Nref  # rescaling factor
         self.theta0 = theta0  # mutation flux = 4 * mu * length
-        self.mu = mu  # mutation rate per base per generation
+        self.mutation_rate = mutation_rate  # per base per generation
+        self.recombination_rate = recombination_rate
         self.has_anc_size = has_anc_size
         self.fixed_vars = {}
         self.linear_constrain = linear_constrain
@@ -164,7 +168,8 @@ class EpochDemographicModel(DemographicModel):
     :type Nanc_size: float or :class:`gadma.utils.PopulationSizeVariable`
     """
 
-    def __init__(self, gen_time=None, theta0=None, mu=None, Nref=None,
+    def __init__(self, gen_time=None, theta0=None, mutation_rate=None,
+                 recombination_rate=None, Nref=None,
                  has_anc_size=None, Nanc_size=None, linear_constrain=None,
                  inbreeding_args=None):
         if has_anc_size is None:
@@ -176,7 +181,8 @@ class EpochDemographicModel(DemographicModel):
         super(EpochDemographicModel, self).__init__(
             gen_time=gen_time,
             theta0=theta0,
-            mu=mu,
+            mutation_rate=mutation_rate,
+            recombination_rate=recombination_rate,
             Nref=Nref,
             has_anc_size=has_anc_size,
             linear_constrain=linear_constrain

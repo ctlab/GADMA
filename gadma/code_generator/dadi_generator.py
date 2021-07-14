@@ -240,7 +240,7 @@ def _print_main(engine, values, mode='dadi', nanc=None):
     if nanc is not None:
         ret_str += f"Nanc = {nanc}\n"
 
-    mu_is_val = engine.model.mu is not None
+    mu_is_val = engine.model.mutation_rate is not None
     data_holder_is_val = engine.data_holder is not None
     seq_len_is_val = engine.data_holder.sequence_length is not None
 
@@ -251,7 +251,7 @@ def _print_main(engine, values, mode='dadi', nanc=None):
             ret_str += f"theta0 = {engine.model.theta0}\n"
             ret_str += "Nanc = int(theta / theta0)\n"
         elif mu_and_L:
-            ret_str += f"mu = {engine.model.mu}\n"
+            ret_str += f"mu = {engine.model.mutation_rate}\n"
             ret_str += f"L = {engine.data_holder.sequence_length}\n"
             ret_str += "theta0 = 4 * mu * L\n"
     else:

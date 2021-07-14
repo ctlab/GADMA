@@ -328,6 +328,11 @@ def get_settings():
                                                "populations are "\
                                                f"{projections} and got "\
                                                f"projections {holder_proj}."
+    if (settings_storage.recombination_rate is not None and
+            settings_storage.recombination_rate != 0):
+        if settings_storage.engine in ['moments', 'dadi']:
+            warnings.warn(f"Engine {settings_storage.engine} will ignore "
+                          "not-zero recombination rate.")
     return settings_storage, args
 
 
