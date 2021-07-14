@@ -1,7 +1,7 @@
 # mutation rate
 0.0005
 # recombination rate
-0
+0.0004
 # mutation matrix (2 alleles)
 0    1
 1    0

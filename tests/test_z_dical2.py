@@ -18,6 +18,7 @@ class TestDiCal2(unittest.TestCase):
             return  os.path.join(DATA_PATH, "MODELS", "dical2_models", p)
         def data_path(p):
             return os.path.join(DATA_PATH, "DATA", 'vcf', p)
+        dical_args = ['--paramFile', path('mutRec.param'),
                       '--vcfFile', data_path('contig.0.vcf'),
                       '--vcfFilterPassString', 'PASS',
                       '--vcfReferenceFile', data_path('reference.fa'),
