@@ -13,7 +13,10 @@ outgroup = None
 sequence_length = None
 linked_snp_s = True
 directory_with_bootstrap = None
-# boots = None
+
+# special for diCal2 options
+reference_file = None
+rescaling_factor = 10000
 
 # Pipeline
 theta0 = None

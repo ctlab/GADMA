@@ -3,7 +3,8 @@ from .settings_storage import HOME_DIR
 from . import SettingsStorage
 from ..core import SUPPORT_STRING
 from ..utils import ensure_dir_existence
-from ..data.data_utils import get_defaults_from_vcf_format
+from ..data.data_utils import check_and_return_projections_and_labels
+from ..data import VCFDataHolder
 from .. import __version__
 
 import warnings
@@ -294,6 +295,12 @@ def get_settings():
         if settings_storage.engine != "dadi":
             raise ValueError("Please check your engine. If you want to infer "
                              "inbreeding please change engine to `dadi`")
+    # dadi and moments ignore recombination rate if it is set
+    if (settings_storage.recombination_rate is not None and
+            settings_storage.recombination_rate != 0):
+        if settings_storage.engine in ['moments', 'dadi']:
+            warnings.warn(f"Engine {settings_storage.engine} will ignore "
+                          "not-zero recombination rate.")
     # If dical2 we should check that our data is correct without reading it
     if settings_storage.engine == "diCal2":
         if not isinstance(settings_storage.data_holder, VCFDataHolder):
@@ -302,37 +309,22 @@ def get_settings():
         ref = settings_storage.data_holder.reference_file
         assert ref is not None, "Reference file should be set for diCal2 "\
                                 "engine."
-        # get info from popmap and vcf
-        full_populations, full_projections = get_defaults_from_vcf_format(
-            vcf_file=settings_storage.data_holder.filename,
-            popmap_file=settings_storage.data_holder.popmap_file,
-            verbose=True
+        # Check data_holder
+        projections, pop_labels = check_and_return_projections_and_labels(
+            settings_storage.data_holder
         )
-        # check for population labels
-        holder_pop_labels = settings_storage.data_holder.population_labels
-        holder_proj = list(settings_storage.data_holder.projections)
-        populations = full_populations
-        if holder_pop_labels is not None:
-            check_population_labels_vcf(
-                pop_labels=holder_pop_labels,
-                full_pop_labels=full_populations
-            )
-            populations = holder_pop_labels
-        # check for projections
-        pop2proj = dict(zip(full_populations, full_projections))
-        projections = [pop2proj[pop] for pop in populations]
-        if holder_proj is not None:
-            assert projections == holder_proj, "Data cannot be downsized for "\
-                                               "diCal2 engine. Sample size of"\
-                                               f" VCF data for {populations} "\
-                                               "populations are "\
-                                               f"{projections} and got "\
-                                               f"projections {holder_proj}."
-    if (settings_storage.recombination_rate is not None and
-            settings_storage.recombination_rate != 0):
-        if settings_storage.engine in ['moments', 'dadi']:
-            warnings.warn(f"Engine {settings_storage.engine} will ignore "
-                          "not-zero recombination rate.")
+        # check for mutation rate and recombination rate
+        mu = settings_storage.mutation_rate
+        rec = settings_storage.recombination_rate
+        assert mu is not None, f"DiCal2 engine requires mutation rate ({mu})."
+        assert rec is not None, f"DiCal2 engine requires recombination rate "\
+                                f"({rec})."
+        if settings_storage.ancestral_size_as_parameter is False:
+            settings_storage.ancestral_size_as_parameter = True
+        if "Lin" in settings_storage.dynamics:
+            settings_storage.dynamics = [
+                dyn for dyn in settings_storage.dynamics if dyn != "Lin"
+            ]
     return settings_storage, args
 
 

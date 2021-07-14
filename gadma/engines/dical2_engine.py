@@ -5,6 +5,7 @@ from ..utils import DiscreteVariable, MigrationVariable, cache_func
 from ..utils import get_growth_rate
 from ..data.data_utils import read_popinfo, get_list_of_names_from_vcf
 from ..data.data_utils import get_defaults_from_vcf_format, ploidy_from_vcf
+from ..data.data_utils import check_population_labels_vcf
 from .. import VCFDataHolder
 from .. import dadi_available, moments_available
 from . import register_engine
@@ -507,7 +508,7 @@ class DiCal2Engine(Engine):
                     if dyn == "Sud":
                         rates.append(0)
                     else:
-                        assert dyn == "Exp"
+                        assert dyn == "Exp", str(dyn)
                         initial_size = get_value(event.init_size_args[i])
                         final_size = get_value(event.size_args[i])
                         time = get_value(event.time_arg)

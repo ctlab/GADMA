@@ -3,6 +3,7 @@ import ruamel.yaml
 import numpy as np
 from . import settings
 from ..data import SFSDataHolder, VCFDataHolder
+from ..data import update_data_holder_with_inner_data
 from ..engines import get_engine, MomentsEngine
 from ..engines import all_engines, all_drawing_engines
 from ..models import StructureDemographicModel, CustomDemographicModel
@@ -106,7 +107,7 @@ class SettingsStorage(object):
                        'const_for_mutation_strength',
                        'const_for_mutation_rate',
                        'mutation_rate', 'recombination_rate',
-                       'time_to_print_summary']
+                       'time_to_print_summary', 'rescaling_factor']
         probs_attrs = ['mean_mutation_strength', 'mean_mutation_rate',
                        'p_mutation', 'p_crossover', 'p_random']
         bool_attrs = ['outgroup', 'linked_snp_s', 'only_sudden',
@@ -125,11 +126,12 @@ class SettingsStorage(object):
         special_attrs = ['const_for_mutation_strength',
                          'const_for_mutation_rate', 'vmin',
                          'parameter_identifiers', 'migration_masks']
-        exist_file_attrs = ['input_data', 'custom_filename']
+        exist_file_attrs = ['input_data', 'custom_filename', 'reference_file']
         exist_dir_attrs = ['directory_with_bootstrap', 'resume_from']
         empty_dir_attrs = ['output_directory']
         data_holder_attrs = ['projections', 'outgroup',
-                             'population_labels', 'sequence_length']
+                             'population_labels', 'sequence_length',
+                             'reference_file']
         bounds_attrs = ['min_n', 'max_n', 'min_t', 'max_t', 'min_m', 'max_m',
                         'dynamics']
         bounds_lists = ['lower_bound', 'upper_bound', 'parameter_identifiers']
@@ -370,6 +372,7 @@ class SettingsStorage(object):
                     outgroup=self.outgroup,
                     population_labels=self.population_labels,
                     sequence_length=self.sequence_length,
+                    reference_file=self.reference_file,
                 )
             else:
                 data_holder = SFSDataHolder(
@@ -753,16 +756,23 @@ class SettingsStorage(object):
         be set.
         """
         engine = get_engine(self.engine)
-        data = engine.read_data(self.data_holder)
-        self.projections = data.sample_sizes
-        self.population_labels = data.pop_ids
-        self.outgroup = not data.folded
+        data = None
+        if self.engine != "diCal2":
+            data = engine.read_data(self.data_holder)
+        self.data_holder = update_data_holder_with_inner_data(
+            data_holder=self.data_holder,
+            inner_data=data
+        )
+        self.projections = self.data_holder.projections
+        self.population_labels = self.data_holder.population_labels
+        self.outgroup = self.data_holder.outgroup
         if self.pts is None:
             max_n = max(self.projections)
             x = (int((max_n - 1) / 10) + 1) * 10
             super(SettingsStorage, self).__setattr__("pts",
                                                      [x, x + 10, x + 20])
-        self._inner_data = data
+        if self.engine != "diCal2":
+            self._inner_data = data
         self.number_of_populations = len(self.projections)
         return data
 
@@ -1088,6 +1098,11 @@ class SettingsStorage(object):
         theta0 = self.theta0
         mut_rate = self.mutation_rate
         rec_rate = self.recombination_rate
+        # We have special option for diCal2 engine - rescaling_factor
+        if self.engine == 'diCal2':
+            Nref = self.rescaling_factor
+        else:
+            Nref = None
         if (self.initial_structure is not None and
                 self.final_structure is not None):
             create_migs = not self.no_migrations
@@ -1111,6 +1126,7 @@ class SettingsStorage(object):
                 theta0=theta0,
                 mutation_rate=mut_rate,
                 recombination_rate=rec_rate,
+                Nref=Nref,
                 has_inbr=create_inbr
             )
             constrain = self.get_linear_constrain_for_model(model)

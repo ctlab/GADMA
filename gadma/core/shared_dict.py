@@ -233,6 +233,9 @@ class SharedDictForCoreRun(SharedDict):
         if isinstance(engine, Engine) and not is_pickleable(engine.model):
             engine = copy.deepcopy(engine)
             super(Engine, engine).__setattr__("_model", None)
+        if isinstance(engine, Engine) and engine.id == "diCal2":
+            super(Engine, engine).__setattr__("inner_data", None)
+            engine._extended_config_info = None
         # print(type(x), x)
         if isinstance(x, WeightedMetaArray):
             return (engine, (x, x.metadata), y)

@@ -49,6 +49,9 @@ class CoreRun(object):
         # 2.1 Take engine, data and model for the first start.
         self.engine = get_engine(self.settings.engine)
         self.data = self.settings.inner_data
+        # If data was not read then we will read it again
+        if self.data is None:
+            self.data = self.settings.data_holder
         self.model = self.settings.get_model()
         # We save data_holder in engine for good code generation
         self.engine.data_holder = self.settings.data_holder

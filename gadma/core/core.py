@@ -5,6 +5,9 @@ from .draw_and_generate_code import print_runs_summary
 from .core_run import CoreRun
 from .shared_dict import SharedDictForCoreRun
 
+from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable
+from ..utils import DynamicVariable
+
 import os
 import sys
 
@@ -34,6 +37,13 @@ def job(index, shared_dict, settings):
     :type settings: :class:`gadma.cli.settings_storage.SettingsStorage`
     """
     try:
+        # As we now spawn our processes then some options break
+        PopulationSizeVariable.default_domain = [settings.min_n,
+                                                 settings.max_n]
+        TimeVariable.default_domain = [settings.min_t, settings.max_t]
+        MigrationVariable.default_domain = [settings.min_m, settings.max_m]
+        DynamicVariable.default_domain = settings.dynamics
+        # Run our run
         obj = CoreRun(index, shared_dict, settings)
         obj.run(settings.get_optimizers_init_kwargs())
     except Exception as e:

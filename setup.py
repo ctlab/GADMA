@@ -20,6 +20,7 @@ import os, sys
 import urllib.request
 import tarfile
 import glob
+import shutil
 
 
 NAME = 'gadma'
@@ -39,19 +40,27 @@ if sys.version[0:3] not in SUPPORTED_PYTHON_VERSIONS:
 with open('README.md') as f:
     DESCRIPTION = f.read()
 
+# Other setup options that could be changed during next steps
 requirements = ['numpy', 'scipy', 'matplotlib',
                 'Pillow', 'Cython', 'mpmath', 'nlopt', 'ruamel.yaml',
                 'dadi', 'jpype1']
 
 data_files = [["gadma", ["gadma/test.fs"]], ("", ["LICENSE"])]
 
+package_data = {
+    'gadma': ["CatchSystemExit.jar"],
+    'gadma.cli': ['*.py',  'params_template', 'extra_params_template', 'test_settings'],
+}
+
+
 # Load dical2 or use the saved version
 def unarchive(tar_gz_archive):
     tar = tarfile.open(tar_gz_archive, "r:gz")
-    tar.extractall()
-    names = tar.getnames()
+    dirname = os.path.commonprefix(tar.getnames())
+    if not os.path.exists(dirname):
+        tar.extractall(path="gadma")
     tar.close()
-    return names
+    return os.path.join("gadma", dirname)
 
 #dical2_url = "https://sourceforge.net/projects/dical2/files/latest/download?source=files"
 dical2_saved = os.path.join(".", "diCal2_2_0_5.tar.gz")
@@ -69,45 +78,51 @@ if not os.path.exists(dical2_download):
     print("Dical2 was taken from saved release.")
     success = False
 
+# path to keep unarchieved diCal2 version
+data_path = None
+
 if success:
     try:
-        tar_names = unarchive(dical2_download)
+        data_path = unarchive(dical2_download)
     except:
         print("Dical unarchivement failed.")
         success = False
 
 if not success:
     try:
-        tar_names = unarchive(dical2_saved)
+        data_path = unarchive(dical2_saved)
         print("Dical2 was taken from saved release.")
         success = True
     except Exception as e:
-        print(f"Dical installation failed: {e}. Please try to do it manually. "
-              "Path to dical2 could be set in gadma/dical2_path.py file")
+        print(f"Dical installation failed: {e}. GADMA will not have diCal "
+              "engine. Please try to do it manually. "
+              "Please\n\t1a) Download archive with diCal2 from codeforce: "
+              "https://sourceforge.net/projects/dical2/\n"
+              "\t2), unarchive tar.gz file to `gadma` directory: "
+              "tar -xzf rebol.tar.gz -C gadma/\n\t3) Run this install again.\n"
+              "Also Path to dical2 could be set in gadma/dical2_path.py file.")
         success = False
+
 # write our information to gadma files before installation
 if success:
-    dical_name = None
-    for name in tar_names:
-        if name.startswith("diCal2_"):
-            if os.path.isdir(os.path.join(".", name)):
-                if os.path.exists(os.path.join(".", name, "diCal2.jar")):
-                    dical_name = name
-    if dical_name is not None:
+    assert data_path is not None
+    path_to_dical_jar = os.path.join(data_path, "diCal2.jar")
+    if os.path.exists(path_to_dical_jar):
         with open(os.path.join("gadma", "dical2_path.py"), 'w') as fl:
             fl.write("# Generated automatically from setup.py\n")
             fl.write(f"import os\n\n"
                      f"dical2_path = os.path.abspath(\n"
                      f"    os.path.join(\n"
                      f"        os.path.dirname(os.path.dirname(__file__)),\n"
-                     f"        '{dical_name}'\n"
+                     f"        '{data_path}'\n"
                      f"    )\n"
                      f")\n")
-        # add all files to data_files
-#        data_files.append(("", []))
-        for (dirpath, dirnames, filenames) in os.walk(dical_name):
-            filenames = [os.path.join(dirpath, f_name) for f_name in filenames]
-            data_files.append((dirpath, filenames))
+        # save data_path to gadma package_data
+        package_data['gadma'].append(os.path.join(data_path, "*"))
+    else:
+        print(f"diCal2.jar was not found in diCal2 directory ({data_path}), "
+              "Please remove or rename the directory if it is not unarchieved "
+              "folder.")
 
 # Begin installation
 setup(
@@ -129,10 +144,7 @@ setup(
     ],
     packages=find_packages(exclude=['examples', 'tests']),
     include_package_data=True,
-    package_data={
-        'gadma': ["CatchSystemExit.jar"],
-        'gadma.cli': ['*.py',  'params_template', 'extra_params_template', 'test_settings'],
-    },
+    package_data=package_data,
     data_files=data_files,
     install_requires=requirements,
     entry_points={
