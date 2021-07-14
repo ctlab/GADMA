@@ -700,9 +700,10 @@ def read_fsc_data(module, data_holder):
             if n_observations == 1:
                 dim2 = len(lines)
             else:
+
                 for i, line in enumerate(lines[1:]):
-                    if line.split('_')[1] == '0':
-                        dim2 = i + 2
+                    if line.split()[0].split('_')[1] == '0':
+                        dim2 = int(lines[i].split()[0].split('_')[1]) + 1
                         break
 
             total = np.zeros((dim1, dim2))

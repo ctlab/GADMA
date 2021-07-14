@@ -275,11 +275,13 @@ def test_fsc_reading():
         'file population_labels projections outgroup')
 
     vcf = os.path.join(DATA_PATH, 'fsc', 'test_data.vcf')
+    engine = get_engine('dadi')
 
     tests = [
         # joint SFSs for 2 demes; minor and derived allele
+        # also test projections
         TestInfo('jointMAFpop1_0', ('YRI', 'CEU'), None, False),
-        TestInfo('jointDAFpop1_0', ('YRI', 'CEU'), None, True),
+        TestInfo('jointDAFpop1_0', ('YRI', 'CEU'), [4, 2], True),
         # SFS for single population; minor and derived allele
         TestInfo('YRI_DAFpop0', ('YRI',), None, True),
         TestInfo('YRI_MAFpop0', ('YRI',), None, False),
@@ -309,11 +311,10 @@ def test_fsc_reading():
             outgroup=test.outgroup
         )
 
-        engine = get_engine('dadi')
         fsc_data = engine.read_data(fsc_data_holder)
         vcf_data = engine.read_data(vcf_data_holder)
 
-        debug = True
+        debug = False
         if debug:
             print(test.file, np.sum(np.abs(fsc_data - vcf_data)))
             print('from fsc:')
@@ -339,4 +340,23 @@ def test_fsc_reading():
         # deviates from dadi somehow
         delta = np.sum(np.abs(fsc_data - vcf_data))
         assert delta <= 4, "difference between SFSs is larger than expected"
+
+    # test the case with multiple observations per file
+    multiple = FSCDataHolder(
+        filename=os.path.join(DATA_PATH, 'fsc', 'MO_jointDAFpop1_0.obs'),
+        population_labels = ('YRI', 'CEU'),
+        projections=None,
+        sequence_length=None,
+        outgroup=True
+    )
+    single = FSCDataHolder(
+        filename=os.path.join(DATA_PATH, 'fsc', 'jointDAFpop1_0.obs'),
+        population_labels = ('YRI', 'CEU'),
+        projections=None,
+        sequence_length=None,
+        outgroup=True
+    )
+    multiple_SFS = engine.read_data(multiple)
+    single_SFS = engine.read_data(single)
+    assert np.all(multiple_SFS == single_SFS), "Several observations per file"
 
