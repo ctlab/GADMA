@@ -328,7 +328,8 @@ class DiCal2Engine(Engine):
         if model is None or self.model is None or self.data is None:
             do_nothing = True
         else:
-            if self.model.mu == model.mu and self.model.Nref == model.Nref:
+            if (self.model.mutation_rate == model.mutation_rate and
+                    self.model.Nref == model.Nref):
                 do_nothing = True
             elif jpype.isJVMStarted():
                 do_nothing = True
@@ -347,8 +348,8 @@ class DiCal2Engine(Engine):
             preSequenceList=sequence_list,
             preConfigInfo=local_config_info,
             numPerDeme=None,  # looks like it is null
-            theta=4*self.model.Nref*self.model.mu,
-            rho=0,  # self.model.recombination_rate,  # TODO
+            theta=4*self.model.Nref*self.model.mutation_rate,
+            rho= 4*self.model.Nref*self.model.recombination_rate,
             mutMatrix=mut_matrix,
             useLocusSkipping=False,
             lociPerHmmStep=self.loci_per_HMM_step,
