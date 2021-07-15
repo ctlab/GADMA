@@ -183,11 +183,11 @@ def update_data_holder_with_inner_data(data_holder, inner_data):
     Updates given data_holder with given data that was read from it.
     """
     if hasattr(inner_data, "sample_sizes"):
-        data_holder.projections = data.sample_sizes
+        data_holder.projections = inner_data.sample_sizes
     if hasattr(inner_data, "pop_ids"):
-        data_holder.population_labels = data.pop_ids
+        data_holder.population_labels = inner_data.pop_ids
     if hasattr(inner_data, "folded"):
-        data_holder.outgroup = not data.folded
+        data_holder.outgroup = not inner_data.folded
     if isinstance(data_holder, VCFDataHolder):
         projections, pop_labels = check_and_return_projections_and_labels(
             data_holder
