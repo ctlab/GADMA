@@ -20,7 +20,7 @@ jobs:
           python setup.py build
 
       - name: Check code style.
-        run: pycodestyle gadma
+        run: pycodestyle gadma --exclude diCal2_2_0_5
 
       - name: flake8
-        run: flake8 --exit-zero ./gadma
+        run: flake8 --exit-zero ./gadma --exclude diCal2_2_0_5
