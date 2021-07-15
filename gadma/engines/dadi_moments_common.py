@@ -146,7 +146,7 @@ class DadiOrMomentsEngine(Engine):
 
     def get_N_ancestral(self, values, grid_sizes):
         if self.model.has_anc_size:
-            super(DadiOrMomentsEngine, self).get_N_ancestral(self, values)
+            return super(DadiOrMomentsEngine, self).get_N_ancestral(values)
         theta = self.get_theta(values, grid_sizes)
         return self.get_N_ancestral_from_theta(theta)
 

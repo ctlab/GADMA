@@ -195,5 +195,5 @@ def update_data_holder_with_inner_data(data_holder, inner_data):
         data_holder.projections = projections
         data_holder.population_labels = pop_labels
         # TODO: valid only for dical2
-        data_holder.outgroup = data_holder.reference_file is not None
+        # data_holder.outgroup = data_holder.reference_file is not None
     return data_holder
