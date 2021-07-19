@@ -104,7 +104,8 @@ class SettingsStorage(object):
                        'upper_bound_of_first_split',
                        'upper_bound_of_second_split',
                        'const_for_mutation_strength',
-                       'const_for_mutation_rate', 'mutation_rate',
+                       'const_for_mutation_rate',
+                       'mutation_rate', 'recombination_rate',
                        'time_to_print_summary']
         probs_attrs = ['mean_mutation_strength', 'mean_mutation_rate',
                        'p_mutation', 'p_crossover', 'p_random']
@@ -1085,6 +1086,7 @@ class SettingsStorage(object):
         gen_time = self.time_for_generation
         theta0 = self.theta0
         mut_rate = self.mutation_rate
+        rec_rate = self.recombination_rate
         if (self.initial_structure is not None and
                 self.final_structure is not None):
             create_migs = not self.no_migrations
@@ -1106,7 +1108,8 @@ class SettingsStorage(object):
                 migs_mask=migs_mask,
                 gen_time=gen_time,
                 theta0=theta0,
-                mu=mut_rate,
+                mutation_rate=mut_rate,
+                recombination_rate=rec_rate,
                 has_inbr=create_inbr
             )
             constrain = self.get_linear_constrain_for_model(model)
@@ -1123,7 +1126,8 @@ class SettingsStorage(object):
                                               variables=variables,
                                               gen_time=gen_time,
                                               theta0=theta0,
-                                              mu=mut_rate)
+                                              mutation_rate=mut_rate,
+                                              recombination_rate=rec_rate)
             module_name = module_name_from_path(self.custom_filename)
             spec = importlib.util.spec_from_file_location(module_name,
                                                           self.custom_filename)
@@ -1133,14 +1137,16 @@ class SettingsStorage(object):
                                           variables=variables,
                                           gen_time=gen_time,
                                           theta0=theta0,
-                                          mu=mut_rate)
+                                          mutation_rate=mut_rate,
+                                          recombination_rate=rec_rate)
 
         elif self.custom_filename is None and self.model_func is not None:
             return CustomDemographicModel(function=self.model_func,
                                           variables=None,
                                           gen_time=gen_time,
                                           theta0=theta0,
-                                          mu=mut_rate)
+                                          mutation_rate=mut_rate,
+                                          recombination_rate=rec_rate)
         else:
             raise ValueError("Some settings are missed so no model is "
                              "generated")

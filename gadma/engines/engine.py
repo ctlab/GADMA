@@ -1,5 +1,6 @@
 from ..data import DataHolder
 from ..models import Model
+from ..data import update_data_holder_with_inner_data
 import copy
 
 _registered_engines = {}
@@ -188,11 +189,10 @@ class Engine(object):
         if isinstance(data, DataHolder):
             self.inner_data = self.read_data(data)
             self.data_holder = copy.deepcopy(data)
-            # TODO valid for dadi and moments
-            if self.inner_data is not None:
-                self.data_holder.projections = self.inner_data.sample_sizes
-                self.data_holder.population_labels = self.inner_data.pop_ids
-                self.data_holder.outgroup = not self.inner_data.folded
+            self.data_holder = update_data_holder_with_inner_data(
+                data_holder=self.data_holder,
+                inner_data=self.inner_data
+            )
         elif (self.inner_data_type is not None and
                 isinstance(data, self.inner_data_type)):
             self.inner_data = data
@@ -206,6 +206,18 @@ class Engine(object):
     @data.setter
     def data(self, new_data):
         self.set_data(new_data)
+
+    def get_N_ancestral(self, values):
+        """
+        Returns size of ancestral population. Is implemented for models with
+        ancestral size as parameter. For dadi and moments it is not always
+        True.
+        """
+        if hasattr(self.model, "has_anc_size") and self.model.has_anc_size:
+            var2value = self.model.var2value(values)
+            return self.model.get_value_from_var2value(var2value,
+                                                       self.model.Nanc_size)
+        raise NotImplementedError
 
     def evaluate(self, values, **options):
         """

@@ -293,6 +293,11 @@ def get_settings():
         if settings_storage.engine != "dadi":
             raise ValueError("Please check your engine. If you want to infer "
                              "inbreeding please change engine to `dadi`")
+    if (settings_storage.recombination_rate is not None and
+            settings_storage.recombination_rate != 0):
+        if settings_storage.engine in ['moments', 'dadi']:
+            warnings.warn(f"Engine {settings_storage.engine} will ignore "
+                          "not-zero recombination rate.")
     return settings_storage, args
 
 

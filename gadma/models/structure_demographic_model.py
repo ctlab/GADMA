@@ -48,13 +48,16 @@ class StructureDemographicModel(EpochDemographicModel):
     :type gen_time: float
     :param theta0: Mutation flux (4\*mu\*L).
     :type theta0: float
-    :param mu: Mutation rate per base per generation.
-    :type mu: float
+    :param mutation_rate: Mutation rate per base per generation.
+    :type mutation_rate: float
+    :param recombination_rate: Recombination rate per base per generation.
+    :type recombination_rate: float
     """
     def __init__(self, initial_structure, final_structure,
                  has_migs, has_sels, has_dyns, sym_migs, frac_split,
                  migs_mask=None, has_anc_size=False,
-                 gen_time=None, theta0=None, mu=None, has_inbr=None):
+                 gen_time=None, theta0=None, mutation_rate=None,
+                 recombination_rate=None, Nref=None, has_inbr=None):
         if has_anc_size:
             Nanc_size = PopulationSizeVariable("Nanc", units="physical")
         else:
@@ -62,9 +65,11 @@ class StructureDemographicModel(EpochDemographicModel):
         super(StructureDemographicModel, self).__init__(
             gen_time=gen_time,
             theta0=theta0,
-            mu=mu,
+            mutation_rate=mutation_rate,
+            recombination_rate=recombination_rate,
             has_anc_size=has_anc_size,
             Nanc_size=Nanc_size,
+            Nref=Nref,
         )
         if np.any(np.array(initial_structure) > np.array(final_structure)):
             raise ValueError(f"Elements of the initial structure "
@@ -135,7 +140,8 @@ class StructureDemographicModel(EpochDemographicModel):
         super(StructureDemographicModel, self).__init__(
             gen_time=self.gen_time,
             theta0=self.theta0,
-            mu=self.mu,
+            mutation_rate=self.mutation_rate,
+            recombination_rate=self.recombination_rate,
             has_anc_size=self.has_anc_size,
             Nanc_size=self.Nanc_size
         )

@@ -1,5 +1,6 @@
 import re
 import warnings
+from .data import VCFDataHolder
 
 
 # function for working with VCF files
@@ -136,3 +137,63 @@ def check_projections_vcf(projections, full_projections, pop_labels):
                            f"{pop_labels}, {projections}\nPop.labels "\
                            "and projections from VCF file: "\
                            f"{pop_labels}, {full_projections}."
+
+
+def check_and_return_projections_and_labels(data_holder):
+    """
+    Takes VCF data holder and checks that its info is okay for vcf and popmap.
+    Returns valid projections and population labels (could be used for the
+    same data holder).
+    """
+    assert isinstance(data_holder, VCFDataHolder)
+    # get info from popmap and vcf
+    full_populations, full_projections = get_defaults_from_vcf_format(
+        vcf_file=data_holder.filename,
+        popmap_file=data_holder.popmap_file,
+        verbose=True
+    )
+    # get holder info
+    holder_pop_labels = data_holder.population_labels
+    holder_proj = data_holder.projections
+    if holder_proj is not None:
+        holder_proj = list(holder_proj)
+    populations = full_populations
+    # check for population labels
+    if holder_pop_labels is not None:
+        check_population_labels_vcf(
+            pop_labels=holder_pop_labels,
+            full_pop_labels=full_populations
+        )
+        populations = holder_pop_labels
+    # check for projections
+    pop2proj = dict(zip(full_populations, full_projections))
+    projections = [pop2proj[pop] for pop in populations]
+    if holder_proj is not None:
+        assert projections == holder_proj, "Data cannot be downsized for "\
+                                           "diCal2 engine. Sample size of"\
+                                           f" VCF data for {populations} "\
+                                           "populations are "\
+                                           f"{projections} and got "\
+                                           f"projections {holder_proj}."
+    return projections, populations
+
+
+def update_data_holder_with_inner_data(data_holder, inner_data):
+    """
+    Updates given data_holder with given data that was read from it.
+    """
+    if hasattr(inner_data, "sample_sizes"):
+        data_holder.projections = inner_data.sample_sizes
+    if hasattr(inner_data, "pop_ids"):
+        data_holder.population_labels = inner_data.pop_ids
+    if hasattr(inner_data, "folded"):
+        data_holder.outgroup = not inner_data.folded
+    if isinstance(data_holder, VCFDataHolder):
+        projections, pop_labels = check_and_return_projections_and_labels(
+            data_holder
+        )
+        data_holder.projections = projections
+        data_holder.population_labels = pop_labels
+        # TODO: valid only for dical2
+        # data_holder.outgroup = data_holder.reference_file is not None
+    return data_holder

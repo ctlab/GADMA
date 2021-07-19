@@ -15,6 +15,7 @@ from gadma.utils import PopulationSizeVariable, MigrationVariable,\
     TimeVariable, FractionVariable, ContinuousVariable
 from gadma import *
 from gadma.core.shared_dict import SharedDict, SharedDictForCoreRun
+from gadma.cli import arg_parser
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
 
@@ -436,7 +437,7 @@ class TestCLI(unittest.TestCase):
         params_file = 'params'
         for opts in options:
             with open(params_file, 'w') as fl:
-                fl.write("Input file: YRI_CEU.fs\n"
+                fl.write("Input data: YRI_CEU.fs\n"
                          f"Output directory: {output}\n")
                 for line in opts:
                     fl.write(line)
@@ -459,7 +460,7 @@ class TestCLI(unittest.TestCase):
         if check_dir_existence(outdir):
             shutil.rmtree(outdir)
         with open(params_file, 'w') as fl:
-            fl.write(f"Input file: {data_file}\n"
+            fl.write(f"Input data: {data_file}\n"
                      "Projections: 6\n"
                      "Linked SNP's: False\n"
                      "Silence: True\n"
@@ -479,11 +480,11 @@ class TestCLI(unittest.TestCase):
 
     def test_inbreeding_fail_run_with_moments(self):
         params_file = 'params'
-        outdir = os.path.join(DATA_PATH, 'resume_dir')
+        outdir = os.path.join(DATA_PATH, 'out_dir')
         if check_dir_existence(outdir):
             shutil.rmtree(outdir)
         with open(params_file, 'w') as fl:
-            fl.write("Input file: tests/test_data/DATA/sfs/YRI_CEU.fs\n"
+            fl.write("Input data: tests/test_data/DATA/sfs/YRI_CEU.fs\n"
                      "Linked SNP's: False\n"
                      "Silence: True\n"
                      "global_maxiter: 2\n"
@@ -499,9 +500,27 @@ class TestCLI(unittest.TestCase):
             if check_dir_existence(outdir):
                 shutil.rmtree(outdir)
             os.remove(params_file)
-            gadma.matplotlib_available = True
 
-
+    def test_reading_from_cmd_and_checks(self):
+        # checks recombination rate warning
+        params_file = 'params'
+        outdir = os.path.join(DATA_PATH, 'out_dir')
+        if check_dir_existence(outdir):
+            shutil.rmtree(outdir)
+        with open(params_file, 'w') as fl:
+            fl.write("Input data: tests/test_data/DATA/sfs/YRI_CEU.fs\n"
+                     "Silence: True\n"
+                     "engine: moments\n"
+                     "recombination rate: 1e-8")
+        sys.argv = ['gadma', '-p', params_file,
+                    '--output', outdir]
+        try:
+            settings_storage, args = arg_parser.get_settings()
+        finally:
+            if check_dir_existence(outdir):
+                shutil.rmtree(outdir)
+            os.remove(params_file)
+        
     def test_logging_to_stderr(self):
         saved_stderr = sys.stderr
         sys.stderr = StdAndFileLogger("log_file", stderr=True)
