@@ -234,6 +234,7 @@ class SharedDictForCoreRun(SharedDict):
             engine = copy.deepcopy(engine)
             super(Engine, engine).__setattr__("_model", None)
         if isinstance(engine, Engine) and engine.id == "diCal2":
+            engine = copy.copy(engine)
             super(Engine, engine).__setattr__("inner_data", None)
             engine._extended_config_info = None
         # print(type(x), x)
