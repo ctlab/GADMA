@@ -2,7 +2,9 @@ import operator as op
 import numpy as np
 import copy
 import time
+from collections import OrderedDict
 
+from .gaussian_process import GPyGaussianProcess, SMACGaussianProcess
 from .optimizer import ConstrainedOptimizer
 from .global_optimizer import GlobalOptimizer, register_global_optimizer
 from .optimizer_result import OptimizerResult
@@ -74,13 +76,16 @@ class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         )
 
     def _get_kernel_class(self):
-        return op.attrgetter(self.kernel_name)(GPy.kern.src.stationary)
+        kernel_name = self.kernel_name.lower().capitalize()
+        if kernel_name == "Rbf":
+            kernel_name = "RBF"
+        return op.attrgetter(kernel_name)(GPy.kern)
 
-    def get_kernel(self, ndim):
-        kernel = self._get_kernel_class()(ndim, ARD=self.ARD)
+    def get_kernel(self, config_space):
+        kernel = self._get_kernel_class()(len(config_space), ARD=self.ARD)
         return kernel
 
-    def get_domain(self, variables):
+    def get_config_space(self, variables):
         gpy_domain = []
         for var in variables:
             gpy_domain.append({'name': var.name,
@@ -173,6 +178,23 @@ class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         info.result.Y_out = info.result.Y
         super(GPyOptBayesianOptimizer, self).save(info, save_file)
 
+    def get_model(self, config_space):
+        from GPyOpt.models import GPModel
+        kernel = self.get_kernel(config_space)
+        gp_model = GPModel(
+            kernel=kernel,
+            noise_var=None,
+            exact_feval=True,
+            optimizer="lbfgs",
+            max_iters=1000,
+            optimize_restarts=5,
+            sparse=False,
+            num_inducing=10,
+            verbose=False,
+            ARD=self.ARD
+        )
+        return GPyGaussianProcess(gp_model)
+
     def _optimize(self, f, variables, X_init, Y_init, maxiter, maxeval,
                   iter_callback):
         from GPyOpt.methods import BayesianOptimization
@@ -187,15 +209,18 @@ class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             y_best = Y_init[0]
             iter_callback(x_best, y_best, X_init, Y_init)
 
-        kernel = self.get_kernel(ndim)
-        gpy_domain = self.get_domain(variables)
+        gpy_domain = self.get_config_space(variables)
+        kernel = self.get_kernel(config_space=gpy_domain)
 
         Y_init = np.array(Y_init).reshape(len(Y_init), -1)
         X_init = np.array(X_init, dtype=float)
 
+        gpy_model = self.get_model(config_space=gpy_domain).gp_model
+
         bo = BayesianOptimization(f=f,
                                   domain=gpy_domain,
-                                  model_type='GP',
+                                  model_type='user-specified',
+                                  model=gpy_model,
                                   acquisition_type=self.acquisition_type,
                                   kernel=kernel,
                                   X=np.array(X_init),
@@ -262,7 +287,7 @@ class SMACSquirrelOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         )
 
     def get_configs(self, variables):
-        api_config = {}
+        api_config = OrderedDict()
         cs = ConfigurationSpace()
         hp_list = []
         for var in variables:
@@ -504,14 +529,15 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
     def get_model(self, config_space):
         kernel = self.get_kernel(config_space)
         types, bounds = get_types(config_space, instance_features=None)
-        return GaussianProcess(
+        smac_gp = GaussianProcess(
             configspace=config_space,
             types=types,
             bounds=bounds,
             seed=self._get_random_state().randint(MAXINT),
             kernel=kernel,
-            normalize_y=True,
+            normalize_y=False,
         )
+        return SMACGaussianProcess(smac_gp)
 
     def get_acquisition_function_class(self):
         if self.acquisition_type.lower() == "logei":
@@ -527,7 +553,8 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                              f"{self.acquisition_type}")
 
     def get_acquisition_function(self, model):
-        return self.get_acquisition_function_class()(model=model)
+        assert isinstance(model, SMACGaussianProcess)
+        return self.get_acquisition_function_class()(model=model.gp_model)
 
     def get_acquisition_function_optimizer(self,
                                            config_space,
@@ -542,7 +569,7 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         )
 
     def get_config_space(self, variables):
-        api_config = {}
+        api_config = OrderedDict()
         cs = ConfigSpace.ConfigurationSpace()
         hp_list = []
         for var in variables:
@@ -671,7 +698,8 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                 for ind, (var, par) in enumerate(zip(variables, x)):
                     if isinstance(variables[ind], ContinuousVariable):
                         par = float(par)
-                    X_init_configs[i][var.name] = par
+                    else:
+                        X_init_configs[i][var.name] = par
 
         # add our initial design to run history
         for x, y in zip(X_init_configs, Y_init):
@@ -683,7 +711,9 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                  self.run_info.result.n_iter < maxiter):
             total_t_start = time.time()
 
-            X, y = rh2epm.transform(runhistory)
+            X, Y = rh2epm.transform(runhistory)
+            # normalization
+            y = normalize(y)
 
             # If all are not finite then we return nothing
             if np.all(~np.isfinite(y)):
@@ -698,7 +728,7 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             gp_train_time = time.time() - t_start
 
             t_start = time.time()
-            predictions = model.predict_marginalized_over_instances(X)[0]
+            predictions = model.predict(X)[0]
             best_index = np.argmin(predictions)
             best_observation = y[best_index]
             x_best_array = X[best_index]
@@ -706,7 +736,7 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
             t_start = time.time()
             acq_fun.update(
-                model=model,
+                model=model.gp_model,
                 eta=best_observation,
                 incumbent_array=x_best_array,
                 num_data=len(X),

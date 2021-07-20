@@ -7,6 +7,12 @@ import tempfile
 import pickle
 from multiprocessing import Process, Queue, queues
 import warnings
+import copy
+import math
+from .. import smac_available
+if smac_available:
+    from smac.runhistory.runhistory import RunHistory
+    from smac.tae.execute_ta_run import StatusType
 
 
 def logarithm_transform(x):
@@ -320,6 +326,12 @@ class WeightedMetaArray(np.ndarray):
             return super_str + '\t' + self.metadata
         return super_str
 
+    def str_as_list(self):
+        super_str = str(list(self))
+        if hasattr(self, 'metadata'):
+            return super_str + '\t' + self.metadata
+        return super_str
+
     def __repr__(self):
         super_str = super(WeightedMetaArray, self).__repr__()
         if hasattr(self, 'metadata'):
@@ -503,6 +515,152 @@ def get_claic_score(engine, x0, boots,
         return claic_score, eps
     else:
         return claic_score
+
+
+# Leave-one-out cross validation for Gaussian process
+def get_mu_and_sigma_rassmusen(K_inv, Y, i):
+    """
+    Get mu and sigma for missed element i according to Rassmusen.
+
+    :param K_inv: Inversed covariance matrix (cov(X, X)).
+    :param Y: All objectives.
+    :param i: Index of element that we exclude from X and Y.
+
+    :returns: mean and std of GP prediction for i-th element if GP is trained\
+              on all X and Y excluding i-th element.
+    """
+    mu = Y[i] - np.dot(K_inv, Y)[i] / K_inv[i, i]
+    var = 1 / K_inv[i, i]
+    sigma = math.sqrt(var)
+    return mu, sigma
+
+
+def get_one_score(mu, sigma, y_true):
+    """
+    Returns LOO score for excluding one element.
+    """
+    return - 1 / 2 * np.log(sigma) - (y_true - mu) ** 2 / (2 * sigma)\
+           - 1 / 2 * np.log(2 * math.pi)
+
+
+def get_LOO_score(X_train, Y_train, gp_model,
+                  mode="rassmusen", verbose=False, do_optimize=True):
+    assert mode in ["rassmusen", "gp_train"]
+    # 1. Train full GP
+    if verbose:
+        print("Begin GP training")
+    t_start = time.time()
+    gp_model.train(X_train, Y_train, optimize=do_optimize)
+    if verbose:
+        print(f"Time of GP training: {time.time() - t_start}")
+    # Hyperparameters of GP TODO
+    if verbose:
+        print(f"Hyperparameters of GP: {gp_model.get_hypers()}")
+    # 2. Get inversed covariance matrix K
+    noise = gp_model.get_noise()
+    if verbose:
+        print(f"Inverse covariance matrix (noise: {noise})")
+    K = gp_model.get_K()
+    K_noise = K + noise * np.eye(K.shape[0])
+    K_inv = np.linalg.inv(K_noise)
+    # 3. Begin cross validation
+    t_start = time.time()
+    if verbose:
+        print("Begin cross validation pipeline.")
+    LOO_score = 0
+    for i, (x, y) in enumerate(zip(X_train, Y_train)):
+        if mode == "rassmusen":
+            mu, sigma = get_mu_and_sigma_rassmusen(K_inv, Y_train, i)
+        else:
+            except_i = [el for el in range(len(X_train)) if el != i]
+            gp_model.train(
+                np.array(X_train)[except_i, :],
+                np.array(Y_train)[except_i],
+                optimize=False
+            )
+            mu, sigma = gp_model.predict([X_train[i]])
+            mu, sigma = mu[0], sigma[0]
+        if sigma < 0:
+            if verbose:
+                print(f"GP without {i} sample predicts sigma < 0")
+            continue
+        LOO_score += get_one_score(mu, sigma, Y_train[i])
+        if verbose:
+            print(f"GP without {i} sample predicts (mu={mu}, sigma={sigma}) "
+                  f"when y_true={Y_train[i]}")
+    if verbose:
+        print(f"End cross validation pipeline ({time.time() - t_start} sec.).")
+        print(f"LOO score: {LOO_score}")
+    return LOO_score
+
+
+def normalize(Y):
+    Y = np.array(Y)
+    Y -= np.mean(Y)
+    Y /= np.std(Y)
+    return Y
+
+
+def transform_smac(optimizer, variables, X, Y):
+    from ..optimizers import SMACBayesianOptimizer
+    if not isinstance(optimizer, SMACBayesianOptimizer):
+        return X, Y
+    # We create run history, fill it and transform its data with rh2epm
+    # It is usual pipeline for SMAC
+    config_space = optimizer.get_config_space(variables=variables)
+    rh2epm = optimizer.get_runhistory2epm(
+        scenario=optimizer.get_scenario(
+            maxeval=None,
+            config_space=config_space
+        )
+    )
+    runhistory = RunHistory()
+    config = config_space.sample_configuration(1)
+    for x, y in zip(X, Y):
+        for var, value in zip(variables, x):
+            config[var.name] = float(value)
+        runhistory.add(
+            config=copy.copy(config),
+            cost=y,
+            time=0,
+            status=StatusType.SUCCESS
+        )
+    X, Y = rh2epm.transform(runhistory)
+    return X, Y.flatten()
+
+
+def get_loo_scores_for_kernels(optimizer, variables, X, Y,
+                               mode="rassmusen", verbose=False):
+    from ..optimizers import GaussianProcess, SMACBayesianOptimizer
+    # We transform X and Y if needed
+    Y = normalize(Y)
+    X, Y = transform_smac(optimizer, variables, X, Y)
+
+    assert hasattr(optimizer, "get_model")
+    kernels = ["matern52", "matern32", "rbf", "exponential"]
+    scores = {}
+    opt = copy.copy(optimizer)
+    for kernel_name in kernels:
+        opt.kernel_name = kernel_name
+        gp = opt.get_model(config_space=opt.get_config_space(variables))
+        assert isinstance(gp, GaussianProcess)
+        score = get_LOO_score(X_train=X, Y_train=Y, gp_model=gp,
+                              mode=mode, verbose=verbose)
+        scores[kernel_name] = score
+    return scores
+
+
+def get_best_kernel(optimizer, variables, X, Y,
+                    mode="rassmusen", verbose=False):
+    scores = get_loo_scores_for_kernels(
+        optimizer=optimizer,
+        variables=variables,
+        X=X,
+        Y=Y,
+        mode=mode,
+        verbose=verbose,
+    )
+    return max(scores, key=scores.get)
 
 
 # Printing functions

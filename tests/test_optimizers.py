@@ -62,7 +62,7 @@ def get_1pop_sim_example_1(engine_id, args=(), data_size=4):
 
 def get_1pop_sim_example_2(engine_id, args=(), data_size=4):
     """
-    Exponential incease.
+    Exponential increase.
     """
     t = TimeVariable('t')
     nu1 = PopulationSizeVariable('nu1')
