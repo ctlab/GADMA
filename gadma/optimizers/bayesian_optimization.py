@@ -713,8 +713,6 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             total_t_start = time.time()
 
             X, Y = rh2epm.transform(runhistory)
-            # normalization
-            y = normalize(y)
 
             # If all are not finite then we return nothing
             if np.all(~np.isfinite(y)):
@@ -723,6 +721,9 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             # Safeguard, just in case...
             if np.any(~np.isfinite(y)):
                 y[~np.isfinite(y)] = np.max(y[np.isfinite(y)])
+
+            # normalization
+            y = normalize(y)
 
             t_start = time.time()
             model.train(X, y)
