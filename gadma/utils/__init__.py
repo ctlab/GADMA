@@ -15,7 +15,7 @@ from .utils import float_repr, variables_values_repr, bcolors, warning_format  #
 from .utils import module_name_from_path, timeout, get_correct_dtype  # NOQA
 from .utils import get_mu_and_sigma_rassmusen, get_LOO_score, get_one_score  # NOQA
 from .utils import get_loo_scores_for_kernels, get_best_kernel  # NOQA
-from .utils import normalize, transform_smac  # NOQA
+from .utils import get_loo_score_for_optimizer, normalize, transform_smac  # NOQA
 from .distributions import trunc_normal, trunc_lognormal  # NOQA
 from .distributions import trunc_normal_3_sigma_rule, trunc_lognormal_3_sigma_rule  # NOQA
 from .distributions import uniform_generator, trunc_lognormal_sigma_generator  # NOQA

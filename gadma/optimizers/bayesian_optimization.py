@@ -712,7 +712,7 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                  self.run_info.result.n_iter < maxiter):
             total_t_start = time.time()
 
-            X, Y = rh2epm.transform(runhistory)
+            X, y = rh2epm.transform(runhistory)
 
             # If all are not finite then we return nothing
             if np.all(~np.isfinite(y)):

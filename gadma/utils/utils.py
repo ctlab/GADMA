@@ -597,7 +597,9 @@ def get_LOO_score(X_train, Y_train, gp_model,
 def normalize(Y):
     Y = np.array(Y)
     Y -= np.mean(Y)
-    Y /= np.std(Y)
+    sigma = np.std(Y)
+    if sigma > 0:
+        Y /= sigma
     return Y
 
 
@@ -629,23 +631,40 @@ def transform_smac(optimizer, variables, X, Y):
     return X, Y.flatten()
 
 
-def get_loo_scores_for_kernels(optimizer, variables, X, Y,
-                               mode="rassmusen", verbose=False):
+def get_loo_score_for_optimizer(optimizer, variables, X, Y,
+                                mode="rassmusen", verbose=False):
+    """
+    Optimizer has the correct kernel
+    """
     from ..optimizers import GaussianProcess, SMACBayesianOptimizer
     # We transform X and Y if needed
-    Y = normalize(Y)
     X, Y = transform_smac(optimizer, variables, X, Y)
+    Y = normalize(Y)
+    gp = optimizer.get_model(
+        config_space=optimizer.get_config_space(variables)
+    )
+    assert isinstance(gp, GaussianProcess)
+    return get_LOO_score(X_train=X, Y_train=Y, gp_model=gp,
+                         mode=mode, verbose=verbose)
 
+
+def get_loo_scores_for_kernels(optimizer, variables, X, Y,
+                               mode="rassmusen", verbose=False):
     assert hasattr(optimizer, "get_model")
     kernels = ["matern52", "matern32", "rbf", "exponential"]
+
     scores = {}
     opt = copy.copy(optimizer)
     for kernel_name in kernels:
         opt.kernel_name = kernel_name
-        gp = opt.get_model(config_space=opt.get_config_space(variables))
-        assert isinstance(gp, GaussianProcess)
-        score = get_LOO_score(X_train=X, Y_train=Y, gp_model=gp,
-                              mode=mode, verbose=verbose)
+        score = get_loo_score_for_optimizer(
+            optimizer=opt,
+            variables=variables,
+            X=X,
+            Y=Y,
+            mode=mode,
+            verbose=verbose
+        )
         scores[kernel_name] = score
     return scores
 
