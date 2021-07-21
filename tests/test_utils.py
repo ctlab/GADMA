@@ -115,6 +115,8 @@ class TestUtils(unittest.TestCase):
                 os.remove(eval_file)
 
     def test_bo_cross_validation(self):
+        if not smac_available:
+            return
         DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
         data_path = os.path.join(DATA_PATH, "DATA", "sfs", "YRI_CEU.fs")
         data_holder = SFSDataHolder(data_path, projections=[10, 10])
@@ -143,9 +145,9 @@ class TestUtils(unittest.TestCase):
                 variables=model.variables,
                 num_init=10
             )
-            Y = normalize(_Y)
             # will do nothing if it is not smac
-            X, Y = transform_smac(optimizer, model.variables, _X, Y)
+            X, Y = transform_smac(optimizer, model.variables, _X, _Y)
+            Y = normalize(Y)
 
             config_space = optimizer.get_config_space(
                 variables=model.variables
