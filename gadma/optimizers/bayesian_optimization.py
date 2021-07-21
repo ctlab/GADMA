@@ -9,6 +9,7 @@ from .optimizer import ConstrainedOptimizer
 from .global_optimizer import GlobalOptimizer, register_global_optimizer
 from .optimizer_result import OptimizerResult
 from ..utils import ContinuousVariable, WeightedMetaArray, get_correct_dtype
+from ..utils import normalize
 
 from .. import GPyOpt_available, GPyOpt
 from .. import GPy_available, GPy
