@@ -113,3 +113,60 @@ class TestUtils(unittest.TestCase):
         finally:
             if os.path.exists(eval_file):
                 os.remove(eval_file)
+
+    def test_bo_cross_validation(self):
+        if not smac_available:
+            return
+        DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
+        data_path = os.path.join(DATA_PATH, "DATA", "sfs", "YRI_CEU.fs")
+        data_holder = SFSDataHolder(data_path, projections=[10, 10])
+
+        model = StructureDemographicModel(
+            initial_structure=[2, 1],
+            final_structure=[2, 1],
+            has_migs=True,
+            has_sels=False,
+            has_dyns=False,
+            sym_migs=True,
+            frac_split=True,
+        )
+
+        engine = get_engine("moments")
+        engine.data = data_holder
+        engine.model = model
+
+        for opt_name in ["SMAC_BO_optimization", "GPyOpt_Bayesian_optimization"]:
+            optimizer = get_global_optimizer(opt_name)
+            optimizer.acquisition_type = "PI"
+            optimizer.log_transform = True
+
+            _X, _Y = optimizer.initial_design(
+                f=engine.evaluate,
+                variables=model.variables,
+                num_init=10
+            )
+            # will do nothing if it is not smac
+            X, Y = transform_smac(optimizer, model.variables, _X, _Y)
+            Y = normalize(Y)
+
+            config_space = optimizer.get_config_space(
+                variables=model.variables
+            )
+            for kernel_name in ["Matern52", "matern32", "rbf", "Exponential"]:
+                optimizer.kernel_name = kernel_name
+                gp = optimizer.get_model(config_space=config_space)
+                s1 = get_LOO_score(X_train=X, Y_train=Y, gp_model=gp,
+                                   mode="rassmusen", verbose=True, do_optimize=True)
+                s2 = get_LOO_score(X_train=X, Y_train=Y, gp_model=gp,
+                                   mode="gp_train", verbose=True, do_optimize=False)
+                self.assertTrue(np.isclose(s1, s2), msg=f"{s1} != {s2}")
+
+            name1 = get_best_kernel(
+                optimizer=optimizer, variables=model.variables, X=_X, Y=_Y,
+                mode="rassmusen"
+            )
+            name2 = get_best_kernel(
+                optimizer=optimizer, variables=model.variables, X=_X, Y=_Y,
+                mode="gp_train"
+            )
+            #self.assertEqual(name1, name2)

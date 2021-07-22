@@ -3,11 +3,14 @@ import numpy as np
 import copy
 import time
 import random
+from collections import OrderedDict
 
+from .gaussian_process import GPyGaussianProcess, SMACGaussianProcess
 from .optimizer import ConstrainedOptimizer
 from .global_optimizer import GlobalOptimizer, register_global_optimizer
 from .optimizer_result import OptimizerResult
 from ..utils import ContinuousVariable, WeightedMetaArray, get_correct_dtype
+from ..utils import normalize, get_best_kernel
 
 from .. import GPyOpt_available, GPyOpt
 from .. import GPy_available, GPy
@@ -54,11 +57,26 @@ def get_maxeval_for_bo(maxeval, maxiter):
     return min(maxit, maxev)
 
 
+def choose_kernel_if_needed(optimizer, variables, X, Y):
+    # If needed we choose our kernel
+    if optimizer.kernel_name.lower() == "auto":
+        optimizer.kernel_name = get_best_kernel(
+            optimizer=optimizer,
+            variables=variables,
+            X=X,
+            Y=Y,
+            mode="rassmusen"
+        )
+        message = f"Kernel was chosen automatikally: {optimizer.kernel_name}\n"
+        return optimizer.kernel_name, message
+    return optimizer.kernel_name, None
+
+
 class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
     """
     Class for Bayesian optimization
     """
-    def __init__(self, kernel="Matern52", ARD=True, acquisition_type='MPI',
+    def __init__(self, kernel="Auto", ARD=True, acquisition_type='MPI',
                  random_type='resample', custom_rand_gen=None,
                  log_transform=False, maximize=False):
         if not GPy_available or not GPyOpt_available:
@@ -75,13 +93,18 @@ class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         )
 
     def _get_kernel_class(self):
-        return op.attrgetter(self.kernel_name)(GPy.kern.src.stationary)
+        if self.kernel_name.lower() == "auto":
+            return None
+        kernel_name = self.kernel_name.lower().capitalize()
+        if kernel_name == "Rbf":
+            kernel_name = "RBF"
+        return op.attrgetter(kernel_name)(GPy.kern)
 
-    def get_kernel(self, ndim):
-        kernel = self._get_kernel_class()(ndim, ARD=self.ARD)
+    def get_kernel(self, config_space):
+        kernel = self._get_kernel_class()(len(config_space), ARD=self.ARD)
         return kernel
 
-    def get_domain(self, variables):
+    def get_config_space(self, variables):
         gpy_domain = []
         for var in variables:
             gpy_domain.append({'name': var.name,
@@ -180,6 +203,23 @@ class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         info.result.Y_out = info.result.Y
         super(GPyOptBayesianOptimizer, self).save(info, save_file)
 
+    def get_model(self, config_space):
+        from GPyOpt.models import GPModel
+        kernel = self.get_kernel(config_space)
+        gp_model = GPModel(
+            kernel=kernel,
+            noise_var=None,
+            exact_feval=True,
+            optimizer="lbfgs",
+            max_iters=1000,
+            optimize_restarts=5,
+            sparse=False,
+            num_inducing=10,
+            verbose=False,
+            ARD=self.ARD
+        )
+        return GPyGaussianProcess(gp_model)
+
     def _optimize(self, f, variables, X_init, Y_init, maxiter, maxeval,
                   iter_callback):
         from GPyOpt.methods import BayesianOptimization
@@ -187,22 +227,30 @@ class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
         maxeval = get_maxeval_for_bo(maxeval, maxiter)
 
+        kernel_name, message = choose_kernel_if_needed(
+            self, variables, X_init, Y_init
+        )
+        self.kernel_name = kernel_name
+
         ndim = len(variables)
 
         if len(Y_init) > 0:
             x_best = X_init[0]
             y_best = Y_init[0]
-            iter_callback(x_best, y_best, X_init, Y_init)
+            iter_callback(x_best, y_best, X_init, Y_init, message=message)
 
-        kernel = self.get_kernel(ndim)
-        gpy_domain = self.get_domain(variables)
+        gpy_domain = self.get_config_space(variables)
+        kernel = self.get_kernel(config_space=gpy_domain)
 
         Y_init = np.array(Y_init).reshape(len(Y_init), -1)
         X_init = np.array(X_init, dtype=float)
 
+        gpy_model = self.get_model(config_space=gpy_domain).gp_model
+
         bo = BayesianOptimization(f=f,
                                   domain=gpy_domain,
-                                  model_type='GP',
+                                  model_type='user-specified',
+                                  model=gpy_model,
                                   acquisition_type=self.acquisition_type,
                                   kernel=kernel,
                                   X=np.array(X_init),
@@ -269,7 +317,7 @@ class SMACSquirrelOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         )
 
     def get_configs(self, variables):
-        api_config = {}
+        api_config = OrderedDict()
         cs = ConfigurationSpace()
         hp_list = []
         for var in variables:
@@ -391,7 +439,7 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
     Other parameters are standard for :class:`gadma.GlobalOptimizer`.
     """
-    def __init__(self, kernel="Matern52", acquisition_type='MPI',
+    def __init__(self, kernel="Auto", acquisition_type='MPI',
                  random_type='resample', custom_rand_gen=None,
                  log_transform=False, maximize=False):
         if not smac_available:
@@ -433,6 +481,10 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             nu = 2.5
         elif self.kernel_name.lower() == "rbf":
             kernel_cls = RBF
+            nu = None
+        elif self.kernel_name.lower() == "auto":
+            # In that case we should choose kernel from initial design by ll
+            kernel_cls = None
             nu = None
         else:
             raise ValueError(f"Unknown name of kernel: {self.kernel_name}.")
@@ -515,14 +567,15 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
     def get_model(self, config_space):
         kernel = self.get_kernel(config_space)
         types, bounds = get_types(config_space, instance_features=None)
-        return GaussianProcess(
+        smac_gp = GaussianProcess(
             configspace=config_space,
             types=types,
             bounds=bounds,
             seed=self._get_random_state().randint(MAXINT),
             kernel=kernel,
-            normalize_y=True,
+            normalize_y=False,
         )
+        return SMACGaussianProcess(smac_gp)
 
     def get_acquisition_function_class(self):
         if self.acquisition_type.lower() == "logei":
@@ -538,7 +591,8 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                              f"{self.acquisition_type}")
 
     def get_acquisition_function(self, model):
-        return self.get_acquisition_function_class()(model=model)
+        assert isinstance(model, SMACGaussianProcess)
+        return self.get_acquisition_function_class()(model=model.gp_model)
 
     def get_acquisition_function_optimizer(self,
                                            config_space,
@@ -553,7 +607,7 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         )
 
     def get_config_space(self, variables):
-        api_config = {}
+        api_config = OrderedDict()
         cs = ConfigSpace.ConfigurationSpace()
         hp_list = []
         for var in variables:
@@ -644,7 +698,12 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                   iter_callback):
         maxeval = get_maxeval_for_bo(maxeval, maxiter)
 
-        iter_callback(X_init[0], Y_init[0], X_init, Y_init)
+        kernel_name, message = choose_kernel_if_needed(
+            self, variables, X_init, Y_init
+        )
+        self.kernel_name = kernel_name
+
+        iter_callback(X_init[0], Y_init[0], X_init, Y_init, message=message)
 
         # Get config space
         config_space = self.get_config_space(variables)
@@ -682,7 +741,8 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                 for ind, (var, par) in enumerate(zip(variables, x)):
                     if isinstance(variables[ind], ContinuousVariable):
                         par = float(par)
-                    X_init_configs[i][var.name] = par
+                    else:
+                        X_init_configs[i][var.name] = par
 
         # add our initial design to run history
         for x, y in zip(X_init_configs, Y_init):
@@ -704,12 +764,15 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             if np.any(~np.isfinite(y)):
                 y[~np.isfinite(y)] = np.max(y[np.isfinite(y)])
 
+            # normalization
+            y = normalize(y)
+
             t_start = time.time()
             model.train(X, y)
             gp_train_time = time.time() - t_start
 
             t_start = time.time()
-            predictions = model.predict_marginalized_over_instances(X)[0]
+            predictions = model.predict(X)[0]
             best_index = np.argmin(predictions)
             best_observation = y[best_index]
             x_best_array = X[best_index]
@@ -717,7 +780,7 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
             t_start = time.time()
             acq_fun.update(
-                model=model,
+                model=model.gp_model,
                 eta=best_observation,
                 incumbent_array=x_best_array,
                 num_data=len(X),
@@ -808,7 +871,6 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
         return run_info
 
     def _create_gp_model(self, config_space, kernel_name):
-        assert kernel_name in ["Matern52", "RBF"]
         opt = SMACBayesianOptimizer(kernel=kernel_name)
         return opt.get_model(config_space=config_space)
 
@@ -830,13 +892,27 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
                   iter_callback):
         maxeval = get_maxeval_for_bo(maxeval, maxiter)
 
+        # Create help optimizer with usual SMAC to call the same functions
+        help_opt = SMACBayesianOptimizer(kernel="Auto")
+        help_opt_log = SMACBayesianOptimizer(
+            kernel="Auto", acquisition_type="logEI"
+        )
+
+        kernel_name1, message1 = choose_kernel_if_needed(
+            help_opt, variables, X_init, Y_init
+        )
+        help_opt.kernel_name = kernel_name1
+
+        kernel_name2, message2 = choose_kernel_if_needed(
+            help_opt_log, variables, X_init, Y_init
+        )
+        help_opt_log.kernel_name = kernel_name2
+
+        message = f"For usual Y:\n{message1}For log_transformed Y:\n{message2}"
+
         x_best = X_init[0]
         y_best = Y_init[0]
-        iter_callback(x_best, y_best, X_init, Y_init)
-
-        # Create help optimizer with usual SMAC to call the same functions
-        help_opt = SMACBayesianOptimizer()
-        help_opt_log = SMACBayesianOptimizer(acquisition_type="logEI")
+        iter_callback(x_best, y_best, X_init, Y_init, message=message)
 
         # Get config space
         config_space = help_opt.get_config_space(variables)
@@ -862,21 +938,21 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
             )
 
         combinations = []
-        for acq_name in ["PI", "logEI"]:
-            for model_name in ["Matern52", "RBF"]:
-                gp = self._create_gp_model(config_space, model_name)
-                acq = self._create_acquisition_function(
-                    model=gp,
-                    acquisition_name=acq_name
-                )
-                acq_opt = help_opt.get_acquisition_function_optimizer(
-                    config_space,
-                    acq
-                )
-                mark = f"{model_name}_{acq_name}"
-                combinations.append(
-                    (mark, gp, acq, acq_opt, acq2rh2epm[acq_name])
-                )
+        for model_name, acq_name in [(kernel_name1, "PI"),
+                                     (kernel_name2, "logEI")]:
+            gp = self._create_gp_model(config_space, model_name)
+            acq = self._create_acquisition_function(
+                model=gp,
+                acquisition_name=acq_name
+            )
+            acq_opt = help_opt.get_acquisition_function_optimizer(
+                config_space,
+                acq
+            )
+            mark = f"{model_name}_{acq_name}"
+            combinations.append(
+                (mark, gp, acq, acq_opt, acq2rh2epm[acq_name])
+            )
 
         # transform our X_init for valid configurations
         # we create random valid configs and then fill them with our values
@@ -919,13 +995,16 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
                 if np.any(~np.isfinite(y)):
                     y[~np.isfinite(y)] = np.max(y[np.isfinite(y)])
 
+                # normalization
+                y = normalize(y)
+
                 t_start = time.time()
                 gp.train(X, y)
                 gp_train_time += time.time() - t_start
 
                 t_start = time.time()
                 # we do not care what model is used here
-                predictions = gp.predict_marginalized_over_instances(X)[0]
+                predictions = gp.predict(X)[0]
                 best_index = np.argmin(predictions)
                 best_observation = y[best_index]
                 x_best_array = X[best_index]
@@ -933,7 +1012,7 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
 
                 t_start = time.time()
                 acq.update(
-                    model=gp,
+                    model=gp.gp_model,
                     eta=best_observation,
                     incumbent_array=x_best_array,
                     num_data=len(X),
