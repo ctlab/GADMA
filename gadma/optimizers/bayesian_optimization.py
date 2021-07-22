@@ -687,6 +687,14 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                   iter_callback):
         maxeval = get_maxeval_for_bo(maxeval, maxiter)
 
+        # Safeguard, when Y_init is bad
+        Y_init = np.array(Y_init)
+        if np.all(~np.isfinite(Y_init)):
+            iter_callback(X_init[0], Y_init[0], X_init, Y_init)
+            return self.run_info.result
+        if np.any(~np.isfinite(Y_init)):
+            Y_init[~np.isfinite(Y_init)] = np.max(Y_init[np.isfinite(Y_init)])
+
         kernel_name, message = choose_kernel_if_needed(
             self, variables, X_init, Y_init
         )
