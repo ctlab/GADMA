@@ -172,7 +172,7 @@ def generate_code_to_file(x, engine, settings, filename):
     # Generate code
     if isinstance(engine.model, EpochDemographicModel):
         engines = all_available_engines()
-        mu_and_L = engine.model.mu is not None and \
+        mu_and_L = engine.model.mutation_rate is not None and \
             settings.sequence_length is not None
         if not (engine.model.has_anc_size or
                 engine.model.theta0 is not None or mu_and_L):
