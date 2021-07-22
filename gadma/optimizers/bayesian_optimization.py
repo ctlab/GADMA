@@ -1000,9 +1000,6 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
                 if np.any(~np.isfinite(y)):
                     y[~np.isfinite(y)] = np.max(y[np.isfinite(y)])
 
-                # normalization
-                y = normalize(y)
-
                 t_start = time.time()
                 gp.train(X, y)
                 gp_train_time += time.time() - t_start
