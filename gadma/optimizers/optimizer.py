@@ -366,7 +366,7 @@ class Optimizer(object):
         """
         raise NotImplementedError
 
-    def write_report(self, variables, run_info, report_file):
+    def write_report(self, variables, run_info, report_file, message=None):
         """
         Write report about one iteration of global optimization in report file.
         Requires implemented :meth:`_write_report_to_stream` method.
@@ -387,6 +387,8 @@ class Optimizer(object):
             stream = open(report_file, 'a')
         else:
             stream = sys.stdout
+        if message is not None:
+            print(message, file=stream)
         self._write_report_to_stream(variables, run_info, stream)
         if report_file is not None:
             stream.close()
@@ -517,6 +519,10 @@ class Optimizer(object):
                                                        **optimize_kwargs)
 
         def iter_callback(x, y, X_iter, Y_iter, **update_kwargs):
+            message = None
+            if "message" in update_kwargs:
+                message = update_kwargs["message"]
+                del update_kwargs["message"]
             x = apply_transform(vars_in_opt, self.inv_transform, x)
             y = self.sign * y
             X = [apply_transform(vars_in_opt, self.inv_transform, _x)
@@ -538,7 +544,9 @@ class Optimizer(object):
                 **update_kwargs)
             # Write report
             if verbose > 0 and self.run_info.result.n_iter % verbose == 0:
-                self.write_report(variables, self.run_info, report_file)
+                self.write_report(
+                    variables, self.run_info, report_file, message=message
+                )
             # Save run_info
             self.save(self.run_info, save_file)
             # Call callback

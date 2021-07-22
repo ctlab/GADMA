@@ -9,7 +9,7 @@ from .optimizer import ConstrainedOptimizer
 from .global_optimizer import GlobalOptimizer, register_global_optimizer
 from .optimizer_result import OptimizerResult
 from ..utils import ContinuousVariable, WeightedMetaArray, get_correct_dtype
-from ..utils import normalize
+from ..utils import normalize, get_best_kernel
 
 from .. import GPyOpt_available, GPyOpt
 from .. import GPy_available, GPy
@@ -56,11 +56,26 @@ def get_maxeval_for_bo(maxeval, maxiter):
     return min(maxit, maxev)
 
 
+def choose_kernel_if_needed(optimizer, variables, X, Y):
+    # If needed we choose our kernel
+    if optimizer.kernel_name.lower() == "auto":
+        optimizer.kernel_name = get_best_kernel(
+            optimizer=optimizer,
+            variables=variables,
+            X=X,
+            Y=Y,
+            mode="rassmusen"
+        )
+        message = f"Kernel was chosen automatikally: {optimizer.kernel_name}\n"
+        return optimizer.kernel_name, message
+    return optimizer.kernel_name, None
+
+
 class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
     """
     Class for Bayesian optimization
     """
-    def __init__(self, kernel="Matern52", ARD=True, acquisition_type='MPI',
+    def __init__(self, kernel="Auto", ARD=True, acquisition_type='MPI',
                  random_type='resample', custom_rand_gen=None,
                  log_transform=False, maximize=False):
         if not GPy_available or not GPyOpt_available:
@@ -77,6 +92,8 @@ class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         )
 
     def _get_kernel_class(self):
+        if self.kernel_name.lower() == "auto":
+            return None
         kernel_name = self.kernel_name.lower().capitalize()
         if kernel_name == "Rbf":
             kernel_name = "RBF"
@@ -203,12 +220,17 @@ class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
         maxeval = get_maxeval_for_bo(maxeval, maxiter)
 
+        kernel_name, message = choose_kernel_if_needed(
+            self, variables, X_init, Y_init
+        )
+        self.kernel_name = kernel_name
+
         ndim = len(variables)
 
         if len(Y_init) > 0:
             x_best = X_init[0]
             y_best = Y_init[0]
-            iter_callback(x_best, y_best, X_init, Y_init)
+            iter_callback(x_best, y_best, X_init, Y_init, message=message)
 
         gpy_domain = self.get_config_space(variables)
         kernel = self.get_kernel(config_space=gpy_domain)
@@ -405,7 +427,7 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
     """
     Class for Bayesian optimization with SMAC from Black Box challenge.
     """
-    def __init__(self, kernel="Matern52", ARD=True, acquisition_type='MPI',
+    def __init__(self, kernel="Auto", ARD=True, acquisition_type='MPI',
                  random_type='resample', custom_rand_gen=None,
                  log_transform=False, maximize=False):
         if not smac_available:
@@ -448,6 +470,10 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             nu = 2.5
         elif self.kernel_name.lower() == "rbf":
             kernel_cls = RBF
+            nu = None
+        elif self.kernel_name.lower() == "auto":
+            # In that case we should choose kernel from initial design by ll
+            kernel_cls = None
             nu = None
         else:
             raise ValueError(f"Unknown name of kernel: {self.kernel_name}.")
@@ -661,7 +687,12 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                   iter_callback):
         maxeval = get_maxeval_for_bo(maxeval, maxiter)
 
-        iter_callback(X_init[0], Y_init[0], X_init, Y_init)
+        kernel_name, message = choose_kernel_if_needed(
+            self, variables, X_init, Y_init
+        )
+        self.kernel_name = kernel_name
+
+        iter_callback(X_init[0], Y_init[0], X_init, Y_init, message=message)
 
         # Get config space
         config_space = self.get_config_space(variables)

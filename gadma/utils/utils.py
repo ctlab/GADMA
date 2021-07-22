@@ -29,9 +29,11 @@ def logarithm_transform(x):
 
 def _is_valid_for_log(variable):
     from .variables import ContinuousVariable, FractionVariable
+    zero_is_valid = (variable.correct_value(0) or
+                     np.isclose(0, variable.domain[0]))
     return (isinstance(variable, ContinuousVariable) and
             not isinstance(variable, FractionVariable) and
-            not variable.correct_value(0))
+            not zero_is_valid)
 
 
 def apply_transform(variables, transform, x):

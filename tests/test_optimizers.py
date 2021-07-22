@@ -387,8 +387,10 @@ class TestLocalOpt(TestBaseOptClass):
 
         for opt in all_global_optimizers():
             with self.subTest(optimizer=opt.id):
+                if hasattr(opt, "kernel_name"):
+                    opt.kernel_name = "auto"
                 res = opt.optimize(f, dm.variables, num_init=10,
-                                   args=args, maxeval=25, maxiter=5)
+                                   args=args, maxeval=15, maxiter=3)
         for opt_name in ["BFGS", "L-BFGS-B"]: #all_local_optimizers():
             opt = get_local_optimizer(opt_name)
             with self.subTest(local_optimizer=opt.id):
@@ -658,7 +660,7 @@ class TestSMACOptimizations(unittest.TestCase):
             return
 
         opt = get_global_optimizer("SMAC_BO_optimization")
-        for kernel in ["exponential", "matern32", "matern52", "rbf"]:
+        for kernel in ["exponential", "matern32", "matern52", "rbf", "auto"]:
             opt.kernel_name = kernel
         opt._kernel_name = "not_valid"
         self.assertRaises(ValueError, opt._get_kernel_class_and_nu)
