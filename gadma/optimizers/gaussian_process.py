@@ -63,7 +63,7 @@ class GPyGaussianProcess(GaussianProcess):
 class SMACGaussianProcess(GaussianProcess):
     def __init__(self, gp_model):
         super(SMACGaussianProcess, self).__init__(gp_model=gp_model)
-        self.gp_model.normalize_y = False
+        self.gp_model.normalize_y = True
 
     def train(self, X, Y, optimize=True):
         self.gp_model._train(X, Y, do_optimize=optimize)

@@ -575,11 +575,17 @@ def get_LOO_score(X_train, Y_train, gp_model,
             mu, sigma = get_mu_and_sigma_rassmusen(K_inv, Y_train, i)
         else:
             except_i = [el for el in range(len(X_train)) if el != i]
+            if hasattr(gp_model.gp_model, "normalize_y"):
+                normalizaton = gp_model.gp_model.normalize_y
+                gp_model.gp_model.normalize_y = False
             gp_model.train(
                 np.array(X_train)[except_i, :],
                 np.array(Y_train)[except_i],
                 optimize=False
             )
+            if hasattr(gp_model.gp_model, "normalize_y"):
+                gp_model.gp_model.normalize_y = normalizaton
+
             mu, sigma = gp_model.predict([X_train[i]])
             mu, sigma = mu[0], sigma[0]
         if sigma < 0:
