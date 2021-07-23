@@ -22,7 +22,7 @@ Each of the next ``N`` lines contains values for single observed FS; values can 
 Examples
 ^^^^^^^^
 
-SFS of a derived allele for single population (``YRI_DAFpop0.pbs``)
+SFS of a derived allele for single population (``YRI_DAFpop0.obs``)
 
 .. code-block:: none
 
@@ -30,9 +30,10 @@ SFS of a derived allele for single population (``YRI_DAFpop0.pbs``)
         d0_0    d0_1    d0_2    d0_3    d0_4
         21671 25734 10899 6520 2388
 
-SFS of a minor allele for single population (``YRI_MAFpop0.pbs``)
+SFS of a minor allele for single population (``YRI_MAFpop0.obs``)
 
 .. code-block:: none
+
         1 observation
         d0_0    d0_1    d0_2    d0_3    d0_4
         24059 32254 10899 0 0
@@ -53,6 +54,7 @@ Examples
 2 observations of a joint SFS of derived allele for two populations: ``0`` with 4 samples and ``1`` with 5 samples (``MO_jointDAFpop1_0.obs``)
 
 .. code-block:: none
+
         2 observation
         	d0_0	d0_1	d0_2	d0_3	d0_4
         d1_0	0 15463 2757 588 84
@@ -69,7 +71,9 @@ Examples
         d1_5	830 966 949 629 377
 
 SFS of minor allele for two populations with 8 and 4 samples (``jointMAFpop1_0.pbs``)
+
 .. code-block:: none
+
 	1 observation
 		d0_0	d0_1	d0_2	d0_3	d0_4
 	d1_0	0 17097 3650 992 224
@@ -96,6 +100,7 @@ Examples
 Multidimensional SFS of a derived allele for 3 populations having 4 samples each (``DSFS.obs``)
 
 .. code-block:: none
+
 	1 observations. No. of demes and sample sizes are on next line.
 	3	4 4 4
 	0 6749 917 119 10 5414 2100 1001 349 54 917 1163 661 253 92 193 347 429 225 71 26 94 168 179 140 15463 1430 505 140 17 1240 1118 668 277 102 418 632 625 345 159 132 283 405 438 260 12 114 212 335 404 2757 663 329 102 21 606 612 483 230 107 247 467 473 373 180 116 249 372 460 437 10 97 238 377 893 588 227 143 47 1 212 264 210 160 62 136 241 319 261 128 56 159 258 386 369 13 48 192 406 1634 84 65 53 24 2 46 73 104 87 27 37 71 158 158 113 13 66 170 239 280 1 22 105 390 0
@@ -103,6 +108,7 @@ Multidimensional SFS of a derived allele for 3 populations having 4 samples each
 Multidimensional SFS of a minor allele for 3 populations having 4 samples each (``MSFS.obs``)
 
 .. code-block:: none
+
 	1 observations. No. of demes and sample sizes are on next line.
 	3	4 4 4
 	0 7139 1022 141 11 5694 2339 1171 415 67 1030 1321 819 324 64.5 220 434 533 149 0 28 118 110.5 0 0 17097 1836 697 188 30 1609 1504 926 436 79 546 893 944 293 0 194 443 307.5 0 0 13 80.5 0 0 0 3650 1040 567 199 15.5 1043 1072 855 239.5 0 427 840 473 0 0 223 239.5 0 0 0 15.5 0 0 0 0 992 562 355 80.5 0 472 702 307.5 0 0 295 293 0 0 0 79 0 0 0 0 0 0 0 0 0 224 244 110.5 0 0 117 149 0 0 0 64.5 0 0 0 0 0 0 0 0 0 0 0 0 0 0
