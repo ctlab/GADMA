@@ -1,7 +1,7 @@
 Fastsimcoal2 data format (.obs)
 ********************************
 
-SFS holding format native to fastsimcoal2. Can be generated with fastsimcoal2 or easySFS software. See fastsimcoal2 manual for examples.
+SFS holding format native to fastsimcoal2. Can be generated with fastsimcoal2 or easySFS software. See fastsimcoal2 manual for more examples.
 
 General
 -------
