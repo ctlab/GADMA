@@ -683,7 +683,6 @@ def read_fsc_data(module, data_holder):
                     # separeted with spaces, while in fsc examples files
                     # values are separeted with tabs... but Python's split()
                     # works with both
-                    this_one = np.array([float(i) for i in line.split()])
                     total += np.array([float(i)
                                       for i in line.split()]).reshape(ndim)
             if not data_holder.outgroup:
@@ -700,7 +699,6 @@ def read_fsc_data(module, data_holder):
             if n_observations == 1:
                 dim2 = len(lines)
             else:
-
                 for i, line in enumerate(lines[1:]):
                     if line.split()[0].split('_')[1] == '0':
                         dim2 = int(lines[i].split()[0].split('_')[1]) + 1
