@@ -660,11 +660,16 @@ def get_loo_score_for_optimizer(optimizer, variables, X, Y,
                          mode=mode, verbose=verbose)
 
 
-def get_loo_scores_for_kernels(optimizer, variables, X, Y,
-                               mode="rassmusen", verbose=False):
+def get_loo_scores_for_kernels(
+    optimizer,
+    variables,
+    X,
+    Y,
+    kernels=["matern52", "matern32", "rbf", "exponential"]
+    mode="rassmusen",
+    verbose=False
+):
     assert hasattr(optimizer, "get_model")
-    kernels = ["matern52", "matern32", "rbf", "exponential"]
-
     scores = {}
     opt = copy.copy(optimizer)
     for kernel_name in kernels:
@@ -681,13 +686,21 @@ def get_loo_scores_for_kernels(optimizer, variables, X, Y,
     return scores
 
 
-def get_best_kernel(optimizer, variables, X, Y,
-                    mode="rassmusen", verbose=False):
+def get_best_kernel(
+    optimizer,
+    variables,
+    X,
+    Y,
+    kernels=["matern52", "matern32", "rbf", "exponential"]
+    mode="rassmusen",
+    verbose=False
+):
     scores = get_loo_scores_for_kernels(
         optimizer=optimizer,
         variables=variables,
         X=X,
         Y=Y,
+        kernels=kernels,
         mode=mode,
         verbose=verbose,
     )
