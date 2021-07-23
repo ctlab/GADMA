@@ -50,9 +50,6 @@ POPMAP_SIM_YRI_CEU =  os.path.join(DATA_PATH, "vcf",
                                    "out_of_africa_chr22_sim.popmap")
 BAD_POPMAP = os.path.join(DATA_PATH, "vcf", "bad.popmap")
 
-# FSC_DATA_JOINT_DAF = os.path.join(DATA_PATH, 'fsc', 'data_jointDAFpop1_0.obs')
-FSC_DATA_JOINT_MAF = os.path.join(DATA_PATH, 'fsc', 'data_jointMAFpop1_0.obs')
-
 VCF_DATA = os.path.join(DATA_PATH, "vcf", "data.vcf")
 POPMAP = os.path.join(DATA_PATH, "vcf", "popmap")
 
@@ -294,8 +291,8 @@ def test_fsc_reading():
         obs, popmap = (os.path.join(DATA_PATH,'fsc', f'{test.file}.{ext}')
             for ext in ['obs', 'popmap'])
 
-        fsc_data_holder = FSCDataHolder(
-            filename=obs,
+        fsc_data_holder = SFSDataHolder(
+            obs,
             population_labels=test.population_labels,
             projections=test.projections,
             sequence_length=None,
@@ -342,15 +339,15 @@ def test_fsc_reading():
         assert delta <= 4, "difference between SFSs is larger than expected"
 
     # test the case with multiple observations per file
-    multiple = FSCDataHolder(
-        filename=os.path.join(DATA_PATH, 'fsc', 'MO_jointDAFpop1_0.obs'),
+    multiple = SFSDataHolder(
+        os.path.join(DATA_PATH, 'fsc', 'MO_jointDAFpop1_0.obs'),
         population_labels = ('YRI', 'CEU'),
         projections=None,
         sequence_length=None,
         outgroup=True
     )
-    single = FSCDataHolder(
-        filename=os.path.join(DATA_PATH, 'fsc', 'jointDAFpop1_0.obs'),
+    single = SFSDataHolder(
+        os.path.join(DATA_PATH, 'fsc', 'jointDAFpop1_0.obs'),
         population_labels = ('YRI', 'CEU'),
         projections=None,
         sequence_length=None,

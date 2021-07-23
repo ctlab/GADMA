@@ -73,7 +73,7 @@ GPy_available = GPy is not None
 GPyOpt_available = GPyOpt is not None
 bayesmark_available = bayesmark is not None
 
-from .data import DataHolder, SFSDataHolder, VCFDataHolder, FSCDataHolder  # NOQA
+from .data import DataHolder, SFSDataHolder, VCFDataHolder  # NOQA
 from .engines import get_engine, all_engines  # NOQA
 from .engines import all_available_engines, all_simulation_engines  # NOQA
 from .engines import all_drawing_engines  # NOQA
