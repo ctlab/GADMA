@@ -87,7 +87,7 @@ SFS of minor allele for two populations with 8 and 4 samples (``jointMAFpop1_0.p
 	d1_8	0 0 0 0 0
 
 
-Multiple observations (_{M,D}SFS.obs)
+Multiple populations (_{M,D}SFS.obs)
 -------------------------------------
 The second line contains number of demes ``A`` and ``A`` integers - population sizes for each deme.
 
