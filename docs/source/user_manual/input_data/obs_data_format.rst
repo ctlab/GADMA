@@ -23,6 +23,7 @@ Examples
 ^^^^^^^^
 
 SFS of a derived allele for single population (``YRI_DAFpop0.pbs``)
+
 .. code-block:: none
 
         1 observation
@@ -30,6 +31,7 @@ SFS of a derived allele for single population (``YRI_DAFpop0.pbs``)
         21671 25734 10899 6520 2388
 
 SFS of a minor allele for single population (``YRI_MAFpop0.pbs``)
+
 .. code-block:: none
         1 observation
         d0_0    d0_1    d0_2    d0_3    d0_4
