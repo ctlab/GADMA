@@ -749,8 +749,7 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                 for ind, (var, par) in enumerate(zip(variables, x)):
                     if isinstance(variables[ind], ContinuousVariable):
                         par = float(par)
-                    else:
-                        X_init_configs[i][var.name] = par
+                    X_init_configs[i][var.name] = par
 
         # add our initial design to run history
         for x, y in zip(X_init_configs, Y_init):
