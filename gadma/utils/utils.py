@@ -665,7 +665,7 @@ def get_loo_scores_for_kernels(
     variables,
     X,
     Y,
-    kernels=["matern52", "matern32", "rbf", "exponential"]
+    kernels=["matern52", "matern32", "rbf", "exponential"],
     mode="rassmusen",
     verbose=False
 ):
@@ -691,7 +691,7 @@ def get_best_kernel(
     variables,
     X,
     Y,
-    kernels=["matern52", "matern32", "rbf", "exponential"]
+    kernels=["matern52", "matern32", "rbf", "exponential"],
     mode="rassmusen",
     verbose=False
 ):

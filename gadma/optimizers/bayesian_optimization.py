@@ -57,7 +57,7 @@ def get_maxeval_for_bo(maxeval, maxiter):
     return min(maxit, maxev)
 
 
-def choose_kernel_if_needed(optimizer, variables, X, Y):
+def choose_kernel_if_needed(optimizer, variables, X, Y, kernels):
     # If needed we choose our kernel
     if optimizer.kernel_name.lower() == "auto":
         optimizer.kernel_name = get_best_kernel(
@@ -65,7 +65,8 @@ def choose_kernel_if_needed(optimizer, variables, X, Y):
             variables=variables,
             X=X,
             Y=Y,
-            mode="rassmusen"
+            mode="rassmusen",
+            kernels=kernels,
         )
         message = f"Kernel was chosen automatikally: {optimizer.kernel_name}\n"
         return optimizer.kernel_name, message
@@ -127,8 +128,6 @@ class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         y_best = run_info.result.y
         n_iter = run_info.result.n_iter
 
-        if n_iter > 0:
-            print("\n", file=stream)
         print('====================== Iteration %05d ======================' %
               n_iter, file=stream)
 
@@ -172,6 +171,7 @@ class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         print(f'On parameters: {get_x_repr(x_best)}', file=stream)
         print('*************************************************************',
               file=stream)
+        print("\n", file=stream)
 
     def _create_run_info(self):
         """
@@ -835,7 +835,7 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
     Four different combinations are used on each iteration: Matern52 and RBF
     as kernels of GP; and MPI and logEI as acquisition functions.
     """
-    def __init__(self,
+    def __init__(self, kernels_to_choose=["matern52", "rbf"],
                  random_type='resample', custom_rand_gen=None,
                  log_transform=False, maximize=False):
         if not smac_available:
@@ -846,6 +846,7 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
             log_transform=log_transform,
             maximize=maximize
         )
+        self.kernels_to_choose = kernels_to_choose
 
     def _create_run_info(self):
         run_info = super(SMACBOKernelCombination, self)._create_run_info()
@@ -892,6 +893,20 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
             stream=stream
         )
 
+    def do_gp_optimization(self):
+        """
+        We optimize gp:
+        1) every iteration for first 50 iterations
+        2) every 5th iteration for next 50 iterations
+        3) every 10th iteration for the last iterations
+        """
+        n_iter = self.run_info.result.n_iter + 1  # this is correct
+        if n_iter <= 50:
+            return True
+        if n_iter <= 100:
+            return (n_iter % 5) == 0
+        return (n_iter % 10) == 0
+
     def _optimize(self, f, variables, X_init, Y_init, maxiter, maxeval,
                   iter_callback):
         maxeval = get_maxeval_for_bo(maxeval, maxiter)
@@ -903,12 +918,20 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
         )
 
         kernel_name1, message1 = choose_kernel_if_needed(
-            help_opt, variables, X_init, Y_init
+            optimizer=help_opt,
+            variables=variables,
+            X=X_init,
+            Y=Y_init,
+            kernels=self.kernels_to_choose
         )
         help_opt.kernel_name = kernel_name1
 
         kernel_name2, message2 = choose_kernel_if_needed(
-            help_opt_log, variables, X_init, Y_init
+            optimizer=help_opt_log,
+            variables=variables,
+            X=X_init,
+            Y=Y_init,
+            kernels=self.kernels_to_choose
         )
         help_opt_log.kernel_name = kernel_name2
 
@@ -976,6 +999,9 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
         while self.run_info.result.n_eval < maxeval or \
                 (maxiter is not None and
                  self.run_info.result.n_iter * 4 < maxiter):
+            do_gp_optim = self.do_gp_optimization()
+            message = f"GP was optimized: {do_gp_optim}"
+
             total_t_start = time.time()
 
             gp_train_time = 0
@@ -1000,7 +1026,7 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
                     y[~np.isfinite(y)] = np.max(y[np.isfinite(y)])
 
                 t_start = time.time()
-                gp.train(X, y)
+                gp.train(X, y, optimize=do_gp_optim)
                 gp_train_time += time.time() - t_start
 
                 t_start = time.time()
@@ -1058,7 +1084,8 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
                              "gp_predict_time": gp_predict_time,
                              "acq_opt_time": acq_opt_time,
                              "eval_time": eval_time,
-                             "iter_time": total_iter_time}
+                             "iter_time": total_iter_time,
+                             "message": message}
             iter_callback(x_best, y_best, iter_X, iter_y, **update_kwargs)
 
         return self.run_info.result
