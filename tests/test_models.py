@@ -571,6 +571,10 @@ class TestModels(unittest.TestCase):
         self.assertEqual(Exp(a), Exp(a))
         self.assertNotEqual(Exp(b), Exp(a))
 
+        self.assertNotEqual(Log(b), Exp(b))
+        self.assertNotEqual(Log(b), Multiplication(a, b))
+        self.assertEqual(Exp(Multiplication(a, b)), Exp(Multiplication(b, a)))
+
     def test_operation_creation(self):
         self.test_creation_exp()
         self.test_creation_log()
@@ -681,4 +685,4 @@ class TestModels(unittest.TestCase):
 
     def test_translation_from_epoch_to_coalescent(self):
         em = EpochDemographicModel()
-        cm = em.translate_to(CoalescentDemographicModel)
+        # cm = em.translate_to(CoalescentDemographicModel)

@@ -1,7 +1,7 @@
 from ..utils import Variable, TimeVariable, DemographicVariable
 from ..utils import PopulationSizeVariable, VariablePool, variables_values_repr
 from . import Model, Epoch, Split
-from .variables_combinations import operation_creation, Addition
+from .variables_combinations import operation_creation, Addition, BinaryOperation
 import copy
 import numpy as np
 
@@ -41,6 +41,14 @@ class DemographicModel(Model):
         self.has_anc_size = has_anc_size
         self.fixed_vars = {}
         self.linear_constrain = linear_constrain
+
+    @staticmethod
+    def get_value_from_var2value(var2value, entity):
+        if isinstance(entity, Variable):
+            return var2value[entity]
+        if isinstance(entity, BinaryOperation):
+            return entity.get_value(var2value)
+        return entity
 
     def add_variable(self, variable):
         """
@@ -256,7 +264,7 @@ class EpochDemographicModel(DemographicModel):
         new_epoch = Epoch(time_arg, sizes, size_args, mig_args,
                           dyn_args, sel_args, dom_args)
         self.events.append(new_epoch)
-        self.add_variable(new_epoch)
+        self.add_variables(new_epoch.variables)
 
     def add_split(self, pop_to_div, size_args):
         """
@@ -433,7 +441,8 @@ class EpochDemographicModel(DemographicModel):
         if isinstance(model, CoalescentDemographicModel):
             if values is None:
                 raise ValueError(
-                    f"Cannot translate to CoalescentDemographicModel without values"
+                    f"Cannot translate to CoalescentDemographicModel"
+                    f" without values"
                 )
             model.translate_to(cls, values)
         raise ValueError(
@@ -452,7 +461,8 @@ class EpochDemographicModel(DemographicModel):
         from .coalescent_demographic_model import CoalescentDemographicModel
         if issubclass(ModelClass, CoalescentDemographicModel):
             model = CoalescentDemographicModel(
-                mu=self.mu,
+                mutation_rate=self.mutation_rate,
+                recombination_rate=self.recombination_rate,
                 gen_time=self.gen_time,
                 theta0=self.theta0,
                 linear_constrain=self.linear_constrain
@@ -460,7 +470,6 @@ class EpochDemographicModel(DemographicModel):
             current_time = self.get_summary_duration()
             current_sizes = [self.Nanc_size]
             current_dyn = ["Sud"]
-            # (a + b) * c и c * a + c * b
             for event in self.events:
                 if isinstance(event, Epoch):
                     for i in range(len(current_sizes)):
@@ -472,9 +481,10 @@ class EpochDemographicModel(DemographicModel):
                     #                                         dyn=current_dyn[i])
 
                     pass
-                # elif isinstance(event, Split):
-                #   model.move_lineages(pop_from=event.n_pop,
-                #                      pop=event.pop_to_div)
+                elif isinstance(event, Split):
+                    pass
+                    #model.move_lineages(pop_from=event.n_pop,
+                     #                   pop=event.pop_to_div)
             return model
         raise ValueError(
             f"Cannot translate to {ModelClass}"

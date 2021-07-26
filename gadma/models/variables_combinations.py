@@ -1,5 +1,4 @@
 import math
-from abc import ABC
 
 import numpy as np
 
@@ -42,7 +41,8 @@ class UnaryOperation(Operation):
     def __eq__(self, other):
         if not isinstance(other, UnaryOperation):
             return False
-        return self.operation_str() == other.operation_str() and self.arg == other.arg
+        return self.operation_str() == other.operation_str() \
+            and self.arg == other.arg
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -110,7 +110,8 @@ class BinaryOperation(Operation):
         return self.operation_str() == other.operation_str() and (
                 self.arg1 == other.arg1 and self.arg2 == other.arg2
                 or
-                self.is_commutative() and self.arg1 == other.arg2 and self.arg2 == other.arg1
+                self.is_commutative() and
+                self.arg1 == other.arg2 and self.arg2 == other.arg1
         )
 
     def __ne__(self, other):
@@ -319,7 +320,6 @@ def operation_creation(operation, arg1, arg2=None):
     else:
         if issubclass(operation, UnaryOperation):
             return operation.operation(arg1)
-
         return operation.operation(arg1, arg2)
 
 

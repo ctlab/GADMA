@@ -4,7 +4,7 @@ from .variables_combinations import BinaryOperation, \
     Multiplication, \
     operation_creation, \
     Exp
-from ..utils import Variable
+
 from .event import SetSize, MoveLineages, Leaf
 from . import DemographicModel, EpochDemographicModel
 import numpy as np
@@ -29,37 +29,30 @@ class CoalescentDemographicModel(DemographicModel):
     """
 
     def __init__(self,
-                 mu=None,
                  gen_time=None,
-                 rec_rate=None,
+                 mutation_rate=None,
+                 recombination_rate=None,
                  theta0=None,
                  linear_constrain=None):
         self.events = list()
-        self.rec_rate = rec_rate
+        self.rec_rate = recombination_rate
         self.gen_time = gen_time
 
         super(CoalescentDemographicModel, self).__init__(
             gen_time=gen_time,
             theta0=theta0,
-            mu=mu,
+            mutation_rate=mutation_rate,
+            recombination_rate=recombination_rate,
             linear_constrain=linear_constrain
         )
 
     @classmethod
-    def create_from(cls, model):
+    def create_from(cls, model, values):
         if isinstance(model, EpochDemographicModel):
-            model.translate_to(cls)
+            model.translate_to(cls, values)
         raise ValueError(
             f"Cannot translate to {model.__class__}"
         )
-
-    @staticmethod
-    def get_value_from_var2value(var2value, entity):
-        if isinstance(entity, Variable):
-            return var2value[entity]
-        if isinstance(entity, BinaryOperation):
-            return entity.get_value(var2value)
-        return entity
 
     @property
     def has_anc_size(self):
@@ -285,7 +278,8 @@ class CoalescentDemographicModel(DemographicModel):
             epoch_model = EpochDemographicModel(
                 gen_time=self.gen_time,
                 theta0=self.theta0,
-                mu=self.mu,
+                mutation_rate=self.mutation_rate,
+                recombination_rate=self.recombination_rate,
                 linear_constrain=self.linear_constrain
             )
 
