@@ -20,8 +20,17 @@ Suppose that we have SNP data for two populations. Data is in dadi's SNP file fo
 
    $ gadma -i snp_data.txt -o gadma_output
 
-
 Example 3
+----------
+
+Assume we have VCF file. It is possible to read SFS data directly from it. `Some rules are applied to the VCF format for successful reading <input_data/vcf_data_format.rst>`__. VCF file should be set along with :ref:`popmap_file` that describes how samples map to the populations:
+
+.. code-block:: console
+
+   $ gadma -i vcf_data.vcf,popmap_file -o gadma_output
+
+
+Example 4
 -----------
 
 We did not specify AFS size or labels for populations, they are taken automatically from the input file. We can see a parameter file of our run in the ``gadma_output/param_file``.
@@ -70,7 +79,7 @@ To run GADMA we need to specify the ``-p/--params`` command-line option in the c
 
    $ gadma -i snp_data.txt -o gadma_output -p params_file
 
-Example 4
+Example 5
 -----------
 
 Consider some AFS file ``fs_data.fs``. There is a spectrum for three populations: YRI, CEU, CHB. However, the axes are mixed up: CHB, YRI, CEU. To run GADMA we should reorder them from most ancient to most recent:
@@ -94,7 +103,7 @@ Also we can put information about input file and output directory to our paramet
 .. code-block:: none
 
    # param_file
-   Input file : fs_data.fs
+   Input data : fs_data.fs
    Output directory : gadma_output
    Population labels : YRI, CEU, CHB
    Initial structure : 2,1,1
@@ -106,7 +115,7 @@ Now we can run GADMA in the following way:
    $ gadma -p params
 
 
-Example 5
+Example 6
 ------------
 
 We have our GADMA launch interrupted for some reasons. We want to resume it:
@@ -118,7 +127,7 @@ We have our GADMA launch interrupted for some reasons. We want to resume it:
 The directory ``gadma_output`` is the output directory of the previous run. We can find the resumed run in ``gadma_output_resumed``
 
 
-Example 6
+Example 7
 -------------
 
 Our launch was finished, and we used ``dadi`` with a default grid size which GADMA determines automatically if it is not specified by the user. We found out that it would be better to find some models using greater number of grid points in dadi scheme, but we want to take final models from the previous run:
@@ -154,7 +163,7 @@ And run GADMA in the following way:
    $ gadma -p params
 
 
-Example 7
+Example 8
 -----------
 
 We can add a custom model using a parameter ``Custom filename`` in the parameter file:
@@ -193,7 +202,7 @@ In addition, we can easily specify values for lower and upper bounds through a p
    Lower bounds : 1e-2, 1e-2, 1e-2, 0, 0, 0
    Upper bounds : 100, 100, 100, 10, 3, 3
 
-Example 8
+Example 9
 ------------
 
 Also, we can get the values of lower/upper bounds, both, or none of them in the parameter file automatically. For this, each identifier in the parameter file must be declared through a parameter ``Parameter identifiers``. Below is an identifier list:

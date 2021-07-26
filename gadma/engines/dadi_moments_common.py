@@ -1,15 +1,19 @@
 from . import Engine
 from ..models import DemographicModel, StructureDemographicModel,\
                      CustomDemographicModel
-from ..utils import DiscreteVariable, cache_func
-from .. import SFSDataHolder
+from ..utils import DiscreteVariable, cache_func, bcolors
+from .. import SFSDataHolder, VCFDataHolder
 from .. import dadi_available, moments_available
 from ..code_generator import id2printfunc
+from ..data.data_utils import get_defaults_from_vcf_format, ploidy_from_vcf
+from ..data.data_utils import check_population_labels_vcf,\
+                              check_projections_vcf
 
 import warnings
 import os
 import numpy as np
 from functools import wraps
+from collections import defaultdict
 
 
 class DadiOrMomentsEngine(Engine):
@@ -22,30 +26,34 @@ class DadiOrMomentsEngine(Engine):
     base_module = None  #:
     supported_models = [DemographicModel, StructureDemographicModel,
                         CustomDemographicModel]  #:
-    supported_data = [SFSDataHolder]  #:
+    supported_data = [VCFDataHolder, SFSDataHolder]  #:
     inner_data_type = None  # base_module.Spectrum  #:
+    can_evaluate = True
+    can_draw = False  # dadi cannot
+    can_simulate = True
 
     @classmethod
-    def read_data(cls, data_holder):
+    def _read_data(cls, data_holder):
         """
         Reads SFS data from `data_holder`.
 
-        Could read two types of data:
+        Could read three types of data:
 
             * :py:mod:`dadi` SFS data type
             * :py:mod:`dadi` SNP data type
+            * :py:mod:`fastimcoal2` data (.obs)
 
-        Check :py:mod:`dadi` manual for additional information.
+        Check :py:mod:`dadi` and :py:mod:`fastsimcoal2` manual
+        for additional information.
 
         :param data_holder: holder of the data.
         :type data_holder: :class:`SFSDataHolder`
         """
-        if data_holder.__class__ not in cls.supported_data:
-            raise ValueError(f"Data class {data_holder.__class__.__name__}"
-                             f" is not supported by {cls.id} engine.\nThe "
-                             f"supported classes are: {cls.supported_data}"
-                             f" and {cls.inner_data_type}")
-        data = read_dadi_data(cls.base_module, data_holder)
+        if isinstance(data_holder, SFSDataHolder):
+            data = read_sfs_data(cls.base_module, data_holder)
+        else:
+            assert isinstance(data_holder, VCFDataHolder)
+            data = read_vcf_data(cls.base_module, data_holder)
         return data
 
     @property
@@ -129,18 +137,18 @@ class DadiOrMomentsEngine(Engine):
     def get_N_ancestral_from_theta(self, theta):
         if self.model.theta0 is not None:
             theta0 = self.model.theta0
-        elif (self.model.mu is not None and self.data_holder is not None and
+        elif (self.model.mutation_rate is not None and
+                self.data_holder is not None and
                 self.data_holder.sequence_length is not None):
-            theta0 = 4 * self.model.mu * self.data_holder.sequence_length
+            theta0 = 4 * self.model.mutation_rate *\
+                     self.data_holder.sequence_length
         else:
             return None
         return theta / theta0
 
     def get_N_ancestral(self, values, grid_sizes):
         if self.model.has_anc_size:
-            var2value = self.model.var2value(values)
-            return self.model.get_value_from_var2value(var2value,
-                                                       self.model.Nanc_size)
+            return super(DadiOrMomentsEngine, self).get_N_ancestral(values)
         theta = self.get_theta(values, grid_sizes)
         return self.get_N_ancestral_from_theta(theta)
 
@@ -218,7 +226,7 @@ class DadiOrMomentsEngine(Engine):
             theta = self._get_theta_from_sfs(values_gen, model_sfs)
         ll_model = self.base_module.Inference.ll(theta * model_sfs, self.data)
         # Save simulated data
-        key = self._get_key(values_gen, grid_sizes)
+        key = self._get_key(values, grid_sizes)
         self.saved_add_info[key] = theta
         return ll_model
 
@@ -286,6 +294,8 @@ class DadiOrMomentsEngine(Engine):
             raise AttributeError("Engine was initialized with inner "
                                  "data. Need gadma.DataHolder for "
                                  "generation of code.")
+        if filename is not None and not filename.endswith("py"):
+            filename = filename + ".py"
         return id2printfunc[self.id](self, values,
                                      grid_sizes, filename, nanc, gen_time,
                                      gen_time_units)
@@ -384,7 +394,13 @@ def _get_default_from_snp_format(filename):
         appr_size = np.zeros(n_pop, dtype=int)
         for line in f:
             info = line.split()
-            if info[1][1].lower() not in ['a', 't', 'c', 'g']:
+            nucleotides = ['a', 't', 'c', 'g']
+            assert len(info[0]) % 2 == 1
+            assert len(info[1]) % 2 == 1
+            info_0_char = info[0][len(info[0]) // 2].lower()
+            info_1_char = info[1][len(info[1]) // 2].lower()
+            if (info_0_char not in nucleotides or
+                    info_1_char not in nucleotides):
                 has_outgroup = False
             for num in range(n_pop):
                 cur_size = int(info[3 + num]) + int(info[4 + n_pop + num])
@@ -401,7 +417,7 @@ def _change_outgroup(sfs, new_outgroup):
     if new_outgroup is not None:
         if new_outgroup and sfs.folded:
             raise ValueError("Data does not have outgroup.")
-        if not new_outgroup:
+        if not new_outgroup and not sfs.folded:
             sfs = sfs.fold()
     return sfs
 
@@ -459,15 +475,105 @@ def _read_data_snp_type(module, data_holder):
     return sfs
 
 
-def read_dadi_data(module, data_holder):
+def _read_fsc_data(module, data_holder):
     """
-    Read file in one of dadi's formats.
+    Reads file in .obs fastsimcoal2 format and returns dadi's Spectrum object.
+
+    :param module: dadi or moments module (or analogue)
+    :param data_holder: object holding the data.
+    :type  data_holder: gadma.data.SFSDataHolder
+
+    :returns: data
+    :rtype: (str, :class:`dadi.Spectrum`)
+    """
+
+    mask = None
+
+    with open(data_holder.filename, 'r') as f:
+        n_observations = int(next(f).split()[0])
+        if n_observations > 1:
+            warnings.warn("Multiple observations are found in "
+                          f"{data_holder.filename}. Calculating mean SFS")
+
+        if 'DSFS' in data_holder.filename or 'MSFS' in data_holder.filename:
+            # determine dimensionality
+            ndim = [int(i) + 1 for i in next(f).strip().split('\t')[1].split()]
+            total = np.zeros(ndim)
+            for line in f:
+                if not line.isspace():
+                    # in files generated by easySFS numeric values are
+                    # separeted with spaces, while in fsc examples files
+                    # values are separeted with tabs... but Python's split()
+                    # works with both
+                    total += np.array([float(i)
+                                      for i in line.split()]).reshape(ndim)
+            if not data_holder.outgroup:
+                # in files generated by easySFS and in example files from
+                # fastsimcoal manual enries in folded SFS are masked with zeros
+                mask = np.where(total == 0, True, False)
+
+        elif 'joint' in data_holder.filename:
+            # skip header & determine dimensionality for pop1
+            dim1 = len(next(f).split('\t')) - 1
+
+            # determine dimensionality for pop2
+            lines = f.readlines()
+            if n_observations == 1:
+                dim2 = len(lines)
+            else:
+                for i, line in enumerate(lines[1:]):
+                    if line.split()[0].split('_')[1] == '0':
+                        dim2 = int(lines[i].split()[0].split('_')[1]) + 1
+                        break
+
+            total = np.zeros((dim1, dim2))
+            for k in range(n_observations):
+                observation = lines[k * dim2:(k+1) * dim2]
+                observation = [line.strip().split('\t')[1].split() for line
+                               in observation]
+                for i in range(dim2):
+                    for j in range(dim1):
+                        observation[i][j] = float(observation[i][j])
+                total += np.array(observation).T
+
+            # construct triangular mask manually if reading unfolded SFS
+            if not data_holder.outgroup:
+                mask = np.arange(dim1 * dim2).reshape((dim1, dim2))
+                # elements mask[i, j] where i + j >= dim1 + 2 are masked
+                mask = np.where(mask // dim2 + mask % dim2 >= dim1 + 2,
+                                True, False)
+        else:
+            # skip header & determine dimensionality
+            ndim = len(next(f).split('\t'))
+            total = np.zeros(ndim)
+            for line in f:
+                if not line.isspace():
+                    total += np.array([float(i) for i in line.strip().split()])
+
+            if not data_holder.outgroup:
+                mask = np.arange(ndim)
+                mask = np.where(mask > ndim / 2, True, False)
+
+    data = module.Spectrum(total / n_observations,
+                           pop_ids=data_holder.population_labels,
+                           data_folded=not data_holder.outgroup,
+                           mask=mask)
+    if data_holder.projections:
+        data = data.project(data_holder.projections)
+
+    assert data.S() > 0, "Result SFS built from FSC file is zero matrix."
+    return data
+
+
+def read_sfs_data(module, data_holder):
+    """
+    Reads file in one of dadi's or fastsimcoal2 formats.
 
     :param module: dadi or moments module (or analogue)
     :param data_holder: object holding the data.
     :type  data_holder: gadma.data.DataHolder
 
-    :returns: ('sfs'/'snp', data)
+    :returns: data
     :rtype: (str, :class:`dadi.Spectrum`)
     """
     _, ext = os.path.splitext(data_holder.filename)
@@ -475,6 +581,9 @@ def read_dadi_data(module, data_holder):
         return _read_data_sfs_type(module, data_holder)
     elif ext == '.txt':
         return _read_data_snp_type(module, data_holder)
+    elif ext == '.obs':
+        # fastsimcoal2 data
+        return _read_fsc_data(module, data_holder)
     else:
         # Try to guess
         try:
@@ -487,3 +596,151 @@ def read_dadi_data(module, data_holder):
                                   " (.sfs) or .txt. Attempts to guess the"
                                   " file type failed.\nTo get the error "
                                   "message, please, change the extension.")
+
+
+def read_vcf_data(module, data_holder):
+    """
+    Reads file in vcf format and returns dadi's Spectrum object.
+
+    :param module: dadi or moments module (or analogue)
+    :param data_holder: object holding the data.
+    :type  data_holder: gadma.data.VCFDataHolder
+
+    :returns: data
+    :rtype: (str, :class:`dadi.Spectrum`)
+    """
+    assert data_holder.bed_file is None, f"{module} does not support bed files"
+
+    # Check that we have diploid VCF file
+    ploidy = ploidy_from_vcf(data_holder.filename)
+    assert ploidy == 2, "Only diploid VCF files could be read. "\
+                        f"Ploidy of given file is: {ploidy}"
+    # get our info about maximal everything
+    populations, full_projections = get_defaults_from_vcf_format(
+        vcf_file=data_holder.filename,
+        popmap_file=data_holder.popmap_file,
+        verbose=True
+    )
+    # check our lines
+    filtered_out_lines = []
+    lines_with_no_nucl = []
+    repeated_lines = defaultdict(list)
+    total_snp = 0
+    positions2line_num = {}
+    has_anc_allele = True
+    with open(data_holder.filename) as f:
+        for line_number, line in enumerate(f):
+            if line.startswith("#"):
+                continue
+            total_snp += 1
+            splitline = line.split()
+            # check filter
+            if splitline[6].upper() not in [".", "PASS"]:
+                filtered_out_lines.append(line_number)
+                continue
+            # check nucleotides
+            nucleotides = ["A", "T", "G", "C"]
+            if (splitline[3].upper() not in nucleotides or
+                    splitline[4].upper() not in nucleotides):
+                lines_with_no_nucl.append(line_number)
+            pos = (splitline[0], splitline[1])
+            if pos in positions2line_num:
+                repeated_lines[positions2line_num[pos]].append(line_number)
+            else:
+                positions2line_num[pos] = line_number
+            # check outgroup info in INFO column
+            got_AA = False
+            for info in splitline[7].split(";"):
+                if info.strip().startswith("AA="):
+                    got_AA = True
+                    break
+            if not got_AA:
+                has_anc_allele = False
+    if len(filtered_out_lines) > 0:
+        if len(filtered_out_lines) == total_snp:
+            raise ValueError("All lines in VCF file will be filtered out "
+                             "during reading. Please set FILTER column to "
+                             "`.` or `PASS` value.")
+        lines = ""
+        if len(filtered_out_lines) < 10:
+            lines = f" Numbers of lines: {filtered_out_lines}"
+        warnings.warn(f"Several lines ({len(filtered_out_lines)} / {total_snp}"
+                      ") of VCF file will be ignored as FILTER "
+                      f"column is not equal to `.` or `PASS`.{lines}")
+    if len(lines_with_no_nucl) > 0:
+        if len(lines_with_no_nucl) + len(filtered_out_lines) == total_snp:
+            raise ValueError("Reference and alternative alleles in VCF file "
+                             "are not nucleotides.")
+        lines = ""
+        if len(lines_with_no_nucl) < 10:
+            lines = f" Numbers of lines: {lines_with_no_nucl}"
+        warnings.warn(f"Several lines ({len(lines_with_no_nucl)} / {total_snp}"
+                      ") has not-nucleotide reference or alternative allele. "
+                      f"Those variants will be ignored during reading.{lines}")
+    missed_repeats = 0
+    if len(repeated_lines) > 0:
+        for line_number in repeated_lines:
+            missed_repeats += len(repeated_lines[line_number])
+        warnings.warn(f"{bcolors.FAIL}BE CAREFUL several positions are "
+                      "repeated in VCF file.For each repeat the last "
+                      "information from file will be taken. Number of lost "
+                      f"lines: {missed_repeats}{bcolors.ENDC}")
+    # number of snp's that will be read
+    snp_num = total_snp
+    snp_num -= len(filtered_out_lines)
+    snp_num -= len(lines_with_no_nucl)
+    snp_num -= missed_repeats
+
+    # Check outgroup
+    outgroup = data_holder.outgroup
+    if data_holder.outgroup is None:
+        outgroup = has_anc_allele
+    if data_holder.outgroup is True and not has_anc_allele:
+        raise ValueError("Information about ancestral allele was missed "
+                         "somewhere in VCF file. Check that INFO column "
+                         "contains AA field. It is not possible to create "
+                         "SFS with outgroup without this information.")
+    # Build sfs
+    dd = module.Misc.make_data_dict_vcf(
+        vcf_filename=data_holder.filename,
+        popinfo_filename=data_holder.popmap_file,
+        filter=True,
+        flanking_info=[None, None],
+    )
+    if len(dd) == 0:
+        raise ValueError("None SNP's were read from the VCF file "
+                         f"{data_holder.filename}. Please check the VCF "
+                         "format of the file. E.g. variants should be from "
+                         "list of nucleotides (A, T, C, G) or lines should be "
+                         "marked as PASS or as '.' in FILTER column.")
+    assert len(dd) == snp_num, "Something went wrong and lower number of "\
+                               f"SNP's were read ({len(dd)} / {snp_num})."
+    # populations labels
+    population_labels = data_holder.population_labels
+    if data_holder.population_labels is None:
+        population_labels = list(populations)
+    # Check that we have correct pop labels
+    check_population_labels_vcf(
+        pop_labels=population_labels,
+        full_pop_labels=populations
+    )
+    # and get our projections
+    projections = data_holder.projections
+    pop2proj = dict(zip(populations, full_projections))
+    projected_full_proj = [pop2proj[pop] for pop in population_labels]
+    if data_holder.projections is None:
+        projections = projected_full_proj
+    # check projections are less than in vcf file
+    check_projections_vcf(
+        projections=projections,
+        full_projections=projected_full_proj,
+        pop_labels=population_labels
+    )
+    data = module.Spectrum.from_data_dict(
+        data_dict=dd,
+        pop_ids=population_labels,
+        projections=projections,
+        polarized=outgroup,
+    )
+    assert data.S() > 0, "Result SFS built from VCF file is zero matrix."
+    return data

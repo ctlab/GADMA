@@ -1,5 +1,5 @@
 import numpy as np
-from ..utils import Variable, VariablePool, float_repr
+from ..utils import Variable, VariablePool, float_repr, DiscreteVariable
 
 
 class Model(object):
@@ -39,12 +39,19 @@ class Model(object):
                                  " added to the model as variables.")
         else:
             if isinstance(variable, Model):
-                for var in variable.variables:
+                for var in variable._variables:
                     self.add_variable(var)
+                for var in variable.fixed_values:
+                    self.fixed_values[var] = self.fixed_values[var]
+                    self.is_fixed[self._variables.index(var)] = True
                 return
             if variable not in self._variables:
                 self._variables.append(variable)
                 self.is_fixed.append(False)
+                if (isinstance(variable, DiscreteVariable) and
+                        len(variable.domain) == 1):
+                    self.fixed_values[variable] = variable.domain[0]
+                    self.is_fixed[self._variables.index(variable)] = True
 
     def add_variables(self, variables):
         """
@@ -155,6 +162,8 @@ class Model(object):
         if isinstance(arg, Variable):
             val = self.var2value(values)[arg]
             arg_repr = f"{arg.name}"
+            if arg in self.fixed_values:
+                arg_repr = ""
         elif isinstance(arg, BinaryOperation):
             var2value = self.var2value(values)
             val = arg.get_value([var2value[var] for var in arg.variables])

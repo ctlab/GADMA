@@ -2,15 +2,16 @@ import os
 import ruamel.yaml
 import numpy as np
 from . import settings
-from ..data import SFSDataHolder
+from ..data import SFSDataHolder, VCFDataHolder
 from ..engines import get_engine, MomentsEngine
+from ..engines import all_engines, all_drawing_engines
 from ..models import StructureDemographicModel, CustomDemographicModel
 from ..optimizers import get_local_optimizer, get_global_optimizer
 from ..optimizers import LinearConstrain
 from ..utils import check_dir_existence, check_file_existence, abspath,\
     module_name_from_path, custom_generator
 from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable,\
-    ContinuousVariable
+    ContinuousVariable, DynamicVariable
 import warnings
 import importlib.util
 import sys
@@ -29,9 +30,11 @@ CHANGED_IDENTIFIERS = {"use_moments_or_dadi": "engine",
                        "stop_iteration": "stuck_generation_number",
                        "name_of_local_optimization": "local_optimizer",
                        "lower_bounds": "lower_bound",
-                       "upper_bounds": "upper_bound"}
+                       "upper_bounds": "upper_bound",
+                       "multinom": "ancestral_size_as_parameter",
+                       "input_file": "input_data"}
 
-DEPRECATED_IDENTIFIERS = ["multinom", "flush_delay",
+DEPRECATED_IDENTIFIERS = ["flush_delay",
                           "epsilon_for_ls", "gtol", "maxiter",
                           "multinomial_mutation", "multinomial_crossing",
                           "distribution", "std",
@@ -101,7 +104,8 @@ class SettingsStorage(object):
                        'upper_bound_of_first_split',
                        'upper_bound_of_second_split',
                        'const_for_mutation_strength',
-                       'const_for_mutation_rate', 'mutation_rate',
+                       'const_for_mutation_rate',
+                       'mutation_rate', 'recombination_rate',
                        'time_to_print_summary']
         probs_attrs = ['mean_mutation_strength', 'mean_mutation_rate',
                        'p_mutation', 'p_crossover', 'p_random']
@@ -110,7 +114,8 @@ class SettingsStorage(object):
                       'relative_parameters', 'only_models',
                       'symmetric_migrations', 'split_fractions',
                       'generate_x_transform', 'global_log_transform',
-                      'local_log_transform']
+                      'local_log_transform', 'inbreeding',
+                      'ancestral_size_as_parameter']
         int_list_attrs = ['pts', 'initial_structure', 'final_structure',
                           'projections']
         float_list_attrs = ['lower_bound', 'upper_bound']
@@ -120,18 +125,21 @@ class SettingsStorage(object):
         special_attrs = ['const_for_mutation_strength',
                          'const_for_mutation_rate', 'vmin',
                          'parameter_identifiers', 'migration_masks']
-        exist_file_attrs = ['input_file', 'custom_filename']
+        exist_file_attrs = ['input_data', 'custom_filename']
         exist_dir_attrs = ['directory_with_bootstrap', 'resume_from']
         empty_dir_attrs = ['output_directory']
         data_holder_attrs = ['projections', 'outgroup',
                              'population_labels', 'sequence_length']
-        bounds_attrs = ['min_n', 'max_n', 'min_t', 'max_t', 'min_m', 'max_m']
+        bounds_attrs = ['min_n', 'max_n', 'min_t', 'max_t', 'min_m', 'max_m',
+                        'dynamics']
         bounds_lists = ['lower_bound', 'upper_bound', 'parameter_identifiers']
         missed_attrs = ['engine', 'global_optimizer', 'local_optimizer',
                         '_inner_data', '_bootstrap_data', 'X_init', 'Y_init',
                         'model_func', 'get_engine_args', 'data_holder',
                         'units_of_time_in_drawing', 'resume_from_settings',
-                        'dadi_available', 'moments_available']
+                        'dadi_available', 'moments_available',
+                        'model_plot_engine', 'sfs_plot_engine',
+                        'kernel', 'acquisition_function']
 
         super_hasattr = True
         setattr_at_the_end = True
@@ -291,15 +299,20 @@ class SettingsStorage(object):
         if (value is not None and
                 (name in empty_dir_attrs or
                  name in exist_file_attrs or name in exist_dir_attrs)):
-            value = abspath(value)
+            abspath_value = []
+            for val in value.split(","):
+                abspath_value.append(abspath(val.strip()))
+            value = ", ".join(abspath_value)
         # 1.8 Check for empty dirs (NOW IN ARG_PARSER)
         # if name in empty_dir_attrs and value is not None:
         #     value = ensure_dir_existence(value, check_emptiness=True)
         # 1.9 Check file and dir exist
         if name in exist_file_attrs and value is not None:
-            if not check_file_existence(value):
-                raise ValueError(f"Setting {name} should be set to existed "
-                                 f"file. File {value} does not exist.")
+            for val in value.split(","):
+                val = val.strip()
+                if not check_file_existence(val):
+                    raise ValueError(f"Setting {name} should be set to existed"
+                                     f" file. File {val} does not exist.")
         if name in exist_dir_attrs and value is not None:
             if not check_dir_existence(value):
                 raise ValueError(f"Setting {name} should be set to existed "
@@ -325,17 +338,47 @@ class SettingsStorage(object):
                                  "and 2.")
         # 2.2 Vmin
         if name == 'vmin':
-            if value <= 0:
+            if value is not None and value <= 0:
                 raise ValueError(f"Setting {name} ({value}) must be > 0.")
 
         # 3. Now change some other attributes according to new one
         # 3.1 If new_file we need to create data_holder
-        if name == 'input_file':
-            data_holder = SFSDataHolder(value,
-                                        self.projections,
-                                        self.outgroup,
-                                        self.population_labels,
-                                        self.sequence_length)
+        if name == 'input_data':
+            files = [name.strip() for name in value.split(",")]
+            if len(files) > 1:
+                n_files = len(files)
+                assert n_files <= 2, "Input file could take maximum two "\
+                                     "files: SFS file or VCF file with popmap"\
+                                     f" file. Got {n_files} files: {files}"
+                extension = files[0][files[0].rfind('.'):].lower()
+                assert extension == ".vcf", "Input file was set to two files "\
+                                            "but the first one does not have "\
+                                            f".vcf extension: {value}"
+            else:
+                files = [value]
+                extension = value[value.rfind('.'):].lower()
+            if extension == ".vcf":
+                assert len(files) != 1, "VCF file should be set together with"\
+                                        " popmap file. Popmap file is missed,"\
+                                        " please set it as: vcf_file, "\
+                                        "popmap_file"
+                vcf_file, popmap_file = files
+                data_holder = VCFDataHolder(
+                    vcf_file=vcf_file,
+                    popmap_file=popmap_file,
+                    projections=self.projections,
+                    outgroup=self.outgroup,
+                    population_labels=self.population_labels,
+                    sequence_length=self.sequence_length,
+                )
+            else:
+                data_holder = SFSDataHolder(
+                    sfs_file=value,
+                    projections=self.projections,
+                    outgroup=self.outgroup,
+                    population_labels=self.population_labels,
+                    sequence_length=self.sequence_length
+                )
             super(SettingsStorage, self).__setattr__('data_holder',
                                                      data_holder)
         # 3.2 If we change some attributes of data_holder we need update it
@@ -344,7 +387,22 @@ class SettingsStorage(object):
                 setattr(self.data_holder, name, value)
         # 3.3 For engine we need check it exists
         elif name == 'engine':
-            get_engine(value)
+            engine = get_engine(value)
+            if not engine.can_evaluate:
+                raise ValueError(f"Engine {value} cannot evaluate "
+                                 f"log-likelihood. Available engines are: "
+                                 f"{[engine.id in all_engines()]}")
+        elif name == 'model_plot_engine':
+            engine = get_engine(value)
+            if not engine.can_draw:
+                raise ValueError(f"Engine {value} cannot draw model plots. "
+                                 f"Available engines are: "
+                                 f"{[engine.id in all_drawing_engines()]}")
+        elif name == 'sfs_plot_engine' and value is not None:
+            engine = get_engine(value)
+            if not hasattr(engine, "draw_sfs_plots"):
+                raise ValueError(f"Engine {value} cannot draw sfs plots. "
+                                 f"Available engines are: dadi, moments")
         # 3.4 For local and global optimizer we need check existence
         elif name == 'global_optimizer':
             get_global_optimizer(value)
@@ -444,6 +502,13 @@ class SettingsStorage(object):
                 cls = TimeVariable
             elif name.endswith('m'):
                 cls = MigrationVariable
+            elif name == "dynamics":
+                cls = DynamicVariable
+                if isinstance(value, str):
+                    value = [x.strip() for x in value.split(",")]
+                    for i in range(len(value)):
+                        if value[i].isdigit():
+                            value[i] = int(value[i])
             else:
                 raise AttributeError("Check for supported variables")
 
@@ -452,8 +517,17 @@ class SettingsStorage(object):
                 cls.default_domain = [value, cls.default_domain[1]]
             elif name.startswith('max'):
                 cls.default_domain = [cls.default_domain[0], value]
+            else:
+                assert name == "dynamics"
+                for dyn in value:
+                    if dyn not in cls._help_dict:
+                        raise ValueError(f"Unknown dynamic {value}. Available "
+                                         "dynamics are: "
+                                         f"{list(cls._help_dict.keys())}")
+                cls.default_domain = value
 
-            domain_changed = np.any(old_domain != np.array(cls.default_domain))
+            domain_changed = len(old_domain) != len(cls.default_domain) or\
+                np.any(old_domain != np.array(cls.default_domain))
             if domain_changed:
                 if name.endswith('n'):
                     warnings.warn(f"Domain of PopulationSizeVariable changed "
@@ -463,6 +537,9 @@ class SettingsStorage(object):
                                   f"{cls.default_domain}")
                 if name.endswith('m'):
                     warnings.warn(f"Domain of MigrationVariable changed to "
+                                  f"{cls.default_domain}")
+                if name == "dynamics":
+                    warnings.warn(f"Domain of DynamicVariable changed to "
                                   f"{cls.default_domain}")
 
         # 3.10 If we set custom filename with model we should check it is
@@ -679,7 +756,7 @@ class SettingsStorage(object):
         data = engine.read_data(self.data_holder)
         self.projections = data.sample_sizes
         self.population_labels = data.pop_ids
-        self.outgroup = not data.folded  # TODO check function
+        self.outgroup = not data.folded
         if self.pts is None:
             max_n = max(self.projections)
             x = (int((max_n - 1) / 10) + 1) * 10
@@ -772,9 +849,14 @@ class SettingsStorage(object):
             if attr_name in CHANGED_IDENTIFIERS:
                 attr_name = CHANGED_IDENTIFIERS[attr_name]
                 setting_name = attr_name.replace("_", " ").capitalize()
+                msg = ""
+                if attr_name == "ancestral_size_as_parameter":
+                    msg = f" (`{setting_name}` = not `key`)"
+                    assert isinstance(loaded_dict[key], bool)
+                    loaded_dict[key] = not loaded_dict[key]
                 warnings.warn(f"Setting `{key}` is renamed in 2 version of "
                               f"GADMA to `{setting_name}`. It is successfully"
-                              " read.")
+                              f" read.{msg}")
 
             if not hasattr(self, attr_name):
                 if attr_name in DEPRECATED_IDENTIFIERS:
@@ -900,6 +982,10 @@ class SettingsStorage(object):
             opt.const_mut_strength = self.const_for_mutation_strength
             opt.eps = self.eps
             opt.n_stuck_gen = self.stuck_generation_number
+        if (self.global_optimizer.lower() == "gpyopt_bayesian_optimization" or
+                self.global_optimizer.lower() == "smac_bo_optimization"):
+            opt.kernel_name = self.kernel
+            opt.acquisition_type = self.acquisition_function
 
         opt.log_transform = self.global_log_transform
         opt.maximize = True
@@ -966,8 +1052,10 @@ class SettingsStorage(object):
             engine_id = self.engine
         if engine_id == 'dadi':
             args = (self.pts,)
-        else:
+        elif engine_id == "moments":
             args = (MomentsEngine.default_dt_fac,)
+        else:
+            args = ()
         return args
 
     def get_linear_constrain_for_model(self, model):
@@ -998,6 +1086,7 @@ class SettingsStorage(object):
         gen_time = self.time_for_generation
         theta0 = self.theta0
         mut_rate = self.mutation_rate
+        rec_rate = self.recombination_rate
         if (self.initial_structure is not None and
                 self.final_structure is not None):
             create_migs = not self.no_migrations
@@ -1006,17 +1095,23 @@ class SettingsStorage(object):
             sym_migs = self.symmetric_migrations
             split_f = self.split_fractions
             migs_mask = self.migration_masks
-            model = StructureDemographicModel(self.initial_structure,
-                                              self.final_structure,
-                                              has_migs=create_migs,
-                                              has_sels=create_sels,
-                                              has_dyns=create_dyns,
-                                              sym_migs=sym_migs,
-                                              frac_split=split_f,
-                                              migs_mask=migs_mask,
-                                              gen_time=gen_time,
-                                              theta0=theta0,
-                                              mu=mut_rate)
+            create_inbr = self.inbreeding
+            model = StructureDemographicModel(
+                self.initial_structure,
+                self.final_structure,
+                has_anc_size=self.ancestral_size_as_parameter,
+                has_migs=create_migs,
+                has_sels=create_sels,
+                has_dyns=create_dyns,
+                sym_migs=sym_migs,
+                frac_split=split_f,
+                migs_mask=migs_mask,
+                gen_time=gen_time,
+                theta0=theta0,
+                mutation_rate=mut_rate,
+                recombination_rate=rec_rate,
+                has_inbr=create_inbr
+            )
             constrain = self.get_linear_constrain_for_model(model)
             model.linear_constrain = constrain
             return model
@@ -1031,7 +1126,8 @@ class SettingsStorage(object):
                                               variables=variables,
                                               gen_time=gen_time,
                                               theta0=theta0,
-                                              mu=mut_rate)
+                                              mutation_rate=mut_rate,
+                                              recombination_rate=rec_rate)
             module_name = module_name_from_path(self.custom_filename)
             spec = importlib.util.spec_from_file_location(module_name,
                                                           self.custom_filename)
@@ -1041,14 +1137,16 @@ class SettingsStorage(object):
                                           variables=variables,
                                           gen_time=gen_time,
                                           theta0=theta0,
-                                          mu=mut_rate)
+                                          mutation_rate=mut_rate,
+                                          recombination_rate=rec_rate)
 
         elif self.custom_filename is None and self.model_func is not None:
             return CustomDemographicModel(function=self.model_func,
                                           variables=None,
                                           gen_time=gen_time,
                                           theta0=theta0,
-                                          mu=mut_rate)
+                                          mutation_rate=mut_rate,
+                                          recombination_rate=rec_rate)
         else:
             raise ValueError("Some settings are missed so no model is "
                              "generated")

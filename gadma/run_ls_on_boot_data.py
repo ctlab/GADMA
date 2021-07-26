@@ -38,8 +38,7 @@ def run_job(params):
 
     f = engine.evaluate
 
-    optimizer = gadma.get_local_optimizer(settings.local_optimizer)
-    optimizer.maximize = True
+    optimizer = settings.get_local_optimizer()
 
     result = optimizer.optimize(f, custom_model.variables, x0=p0,
                                 args=grid_size, **kwargs)

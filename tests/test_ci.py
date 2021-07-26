@@ -84,5 +84,7 @@ class TestConfidenceIntervals(unittest.TestCase):
         sys.argv = ["gadma-get_confidence_intervals", not_existed_file]
         self.assertRaises(ValueError, gadma.get_confidence_intervals.main)
         bad_extension = not_valid_file
+        open(bad_extension, 'a').close()
         sys.argv = ["gadma-get_confidence_intervals", bad_extension]
         self.assertRaises(ValueError, gadma.get_confidence_intervals.main)
+        os.remove(bad_extension)

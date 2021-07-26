@@ -1,6 +1,20 @@
 Output
 ========
 
+.. admonition:: Related options
+
+    * **Base options**:
+
+      * ``Output directory`` - path to empty or not existing dicrectory.
+
+    * **Additional options**:
+
+      * ``Silence`` disables output to stdout (`False`).
+      * ``Time to print summary`` - frequency of summary printing to stdout (`1 min`).
+      * ``Verbose`` - verbosity of optimizations output (`1`).
+      * ``Relative parameters`` shows model parameters in genetic units (`False`).
+      * ``Print models code every N iteration`` enables code generation in subruns (`0`).
+
 .. note::
     Output has changed a little in GADMA version 2.
 
@@ -54,6 +68,7 @@ Model representation
 Every model is printed as a line of parameters, each parameter followed by its name in brackets.
 
 Consider designations:
+
     * ``T`` - time,
     * ``s`` - percent of split,
     * ``nu`` - size of population number \py{i},
@@ -68,41 +83,31 @@ Dynamic of population size change has string representations:
 
 Model is printed as sequence of time intervals and splits that are represented in the following way:
 
-    * First period (``NAnc`` --- size of ancestry population):
+    * First period (``NAnc`` --- size of ancestry population)::
 
-        .. code-block:: none
-    
-            [Nanc = VALUE]
+      [Nanc = VALUE]
 
     * Split:
 
-        - If split divide population ``X``  of size ``NU`` into two new populations by fraction ``s1``:
+      * If split divide population ``X``  of size ``NU`` into two new populations by fraction ``s1``::
 
-            .. code-block:: none
-        
-                [ X pop split   VALUE (s1) [VALUE_1(s1*NU), VALUE_2((1-s1)*NU)]
+        [ X pop split   VALUE (s1) [VALUE_1(s1*NU), VALUE_2((1-s1)*NU)]
             
-        - If split divide population ``X``  of size ``NU`` into two new populations without any fraction parameter (Setting ``Split fractions`` is ``False``):
+      * If split divide population ``X``  of size ``NU`` into two new populations without any fraction parameter (Setting ``Split fractions`` is ``False``)::
 
-            .. code-block:: none
-        
-                [ X pop split [VALUE_1(NU_1), VALUE_2(NU_2)]
+        [ X pop split [VALUE_1(NU_1), VALUE_2(NU_2)]
 
     * Usual time period:
 
-        - If there is one population:
+      * If there is one population::
         
-            .. code-block:: none
-        
-                [ T_VALUE (t), [ NU_VALUE (nu) ], [D_VALUE (dyn)] ]
+        [ T_VALUE (t), [ NU_VALUE (nu) ], [D_VALUE (dyn)] ]
 
-        - If there are two populations:
+      * If there are two populations::
         
-            .. code-block:: none
-        
-                [ T_VALUE (t), [ NU1_VALUE (nu1), NU2_VALUE (nu2)], [[None, M12_VALUE(m12)], [M21_VALUE (m21), None]], [D1_VALUE (dyn1), D2_VALUE (dyn2)]]}
+        [ T_VALUE (t), [ NU1_VALUE (nu1), NU2_VALUE (nu2)], [[None, M12_VALUE(m12)], [M21_VALUE (m21), None]], [D1_VALUE (dyn1), D2_VALUE (dyn2)]]}
 
-        - And similar if there are three populations.
+      * And similar if there are three populations.
 
     * At the end ``theta`` could be printed if length of sequence and mutation rate are known.
 
@@ -124,6 +129,12 @@ Also at the end of the string that corresponds to the model there is an informat
     [Nanc =  7214] [ [ 7211(t1), [17004(nu11)], [Lin(dyn11)] ],	[ 1 pop split   99.85% (s1) [16978.164(s1*nu11), 25.836((1-s1)*nu11)] ],	[ 1365(t2), [12570(nu21), 8922(nu22)], [[0, 6.45e-05(m2_12)], [5.98e-05(m2_21), 0]], [Sud(dyn21), Lin(dyn22)] ] ]	(theta =  2739.60)
 
 
+.. _Relative parameters:
+
+Relative parameters
+-------------------------------
+
+Sometimes it is more important to see parameters scaled to ``Nref = N_A``. To tell GADMA to show models with scaled parameters, option ``Relative parameters`` should be set to ``True``. By default, it is ``False``. It is convenient when ``Theta0`` is unknown.
 
 Output directory content
 --------------------------
@@ -145,8 +156,10 @@ When all GA are executed, the codes are saved in the root directory.
         		- code
         			- dadi
         			- moments
+                    - demes
         		final_best_logLL_model_dadi_code.py
         		final_best_logLL_model_moments_code.py
+               	final_best_logLL_model_demes_code.yml
         		final_best_logLL_model.png
         		eval_file
         		save_file
@@ -156,8 +169,10 @@ When all GA are executed, the codes are saved in the root directory.
         		- code
         			- dadi
         			- moments
+                    - demes
         		final_best_logLL_model_dadi_code.py
         		final_best_logLL_model_moments_code.py
+               	final_best_logLL_model_demes_code.yml
         		final_best_logLL_model.png
         		eval_file
         		save_file
@@ -167,14 +182,20 @@ When all GA are executed, the codes are saved in the root directory.
         	best_logLL_model.png
         	best_logLL_model_dadi_code.py
         	best_logLL_model_moments_code.py
+        	best_logLL_model_demes_code.yml
         	best_aic_model.png
         	best_aic_model_dadi_code.py
         	best_aic_model_moments_code.py
+        	best_aic_model_demes_code.yml
+
+.. _generated_code:
 
 Generated code of models
 --------------------------
 
-By default, GADMA generates Python code only for final models both for ``dadi`` and ``moments``. However, it can do it every ``N`` iteration of the genetic algorithm. In this case option ``Print models code every N iteration`` should be set in the parameter file. GADMA saves files with code to the ``output_dir/<GA_number>/python_code`` directory. Both ``dadi`` and ``moments`` code are generated and saved in different folders there. 
+By default, GADMA generates Python code only for final models for all available engines (``dadi``, ``moments``). However, it can do it every ``N`` iteration of the genetic algorithm. In this case option ``Print models code every N iteration`` should be set in the parameter file. GADMA saves files with code to the ``output_dir/<GA_number>/python_code`` directory. Both ``dadi`` and ``moments`` code are generated and saved in different folders there.
+
+Moreover GADMA generates file with demographic history for ``demes`` library. In contrast to python code of ``dadi`` and ``moments`` it is file in YAML format.
 
 Each code contains the function of the model, which takes values of the parameters as input, and strings that load observed AFS, simulates expected AFS from the model's function and calculates log-likelihood of two AFS'. The calculated log-likelihood is printed to stdout. For the ``moments`` code, a picture is also drawn.
 
@@ -231,4 +252,5 @@ All code can be run in the following way:
                                  gen_time=None,
                                  gen_time_units='generations',
                                  reverse_timeline=True)
+
 

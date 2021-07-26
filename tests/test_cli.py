@@ -15,6 +15,7 @@ from gadma.utils import PopulationSizeVariable, MigrationVariable,\
     TimeVariable, FractionVariable, ContinuousVariable
 from gadma import *
 from gadma.core.shared_dict import SharedDict, SharedDictForCoreRun
+from gadma.cli import arg_parser
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
 
@@ -52,7 +53,7 @@ class TestCLI(unittest.TestCase):
             settings, _ = get_settings_test()
 
             self.assertEqual(settings.output_directory, abspath('some_dir'))
-            self.assertEqual(settings.input_file, abspath(another_fs))
+            self.assertEqual(settings.input_data, abspath(another_fs))
             sys.argv = ['gadma', '-p', param_file, '-o', 'tests',
                         '-i', another_fs]
             self.assertRaises(RuntimeError, get_settings_test)
@@ -213,6 +214,19 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(settings.fractions[1], settings.p_mutation)
         settings.fractions = [0.2, 0.3, 0.3]
 
+        # input data as vcf file
+        vcf_file = os.path.join(DATA_PATH, "DATA", "vcf",
+                                "out_of_africa_chr22_sim.vcf")
+        popmap_file = os.path.join(DATA_PATH, "DATA", "vcf",
+                                   "out_of_africa_chr22_sim.popmap")
+        settings.input_data = f"{vcf_file}, {popmap_file}"
+        self.assertRaises(AssertionError, settings.__setattr__,
+                          'input_data', f"{vcf_file}, {popmap_file}, {vcf_file}")
+        self.assertRaises(AssertionError, settings.__setattr__,
+                          'input_data', f"{popmap_file}, {vcf_file}")
+        self.assertRaises(AssertionError, settings.__setattr__,
+                          'input_data', f"{vcf_file}")
+
         # number of populations and length of lists in other order
         settings = SettingsStorage()
         settings.number_of_populations = 2
@@ -253,7 +267,7 @@ class TestCLI(unittest.TestCase):
         self.assertRaises(ValueError, settings.__setattr__,
                           'directory_with_bootstrap', 'not_existing_dir')
         self.assertRaises(ValueError, settings.__setattr__,
-                          'input_file', 'not_existing_file')
+                          'input_data', 'not_existing_file')
         settings.parameter_identifiers = 'nu, t, f, s'
         self.assertRaises(ValueError, settings.__setattr__,
                           'parameter_identifiers', 'e, t')
@@ -277,6 +291,15 @@ class TestCLI(unittest.TestCase):
             settings.engine = engine.id
             settings.pts = [20, 30, 40]
             settings.engine = engine.id
+        # check errors for bad engines
+        settings.model_plot_engine = "demes"
+        settings.sfs_plot_engine = "dadi"
+        self.assertRaises(ValueError,  settings.__setattr__,
+                          'engine', 'demes')
+        self.assertRaises(ValueError,  settings.__setattr__,
+                          'sfs_plot_engine', 'demes')
+        self.assertRaises(ValueError,  settings.__setattr__,
+                          'model_plot_engine', 'dadi')
 
         # units of time in drawing
         settings.time_for_generation = 1.0
@@ -307,6 +330,15 @@ class TestCLI(unittest.TestCase):
         settings.min_m = 0
         settings.max_m = 5
         self.assertTrue(list(MigrationVariable('v').domain) == [0, 5])
+
+        no_lin = [0, "Exp"]
+        settings.dynamics = no_lin
+        self.assertRaises(ValueError, settings.__setattr__,
+                          'dynamics', [-1, "Exp"])
+        self.assertEqual(list(DynamicVariable('d').domain), no_lin)
+        settings.dynamics = "0, Exp"
+        self.assertEqual(list(DynamicVariable('d').domain), no_lin)
+        settings.dynamics = ["Sud", "Lin", "Exp"]
 
         # get model with parameters when there is no pop ids
         settings = SettingsStorage()
@@ -405,7 +437,7 @@ class TestCLI(unittest.TestCase):
         params_file = 'params'
         for opts in options:
             with open(params_file, 'w') as fl:
-                fl.write("Input file: YRI_CEU.fs\n"
+                fl.write("Input data: YRI_CEU.fs\n"
                          f"Output directory: {output}\n")
                 for line in opts:
                     fl.write(line)
@@ -421,6 +453,74 @@ class TestCLI(unittest.TestCase):
                 gadma.PIL_available = True
                 gadma.moments_available = True
 
+    def test_inbreeding_run(self):
+        params_file = 'params'
+        outdir = os.path.join(DATA_PATH, 'inbreed_dir')
+        data_file = os.path.join(DATA_PATH, "DATA", "sfs", "small_1pop.fs")
+        if check_dir_existence(outdir):
+            shutil.rmtree(outdir)
+        with open(params_file, 'w') as fl:
+            fl.write(f"Input data: {data_file}\n"
+                     "Projections: 6\n"
+                     "Linked SNP's: False\n"
+                     "Silence: True\n"
+                     "global_maxiter: 2\n"
+                     "local_maxiter: 1\n"
+                     "inbreeding: True\n"
+                     "engine: dadi")
+        sys.argv = ['gadma', '-p', params_file, '--output', outdir]
+        try:
+            gadma.matplotlib_available = False
+            core.main()
+        finally:
+            if check_dir_existence(outdir):
+                shutil.rmtree(outdir)
+            os.remove(params_file)
+            gadma.matplotlib_available = True
+
+    def test_inbreeding_fail_run_with_moments(self):
+        params_file = 'params'
+        outdir = os.path.join(DATA_PATH, 'out_dir')
+        if check_dir_existence(outdir):
+            shutil.rmtree(outdir)
+        with open(params_file, 'w') as fl:
+            fl.write("Input data: tests/test_data/DATA/sfs/YRI_CEU.fs\n"
+                     "Linked SNP's: False\n"
+                     "Silence: True\n"
+                     "global_maxiter: 2\n"
+                     "local_maxiter: 1\n"
+                     "inbreeding: True\n"
+                     "engine: moments")
+        sys.argv = ['gadma', '-p', params_file,
+                    '--output', outdir]
+        try:
+            gadma.matplotlib_available = False
+            self.assertRaises(ValueError, core.main)
+        finally:
+            if check_dir_existence(outdir):
+                shutil.rmtree(outdir)
+            os.remove(params_file)
+
+    def test_reading_from_cmd_and_checks(self):
+        # checks recombination rate warning
+        params_file = 'params'
+        outdir = os.path.join(DATA_PATH, 'out_dir')
+        if check_dir_existence(outdir):
+            shutil.rmtree(outdir)
+        with open(params_file, 'w') as fl:
+            fl.write("Input data: tests/test_data/DATA/sfs/YRI_CEU.fs\n"
+                     "Silence: True\n"
+                     "engine: moments\n"
+                     "recombination rate: 1e-8")
+        sys.argv = ['gadma', '-p', params_file,
+                    '--output', outdir]
+        try:
+            settings_storage, args = arg_parser.get_settings()
+        finally:
+            if check_dir_existence(outdir):
+                shutil.rmtree(outdir)
+            os.remove(params_file)
+        
     def test_logging_to_stderr(self):
         saved_stderr = sys.stderr
         sys.stderr = StdAndFileLogger("log_file", stderr=True)

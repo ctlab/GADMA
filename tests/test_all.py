@@ -65,7 +65,7 @@ class TestRestore(unittest.TestCase):
         self.assertTrue(res1.y >= res2.y, msg=f"{res1}\n{res2}")
 
     def test_bo_restore(self):
-        bo = get_global_optimizer("Bayesian_optimization")
+        bo = get_global_optimizer("GPyOpt_Bayesian_optimization")
         f = rosenbrock
         variables = [ContinuousVariable('var1', [1e-15, 10]),
                      ContinuousVariable('var2', [1e-15, 2])]

@@ -21,8 +21,8 @@ class MomentsEngine(DadiOrMomentsEngine):
     if moments_available:
         import moments as base_module
         inner_data_type = base_module.Spectrum  #:
-    supported_data = [SFSDataHolder]  # , VCFDataHolder]  #:
     default_dt_fac = 0.01  #:
+    can_draw = True
 
     @staticmethod
     def _get_kwargs(event, var2value):
@@ -191,7 +191,13 @@ class MomentsEngine(DadiOrMomentsEngine):
         # List of sample sizes to be passed as the ns argument to model_func.
         # Actual values do not matter, as long as the dimensionality is
         # correct. So we take small size for fast drawing.
-        ns = [4 for _ in range(len(self.data.sample_sizes))]
+        if self.data_holder is not None:
+            n_pop = len(self.data_holder.projections)
+            pop_labels = self.data_holder.population_labels
+        else:
+            n_pop = len(self.data.sample_sizes)
+            pop_labels = self.data.pop_ids
+        ns = [4 for _ in range(n_pop)]
         plot_mod = moments.ModelPlot.generate_model(self._inner_func,
                                                     values, ns)
         draw_scale = nref is not None
@@ -203,7 +209,7 @@ class MomentsEngine(DadiOrMomentsEngine):
                                      show=show,
                                      fig_title=fig_title,
                                      draw_scale=draw_scale,
-                                     pop_labels=self.data.pop_ids,
+                                     pop_labels=pop_labels,
                                      nref=nref,
                                      gen_time=gen_time,
                                      gen_time_units=gen_time_units,

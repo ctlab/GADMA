@@ -1,8 +1,40 @@
 Changelogs
 ==============
 
-[2.0.0] - 2021-01-27
----------------------
+[2.0.0rc16] - 2021-06-27
+------------------------
+
+1. VCF data format was add as one of input data for GADMA! Now SFS data can be build from VCF and popmap files like:
+
+.. code-block:: none
+
+    # param_file
+    Input data: vcf_file, popmap_file
+
+2. ``Input file`` setting changed to ``Input data`` option.
+
+2.0.0rc15] - 2021-06-13
+------------------------
+
+1. Add Bayesian optimizations to GADMA. There are three versions of it:
+
+  * `GPyOpt_Bayesian_optimization`
+  * `SMAC_squirrel_optimization`
+  * `SMAC_BO_optimization`
+
+2. Add ``demes`` as a new engine for models plotting.
+3. Add ``Inbreeding`` to infer inbreeding coefficients with ``dadi`` engine.
+4. Update interface of ``gadma.optimizers``.
+5. Move ``Multinom`` option from deprecated options to changed. Add ``Ancestral size as parameter`` instead ``Multinom``.
+6. Update docs.
+
+[2.0.0rc13] - 2021-05-21
+-------------------------
+
+Local optimizations got hyperparameters from ``dadi`` and ``moments``. Now they work and are efficient the same way as in those packages.
+
+[2.0.0rc9] - 2021-01-27
+-------------------------
 
 Prerelease of GADMA v2.0.0.
 

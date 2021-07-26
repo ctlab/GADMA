@@ -1,4 +1,6 @@
 import unittest
+import pytest
+
 
 from gadma import *
 from gadma import ContinuousVariable
@@ -37,14 +39,16 @@ class TestModels(unittest.TestCase):
         self.assertRaises(ValueError, m.add_variable, 1.0)
         self.assertRaises(TypeError, m.var2value, set())
 
+        m = DemographicModel()
+        self.assertRaises(NotImplementedError, m._get_Nanc_size, values=[])
+
     def dadi_wrapper(self, func):
         def wrapper(param, ns, pts):
             xx = dadi.Numerics.default_grid(pts)
             phi = dadi.PhiManip.phi_1D(xx)
             phi = func(param, xx, phi)
-            sfs = dadi.Spectrum.from_phi(phi, ns, [xx] * len(ns))
+            sfs = dadi.Spectrum.from_phi(phi, ns, [xx]*len(ns))
             return sfs
-
         return wrapper
 
     def get_variables_for_gut_2009(self):
@@ -68,7 +72,7 @@ class TestModels(unittest.TestCase):
                 spec.loader.exec_module(module)
                 sys.modules['module'] = module
                 func = getattr(module, 'model_func')
-                variables = self.get_variables_for_gut_2009()[:-1]
+                variables = self.get_variables_for_gut_2009()[:-1] 
                 dm = CustomDemographicModel(func, variables)
                 dm.as_custom_string([var.resample() for var in dm.variables])
                 dm.as_custom_string({var.name: var.resample()
@@ -143,6 +147,39 @@ class TestModels(unittest.TestCase):
         self.assertEqual(dm.number_of_populations(), 1)
         dm.as_custom_string(param)
 
+    def test_dadi_1pop_1_with_inbreeding(self):
+        def inner(param, ns, pts):
+            T, nu, sel, F = param
+
+            xx = dadi.Numerics.default_grid(pts)
+            phi = dadi.PhiManip.phi_1D(xx)
+            phi = dadi.Integration.one_pop(phi, xx, T=T, gamma=sel, nu=nu)
+
+            sfs = dadi.Spectrum.from_phi_inbreeding(phi, ns, (xx,), (F,), (2,))
+
+            return sfs
+
+        ns = (20,)
+        pts = [40, 50, 60]
+        param = [1., 0.5, 1.5, 0.5]
+        func_ex = dadi.Numerics.make_extrap_log_func(inner)
+        real = func_ex(param, ns, pts)
+
+        T = TimeVariable('T1')
+        nu = PopulationSizeVariable('nu2')
+        sl = SelectionVariable('sel')
+        F = FractionVariable("F")
+        dm = EpochDemographicModel()
+        dm.add_epoch(T, [nu], sel_args=[sl])
+        dm.add_inbreeding(inbr_args=[F])
+        d = get_engine('dadi')
+        d.set_model(dm)
+        got = d.simulate(param, ns, pts)
+
+        self.assertTrue(np.allclose(got, real))
+        self.assertEqual(dm.number_of_populations(), 1)
+        dm.as_custom_string(param)
+
     @unittest.skipIf(DADI_NOT_AVAILABLE, "Dadi module is not installed")
     def test_dadi_gut_2pop(self):
         """
@@ -176,14 +213,14 @@ class TestModels(unittest.TestCase):
         dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', Dyn])
 
         dic = {'nu1F': 1.880, nu2B: 0.0724, 'nu2F': 1.764, 'm': 0.930,
-               'Tp': 0.363, 'T': 0.112, 'Dyn': 'Exp', 'SudDyn': 'Sud'}
+               'Tp':  0.363, 'T': 0.112, 'Dyn': 'Exp', 'SudDyn': 'Sud'}
 
         data = SFSDataHolder(YRI_CEU_DATA)
         d = DadiEngine(model=dm, data=data)
-        values = dic  # [dic[var.name] for var in dm.variables]
+        values = dic#[dic[var.name] for var in dm.variables]
         ll1 = d.evaluate(values, pts=[40, 50, 60])
         n_par_before = dm.get_number_of_parameters(dic)
-
+        
         dm.fix_variable(Dyn, 'Exp')
         d.model = dm
         ll2 = d.evaluate(dic, pts=[40, 50, 60])
@@ -221,9 +258,9 @@ class TestModels(unittest.TestCase):
         self.assertRaises(ValueError, dm.fix_variable, var, 3)
         self.assertRaises(ValueError, dm.unfix_variable, var)
 
-        #        dm.events[2].set_value(nu2F, 1.0)
-        #        n_par_after = dm.get_number_of_parameters(dic)
-        #        self.assertEqual(n_par_sud_model, n_par_after + 1)
+#        dm.events[2].set_value(nu2F, 1.0)
+#        n_par_after = dm.get_number_of_parameters(dic)
+#        self.assertEqual(n_par_sud_model, n_par_after + 1)
 
         model = Model()
         model.add_variables([nu1F, m, Tp, Dyn,
@@ -245,7 +282,7 @@ class TestModels(unittest.TestCase):
         dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', Dyn])
 
         dic = {'nu1F': 1.880, nu2B: 0.0724, 'f': 0.9, 'nu2F': 1.764,
-               'm': 0.930, 'Tp': 0.363, 'T': 0.112, 'Dyn': 'Exp',
+               'm': 0.930, 'Tp':  0.363, 'T': 0.112, 'Dyn': 'Exp',
                'SudDyn': 'Sud', 's': 0.1, 'dom': 0.5}
 
         data = SFSDataHolder(YRI_CEU_DATA)
@@ -260,6 +297,8 @@ class TestModels(unittest.TestCase):
                 Nanc = engine.get_theta(dic, *args)
                 tr = dm.translate_values("physical", dic, Nanc)
                 _tr = dm.translate_values("genetic", dic, Nanc)
+                dm.Nref = 1
+                dm.translate_values("physical", dic, Nanc, rescale_back=True)
                 dm_copy = copy.deepcopy(dm)
                 # raise error if not demographic parameters
                 # dm_copy.add_variable(ContinuousVariable("some", [-1, 10]))
@@ -269,6 +308,11 @@ class TestModels(unittest.TestCase):
                 dm.as_custom_string(dic)
 
         # test failures
+        # hack
+        phys_var = PopulationSizeVariable("nu", units="physical")
+        super(DemographicModel, dm).add_variable(phys_var)
+        self.assertRaises(ValueError, dm.translate_values, "genetic", dic, Nanc=None)
+        # other stuff
         event = Event()
         x = [var.resample() for var in event.variables]
         self.assertRaises(NotImplementedError, event.as_custom_string, x)
@@ -287,7 +331,7 @@ class TestModels(unittest.TestCase):
         comb.__str__()
 
         binary_classes = [Addition, Subtraction, Multiplication, Division]
-        strings = ['+', '-', '*', '/']
+        strings = ['+', '-', '*', '/'] 
         for op_f, cls, op_str in zip([op.add, op.sub, op.mul, op.truediv],
                                      binary_classes,
                                      strings):
@@ -312,7 +356,7 @@ class TestModels(unittest.TestCase):
                         op_f2 = obj2.operation
                         self.assertEqual(obj.get_value(values),
                                          op_f(values[0], op_f2(values[1],
-                                                               const)))
+                                              const)))
                         obj.string_repr(values)
                         self.assertEqual(obj.name,
                                          f'nu1 {op_str} (f {op_str2} 5)')
@@ -340,6 +384,39 @@ class TestModels(unittest.TestCase):
         yield ("dadi snp file",
                SFSDataHolder(os.path.join(EXAMPLE_FOLDER, 'DATA', 'sfs',
                                           'dadi_snp_file.txt')))
+        yield ("vcf data",
+               VCFDataHolder(
+                    vcf_file=os.path.join(EXAMPLE_FOLDER, "DATA", "vcf", "out_of_africa_chr22_sim.vcf"),
+                    popmap_file=os.path.join(EXAMPLE_FOLDER, "DATA", "vcf", "out_of_africa_chr22_sim_3pop.popmap")
+               ))
+
+    def test_add_split_after_inbreeding(self):
+        nu1 = PopulationSizeVariable('nu1')
+        nu2 = PopulationSizeVariable('nu2')
+        f1 = FractionVariable('f1')
+        Dyn2 = DynamicVariable('SudDyn')
+        Tp = TimeVariable('Tp')
+
+        dm = EpochDemographicModel()
+        dm.add_epoch(Tp, [nu1], dyn_args=[Dyn2])
+        dm.add_inbreeding([f1])
+        with pytest.raises(ValueError):
+            dm.add_split(0, [nu1, nu2])
+
+    def test_add_epoch_after_inbreeding(self):
+        nu1 = PopulationSizeVariable('nu1')
+        nu2 = PopulationSizeVariable('nu2')
+        f1 = FractionVariable('f1')
+        Dyn2 = DynamicVariable('SudDyn')
+        T = TimeVariable('T')
+        m = MigrationVariable('m')
+        Tp = TimeVariable('Tp')
+
+        dm = EpochDemographicModel()
+        dm.add_epoch(Tp, [nu1], dyn_args=[Dyn2])
+        dm.add_inbreeding([f1])
+        with pytest.raises(ValueError):
+            dm.add_epoch(T, [nu1, nu2], [[None, m], [m, None]], ['Sud', 'Exp'])
 
     def test_code_generation(self):
         nu1 = PopulationSizeVariable('nu1')
@@ -353,6 +430,8 @@ class TestModels(unittest.TestCase):
         d2 = DynamicVariable('d2')
         f = FractionVariable('f')
         h = FractionVariable('h')
+        f1 = FractionVariable('f1')
+        f2 = FractionVariable('f2')
         fxnu1 = Multiplication(f, nu1)
         tf = Multiplication(f, t)
         t_copy = copy.deepcopy(t)
@@ -378,7 +457,7 @@ class TestModels(unittest.TestCase):
         model3.add_epoch(t, [nu1])
         model3.add_split(0, [nu1, nu2])
         model3.add_epoch(tf, [nu2, fxnu1], [[0, m], [0, 0]], [d1, d2],
-                         [0, s], [0.1, 0.8])
+                         [0, s],  [0.1, 0.8])
         model3.add_split(1, [nu2, nu1])
         model3.add_epoch(t, [nu1, nu2, nu1], None, [d1, 'Sud', 'Sud'],
                          [s, 0, s], [h, 0.5, 0])
@@ -396,31 +475,42 @@ class TestModels(unittest.TestCase):
         model5 = EpochDemographicModel(Nanc_size=Nanc)
         model5.add_epoch(t, [nu1])
         model5.add_split(0, [nu1, nu2])
-        model5.add_epoch(T3, [Nu2, fxnu1], [[0, m], [0, 0]], [d1, d2])
+        model5.add_epoch(T3, [0.5, fxnu1], [[0, m], [0, 0]], ["Sud", d2])
         model5.add_split(1, [nu2, nu1])
         model5.add_epoch(t, [nu1, nu2, nu1], None, None)
 
-        values = {nu1: 2, nu2: 0.5, nu3: 0.5, t_copy: 0.3, t2: 0.5,
-                  m: 0.1, s: 0.1, d1: 'Exp', d2: 'Lin', f: 0.5, h: 0.3,
+        model6 = EpochDemographicModel(Nanc_size=Nanc)
+        model6.add_epoch(t, [nu1])
+        model6.add_split(0, [nu1, nu2])
+        model6.add_epoch(T3, [Nu2, fxnu1], [[0, m], [0, 0]], [d1, d2])
+        model6.add_split(1, [nu2, nu1])
+        model6.add_epoch(t, [nu1, nu2, nu1], None, None)
+        model6.add_inbreeding([f1, f2, 0.5])
+
+        values = {nu1: 2, nu2: 0.5, nu3: 0.5, t_copy: 0.3,
+                  t2: 0.5, m: 0.1, s: 0.1, d1: 'Exp', d2: 'Lin',
+                  f: 0.5, h: 0.3, f1: 0.1, f2: 0.3,
                   Nanc: 10000, Nu2: 5000, T3: 4000}
 
-        for engine in all_engines():
-            customfile = os.path.join(
-                EXAMPLE_FOLDER, "MODELS",
-                f"demographic_model_{engine.id}_3pops.py")
+        for engine in all_available_engines():
+            models = [model1, model2, model3, model5, model6]
+            if engine.can_evaluate:
+                customfile = os.path.join(
+                    EXAMPLE_FOLDER, "MODELS",
+                    f"demographic_model_{engine.id}_3pops.py")
 
-            spec = importlib.util.spec_from_file_location(
-                f"module_{engine.id}", customfile)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            sys.modules[f'module_{engine.id}'] = module
-            func = module.model_func
-            variables = [nu1, nu2, nu3, m, t, t2]
+                spec = importlib.util.spec_from_file_location(
+                    f"module_{engine.id}", customfile)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                sys.modules[f'module_{engine.id}'] = module
+                func = module.model_func
+                variables = [nu1, nu2, nu3, m, t, t2]
 
-            model4 = CustomDemographicModel(func, variables)
+                model7 = CustomDemographicModel(func, variables)
+                models.append(model7)
 
-            for ind, model in enumerate([model1, model2,
-                                         model3, model4, model5]):
+            for ind, model in enumerate(models):
                 for description, data in self._sfs_datasets():
                     msg = f"for model {ind + 1} and {description} data and " \
                           f"{engine.id} engine"
@@ -430,19 +520,33 @@ class TestModels(unittest.TestCase):
                     else:
                         options = {}
                         args = ()
-                    model.mu = 1e-8
-                    data.sequence_length = 1e10
 
-                    true_ll = engine.set_and_evaluate(values, model,
-                                                      data, options)
-                    cmd = engine.generate_code(values, None, *args)
+                    engine.data = data
+                    engine.model = model
+                    Nanc = None
+                    if engine.id == "demes":
+                        Nanc = 10000
+                        n_pop = len(model.events[-1].size_args)
+                        labels = [f"Pop_{i}" for i in range(n_pop)]
+                        engine.data_holder.population_labels = labels
 
-                    d = {}
-                    exec(cmd, d)
+                    cmd = engine.generate_code(values, None, *args, nanc=Nanc)
 
-                    msg += f": {true_ll} != {d['ll_model']}"
-                    self.assertTrue(np.allclose(true_ll, d['ll_model']),
-                                    msg=msg)
+                    if engine.can_evaluate:
+                        true_ll = engine.evaluate(values, **options)
+                        d = {}
+                        exec(cmd, d)
+
+                        msg += f": {true_ll} != {d['ll_model']}"
+                        self.assertTrue(np.allclose(true_ll, d['ll_model']),
+                                        msg=msg)
+                    if description == "dadi snp file":
+                        engine.data_holder.population_labels = None
+                        self.assertRaises(ValueError, engine.generate_code,
+                                          values, None, *args, nanc=Nanc)
+                    if description == "fs without pop labels":
+                        engine.data_holder.population_labels = None
+                        engine.generate_code(values, None, *args, nanc=Nanc)
 
     def test_operation_eq(self):
         a = PopulationSizeVariable("a")

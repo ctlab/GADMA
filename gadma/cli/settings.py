@@ -4,7 +4,7 @@ from .. import moments_available, dadi_available
 
 # Main options. Output and input.
 output_directory = None
-input_file = None
+input_data = None
 # input_data = None
 # number_of_populations = None
 population_labels = None
@@ -25,11 +25,15 @@ if moments_available:
     engine = 'moments'
 elif dadi_available:
     engine = 'dadi'
+model_plot_engine = "moments"
+sfs_plot_engine = None  # None means the same as engine
 relative_parameters = False
+ancestral_size_as_parameter = False
 no_migrations = False
 symmetric_migrations = False
 split_fractions = True
 migration_masks = None
+inbreeding = False
 
 # Custom model
 custom_filename = None
@@ -69,6 +73,10 @@ const_for_mutation_rate = 1.068062
 stuck_generation_number = 100
 eps = 1e-2
 
+# BO options
+kernel = "Matern52"
+acquisition_function = "EI"
+
 # just for logging evaluations
 # output_log_file = None
 # max_num_of_eval = None # maximum number of logll eval.
@@ -101,6 +109,7 @@ min_t = TimeVariable.default_domain[0]
 max_t = TimeVariable.default_domain[1]
 min_m = MigrationVariable.default_domain[0]
 max_m = MigrationVariable.default_domain[1]
+dynamics = list(DynamicVariable.default_domain)
 
 # Parameters for local search alg
 # ls_verbose = None
@@ -135,6 +144,7 @@ verbose = 1
 X_init = None
 Y_init = None
 mutation_rate = None
+recombination_rate = None
 
 global_maxiter = None
 global_maxeval = None

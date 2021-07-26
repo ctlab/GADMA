@@ -1,7 +1,7 @@
 from .. import matplotlib, Image
 from .. import matplotlib_available, PIL_available, moments_available
 from ..models import EpochDemographicModel, CustomDemographicModel
-from ..engines import all_engines, Engine
+from ..engines import all_available_engines, Engine, get_engine
 from ..utils import bcolors
 
 import warnings
@@ -11,6 +11,23 @@ from datetime import datetime
 import copy
 
 
+def get_Nanc_gen_time_and_units(x, engine, settings):
+    """
+    Returns size of ancestral size, time for one generation and units of time
+    in plot drawing.
+    """
+    Nanc = engine.get_N_ancestral(x, *settings.get_engine_args())
+    gen_time = None
+    if settings.time_for_generation is not None:
+        gen_time = settings.time_for_generation *\
+                   settings.const_of_time_in_drawing
+        gen_time_units = settings.units_of_time_in_drawing
+    else:
+        gen_time = 1.0
+        gen_time_units = "generations"
+    return Nanc, gen_time, gen_time_units
+
+
 def draw_plots_to_file(x, engine, settings, filename, fig_title):
     """
     Draws plots of data (SFS) and model from ``engine`` with parameters
@@ -18,8 +35,8 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
 
     :param x: Values of the parameters in model.
     :type x: list or dict
-    :param engine: Engine with specified model and data.
-    :type engine: :class:`gadma.engines.engine.Engine`
+    :param engine: Original engine with specified model and data.
+    :type engine: :class:`gadma.engines.Engine`
     :param filename: File name to save picture.
     :type filename: str
     :param fig_title: Title of the schematic model plot.
@@ -30,6 +47,21 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
     if not matplotlib_available:
         raise ValueError("Matplotlib is required to draw models.")
         return
+    model_plot_engine = get_engine(settings.model_plot_engine)
+    model_plot_engine.data_holder = engine.data_holder
+    model_plot_engine.model = engine.model
+    if settings.sfs_plot_engine is None:
+        sfs_plot_engine = engine
+    else:
+        sfs_plot_engine = get_engine(settings.sfs_plot_engine)
+        sfs_plot_engine.data_holder = engine.data_holder
+        sfs_plot_engine.model = engine.model
+
+    Nanc, gen_time, gen_time_units = get_Nanc_gen_time_and_units(
+        x=x,
+        engine=engine,
+        settings=settings,
+    )
     warnings.filterwarnings(
             'ignore', category=matplotlib.cbook.MatplotlibDeprecationWarning)
 
@@ -38,9 +70,14 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
     if pos == -1:
         pos = len(filename)
 
+    # 0. Check that we can draw plot
+    bad_model = False
+    if engine.id != model_plot_engine.id:
+        bad_model = isinstance(engine.model, CustomDemographicModel)
+
     # 1. Draw sfs
     # 1.1 Set file or buffer to save plot
-    if PIL_available:  # then we will concatenate plots later
+    if PIL_available and not bad_model:  # then we will concatenate plots later
         if not moments_available:  # then we won't draw model plot
             save_file_sfs = filename
         else:  # future concatenation
@@ -48,8 +85,14 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
     else:
         save_file_sfs = filename[:pos] + '_sfs' + filename[pos:]
     # 1.2 Draw plot to save_file
-    engine.draw_sfs_plots(x, *settings.get_engine_args(),
-                          save_file=save_file_sfs, vmin=settings.vmin)
+    sfs_plot_engine.draw_sfs_plots(
+        x,
+        *settings.get_engine_args(sfs_plot_engine.id),
+        save_file=save_file_sfs,
+        vmin=settings.vmin
+    )
+    if bad_model:
+        return
 
     # 2 Draw schematic model plot
     # 2.0 Check that moments is available, it not we return
@@ -61,20 +104,17 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
         save_file_model = io.BytesIO()
     else:
         save_file_model = filename[:pos] + '_model' + filename[pos:]
-    # 2.2 Create all arguments for drawing function
-    nref = engine.get_N_ancestral(x, *settings.get_engine_args())
-    gen_time = settings.time_for_generation
-    if gen_time is None:
-        gen_time = 1.0
-        gen_time_units = "Generations"
-    else:
-        gen_time *= settings.const_of_time_in_drawing
-        gen_time_units = settings.units_of_time_in_drawing
-    # 2.3 Draw model plot with moments engine
-    # We use try except to be carefull
+    # 2.2 Draw model plot with moments engine
+    # We use try except to be careful
     try:
-        engine.draw_schematic_model_plot(x, save_file_model, fig_title, nref,
-                                         gen_time, gen_time_units)
+        model_plot_engine.draw_schematic_model_plot(
+            values=x,
+            save_file=save_file_model,
+            fig_title=fig_title,
+            nref=Nanc,
+            gen_time=gen_time,
+            gen_time_units=gen_time_units
+        )
     except Exception as e:
         save_file_sfs.seek(0)
         with open(filename, 'wb') as fl:
@@ -124,25 +164,35 @@ def generate_code_to_file(x, engine, settings, filename):
         pos = len(filename)
     prefix = filename[:pos]
 
-    nref = engine.get_N_ancestral(x, *settings.get_engine_args())
-    gen_time = None
-    if settings.time_for_generation is not None:
-        gen_time = settings.time_for_generation *\
-                   settings.const_of_time_in_drawing
-    gen_time_units = settings.units_of_time_in_drawing
+    Nanc, gen_time, gen_time_units = get_Nanc_gen_time_and_units(
+        x=x,
+        engine=engine,
+        settings=settings,
+    )
     # Generate code
     if isinstance(engine.model, EpochDemographicModel):
-        engines = all_engines()
+        engines = all_available_engines()
+        mu_and_L = engine.model.mutation_rate is not None and \
+            settings.sequence_length is not None
+        if not (engine.model.has_anc_size or
+                engine.model.theta0 is not None or mu_and_L):
+            engines.remove("demes")
     else:
         engines = [copy.deepcopy(engine)]
+    failes = {}  # engine.id: reason
     for other_engine in engines:
         save_file = prefix + f"_{other_engine.id}_code.py"
         other_engine.set_data(engine.data)
         other_engine.data_holder = copy.deepcopy(engine.data_holder)
         other_engine.set_model(engine.model)
         args = settings.get_engine_args(other_engine.id)
-        other_engine.generate_code(x, save_file, *args, nref, gen_time,
-                                   gen_time_units)
+        try:
+            other_engine.generate_code(x, save_file, *args, Nanc, gen_time,
+                                       gen_time_units)
+        except Exception as e:
+            failes[other_engine.id] = str(e)
+    if len(failes) > 0:
+        raise ValueError("; ".join([f"{id}: {failes[id]}" for id in failes]))
 
 
 def print_runs_summary(start_time, shared_dict, settings):

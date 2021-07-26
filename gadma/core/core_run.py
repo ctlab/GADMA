@@ -1,4 +1,4 @@
-from ..engines import get_engine, all_engines
+from ..engines import get_engine, all_available_engines
 from ..utils import sort_by_other_list, ensure_dir_existence,\
                     ensure_file_existence, check_file_existence,\
                     check_dir_existence
@@ -7,6 +7,7 @@ from ..optimizers import GlobalOptimizerAndLocalOptimizer
 from ..utils import get_aic_score, get_claic_score, ident_transform, bcolors
 from ..models import EpochDemographicModel, StructureDemographicModel
 from .draw_and_generate_code import draw_plots_to_file, generate_code_to_file
+from .draw_and_generate_code import get_Nanc_gen_time_and_units
 from ..cli import SettingsStorage
 import os
 import numpy as np
@@ -103,7 +104,16 @@ class CoreRun(object):
                 # If our model is built via gadma then we can write code for
                 # all engines.
                 if isinstance(self.model, EpochDemographicModel):
-                    for engine in all_engines():
+                    demes_will_not_work = False
+                    mu_is_None = self.engine.model.mutation_rate is None
+                    L_is_None = self.settings.sequence_length is None
+                    mu_and_L = not mu_is_None and not L_is_None
+                    if not (self.engine.model.has_anc_size or
+                            self.engine.model.theta0 is not None or mu_and_L):
+                        demes_will_not_work = True
+                    for engine in all_available_engines():
+                        if engine.id == "demes" and demes_will_not_work:
+                            continue
                         engine_dir = os.path.join(self.code_dir, engine.id)
                         ensure_dir_existence(engine_dir)
         # Set counters to zero for callbacks to count number of their calls
@@ -182,7 +192,7 @@ class CoreRun(object):
             prefix = (self.settings.LOCAL_OUTPUT_DIR_PREFIX +
                       self.settings.LONG_NAME_2_SHORT.get(best_by, best_by))
             save_code_file = os.path.join(self.output_dir,
-                                          prefix + "_model.py")
+                                          prefix + "_model")
             try:
                 generate_code_to_file(x, self.engine,
                                       self.settings, save_code_file)
@@ -222,21 +232,34 @@ class CoreRun(object):
         """
         n_iter = self.code_iter_callback_counter
         verbose = self.settings.print_models_code_every_n_iteration
-        filename = f"iteration_{n_iter}.py"
+        filename = f"iteration_{n_iter}"
         if verbose != 0 and n_iter % verbose == 0:
+            Nanc, gen_time, gen_time_units = get_Nanc_gen_time_and_units(
+                x=x,
+                engine=self.engine,
+                settings=self.settings,
+            )
             if isinstance(self.model, EpochDemographicModel):
-                for engine in all_engines():
+                for engine_id in os.listdir(self.code_dir):
+                    engine = get_engine(engine_id)
                     save_file = os.path.join(self.code_dir, engine.id,
                                              filename)
                     args = self.settings.get_engine_args(engine.id)
                     engine.set_data(self.engine.data)
                     engine.data_holder = self.engine.data_holder
                     engine.set_model(self.engine.model)
-                    engine.generate_code(x, save_file, *args)
+                    try:
+                        engine.generate_code(x, save_file, *args, Nanc,
+                                             gen_time=gen_time,
+                                             gen_time_units=gen_time_units)
+                    except Exception as e:
+                        pass
             else:
                 save_file = os.path.join(self.code_dir, filename)
                 args = self.settings.get_engine_args()
-                self.engine.generate_code(x, save_file, *args)
+                self.engine.generate_code(x, save_file, *args,  Nanc,
+                                          gen_time=gen_time,
+                                          gen_time_units=gen_time_units)
         self.code_iter_callback_counter += 1
 
     def callback(self, x, y):
@@ -257,10 +280,7 @@ class CoreRun(object):
             self.draw_iter_callback(x, y)
         except Exception:
             pass
-        try:
-            self.code_iter_callback(x, y)
-        except Exception:
-            pass
+        self.code_iter_callback(x, y)
 
     def intermediate_callback(self, x, y):
         """
@@ -312,19 +332,19 @@ class CoreRun(object):
                   self.settings.LONG_NAME_2_SHORT.get(best_by.lower(),
                                                       best_by.lower()))
         save_plot_file = os.path.join(self.output_dir, prefix + "_model.png")
-        save_code_file = os.path.join(self.output_dir, prefix + "_model.py")
+        save_code_file = os.path.join(self.output_dir, prefix + "_model")
         try:
             draw_plots_to_file(x, self.engine, self.settings,
                                save_plot_file, fig_title)
         except Exception as e:
-            print(f"{bcolors.FAIL}Run {self.index}: failed to draw model due "
-                  f"to the following exception: {e}{bcolors.ENDC}")
+            print(f"{bcolors.WARNING}Run {self.index}: failed to draw model "
+                  f"due to the following exception: {e}{bcolors.ENDC}")
         try:
             generate_code_to_file(x, self.engine,
                                   self.settings, save_code_file)
         except Exception as e:
-            print(f"{bcolors.FAIL}Run {self.index}: failed to generate code "
-                  f"due to the following exception: {e}{bcolors.ENDC}")
+            print(f"{bcolors.WARNING}Run {self.index}: failed to generate code"
+                  f" due to the following exception: {e}{bcolors.ENDC}")
 
     def draw_model_in_output_dir(self, x, y,
                                  best_by='log-likelihood', final=True):
@@ -346,7 +366,7 @@ class CoreRun(object):
             prefix = self.settings.LOCAL_OUTPUT_DIR_PREFIX
         prefix += self.settings.LONG_NAME_2_SHORT.get(best_by, best_by)
         save_plot_file = os.path.join(self.output_dir, prefix + "_model.png")
-        save_code_file = os.path.join(self.output_dir, prefix + "_model.py")
+        save_code_file = os.path.join(self.output_dir, prefix + "_model")
         try:
             generate_code_to_file(x, self.engine,
                                   self.settings, save_code_file)

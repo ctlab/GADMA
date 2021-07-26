@@ -20,18 +20,26 @@ Module :mod:`gadma.optimizers.global_optimizer` contains base class for global o
 
 Additional global optimizer could be implemented by creating new subclass of class :class:`gadma.optimizers.GlobalOptimizer` and register it with function :func:`gadma.optimizers.register_global_optimizer`.
 
+.. _Global optimizers list:
+
 Registered global optimizers
 ****************************
 
 The following optimizers are registered:
 
-+--------------------------+--------------------------------+--------------------------------------------------+
-| ID                       | Description                    | Instance of                                      |
-+==========================+================================+==================================================+
-| "Genetic_algorithm"      | Genetic algorithm optimization | :class:`gadma.optimizers.GeneticAlgorithm`       |
-+--------------------------+--------------------------------+--------------------------------------------------+
-| "Bayesian_optimization"  | Bayesian optimization          | :class:`gadma.optimizers.BayesianOptimization`   |
-+--------------------------+--------------------------------+--------------------------------------------------+
++---------------------------------+------------------------------------------------------------------------------------------+---------------------------------------------------+
+| ID                              | Description                                                                              | Instance of                                       |
++=================================+==========================================================================================+===================================================+
+| "Genetic_algorithm"             | Genetic algorithm optimization                                                           | :class:`gadma.optimizers.GeneticAlgorithm`        |
++---------------------------------+------------------------------------------------------------------------------------------+---------------------------------------------------+
+| "GPyOpt_Bayesian_optimization"  | Bayesian optimization (`GPyOpt <https://github.com/SheffieldML/GPyOpt>`_)                | :class:`gadma.optimizers.GPyOptBayesianOptimizer` |
++---------------------------------+------------------------------------------------------------------------------------------+---------------------------------------------------+
+| "SMAC_squirrel_optimization"    | Bayesian optimization                                                                    |                                                   |
+|                                 | (`SMAC squirrel <https://github.com/automl/Squirrel-Optimizer-BBO-NeurIPS20-automlorg>`_)| :class:`gadma.optimizers.SMACSquirellOptimizer`   |
++---------------------------------+------------------------------------------------------------------------------------------+---------------------------------------------------+
+| "SMAC_BO_optimization"          | Bayesian optimization (`SMAC <https://github.com/automl/SMAC3>`_)                        | :class:`gadma.optimizers.SMACBayesianOptimizer`   |
++---------------------------------+------------------------------------------------------------------------------------------+---------------------------------------------------+
+
 
 .. automodule:: gadma.optimizers.global_optimizer
    :members: register_global_optimizer, get_global_optimizer, all_global_optimizers, GlobalOptimizer
@@ -65,6 +73,7 @@ Module :mod:`gadma.optimizers.local_optimizer` contains classes for local serach
 
 Additional local optimizer could be implemented by creating new subclass of class :class:`gadma.optimizers.local_optimizer.LocalOptimizer` and register it with function :func:`gadma.optimizers.local_optimizer.register_local_optimizer`.
 
+.. _Local optimizers list:
 
 Registered local optimizers
 ***************************

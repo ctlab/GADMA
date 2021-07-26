@@ -234,12 +234,6 @@ class ScipyOptimizer(LocalOptimizer, ContinuousOptimizer):
             self.run_info.result.status = 0
             self.run_info.result.message = "maxiter or maxeval is 0"
 
-        if len(variables) == 0:
-            self.run_info.result.success = True
-            self.run_info.result.status = 0
-            self.run_info.result.message = "Zero parameters to optimize."
-            return self.run_info.result
-
         options = copy.copy(options)
         if maxiter is not None:
             options['maxiter'] = int(maxiter)
@@ -271,18 +265,25 @@ class ScipyOptimizer(LocalOptimizer, ContinuousOptimizer):
         def f_in_scipy(x):
             y = f(x)
             iter_callback(x, y, [x], [y])
+            # we need to fix n_iter as it is not an iteration but evaluation
+            self.run_info.result.n_iter -= 1
             return y
+
+        # Good values from dadi
+        if (self.method != "Nelder-Mead" and self.method != "Powell" and
+                "eps" not in options):
+            options["eps"] = 1e-3
 
         # Run optimization of SciPy
         addit_kw = self.get_addit_scipy_kwargs(variables)
-        res_obj = scipy.optimize.minimize(f, x0, args=(),
+        res_obj = scipy.optimize.minimize(f_in_scipy, x0, args=(),
                                           method=self.method, options=options,
                                           callback=callback, **addit_kw)
         # Call callback after the last iteration
         callback(res_obj.x)
         # Construct OptimizerResult object to return
         result = OptimizerResult.from_SciPy_OptimizeResult(res_obj)
-        assert np.isclose(self.run_info.result.y, self.sign * result.y)
+        assert self.sign * self.run_info.result.y <= result.y
         self.run_info.result.success = result.success
         self.run_info.result.message = result.message
         self.run_info.result.status = result.status
@@ -340,7 +341,7 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
         self.optimizer = optimizer
         super(ManuallyConstrOptimizer, self).__init__(log_transform,
                                                       self.optimizer.maximize)
-        self.out_of_bounds = np.inf
+        self.out_of_bounds = 1e8  # np.inf
 
     @property
     def id(self):
@@ -362,7 +363,7 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
     def evaluate(self, f, variables, x, args=(), linear_constrain=None):
         if np.any([not var.correct_value(el)
                    for el, var in zip(x, variables)]):
-            return np.inf
+            return self.sign * self.out_of_bounds
         # we multiply by sign to avoid double * by -1 and for correct optim.
         return self.sign * super(ManuallyConstrOptimizer, self).evaluate(
             f=f,
@@ -379,6 +380,9 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
                 vars_in_opt[i].domain = [-np.inf, np.inf]
 
         def callback(x, y):
+            if np.any([not var.correct_value(el)
+                       for el, var in zip(x, variables)]):
+                return
             # y is translated back by *(-1) we want correct comparison
             y = self.optimizer.sign * y
             iter_callback(x, y, [x], [y])
@@ -388,6 +392,12 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
                                                       x)
                                       for x in opt_run_info]
             self.run_info.result.Y = self.optimizer.run_info.result.Y
+            self.run_info.result.n_iter = self.optimizer.run_info.result.n_iter
+
+        # Dadi and moments use eps equal to 1e-3. It turned out to be good
+        # value. So we want to use it in our optimizers.
+        if "eps" not in options:
+            options["eps"] = 1e-3
 
         self.optimizer.optimize(f=f,
                                 variables=vars_in_opt,

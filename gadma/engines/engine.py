@@ -1,5 +1,6 @@
 from ..data import DataHolder
 from ..models import Model
+from ..data import update_data_holder_with_inner_data
 import copy
 
 _registered_engines = {}
@@ -33,10 +34,40 @@ def get_engine(id):
 def all_engines():
     """
     Returns an iterator over all registered engines of the demographic
-    inference.
+    inference that can evaluate log-likelihood.
+    """
+    for engine in _registered_engines.values():
+        if engine.can_evaluate:
+            yield engine()
+
+
+def all_available_engines():
+    """
+    Returns an iterator over all registered engines
+    for the demographic inference.
     """
     for engine in _registered_engines.values():
         yield engine()
+
+
+def all_simulation_engines():
+    """
+    Returns an iterator over all registered engines that can simulate
+    log-likelihood for the demographic inference.
+    """
+    for engine in _registered_engines.values():
+        if engine.can_simulate:
+            yield engine()
+
+
+def all_drawing_engines():
+    """
+    Returns an iterator over all registered engines that can simulate
+    log-likelihood for the demographic inference.
+    """
+    for engine in _registered_engines.values():
+        if engine.can_draw:
+            yield engine()
 
 
 class Engine(object):
@@ -58,6 +89,9 @@ class Engine(object):
     supported_models = []
     supported_data = []
     inner_data_type = None
+    can_evaluate = False
+    can_draw = False
+    can_simulate = False
 
     def __init__(self, data=None, model=None):
         self.data = data
@@ -67,8 +101,8 @@ class Engine(object):
     def get_value_from_var2value(var2value, entity):
         return Model.get_value_from_var2value(var2value, entity)
 
-    @staticmethod
-    def read_data(data_holder):
+    @classmethod
+    def read_data(cls, data_holder):
         """
         Reads data from `data_holder.filename` in inner type.
 
@@ -77,6 +111,18 @@ class Engine(object):
 
         :returns: readed data
         :rtype: ``Engine.inner_data_type``
+        """
+        if data_holder.__class__ not in cls.supported_data:
+            raise ValueError(f"Data class {data_holder.__class__.__name__}"
+                             f" is not supported by {cls.id} engine.\nThe "
+                             f"supported classes are: {cls.supported_data}"
+                             f" and {cls.inner_data_type}")
+        return cls._read_data(data_holder)
+
+    @classmethod
+    def _read_data(cls, data_holder):
+        """
+        Inner method to read data_holder.
         """
         raise NotImplementedError
 
@@ -128,7 +174,8 @@ class Engine(object):
             self.saved_add_info = {}
             return
         cls = data.__class__
-        if cls not in self.supported_data and \
+        if self.supported_data is not None and \
+                cls not in self.supported_data and \
                 not isinstance(data, self.inner_data_type):
             try:
                 transformed_data = self.inner_data_type(data)
@@ -142,11 +189,12 @@ class Engine(object):
         if isinstance(data, DataHolder):
             self.inner_data = self.read_data(data)
             self.data_holder = copy.deepcopy(data)
-            # TODO valid for dadi and moments
-            self.data_holder.projections = self.inner_data.sample_sizes
-            self.data_holder.population_labels = self.inner_data.pop_ids
-            self.data_holder.outgroup = not self.inner_data.folded
-        elif isinstance(data, self.inner_data_type):
+            self.data_holder = update_data_holder_with_inner_data(
+                data_holder=self.data_holder,
+                inner_data=self.inner_data
+            )
+        elif (self.inner_data_type is not None and
+                isinstance(data, self.inner_data_type)):
             self.inner_data = data
             self.data_holder = None
         self.saved_add_info = {}
@@ -158,6 +206,18 @@ class Engine(object):
     @data.setter
     def data(self, new_data):
         self.set_data(new_data)
+
+    def get_N_ancestral(self, values):
+        """
+        Returns size of ancestral population. Is implemented for models with
+        ancestral size as parameter. For dadi and moments it is not always
+        True.
+        """
+        if hasattr(self.model, "has_anc_size") and self.model.has_anc_size:
+            var2value = self.model.var2value(values)
+            return self.model.get_value_from_var2value(var2value,
+                                                       self.model.Nanc_size)
+        raise NotImplementedError
 
     def evaluate(self, values, **options):
         """
@@ -195,7 +255,8 @@ class Engine(object):
 
         return self.evaluate(values, **options)
 
-    def generate_code(self, values, filename=None):
+    def generate_code(self, values, filename=None, nanc=None,
+                      gen_time=None, gen_time_units="years"):
         """
         Prints nice formated code in the format of engine to file or returns
         it as string if no file is set.

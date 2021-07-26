@@ -1,3 +1,5 @@
+.. _param_file:
+
 Example parameters file
 =======================
 

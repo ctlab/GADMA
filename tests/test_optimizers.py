@@ -8,6 +8,8 @@ from gadma.models import *
 from gadma.cli.arg_parser import test_args
 from gadma.core import SharedDictForCoreRun
 from gadma.utils import ident_transform
+if smac_available:
+    from gadma.optimizers import smac_optim
 
 import gadma
 import dadi
@@ -60,7 +62,7 @@ def get_1pop_sim_example_1(engine_id, args=(), data_size=4):
 
 def get_1pop_sim_example_2(engine_id, args=(), data_size=4):
     """
-    Exponential incease.
+    Exponential increase.
     """
     t = TimeVariable('t')
     nu1 = PopulationSizeVariable('nu1')
@@ -103,6 +105,17 @@ def get_2pop_sim_example_1(engine_id, args=(), data_size=4):
     return f, variables
 
 class TestBaseOptClass(unittest.TestCase):
+    def test_not_implemented_error(self):
+        opt = Optimizer()
+        def f(x):
+            return 10
+        self.assertRaises(
+            NotImplementedError,
+            opt.optimize,
+            f=f,
+            variables=[TimeVariable("t")]
+        )
+
     def check_class(self, cls):
         """
         Common checks for optmizers class
@@ -178,6 +191,18 @@ class TestBaseOptClass(unittest.TestCase):
         self.assertRaises(AssertionError, opt.check_variables,
                           [ContinuousVariable("var", domain=[1, 2])])
 
+    def test_no_variables_func(self):
+        def fixed_f(x):
+            return 10
+        for opt in list(all_global_optimizers()) + list(all_local_optimizers()):
+            kwargs = {}
+            if isinstance(opt, LocalOptimizer):
+                kwargs["x0"] = []
+            res = opt.optimize(fixed_f, variables=[], **kwargs)
+            self.assertEqual(list(res.x), [])
+            self.assertEqual(res.y, 10)
+            self.assertEqual(res.n_iter, 0)
+            self.assertEqual(res.n_eval, 1)
 
 
 class TestLocalOpt(TestBaseOptClass):
@@ -185,7 +210,13 @@ class TestLocalOpt(TestBaseOptClass):
         opt = LocalOptimizer()
         def f(x):
             return 10
-        self.assertRaises(NotImplementedError, opt.optimize, f, [], [])
+        self.assertRaises(
+            NotImplementedError,
+            opt.optimize,
+            f=f,
+            variables=[TimeVariable("t")],
+            x0=[10]
+        )
 
     def test_valid_restore_file(self):
         for opt in all_local_optimizers():
@@ -356,8 +387,10 @@ class TestLocalOpt(TestBaseOptClass):
 
         for opt in all_global_optimizers():
             with self.subTest(optimizer=opt.id):
+                if hasattr(opt, "kernel_name"):
+                    opt.kernel_name = "auto"
                 res = opt.optimize(f, dm.variables, num_init=10,
-                                   args=args, maxeval=25, maxiter=5)
+                                   args=args, maxeval=15, maxiter=3)
         for opt_name in ["BFGS", "L-BFGS-B"]: #all_local_optimizers():
             opt = get_local_optimizer(opt_name)
             with self.subTest(local_optimizer=opt.id):
@@ -453,7 +486,7 @@ class TestLocalOpt(TestBaseOptClass):
 class TestCoreRun(unittest.TestCase):
     def test_core_run(self):
         settings = test_args()
-        settings.input_file = os.path.join(DATA_PATH, "DATA", "sfs",
+        settings.input_data = os.path.join(DATA_PATH, "DATA", "sfs",
                                            'small_1pop.fs')
         settings.draw_models_every_n_iteration = 100
         settings.print_models_code_every_n_iteration = 100
@@ -590,3 +623,97 @@ class TestGlobalOptimizer(unittest.TestCase):
             )
 
             self.assertFalse(opt.valid_restore_file(None))
+
+    def test_update_of_initial_design(self):
+        opt = get_global_optimizer("Genetic_algorithm")
+
+        def f(x):
+            return x * np.sin(x)
+        X = [[np.random.uniform()] for _ in range(10)]
+        Y = [f(x) for x in X]
+        X_init, Y_init = [], []
+        div = 5
+        X_init = X[:div]
+        Y_init = Y[:div]
+        X_out = X[div:]
+        Y_out = Y[div:]
+        self.assertTrue(len(X_init) > 0)
+        self.assertTrue(len(X_out) > 0)
+        self.assertEqual(len(Y_init) + len(Y_out), len(Y))
+        _X, _Y = opt._update_X_init_Y_init(X_init=X_init, Y_init=None, X_out=X_out, Y_out=Y_out)
+        self.assertEqual(_Y, Y_out)
+        self.assertEqual(_X[:len(X_out)], X_out)
+        self.assertEqual(len(_X), len(X))
+
+        _X, _Y = opt._update_X_init_Y_init(X_init=X_init, Y_init=Y_init[:-1], X_out=X_out, Y_out=Y_out)
+        self.assertEqual(_Y[:len(Y_init)-1], Y_init[:-1])
+        self.assertEqual(_Y[len(Y_init)-1:len(Y_out)-1+len(Y_out)], Y_out)
+        self.assertEqual(len(_Y), len(Y)-1)
+        self.assertEqual(_X[:len(Y_init)-1], X_init[:-1])
+        self.assertEqual(_X[len(Y_init)-1:len(Y_out)-1+len(Y_out)], X_out)
+        self.assertEqual(len(_X), len(X))
+
+
+class TestSMACOptimizations(unittest.TestCase):
+    def test_smac_optimization(self):
+        if not smac_available:  # We are successful when smac is not available
+            return
+
+        opt = get_global_optimizer("SMAC_BO_optimization")
+        for kernel in ["exponential", "matern32", "matern52", "rbf", "auto"]:
+            opt.kernel_name = kernel
+        opt._kernel_name = "not_valid"
+        self.assertRaises(ValueError, opt._get_kernel_class_and_nu)
+
+        opt = get_global_optimizer("SMAC_BO_optimization")
+        for acq in ["LogEI", "EI", "PI", "LCB"]:
+            opt.acquisition_type = acq
+        opt._acquisition_type = "not_valid"
+        self.assertRaises(ValueError, opt.get_acquisition_function_class)
+
+        opt = get_global_optimizer("SMAC_BO_optimization")
+        opt.acquisition_type = "LogEI"
+        variables = [DiscreteVariable("d", domain=[1, 2])]
+        config_space = opt.get_config_space(variables)
+        opt.get_kernel(config_space)
+        scenario = opt.get_scenario(maxeval=1, config_space=config_space)
+        opt.get_runhistory2epm(scenario=scenario)
+
+    def test_smac_optim_file(self):
+        if not smac_available:  # We are successful when smac is not available
+            return
+        import smac
+        from smac.tae.execute_ta_run import StatusType
+        opt = get_global_optimizer("SMAC_squirrel_optimization")
+        variables = [DiscreteVariable("d1", domain=[1, 2, 3])]
+        api_config, config_space = opt.get_configs(variables)
+        self.assertRaises(ValueError, optimizers.smac_optim.SMAC4EPMOpimizer,
+                          api_config, config_space, parallel_setting="not_valid")
+        smac4epm = optimizers.smac_optim.SMAC4EPMOpimizer(api_config, config_space)
+        smac4epm.combinations = smac4epm.combinations[:3]
+        self.assertEqual(len(smac4epm.suggest()), 0)
+        for i in [1, 2, np.inf]:
+            smac4epm.runhistory.add(config=config_space.sample_configuration(),
+                                    cost=100 * i,
+                                    time=0,
+                                    status=StatusType.SUCCESS,)
+        smac4epm.parallel_setting = "not_valid"
+        self.assertRaises(ValueError, smac4epm.suggest, 2)
+        smac4epm.next_evaluations = []
+        for parallel_setting in ["CL_min", "CL_max", "CL_mean", "LS", "KB"]:
+            smac4epm.parallel_setting = parallel_setting
+            smac4epm.suggest(2)
+            smac4epm.next_evaluations = []
+        model, acq, acq_opt, rh2epm = [], 1, 1, 1
+        smac4epm.combinations.append((model, acq, acq_opt, rh2epm))
+        self.assertRaises(ValueError, smac4epm.suggest, 10)
+        smac4epm.combinations = smac4epm.combinations[:-1]
+        model, acq, acq_opt, rh2epm = smac4epm.combinations[-1]
+        rh2epm = []
+        smac4epm.combinations.append((model, acq, acq_opt, rh2epm))
+        smac4epm.next_evaluations = []
+        self.assertRaises(ValueError, smac4epm.suggest, 10)
+
+        api_config, config_space = opt.get_configs(variables=[])
+        self.assertRaises(ValueError, optimizers.smac_optim.SMAC4EPMOpimizer,
+                          api_config, config_space)

@@ -1,14 +1,18 @@
 # GADMA ![](http://jb.gg/badges/research-flat-square.svg)
 
-[![Docs](https://readthedocs.org/projects/gadma/badge/?version=latest)](https://gadma.readthedocs.io/en/latest/?badge=latest) [![Build status](https://github.com/ctlab/GADMA/workflows/build/badge.svg)](https://github.com/ctlab/GADMA/actions) [![codecov](https://codecov.io/gh/ctlab/GADMA/branch/master/graph/badge.svg?token=F303UDEWDJ)](https://codecov.io/gh/ctlab/GADMA) [![PyPI - Downloads](https://img.shields.io/pypi/dm/gadma)](https://pypi.org/project/gadma/)
+[![Docs](https://readthedocs.org/projects/gadma/badge/?version=latest)](https://gadma.readthedocs.io/en/latest/?badge=latest) [![Build status](https://github.com/ctlab/GADMA/workflows/build/badge.svg)](https://github.com/ctlab/GADMA/actions) [![codecov](https://codecov.io/gh/ctlab/GADMA/branch/master/graph/badge.svg?token=F303UDEWDJ)](https://codecov.io/gh/ctlab/GADMA) [![PyPI - Downloads](https://img.shields.io/pypi/dm/gadma)](https://pypistats.org/packages/gadma)
 
 Welcome to GADMA v2!
 
 GADMA implements methods for automatic inference of the joint demographic history of multiple populations from the genetic data.
 
-GADMA is based on two open source packages: the ∂a∂i developed by Ryan Gutenkunst [<https://bitbucket.org/gutenkunstlab/dadi/>] and the *moments* developed by Simon Gravel [<https://bitbucket.org/simongravel/moments/>].
+**GADMA is a command-line tool**. Basic pipeline presents a series of launches of the genetic algorithm folowed by local search optimization and infers demographic history from the Allele Frequency Spectrum of multiple populations (up to three).<br/>
+GADMA features variuos optimization methods ([global](https://gadma.readthedocs.io/en/latest/api/gadma.optimizers.html#global-optimizers-list) and [local](https://gadma.readthedocs.io/en/latest/api/gadma.optimizers.html#local-optimizers-list) search algorithms) which may be used for [any general optimization problem](https://gadma.readthedocs.io/en/latest/api_examples/optimization_example.html).
 
-In contrast to these packages, GADMA is a command-line tool. It presents a series of launches of the genetic algorithm and infer demographic history from Allele Frequency Spectrum of multiple populations (up to three).
+GADMA provides choice of several engines of demographic inference (this list will be extended in the future):
+
+* [∂a∂i](https://bitbucket.org/gutenkunstlab/dadi/)  developed by Ryan Gutenkunst
+* [*moments*](https://bitbucket.org/simongravel/moments/)  developed by Simon Gravel
 
 GADMA is implemented by Ekaterina Noskova (ekaterina.e.noskova@gmail.com)
 
@@ -16,7 +20,7 @@ GADMA is implemented by Ekaterina Noskova (ekaterina.e.noskova@gmail.com)
 
 ### Documentation
 
-Full documentation including installation instructions, usage, examples and API are available [here](https://gadma.readthedocs.io).
+Please see [documentation](https://gadma.readthedocs.io) for more information including installation instructions, usage, examples and API.
 
 ### Contributors
 
@@ -28,11 +32,15 @@ Full documentation including installation instructions, usage, examples and API 
 
 ## Getting help
 
-Please don't be afraid to contact me for different problems and offers via email ekaterina.e.noskova@gmail.com. I will be glad to answer all questions. 
+[F.A.Q.](https://gadma.readthedocs.io/en/latest/faq.html)
+
+Please don't be afraid to contact me for different problems and offers via email ekaterina.e.noskova@gmail.com. I will be glad to answer all questions.
 
 Also you are always welcome to [create an issue](https://github.com/ctlab/GADMA/issues) on the GitHub page of GADMA with your question.
 
-## Citation
+## Citations
+
+Please see full list of citations in [documentation](https://gadma.readthedocs.io/en/latest/citations.html).
 
 If you use GADMA in your research please cite:
 

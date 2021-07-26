@@ -129,6 +129,8 @@ class ContinuousVariable(Variable):
             raise ValueError("The lower bound of variable's domain must be "
                              "greater than upper bound. Got domain: "
                              f"{self.domain}.")
+        # for logarithm transform
+        self._true_domain = self.domain
 
     def get_bounds(self):
         """
@@ -148,9 +150,7 @@ class ContinuousVariable(Variable):
         """
         Check that value is correct for this variable.
         """
-        return (self.domain[0] < value < self.domain[1] or
-                np.isclose(value, self.domain[0]) or
-                np.isclose(value, self.domain[1]))
+        return self.domain[0] <= value <= self.domain[1]
 
     def apply_logarithm(self, back=False):
         """
@@ -158,8 +158,10 @@ class ContinuousVariable(Variable):
         generator are changed.
         """
         if back:
-            self.domain = np.exp(self.domain).tolist()
-        self.domain = np.log(self.domain).tolist()
+            self.domain = self._true_domain
+        else:
+            self._true_domain = self.domain
+            self.domain = np.log(self.domain).tolist()
 
 
 class DiscreteVariable(Variable):
@@ -383,7 +385,7 @@ class MigrationVariable(DemographicVariable, ContinuousVariable):
 
     :note: Values are assumed to be in genetic units.
     """
-    default_domain = np.array([0, 10])
+    default_domain = np.array([0, 10.0])
     default_rand_gen = migration_generator
 
     @staticmethod
@@ -612,7 +614,7 @@ class DynamicVariable(DemographicVariable, DiscreteVariable):
     """
 
     _help_dict = {'Sud': Sud, 'Lin': Lin, 'Exp': Exp, 0: Sud, 1: Lin, 2: Exp}
-    default_domain = np.array(['Sud', 'Lin', 'Exp'])
+    default_domain = ['Sud', 'Lin', 'Exp']
     default_rand_gen = dynamic_generator
 
     def __init__(self, name, domain=None, rand_gen=None):
@@ -623,7 +625,8 @@ class DynamicVariable(DemographicVariable, DiscreteVariable):
         if not all(dom in self.__class__._help_dict for dom in self.domain):
             raise ValueError("Domain of DynamicVariable must be a subset "
                              "of the following general domain: "
-                             f"{self._help_dict.keys()}")
+                             f"{self._help_dict.keys()}. "
+                             f"Got domain: {self.domain}")
 
     @staticmethod
     def get_func_from_value(value):

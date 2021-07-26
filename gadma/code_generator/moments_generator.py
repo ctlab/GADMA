@@ -120,7 +120,7 @@ def _print_moments_func(model, values, dt_fac):
                                     if y1 in func_names:
                                         strs.append(y1 + "(t)")
                                     else:
-                                        strs.append(y1)
+                                        strs.append(str(y1))
                             kwargs[x] = f"lambda t: [{', '.join(strs)}]"
                     else:
                         kwargs[x] = f"[{','.join(varnames)}]"
@@ -178,7 +178,10 @@ def _print_model_plotting(engine, nanc, gen_time, gen_time_units):
     ret_str += "                                           p0, plot_ns)\n"
 
     filename = 'model_from_GADMA.png'
-    pop_ids = list(engine.data_holder.population_labels)
+    if engine.data_holder.population_labels is None:
+        pop_ids = [f"Pop{i}" for i in range(engine.data.ndim)]
+    else:
+        pop_ids = list(engine.data_holder.population_labels)
     draw_scale = nanc is not None
     units = gen_time_units
     if nanc is not None:

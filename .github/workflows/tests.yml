@@ -6,7 +6,9 @@ name: build
 # events but only for the master branch
 on:
   push:
+    branches: [ master, devel, smac_bo ]
   pull_request:
+    branches: [ master, devel ]
 
 jobs:
   build:
@@ -30,11 +32,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Set up Java.
-        uses: actions/setup-java@v1
-        with:
-          java-version: '8'
-
       - name: Install dependencies for tests.
         run: |
           pip3 install coverage
@@ -44,7 +41,7 @@ jobs:
           pip3 install GPy
           pip3 install GPyOpt
           pip3 install pandas
-          pip3 install ruamel.yaml
+          pip3 install ruamel.yaml==0.16.12
           pip3 install pytest
           pip3 install pytest-cov
           pip3 install pytest-timeout
@@ -66,18 +63,22 @@ jobs:
         shell: cmd
         if: matrix.os == 'windows-2019'
 
-      - name: Install SMAC (Linux and Windows).
+      - name: Install SMAC (Linux).
         run: |
           pip3 install scikit-optimize
+          pip3 install configspace
           pip3 install smac==0.12.4
           pip3 install bayesmark
-          pip3 install configspace
-        if: matrix.os != 'macos-10.15'
+        if: matrix.os == 'ubuntu-18.04'
+      - name: Downgrade scipy for SMAC (Linux).
+        run: |
+          pip3 install scipy==1.6.3
+        if: matrix.os == 'ubuntu-18.04' && matrix.python-version == '3.8'
 
       - name: Run tests and codecov.
         run: |
-          python -m pytest --timeout=600 --cov=gadma --cov-report=xml -v tests --disable-warnings
-
+          python -m pytest --timeout=400 --cov=gadma --cov-report=xml -v tests --disable-warnings
+        
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
@@ -85,3 +86,4 @@ jobs:
           file: ./coverage.xml
           flags: unittests
         if: matrix.os == 'ubuntu-18.04' && matrix.python-version == '3.6'
+

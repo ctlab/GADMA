@@ -1,8 +1,11 @@
 from ..models import CustomDemographicModel, EpochDemographicModel,\
     Epoch, Split, BinaryOperation
 from ..utils import Variable, DiscreteVariable, DynamicVariable
+from ..data import SFSDataHolder, VCFDataHolder
 import sys
+import os
 import copy
+import inspect
 
 FUNCTION_NAME = 'model_func'
 
@@ -18,7 +21,7 @@ def _print_dadi_func(model, values):
     """
     from ..engines import DadiEngine  # to avoid cross import
     if isinstance(model, CustomDemographicModel):
-        path_repr = repr(sys.modules[model.function.__module__].__file__)
+        path_repr = repr(os.path.abspath(inspect.getfile(model.function)))
         ret_str = "import importlib.util\n\n"
         ret_str += "spec = importlib.util.spec_from_file_location('module', "\
                    f"{path_repr})\n"
@@ -40,6 +43,7 @@ def _print_dadi_func(model, values):
     ret_str += "\t%s = params\n" % ", ".join([x.name for x in f_vars])
     ret_str += "\txx = dadi.Numerics.default_grid(pts)\n"\
                "\tphi = dadi.PhiManip.phi_1D(xx)\n"
+    inbreeding = False
     for ind, event in enumerate(model.events):
         if event.__class__ is Epoch:
             if event.dyn_args is not None:
@@ -86,7 +90,18 @@ def _print_dadi_func(model, values):
                 ret_str += "\tphi = dadi.PhiManip.phi_%dD_to_%dD_split_%d" %\
                            (event.n_pop, event.n_pop+1, event.pop_to_div + 1)
             ret_str += "(xx, phi)\n"
-    ret_str += "\tsfs = dadi.Spectrum.from_phi(phi, ns, [xx]*len(ns))\n"
+    if model.has_inbreeding:
+        inbr_names = []
+        for var in model.inbreeding_args:
+            if isinstance(var, Variable):
+                inbr_names.append(var.name)
+            else:
+                inbr_names.append(str(var))
+        ret_str += "\tsfs = dadi.Spectrum.from_phi_inbreeding(" \
+                   "phi, ns, [xx]*len(ns), [{}], [2]*len(ns)" \
+                   ")\n".format(", ".join(inbr_names))
+    if not model.has_inbreeding:
+        ret_str += "\tsfs = dadi.Spectrum.from_phi(phi, ns, [xx]*len(ns))\n"
     ret_str += "\treturn sfs\n"
     return ret_str
 
@@ -117,7 +132,14 @@ def _print_load_data(data_holder, is_fs, mode='dadi'):
     ret_str = ""
     fname = data_holder.filename
     if is_fs is None:
-        ret_str += f"dd = {mode}.Misc.make_data_dict({repr(fname)})\n"
+        if isinstance(data_holder, SFSDataHolder):
+            ret_str += f"dd = {mode}.Misc.make_data_dict({repr(fname)})\n"
+        else:
+            assert isinstance(data_holder, VCFDataHolder)
+            ret_str += f"dd = {mode}.Misc.make_data_dict_vcf("
+            ret_str += f"vcf_filename={repr(data_holder.filename)}, "
+            ret_str += f"popinfo_filename={repr(data_holder.popmap_file)}, "
+            ret_str += "filter=True, flanking_info=[None, None])\n"
         ret_str += f"data = {mode}.Spectrum.from_data_dict"
         if (data_holder.population_labels is None or
                 data_holder.projections is None or
@@ -127,7 +149,9 @@ def _print_load_data(data_holder, is_fs, mode='dadi'):
         lbls = list(data_holder.population_labels)
         size = list(data_holder.projections)
         outg = data_holder.outgroup
-        ret_str += f"(dd, {lbls}, {size}, polarized={outg})\n"
+        ret_str += f"(dd, pop_ids={lbls}, "
+        ret_str += f"projections={size}, "
+        ret_str += f"polarized={outg})\n"
     else:
         data = is_fs
         ret_str += f"data = {mode}.Spectrum.from_file({repr(fname)})\n"
@@ -216,7 +240,7 @@ def _print_main(engine, values, mode='dadi', nanc=None):
     if nanc is not None:
         ret_str += f"Nanc = {nanc}\n"
 
-    mu_is_val = engine.model.mu is not None
+    mu_is_val = engine.model.mutation_rate is not None
     data_holder_is_val = engine.data_holder is not None
     seq_len_is_val = engine.data_holder.sequence_length is not None
 
@@ -227,7 +251,7 @@ def _print_main(engine, values, mode='dadi', nanc=None):
             ret_str += f"theta0 = {engine.model.theta0}\n"
             ret_str += "Nanc = int(theta / theta0)\n"
         elif mu_and_L:
-            ret_str += f"mu = {engine.model.mu}\n"
+            ret_str += f"mu = {engine.model.mutation_rate}\n"
             ret_str += f"L = {engine.data_holder.sequence_length}\n"
             ret_str += "theta0 = 4 * mu * L\n"
     else:

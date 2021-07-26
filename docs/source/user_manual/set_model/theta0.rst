@@ -1,7 +1,7 @@
 .. _theta:
 
-Theta0
-===========
+Theta0 and mutation rate
+========================
 
 ``Theta0`` is equal to the expected number of mutations that occur in one chromosome in one generation in the infinite-sited model. GADMA can scale all values of demographic model parameters due to known value of ``Theta0``. However, it is not always possible to find it. There is a way to solve this problem: one can set ``Theta0`` to ``None`` or just not specify it at all, so GADMA will take it as ``1.0`` and after launch one can scale result values due to found ``Theta0``.
 

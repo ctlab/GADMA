@@ -50,8 +50,8 @@ class Epoch(Event):
     :param sel_args: Selection rates for each population during the epoch.
     :type sel_args: list of values and/or :class:`gadma.SelectionVariable`
     """
-    def __init__(self, time_arg, init_size_args, size_args,
-                 mig_args=None, dyn_args=None, sel_args=None, dom_args=None):
+    def __init__(self, time_arg, init_size_args, size_args, mig_args=None,
+                 dyn_args=None, sel_args=None, dom_args=None):
         # Simple checks
         assert len(init_size_args) == len(size_args), (f"{len(init_size_args)}"
                                                        f" != {len(size_args)}")
