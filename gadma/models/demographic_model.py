@@ -1,7 +1,7 @@
 from ..utils import Variable, TimeVariable, DemographicVariable
 from ..utils import PopulationSizeVariable, VariablePool, variables_values_repr
 from . import Model, Epoch, Split
-from .variables_combinations import operation_creation, Addition, BinaryOperation
+from .variables_combinations import operation_creation, Addition, BinaryOperation, Subtraction, Division, Log
 import copy
 import numpy as np
 
@@ -457,7 +457,7 @@ class EpochDemographicModel(DemographicModel):
         return time
 
     def translate_to(self, ModelClass, values):
-        # TODO linear (?)
+
         from .coalescent_demographic_model import CoalescentDemographicModel
         if issubclass(ModelClass, CoalescentDemographicModel):
             model = CoalescentDemographicModel(
@@ -467,24 +467,74 @@ class EpochDemographicModel(DemographicModel):
                 theta0=self.theta0,
                 linear_constrain=self.linear_constrain
             )
+            var2value = self.var2value(values)
             current_time = self.get_summary_duration()
             current_sizes = [self.Nanc_size]
             current_dyn = ["Sud"]
+            current_g = [0]
             for event in self.events:
                 if isinstance(event, Epoch):
                     for i in range(len(current_sizes)):
                         if event.size_args[i] != current_sizes[i]:
-                            pass
-                    #                      model.change_pop_size(pop=i,
-                    #                                           t=current_time,
-                    #                                          size_pop=current_sizes[i],
-                    #                                         dyn=current_dyn[i])
+                            dyn = self.get_value_from_var2value(
+                                var2value=var2value,
+                                entity=event.dyn_args[i]
+                            )
+                            # размер в конце популяции == размер в начале отрезка (левом)
+                            size_pop = event.size_args[i]
+                            if dyn == "Sud":
+                                g = 0
+                            elif dyn == "Lin":
+                                # size = init_size + g * t
+                                g = operation_creation(
+                                    operation=Division,
+                                    arg1=operation_creation(
+                                            operation=Subtraction,
+                                            arg1=size_pop,
+                                            arg2=current_sizes[i]
+                                    ),
+                                    arg2=event.time_arg
+                                )
+                            else:
+                                assert dyn == "Exp"
+                                # size = init_size * exp(gt)
+                                g = operation_creation(
+                                    operation=Division,
+                                    arg1=operation_creation(
+                                        operation=Log,
+                                        arg1=operation_creation(
+                                            operation=Division,
+                                            arg1=size_pop,
+                                            arg2=current_sizes[i]
+                                        )
+                                    ),
+                                    arg2=event.time_arg
+                                )
+                            current_g[i] = g
+                            model.change_pop_size(
+                                pop=i,
+                                t=current_time,
+                                size_pop=size_pop,
+                                dyn=dyn,
+                                g=g
+                            )
+                        current_time -= event.time_arg
+                        current_dyn = event.dyn_args
+                else:
+                    assert isinstance(event, Split)
+                    pop_to_div = event.pop_to_div
+                    model.move_lineages(
+                        pop_from=event.n_pop,
+                        pop=pop_to_div,
+                        t=current_time,
+                        dyn=current_dyn[pop_to_div],
+                        size_pop=current_sizes[pop_to_div],
+                        g=current_g[pop_to_div]
+                    )
+                    current_g.append(0)
+                    current_dyn.append("Sud")
+                current_sizes = event.size_args
 
-                    pass
-                elif isinstance(event, Split):
-                    pass
-                    #model.move_lineages(pop_from=event.n_pop,
-                     #                   pop=event.pop_to_div)
             return model
         raise ValueError(
             f"Cannot translate to {ModelClass}"
