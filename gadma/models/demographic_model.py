@@ -19,7 +19,7 @@ class DemographicModel(Model):
     :type recombination_rate: float
     :param Nref: rescaling factor of the parameters values.
     :type Nref: float
-    :param has_anc_size: If True then model does not have size of ancestral
+    :param has_anc_size: If False then model does not have size of ancestral
                          population. It is the case for dadi and moments as
                          they have multinom mode when this size is generated
                          automatically from the rest of the parameters.

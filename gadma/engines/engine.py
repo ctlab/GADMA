@@ -62,8 +62,8 @@ def all_simulation_engines():
 
 def all_drawing_engines():
     """
-    Returns an iterator over all registered engines that can simulate
-    log-likelihood for the demographic inference.
+    Returns an iterator over all registered engines that can draw
+    plots for the demographic inference.
     """
     for engine in _registered_engines.values():
         if engine.can_draw:
@@ -74,7 +74,7 @@ class Engine(object):
     """
     Abstract class representing an engine of the demographic inference.
 
-    New engine should be inheritted from this class.
+    New engine should be inherited from this class.
     Engine must have at least the ``id``, ``supported_models``,
     ``supported_data`` and ``inner_data`` attributes, and
     implementations of :func:`read_data`
@@ -109,7 +109,7 @@ class Engine(object):
         :param data_holder: Holder of data to read.
         :type data_holder: :class:`gadma.DataHolder`
 
-        :returns: readed data
+        :returns: data which was read
         :rtype: ``Engine.inner_data_type``
         """
         if data_holder.__class__ not in cls.supported_data:
@@ -239,8 +239,8 @@ class Engine(object):
         :type data: :class:`gadma.DataHolder` or :attr:``inner_data``
 
         :raises ValueError: if `model` is `None` and any was not\
-            setted before; or if `data_holder` is `None` and any\
-            was not setted before.
+            set before; or if `data_holder` is `None` and any\
+            was not set before.
         """
         if model is not None:
             self.set_model(model)
@@ -258,7 +258,7 @@ class Engine(object):
     def generate_code(self, values, filename=None, nanc=None,
                       gen_time=None, gen_time_units="years"):
         """
-        Prints nice formated code in the format of engine to file or returns
+        Prints nice formatted code in the format of engine to file or returns
         it as string if no file is set.
 
         :param values: values for the engine's model.

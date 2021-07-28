@@ -5,6 +5,9 @@ from .. import moments_available, dadi_available
 # Main options. Output and input.
 output_directory = None
 input_data = None
+bed_file = None
+# recombination_map = None
+# stats_for_ld_data_parsing = None
 # input_data = None
 # number_of_populations = None
 population_labels = None

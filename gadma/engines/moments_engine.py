@@ -62,7 +62,7 @@ class MomentsEngine(DadiOrMomentsEngine):
             ret_dict['h'] = event.dom_args
         return ret_dict
 
-    def _inner_func(self, values, ns, dt_fac=0.01):
+    def simulate(self, values, ns, dt_fac=0.01):
         """
         Simulates expected SFS for proposed values of variables.
 
@@ -198,7 +198,7 @@ class MomentsEngine(DadiOrMomentsEngine):
             n_pop = len(self.data.sample_sizes)
             pop_labels = self.data.pop_ids
         ns = [4 for _ in range(n_pop)]
-        plot_mod = moments.ModelPlot.generate_model(self._inner_func,
+        plot_mod = moments.ModelPlot.generate_model(self.simulate,
                                                     values, ns)
         draw_scale = nref is not None
         show = save_file is None
@@ -215,16 +215,16 @@ class MomentsEngine(DadiOrMomentsEngine):
                                      gen_time_units=gen_time_units,
                                      reverse_timeline=True)
 
-    def simulate(self, values, ns, dt_fac=default_dt_fac):
-        """
-        Returns simulated expected SFS for :attr:`demographic_model` with
-        values as parameters.
-
-        :param values: Values of demographic model parameters.
-        :param ns: sample sizes of the simulated SFS.
-        """
-        model = self._inner_func(values, ns, dt_fac)
-        return model
+    # def simulate(self, values, ns, dt_fac=default_dt_fac):
+    #     """
+    #     Returns simulated expected SFS for :attr:`demographic_model` with
+    #     values as parameters.
+    #
+    #     :param values: Values of demographic model parameters.
+    #     :param ns: sample sizes of the simulated SFS.
+    #     """
+    #     model = self._inner_func(values, ns, dt_fac)
+    #     return model
 
     def get_theta(self, values, dt_fac=default_dt_fac):
         return super(MomentsEngine, self).get_theta(values, dt_fac)

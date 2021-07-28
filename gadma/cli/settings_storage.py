@@ -125,11 +125,12 @@ class SettingsStorage(object):
         special_attrs = ['const_for_mutation_strength',
                          'const_for_mutation_rate', 'vmin',
                          'parameter_identifiers', 'migration_masks']
-        exist_file_attrs = ['input_data', 'custom_filename']
-        exist_dir_attrs = ['directory_with_bootstrap', 'resume_from']
+        exist_file_attrs = ['input_data', 'custom_filename', 'bed_file', 'recombination_map']
+        exist_dir_attrs = ['directory_with_bootstrap', 'resume_from', 'bed_files_dir']
         empty_dir_attrs = ['output_directory']
         data_holder_attrs = ['projections', 'outgroup',
-                             'population_labels', 'sequence_length']
+                             'population_labels', 'sequence_length',
+                             'bed_file', 'recombination_map', 'bed_files_dir']
         bounds_attrs = ['min_n', 'max_n', 'min_t', 'max_t', 'min_m', 'max_m',
                         'dynamics']
         bounds_lists = ['lower_bound', 'upper_bound', 'parameter_identifiers']
@@ -140,6 +141,7 @@ class SettingsStorage(object):
                         'dadi_available', 'moments_available',
                         'model_plot_engine', 'sfs_plot_engine',
                         'kernel', 'acquisition_function']
+        dict_attrs = ['stats_for_ld_data_parsing']
 
         super_hasattr = True
         setattr_at_the_end = True
@@ -157,7 +159,8 @@ class SettingsStorage(object):
                 name not in empty_dir_attrs and
                 name not in data_holder_attrs and
                 name not in bounds_attrs and name not in missed_attrs and
-                name not in bounds_lists and not super_hasattr):
+                name not in bounds_lists and not super_hasattr and
+                name not in dict_attrs):
             raise ValueError(f"Setting {name} should be checked.")
 
         # -1. For structures it could be one number. We need to transfrom
@@ -358,6 +361,8 @@ class SettingsStorage(object):
                 files = [value]
                 extension = value[value.rfind('.'):].lower()
             if extension == ".vcf":
+                print(self.projections, self.outgroup, self.population_labels,
+                      self.sequence_length)
                 assert len(files) != 1, "VCF file should be set together with"\
                                         " popmap file. Popmap file is missed,"\
                                         " please set it as: vcf_file, "\
@@ -370,6 +375,9 @@ class SettingsStorage(object):
                     outgroup=self.outgroup,
                     population_labels=self.population_labels,
                     sequence_length=self.sequence_length,
+                    # recombination_map=self.recombination_map,
+                    # bed_file=self.bed_file,
+                    # kwargs_for_computing_ld_stats=self.kwargs_for_computing_ld_stats
                 )
             else:
                 data_holder = SFSDataHolder(
@@ -381,6 +389,11 @@ class SettingsStorage(object):
                 )
             super(SettingsStorage, self).__setattr__('data_holder',
                                                      data_holder)
+            # print(data_holder)
+            # print(data_holder.filename)
+            # print(data_holder.recombination_map)
+            # print(data_holder.bed_file)
+            # print(data_holder.kwargs_for_computing_ld_stats)
         # 3.2 If we change some attributes of data_holder we need update it
         elif name in data_holder_attrs:
             if hasattr(self, 'data_holder'):

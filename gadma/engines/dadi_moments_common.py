@@ -236,7 +236,7 @@ class DadiOrMomentsEngine(Engine):
         elif moments_available:
             from moments import Godambe
         else:
-            ImportError("For CLAIC evalueation either dadi or moments is"
+            ImportError("For CLAIC evaluation either dadi or moments is"
                         " required.")
         # Cache evaluations of the frequency spectrum inside our hessian/J
         # evaluation function

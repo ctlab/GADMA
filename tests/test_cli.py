@@ -37,7 +37,7 @@ class TestCLI(unittest.TestCase):
         try:
             sys.argv = ['gadma', '--test']
             settings, _ = get_settings_test()
-            settings.inner_data
+            settings.inner_data # Тут return в никуда
 
             sys.argv = ['gadma']
             self.assertRaises(SystemExit, get_settings_test)
@@ -47,6 +47,7 @@ class TestCLI(unittest.TestCase):
             sys.argv = ['gadma', '-p', param_file, '-o', 'some_dir',
                         '-i', another_fs]
             settings, _ = get_settings_test()
+            # А тут setting дважды, поэтому он ниже просто перезаписывается
 
             sys.argv = ['gadma', '-p', param_file, '-o', 'some_dir',
                         '-i', another_fs, '--only_models']
