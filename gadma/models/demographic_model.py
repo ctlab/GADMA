@@ -42,14 +42,6 @@ class DemographicModel(Model):
         self.fixed_vars = {}
         self.linear_constrain = linear_constrain
 
-    @staticmethod
-    def get_value_from_var2value(var2value, entity):
-        if isinstance(entity, Variable):
-            return var2value[entity]
-        if isinstance(entity, BinaryOperation):
-            return entity.get_value(var2value)
-        return entity
-
     def add_variable(self, variable):
         """
         Overrides :meth:`Model.add_variable` method. Checks that if model
@@ -207,6 +199,21 @@ class EpochDemographicModel(DemographicModel):
                                  f"got: {self.Nanc_size.units}.")
             self.add_variable(self.Nanc_size)
             assert len(self.variables) == 1
+
+    def __eq__(self, other):
+        if self is other:
+            return True
+        if not isinstance(other, EpochDemographicModel):
+            return False
+        if len(self.events) != len(other.events):
+            return False
+        for i, event in enumerate(self.events):
+            if event != other.events[i]:
+                return False
+        return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def _get_Nanc_size(self, values=None):
         """
@@ -469,6 +476,7 @@ class EpochDemographicModel(DemographicModel):
             )
             var2value = self.var2value(values)
             current_time = self.get_summary_duration()
+            # TODO wrong Nanc size and think about it
             current_sizes = [self.Nanc_size]
             current_dyn = ["Sud"]
             current_g = [0]
@@ -476,10 +484,13 @@ class EpochDemographicModel(DemographicModel):
                 if isinstance(event, Epoch):
                     for i in range(len(current_sizes)):
                         if event.size_args[i] != current_sizes[i]:
-                            dyn = self.get_value_from_var2value(
-                                var2value=var2value,
-                                entity=event.dyn_args[i]
-                            )
+                            if event.dyn_args is not None:
+                                dyn = self.get_value_from_var2value(
+                                    var2value=var2value,
+                                    entity=event.dyn_args[i]
+                                )
+                            else:
+                                dyn = "Sud"
                             # размер в конце популяции == размер в начале отрезка (левом)
                             size_pop = event.size_args[i]
                             if dyn == "Sud":
@@ -518,8 +529,12 @@ class EpochDemographicModel(DemographicModel):
                                 dyn=dyn,
                                 g=g
                             )
-                        current_time -= event.time_arg
-                        current_dyn = event.dyn_args
+                        current_time = operation_creation(
+                            operation=Subtraction,
+                            arg1=current_time,
+                            arg2=event.time_arg
+                        )
+                        current_dyn = event.dyn_args if event.dyn_args is not None else ["Sud" for _ in current_sizes]
                 else:
                     assert isinstance(event, Split)
                     pop_to_div = event.pop_to_div
@@ -534,7 +549,14 @@ class EpochDemographicModel(DemographicModel):
                     current_g.append(0)
                     current_dyn.append("Sud")
                 current_sizes = event.size_args
-
+            for pop in range(len(current_sizes)):
+                model.add_leaf(
+                    pop=pop,
+                    t=0,
+                    dyn=current_dyn[pop],
+                    size_pop=current_sizes[pop],
+                    g=current_g[pop]
+                )
             return model
         raise ValueError(
             f"Cannot translate to {ModelClass}"

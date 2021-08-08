@@ -104,10 +104,9 @@ class BinaryOperation(Operation):
         assert len(self.variables) > 0
 
     def __eq__(self, other):
-
-        if not isinstance(other, BinaryOperation):
-            return False
-        return self.operation_str() == other.operation_str() and (
+        if self is other:
+            return True
+        return type(self) == type(other) and (
                 self.arg1 == other.arg1 and self.arg2 == other.arg2
                 or
                 self.is_commutative() and

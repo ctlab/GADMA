@@ -684,5 +684,26 @@ class TestModels(unittest.TestCase):
         self.assertRaises(ValueError, operation_creation, Division, a)
 
     def test_translation_from_epoch_to_coalescent(self):
-        em = EpochDemographicModel()
-        # cm = em.translate_to(CoalescentDemographicModel)
+        from .test_coalescent_dem_model import TestCoalescentDemModel
+        N_a, nu1, nu2, nu2F, t1, t2 = TestCoalescentDemModel.get_genetic_variables_model1()
+        var2values = {
+            'nu1': 0.4,
+            'nu2F': 0.7,
+            'nu2': 0.5,
+            'N_a': 1e5,
+            't1': 1,
+            't2': 5
+        }
+        em = EpochDemographicModel(gen_time=29, Nanc_size=N_a, mutation_rate=1.25e-8)
+        em.add_split(0, [nu1, nu2])
+        em.add_epoch(operation_creation(Subtraction, t2, t1), [nu1, nu2])
+        em.add_epoch(operation_creation(Subtraction, t1, 0), [nu1, nu2F])
+        cm = CoalescentDemographicModel(gen_time=29, mutation_rate=1.25e-8)
+        cm.add_leaf(0, size_pop=nu1)
+        cm.add_leaf(1, size_pop=nu2F)
+        cm.change_pop_size(1, t=t1, size_pop=nu2)
+        cm.move_lineages(1, 0, t=t2, size_pop=N_a)
+
+        translated_model = em.translate_to(CoalescentDemographicModel, var2values)\
+
+        self.assertEqual(translated_model, cm)

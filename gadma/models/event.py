@@ -9,6 +9,7 @@ class Event(Model):
     """
     Base class for some event.
     """
+
     def __init__(self):
         super(Event, self).__init__(raise_excep=False)
 
@@ -50,6 +51,7 @@ class Epoch(Event):
     :param sel_args: Selection rates for each population during the epoch.
     :type sel_args: list of values and/or :class:`gadma.SelectionVariable`
     """
+
     def __init__(self, time_arg, init_size_args, size_args, mig_args=None,
                  dyn_args=None, sel_args=None, dom_args=None):
         # Simple checks
@@ -89,6 +91,34 @@ class Epoch(Event):
         self.add_variables(dyn_args)
         self.add_variables(mig_args)
 
+    def __eq__(self, other):
+        def _dyn_args_eq(dyn_arg, other_dyn_arg):
+            if dyn_arg == other_dyn_arg:
+                return True
+            if dyn_arg is None:
+                return ["Sud" for _ in other_dyn_arg] == other_dyn_arg
+            if other_dyn_arg is None:
+                return ["Sud" for _ in dyn_arg] == dyn_arg
+            return False
+        if self is other:
+            return True
+        if not isinstance(other, Epoch):
+            return False
+
+        return (
+            self.n_pop == other.n_pop and
+            self.time_arg == other.time_arg and
+            self.init_size_args == other.init_size_args and
+            self.size_args == other.size_args and
+            self.sel_args == other.sel_args and
+            self.dom_args == other.dom_args and
+            self.mig_args == other.mig_args and
+            _dyn_args_eq(self.dyn_args, other.dyn_args)
+        )
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 #    def set_value(self, variable, value):
 #        # check dynamics first as they are more probable in our situation
 #        for i, dyn_arg in enumerate(self.dyn_args):
@@ -122,7 +152,7 @@ class Epoch(Event):
         all_repr.append(sizes_repr)
         migs_repr = "[no migs]"
         if self.mig_args is not None:
-            migs_repr = [[help_f(mig)for mig in migs]
+            migs_repr = [[help_f(mig) for mig in migs]
                          for migs in self.mig_args]
             migs_str = []
             for migs in migs_repr:
@@ -171,6 +201,7 @@ class Split(Event):
     :param pop_to_div: Population index that splits.
     :param size_args: Sizes of populations after split.
     """
+
     def __init__(self, pop_to_div, size_args=None):
         # Simple checks
         if size_args is not None:
@@ -182,6 +213,20 @@ class Split(Event):
         super(Split, self).__init__()
         self.add_variable(pop_to_div)
         self.add_variables(size_args)
+
+    def __eq__(self, other):
+        if self is other:
+            return True
+        if not isinstance(other, Split):
+            return False
+        return (
+                self.pop_to_div == other.pop_to_div and
+                self.size_args == other.size_args and
+                self.n_pop == other.n_pop
+        )
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def as_custom_string(self, values):
         def _help_f(x, y):
@@ -211,11 +256,28 @@ class SetSize(Event):
         super(SetSize, self).__init__()
         self.add_variables([pop, t, dyn, size_pop, g])
 
+    def __eq__(self, other):
+        if self is other:
+            return True
+        if not isinstance(other, SetSize):
+            return False
+        return (
+            self.pop == other.pop and
+            self.t == other.t and
+            self.dyn == other.dyn and
+            self.size_pop == other.size_pop and
+            self.g == other.g
+        )
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def as_custom_string(self, values):
         pass
 
 
 class MoveLineages(Event):
+
     def __init__(self, pop_from, pop, t, p=1,
                  dyn='Sud', size_pop=None, g=None):
         self.pop_from = pop_from
@@ -228,11 +290,31 @@ class MoveLineages(Event):
         super(MoveLineages, self).__init__()
         self.add_variables([pop_from, pop, t, p, dyn, size_pop, g])
 
+    def __eq__(self, other):
+        if self is other:
+            return True
+        if not isinstance(other, MoveLineages):
+            return False
+        return (
+            self.pop_from == other.pop_from and
+            self.pop == other.pop and
+            self.t == other.t and
+            self.p == other.p and
+            self.dyn == other.dyn and
+            self.size_pop == other.size_pop and
+            self.g == other.g
+        )
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def as_custom_string(self, values):
         pass
 
 
 class Leaf(Event):
+
+    # TODO copy of set size
     def __init__(self, pop, t=0, dyn='Syd', size_pop=None, g=None):
         self.pop = pop
         self.t = t
@@ -241,6 +323,22 @@ class Leaf(Event):
         self.g = g
         super(Leaf, self).__init__()
         self.add_variables([pop, t, dyn, size_pop, g])
+
+    def __eq__(self, other):
+        if self is other:
+            return True
+        if not isinstance(other, Leaf):
+            return False
+        return (
+                self.pop == other.pop and
+                self.t == other.t and
+                self.dyn == other.dyn and
+                self.size_pop == other.size_pop and
+                self.g == other.g
+        )
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def as_custom_string(self, values):
         pass

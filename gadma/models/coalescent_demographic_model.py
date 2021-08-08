@@ -9,17 +9,19 @@ from .event import SetSize, MoveLineages, Leaf
 from . import DemographicModel, EpochDemographicModel
 import numpy as np
 
+from .. import Variable
+
 
 class CoalescentDemographicModel(DemographicModel):
-    r"""
+    """
     Special class for coalescent demographic model.
 
-    :param mu: Mutation rate per base per generation.
-    :type mu: float
+    :param mutation_rate: Mutation rate per base per generation.
+    :type mutation_rate: float
     :param gen_time: Time of one generation.
     :type gen_time: float
-    :param rec_rate: Recombination rate per generation per base
-    :type rec_rate: float
+    :param recombination_rate: Recombination rate per generation per base
+    :type recombination_rate: float
     :param linear_constrain: linear constrain on parameters.
     :type linear_constrain: :class:`gadma.optimizers.LinearConstrain`
 
@@ -45,6 +47,26 @@ class CoalescentDemographicModel(DemographicModel):
             recombination_rate=recombination_rate,
             linear_constrain=linear_constrain
         )
+
+    def __eq__(self, other):
+        if self is other:
+            return True
+        if not isinstance(other, CoalescentDemographicModel):
+            return False
+        if len(self.events) != len(other.events):
+            return False
+        for event in self.events:
+            has_same_event = False
+            for other_event in other.events:
+                if event == other_event:
+                    has_same_event = True
+                    break
+            if not has_same_event:
+                return False
+        return True
+
+
+
 
     @classmethod
     def create_from(cls, model, values):
@@ -283,7 +305,7 @@ class CoalescentDemographicModel(DemographicModel):
                 linear_constrain=self.linear_constrain
             )
 
-            if Nanc_var.units != "physical":
+            if isinstance(Nanc, Variable) and Nanc_var.units != "physical":
                 raise ValueError(
                     "Nanc variable must be in physical units for translation"
                 )

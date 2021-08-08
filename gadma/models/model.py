@@ -1,4 +1,5 @@
 import numpy as np
+
 from ..utils import Variable, VariablePool, float_repr, DiscreteVariable
 
 
@@ -25,6 +26,15 @@ class Model(object):
     def variables(self, new_variables):
         self._variables = new_variables
         self.is_fixed = [False for var in new_variables]
+
+    @staticmethod
+    def get_value_from_var2value(var2value, entity):
+        if isinstance(entity, Variable):
+            return var2value[entity]
+        from .variables_combinations import BinaryOperation
+        if isinstance(entity, BinaryOperation):
+            return entity.get_value(var2value)
+        return entity
 
     def add_variable(self, variable):
         """
