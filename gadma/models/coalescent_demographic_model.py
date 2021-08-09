@@ -65,7 +65,22 @@ class CoalescentDemographicModel(DemographicModel):
                 return False
         return True
 
+    def equals(self, other, values):
+        if self is other:
+            return True
+        if not isinstance(other, CoalescentDemographicModel):
+            return False
+        if len(self.events) != len(other.events):
+            return False
 
+        event_visited = [False for _ in self.events]
+
+        for i, other_event in enumerate(other.events):
+            for event in self.events:
+                # TODO bug
+                if event == other_event or event.equals(other_event, values):
+                    event_visited[i] = True
+        return event_visited == [True for _ in self.events]
 
 
     @classmethod

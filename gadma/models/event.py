@@ -13,15 +13,15 @@ class Event(Model):
     def __init__(self):
         super(Event, self).__init__(raise_excep=False)
 
-#    def set_value(self, variable, value):
-#        """
-#        Fixes variable `variable` to the value of `value`. This variable is
-#        no longer available after this operation.
-#
-#        :param variable: Variable of the event to fix.
-#        :param value: New constant value of the variable.
-#        """
-#        raise NotImplementedError()
+    #    def set_value(self, variable, value):
+    #        """
+    #        Fixes variable `variable` to the value of `value`. This variable is
+    #        no longer available after this operation.
+    #
+    #        :param variable: Variable of the event to fix.
+    #        :param value: New constant value of the variable.
+    #        """
+    #        raise NotImplementedError()
 
     def as_custom_string(self, values):
         """
@@ -29,6 +29,14 @@ class Event(Model):
         """
         raise NotImplementedError()
 
+    def _equal_args(self, arg1, arg2, var2value):
+        return self.get_value_from_var2value(
+            var2value,
+            arg1
+        ) == self.get_value_from_var2value(
+            var2value,
+            arg2
+        )
 
 class Epoch(Event):
     """
@@ -59,10 +67,10 @@ class Epoch(Event):
                                                        f" != {len(size_args)}")
         if mig_args is not None:
             mig_args = np.array(mig_args)
-            assert(mig_args.ndim == 2)
-            assert(len(mig_args) == len(size_args))
+            assert (mig_args.ndim == 2)
+            assert (len(mig_args) == len(size_args))
             for x in mig_args:
-                assert(len(x) == len(size_args))
+                assert (len(x) == len(size_args))
         if dyn_args is not None:
             assert (len(dyn_args) == len(size_args))
         if sel_args is not None:
@@ -100,45 +108,46 @@ class Epoch(Event):
             if other_dyn_arg is None:
                 return ["Sud" for _ in dyn_arg] == dyn_arg
             return False
+
         if self is other:
             return True
         if not isinstance(other, Epoch):
             return False
 
         return (
-            self.n_pop == other.n_pop and
-            self.time_arg == other.time_arg and
-            self.init_size_args == other.init_size_args and
-            self.size_args == other.size_args and
-            self.sel_args == other.sel_args and
-            self.dom_args == other.dom_args and
-            self.mig_args == other.mig_args and
-            _dyn_args_eq(self.dyn_args, other.dyn_args)
+                self.n_pop == other.n_pop and
+                self.time_arg == other.time_arg and
+                self.init_size_args == other.init_size_args and
+                self.size_args == other.size_args and
+                self.sel_args == other.sel_args and
+                self.dom_args == other.dom_args and
+                self.mig_args == other.mig_args and
+                _dyn_args_eq(self.dyn_args, other.dyn_args)
         )
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
-#    def set_value(self, variable, value):
-#        # check dynamics first as they are more probable in our situation
-#        for i, dyn_arg in enumerate(self.dyn_args):
-#            if variable is dyn_arg:
-#                self.dyn_args[i] = value
-#                return
-#        if variable is self.time_arg:
-#            self.time_arg = value
-#        for i, migs in enumerate(self.mig_args):
-#            for j, mig_arg in enumerate(migs):
-#                if variable is mig_arg:
-#                    self.mig_args[i][j] = value
-#                return
-#        for i, sel_arg in enumerate(self.sel_args):
-#            if variable is sel_arg:
-#                self.sel_args[i] = value
-#                return
-#        raise ValueError(f"Event has such variable {variable}. "
-#                         f"Available variables: {self.variables}")
-#
+    #    def set_value(self, variable, value):
+    #        # check dynamics first as they are more probable in our situation
+    #        for i, dyn_arg in enumerate(self.dyn_args):
+    #            if variable is dyn_arg:
+    #                self.dyn_args[i] = value
+    #                return
+    #        if variable is self.time_arg:
+    #            self.time_arg = value
+    #        for i, migs in enumerate(self.mig_args):
+    #            for j, mig_arg in enumerate(migs):
+    #                if variable is mig_arg:
+    #                    self.mig_args[i][j] = value
+    #                return
+    #        for i, sel_arg in enumerate(self.sel_args):
+    #            if variable is sel_arg:
+    #                self.sel_args[i] = value
+    #                return
+    #        raise ValueError(f"Event has such variable {variable}. "
+    #                         f"Available variables: {self.variables}")
+    #
     def as_custom_string(self, values):
         def _help_f(x, y):
             return f"{y}" if x == "" else f"{y}({x})"
@@ -262,11 +271,25 @@ class SetSize(Event):
         if not isinstance(other, SetSize):
             return False
         return (
+                self.pop == other.pop and
+                self.t == other.t and
+                self.dyn == other.dyn and
+                self.size_pop == other.size_pop and
+                self.g == other.g
+        )
+
+    def equals(self, other, values):
+        if self is other:
+            return True
+        if not isinstance(other, SetSize):
+            return False
+        var2value = self.var2value(values)
+        return (
             self.pop == other.pop and
-            self.t == other.t and
-            self.dyn == other.dyn and
-            self.size_pop == other.size_pop and
-            self.g == other.g
+            self._equal_args(self.t, other.t, var2value) and
+            self._equal_args(self.dyn, other.dyn, var2value) and
+            self._equal_args(self.size_pop, other.size_pop, var2value) and
+            self._equal_args(self.g, other.g, var2value)
         )
 
     def __ne__(self, other):
@@ -305,6 +328,22 @@ class MoveLineages(Event):
             self.g == other.g
         )
 
+    def equals(self, other, values):
+        if self is other:
+            return True
+        if not isinstance(other, MoveLineages):
+            return False
+        var2value = self.var2value(values)
+        return (
+                self.pop_from == other.pop_from and
+                self.pop == other.pop and
+                self._equal_args(self.t, other.t, var2value) and
+                self._equal_args(self.p, other.p, var2value) and
+                self._equal_args(self.dyn, other.dyn, var2value) and
+                self._equal_args(self.size_pop, other.size_pop, var2value) and
+                self._equal_args(self.g, other.g, var2value)
+        )
+
     def __ne__(self, other):
         return not self.__eq__(other)
 
@@ -314,7 +353,7 @@ class MoveLineages(Event):
 
 class Leaf(Event):
 
-    # TODO copy of set size
+    # TODO duplicate code of set size
     def __init__(self, pop, t=0, dyn='Syd', size_pop=None, g=None):
         self.pop = pop
         self.t = t
@@ -335,6 +374,20 @@ class Leaf(Event):
                 self.dyn == other.dyn and
                 self.size_pop == other.size_pop and
                 self.g == other.g
+        )
+
+    def equals(self, other, values):
+        if self is other:
+            return True
+        if not isinstance(other, Leaf):
+            return False
+        var2value = self.var2value(values)
+        return (
+            self.pop == other.pop and
+            self._equal_args(self.t, other.t, var2value) and
+            self._equal_args(self.dyn, other.dyn, var2value) and
+            self._equal_args(self.size_pop, other.size_pop, var2value) and
+            self._equal_args(self.g, other.g, var2value)
         )
 
     def __ne__(self, other):

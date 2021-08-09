@@ -706,4 +706,4 @@ class TestModels(unittest.TestCase):
 
         translated_model = em.translate_to(CoalescentDemographicModel, var2values)\
 
-        self.assertEqual(translated_model, cm)
+        self.assertTrue(translated_model.equals(cm, var2values))
