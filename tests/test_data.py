@@ -50,9 +50,6 @@ POPMAP_SIM_YRI_CEU =  os.path.join(DATA_PATH, "vcf",
                                    "out_of_africa_chr22_sim.popmap")
 BAD_POPMAP = os.path.join(DATA_PATH, "vcf", "bad.popmap")
 
-POP_MAP_LD = os.path.join(DATA_PATH, 'vfc_ld', "pop_map.txt")
-REC_MAP_LD = os.path.join(DATA_PATH, 'vfc_ld', "rec_map.txt")
-VCF_DATA_LD = os.path.join(DATA_PATH, 'vfc_ld', "two_pop.vcf")
 
 
 class TestDataHolder(unittest.TestCase):

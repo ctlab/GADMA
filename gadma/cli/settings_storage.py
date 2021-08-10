@@ -17,6 +17,7 @@ import importlib.util
 import sys
 import copy
 import numbers
+import inspect
 from keyword import iskeyword
 
 HOME_DIR = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
@@ -125,12 +126,14 @@ class SettingsStorage(object):
         special_attrs = ['const_for_mutation_strength',
                          'const_for_mutation_rate', 'vmin',
                          'parameter_identifiers', 'migration_masks']
-        exist_file_attrs = ['input_data', 'custom_filename', 'bed_file', 'recombination_map']
+        exist_file_attrs = ['input_data', 'custom_filename',
+                            'bed_file', 'recombination_map']
         exist_dir_attrs = ['directory_with_bootstrap', 'resume_from', 'bed_files_dir']
         empty_dir_attrs = ['output_directory']
         data_holder_attrs = ['projections', 'outgroup',
                              'population_labels', 'sequence_length',
-                             'bed_file', 'recombination_map', 'bed_files_dir']
+                             'bed_file', 'recombination_map', 'bed_files_dir',
+                             'ld_kwargs']
         bounds_attrs = ['min_n', 'max_n', 'min_t', 'max_t', 'min_m', 'max_m',
                         'dynamics']
         bounds_lists = ['lower_bound', 'upper_bound', 'parameter_identifiers']
@@ -141,7 +144,7 @@ class SettingsStorage(object):
                         'dadi_available', 'moments_available',
                         'model_plot_engine', 'sfs_plot_engine',
                         'kernel', 'acquisition_function']
-        dict_attrs = ['stats_for_ld_data_parsing']
+        dict_attrs = ['ld_kwargs']
 
         super_hasattr = True
         setattr_at_the_end = True
@@ -361,8 +364,6 @@ class SettingsStorage(object):
                 files = [value]
                 extension = value[value.rfind('.'):].lower()
             if extension == ".vcf":
-                print(self.projections, self.outgroup, self.population_labels,
-                      self.sequence_length)
                 assert len(files) != 1, "VCF file should be set together with"\
                                         " popmap file. Popmap file is missed,"\
                                         " please set it as: vcf_file, "\
@@ -375,9 +376,9 @@ class SettingsStorage(object):
                     outgroup=self.outgroup,
                     population_labels=self.population_labels,
                     sequence_length=self.sequence_length,
-                    # recombination_map=self.recombination_map,
-                    # bed_file=self.bed_file,
-                    # kwargs_for_computing_ld_stats=self.kwargs_for_computing_ld_stats
+                    recombination_map=self.recombination_map,
+                    bed_file=self.bed_file,
+                    ld_kwargs=self.ld_kwargs
                 )
             else:
                 data_holder = SFSDataHolder(
@@ -389,11 +390,7 @@ class SettingsStorage(object):
                 )
             super(SettingsStorage, self).__setattr__('data_holder',
                                                      data_holder)
-            # print(data_holder)
-            # print(data_holder.filename)
-            # print(data_holder.recombination_map)
-            # print(data_holder.bed_file)
-            # print(data_holder.kwargs_for_computing_ld_stats)
+
         # 3.2 If we change some attributes of data_holder we need update it
         elif name in data_holder_attrs:
             if hasattr(self, 'data_holder'):
@@ -630,6 +627,28 @@ class SettingsStorage(object):
                 transformed_value.append(new_mask)
             value = transformed_value
 
+        # # 3.13 Check keys in dict for computing LD stats from vcf file
+        # if name in dict_attrs:
+        #     if self.engine == 'moments.LD':
+        #         import moments.LD
+        #         Full_arg_spec = inspect.getfullargspec(moments.LD.Parsing.compute_ld_statistics)
+        #         args_parsing_ld = Full_arg_spec[0]
+        #         for key in value:
+        #             if key not in args_parsing_ld:
+        #                 raise KeyError("Computing_ld_stats function hasn't "
+        #                                f"argument {key}! Check your param_file "
+        #                                f"and remove unexpected args.")
+        #         if all(['rec_map_name' not in list(value),
+        #                 'report' in list(value),
+        #                 value['report'] == False]):
+        #             print('No recombination map name given, using first column.')
+        #     else:
+        #         raise ValueError("You can't pass dictionary with arguments for "
+        #                          "computing LDStats if you don't use"
+        #                          "moments.LD engine. Your current engine is"
+        #                          f"{self.engine}. Change engine or delete dict"
+        #                          f"argument.")
+
         if setattr_at_the_end:
             super(SettingsStorage, self).__setattr__(name, value)
             # assert(self.__getattr__(name) == value)
@@ -766,18 +785,23 @@ class SettingsStorage(object):
         be set.
         """
         engine = get_engine(self.engine)
+
         data = engine.read_data(self.data_holder)
-        self.projections = data.sample_sizes
-        self.population_labels = data.pop_ids
-        self.outgroup = not data.folded
-        if self.pts is None:
-            max_n = max(self.projections)
-            x = (int((max_n - 1) / 10) + 1) * 10
-            super(SettingsStorage, self).__setattr__("pts",
-                                                     [x, x + 10, x + 20])
-        self._inner_data = data
-        self.number_of_populations = len(self.projections)
-        return data
+        if self.engine != 'momentsLD':
+            self.projections = data.sample_sizes
+            self.population_labels = data.pop_ids
+            self.outgroup = not data.folded
+            if self.pts is None:
+                max_n = max(self.projections)
+                x = (int((max_n - 1) / 10) + 1) * 10
+                super(SettingsStorage, self).__setattr__("pts",
+                                                         [x, x + 10, x + 20])
+            self._inner_data = data
+            self.number_of_populations = len(self.projections)
+            return data
+        else:
+            self._inner_data = data
+            return data
 
     def read_bootstrap_data(self, return_filenames=False):
         """

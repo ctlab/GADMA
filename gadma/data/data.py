@@ -55,7 +55,8 @@ class VCFDataHolder(DataHolder):
     """
     def __init__(self, vcf_file, popmap_file, projections=None, outgroup=None,
                  population_labels=None, sequence_length=None,  bed_file=None,
-                 recombination_map=None, kwargs_for_computing_ld_stats=None):
+                 bed_files_dir=None, recombination_map=None,
+                 ld_kwargs=None):
         super(VCFDataHolder, self).__init__(
             filename=vcf_file,
             projections=projections,
@@ -65,8 +66,9 @@ class VCFDataHolder(DataHolder):
         )
         self.popmap_file = popmap_file
         self.bed_file = bed_file
+        self.bed_files_dir = bed_files_dir
         self.recombination_map = recombination_map
-        self.kwargs_for_computing_ld_stats = kwargs_for_computing_ld_stats
+        self.ld_kwargs = ld_kwargs
 
 
 # class FSCDataHolder(DataHolder):
@@ -93,3 +95,10 @@ class VCFDataHolder(DataHolder):
 #             population_labels=population_labels,
 #             sequence_length=sequence_length
 #         )
+
+# def check_all_ld_data_correct(data_holder):
+#     if data_holder.bed_file:
+#         extension = data_holder.bed_file[-4:]
+#         if extension != '.bed':
+#             raise FileExistsError("Check passed bed file. It doesn't have"
+#                                   ".bed extension.")

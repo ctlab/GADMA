@@ -6,7 +6,6 @@ from gadma.models import Model
 import os
 import numpy as np
 
-
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
 
 
@@ -59,15 +58,15 @@ class TestEngines(unittest.TestCase):
             phi = dadi.Integration.one_pop(phi, xx, nu=nu1, T=t1)
             phi = dadi.PhiManip.phi_1D_to_2D(xx, phi)
 
-            nu2_func = lambda t: nu1 * (nu2 / nu1) ** (t/t2)
+            nu2_func = lambda t: nu1 * (nu2 / nu1) ** (t / t2)
             phi = dadi.Integration.two_pops(phi, xx, T=t2, nu1=nu1,
                                             nu2=nu2_func)
             phi = dadi.PhiManip.phi_2D_to_3D_split_1(xx, phi)
 
             phi = dadi.Integration.three_pops(phi, xx, T=t3, nu1=nu1,
-                                            nu2=nu2, nu3=nu3, m12=m12)
+                                              nu2=nu2, nu3=nu3, m12=m12)
 
-            sfs = dadi.Spectrum.from_phi(phi, ns, [xx]*len(ns))
+            sfs = dadi.Spectrum.from_phi(phi, ns, [xx] * len(ns))
             return sfs
 
         nu1 = PopulationSizeVariable('nu1')
@@ -111,15 +110,15 @@ class TestEngines(unittest.TestCase):
             fs = moments.Spectrum(sts)
 
             fs.integrate(Npop=[nu1], tf=tf, dt_fac=dt_fac)
-            fs =  moments.Manips.split_1D_to_2D(fs, ns[0], sum(ns[1:]))
+            fs = moments.Manips.split_1D_to_2D(fs, ns[0], sum(ns[1:]))
 
-            nu2_func = lambda t: nu1 * (nu2 / nu1) ** (t/tf)
+            nu2_func = lambda t: nu1 * (nu2 / nu1) ** (t / tf)
             fs.integrate(Npop=lambda t: [nu1, nu2_func(t)], tf=tf, dt_fac=dt_fac)
-            fs =  moments.Manips.split_2D_to_3D_2(fs, ns[1], ns[2] + ns[3])
+            fs = moments.Manips.split_2D_to_3D_2(fs, ns[1], ns[2] + ns[3])
 
             m = [[0, m12, 0], [0, 0, 0], [0, 0, 0]]
             fs.integrate(Npop=[nu1, nu2, nu3], tf=tf, m=m, dt_fac=dt_fac)
-            fs =  moments.Manips.split_3D_to_4D_3(fs, ns[2], ns[3])
+            fs = moments.Manips.split_3D_to_4D_3(fs, ns[2], ns[3])
 
             fs.integrate(Npop=[nu1, nu2, nu3, nu4], tf=tf, dt_fac=dt_fac)
 
@@ -154,7 +153,6 @@ class TestEngines(unittest.TestCase):
         dm.add_split(2, [nu3, nu4])
         dm.add_epoch(t, [nu1, nu2, nu3, nu4])
         return data, dm, values, ll
-
 
     def test_dadi_engime(self):
         engine = get_engine('dadi')
@@ -258,8 +256,8 @@ class TestEngines(unittest.TestCase):
         dm.add_epoch(T, [nu1F, nu2F, nu2F], mig_args=migs)
 
         values = {'nu1F': 1.880, nu2B: 0.0724, 'f': 0.9, 'nu2F': 1.764,
-               'm': 0.930, 'Tp':  0.363, 'T': 0.112, 'Dyn': 'Lin',
-               'SudDyn': 'Sud', 's': 0.1, 'dom': 0.5, 'm13': 1.5}
+                  'm': 0.930, 'Tp': 0.363, 'T': 0.112, 'Dyn': 'Lin',
+                  'SudDyn': 'Sud', 's': 0.1, 'dom': 0.5, 'm13': 1.5}
 
         engine = gadma.engines.demes_engine.DemesEngine()
         engine.data = data_holder

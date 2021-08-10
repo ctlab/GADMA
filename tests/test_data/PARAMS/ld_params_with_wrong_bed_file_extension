@@ -1,7 +1,7 @@
-Input data : test_data/DATA/vcf_ld/two_pop.vcf, test_data/DATA/vcf_ld/pop_map.txt
-Engine : moments.LD
+Input data : test_data/DATA/vcf_ld/vcf_data.vcf, test_data/DATA/vcf_ld/pop_map.txt
+Engine : momentsLD
 initial_structure: 1,1
 final_structure: 1,2
 recombination_map: test_data/DATA/vcf_ld/rec_map.txt
-bed_file: test_data/DATA/vcf_ld/bed_file.bed
-kwargs_for_computing_ld_stats: {pops': ['pop1', 'pop2'], 'report': False}
+bed_file: test_data/DATA/vcf_ld/bed_file.be
+ld_kwargs: {'pops': ["deme0", "deme1"], 'report': False}

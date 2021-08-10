@@ -46,7 +46,6 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
     """
     if not matplotlib_available:
         raise ValueError("Matplotlib is required to draw models.")
-        return
     model_plot_engine = get_engine(settings.model_plot_engine)
     model_plot_engine.data_holder = engine.data_holder
     model_plot_engine.model = engine.model

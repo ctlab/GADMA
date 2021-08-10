@@ -6,8 +6,8 @@ from .. import moments_available, dadi_available
 output_directory = None
 input_data = None
 bed_file = None
-# recombination_map = None
-# stats_for_ld_data_parsing = None
+recombination_map = None
+ld_kwargs = None
 # input_data = None
 # number_of_populations = None
 population_labels = None
@@ -16,6 +16,7 @@ outgroup = None
 sequence_length = None
 linked_snp_s = True
 directory_with_bootstrap = None
+bed_files_dir = None
 # boots = None
 
 # Pipeline

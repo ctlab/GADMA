@@ -1,6 +1,6 @@
-Input data : test_data/DATA/vcf_ld/parsing_example_ld_1.vcf, test_data/DATA/vcf_ld/parsing_example_ld_1.pops.txt
+Input data : test_data/DATA/vcf_ld/vcf_data.vcf, test_data/DATA/vcf_ld/pop_map.txt
 Engine : momentsLD
 initial_structure: 1,1
 final_structure: 1,2
-recombination_map: test_data/DATA/vcf_ld/parsing_example_ld_1.map.txt
-kwargs_for_computing_ld_stats: {'pops': ["deme0", "deme1"], 'report': True, 'r_bins': 'np.logspace(-6, -3, 7)'}
+recombination_map: test_data/DATA/vcf_ld/rec_map.txt
+ld_kwargs: {'pops': ["deme0", "deme1"], 'report': False, 'r_bins': 'np.logspace(-6, -3, 7)'}

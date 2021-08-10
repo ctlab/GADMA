@@ -12,6 +12,7 @@ import sys
 import os
 import numpy as np
 import itertools
+import inspect
 
 TEST_SETTINGS = os.path.join(HOME_DIR, "test_settings")
 
@@ -298,6 +299,29 @@ def get_settings():
         if settings_storage.engine in ['moments', 'dadi']:
             warnings.warn(f"Engine {settings_storage.engine} will ignore "
                           "not-zero recombination rate.")
+
+    if settings_storage.ld_kwargs:
+        value = settings_storage.ld_kwargs
+        if settings_storage.engine == 'momentsLD':
+            import moments.LD
+            Full_arg_spec = inspect.getfullargspec(moments.LD.Parsing.compute_ld_statistics)
+            args_parsing_ld = Full_arg_spec[0]
+            for key in value:
+                if key not in args_parsing_ld:
+                    raise KeyError("Computing_ld_stats function hasn't "
+                                   f"argument {key}! Check your param_file "
+                                   f"and remove unexpected args.")
+            if all(['rec_map_name' not in list(value),
+                    'report' in list(value),
+                    value['report'] == False]):
+                print('No recombination map name given, using first column.')
+        else:
+            raise ValueError("You can't pass dictionary with arguments for "
+                             "computing LDStats if you don't use "
+                             "moments.LD engine. Your current engine is "
+                             f"{settings_storage.engine}. Change engine or delete dict "
+                             f"argument.")
+
     return settings_storage, args
 
 

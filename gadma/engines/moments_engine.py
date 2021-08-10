@@ -179,9 +179,9 @@ class MomentsEngine(DadiOrMomentsEngine):
         :param nref: An ancestral population size. If None then parameters
                      will be drawn in genetic units.
         :type nref: int
-        :param gen_type: Time of one generation. Should be in units of
+        :param gen_time: Time of one generation. Should be in units of
                          ``gen_time_units``.
-        :type gen_type: float
+        :type gen_time: float
         :param gen_time_units: Units of `gen_type`. For example, it
                                could be Years, Generations, Thousand Years and
                                so on.
