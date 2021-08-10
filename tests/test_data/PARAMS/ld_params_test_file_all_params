@@ -1,7 +1,0 @@
-Input file : test/test_data/DATA/vcf_ld/two_pop.vcf, test/test_data/DATA/vcf_ld/pop_map.txt
-Output directory: tests/output_dir
-Engine : moments.LD
-recombination_map: test/test_data/DATA/vcf_ld/rec_map.txt
-stats_for_ld_data_parsing: {cM : False, pops: ['pop1', 'pop2']}
-population_labels: ['Yti', 'Guti']
-

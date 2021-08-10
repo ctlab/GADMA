@@ -1,0 +1,8 @@
+Input data : test_data/DATA/vcf_ld/two_pop.vcf, test_data/DATA/vcf_ld/pop_map.txt
+Engine : moments.LD
+initial_structure: 1,1
+final_structure: 1,2
+recombination_map: test_data/DATA/vcf_ld/rec_map.txt
+kwargs_for_computing_ld_stats: {'cM': False, 'pops': ['pop1', 'pop2'], 'report': True, 'use_genomes_shmenomes': False}
+population_labels: ['Yti', 'Guti']
+sequence_length: 12125125125

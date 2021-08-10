@@ -1,0 +1,7 @@
+Input data : test_data/DATA/vcf_ld/two_pop.vcf, test_data/DATA/vcf_ld/pop_map.txt
+Engine : moments.LD
+initial_structure: 1,1
+final_structure: 1,2
+recombination_map: test_data/DATA/vcf_ld/rec_map.txt
+bed_files_dir: test_data/DATA/vcf_ld/bed_dir_1/
+kwargs_for_computing_ld_stats: {'pops': ['pop1', 'pop2'], 'report': False, 'r_bins': 'np.logspace(-6, -3, 7)'}
