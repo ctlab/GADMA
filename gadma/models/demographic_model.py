@@ -1,7 +1,8 @@
 from ..utils import Variable, TimeVariable, DemographicVariable
 from ..utils import PopulationSizeVariable, VariablePool, variables_values_repr
 from . import Model, Epoch, Split
-from .variables_combinations import operation_creation, Addition, BinaryOperation, Subtraction, Division, Log
+from .variables_combinations import operation_creation, \
+    Addition, Subtraction, Division, Log
 import copy
 import numpy as np
 
@@ -448,8 +449,8 @@ class EpochDemographicModel(DemographicModel):
         if isinstance(model, CoalescentDemographicModel):
             if values is None:
                 raise ValueError(
-                    f"Cannot translate to CoalescentDemographicModel"
-                    f" without values"
+                    "Cannot translate to CoalescentDemographicModel"
+                    " without values"
                 )
             model.translate_to(cls, values)
         raise ValueError(
@@ -492,7 +493,7 @@ class EpochDemographicModel(DemographicModel):
                                 )
                             else:
                                 dyn = "Sud"
-                            # размер в конце популяции == размер в начале отрезка (левом)
+                            # размер в конце == размер в левом конце отрезка
                             size_pop = event.size_args[i]
                             if dyn == "Sud":
                                 g = 0
@@ -536,7 +537,9 @@ class EpochDemographicModel(DemographicModel):
                         arg1=current_time,
                         arg2=event.time_arg
                     )
-                    current_dyn = event.dyn_args if event.dyn_args is not None else ["Sud" for _ in current_sizes]
+                    current_dyn = event.dyn_args \
+                        if event.dyn_args is not None \
+                        else ["Sud" for _ in current_sizes]
                 else:
                     assert isinstance(event, Split)
                     pop_to_div = event.pop_to_div

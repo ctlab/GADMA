@@ -1,5 +1,4 @@
-from .variables_combinations import BinaryOperation, \
-    Subtraction, \
+from .variables_combinations import Subtraction, \
     Division, \
     Multiplication, \
     operation_creation, \
@@ -77,7 +76,6 @@ class CoalescentDemographicModel(DemographicModel):
 
         for i, other_event in enumerate(other.events):
             for event in self.events:
-                # TODO bug
                 if event == other_event or event.equals(other_event, values):
                     event_visited[i] = True
         return event_visited == [True for _ in self.events]

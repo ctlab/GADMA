@@ -15,8 +15,8 @@ class Event(Model):
 
     #    def set_value(self, variable, value):
     #        """
-    #        Fixes variable `variable` to the value of `value`. This variable is
-    #        no longer available after this operation.
+    #        Fixes variable `variable` to the value of `value`.
+    #        This variable is no longer available after this operation.
     #
     #        :param variable: Variable of the event to fix.
     #        :param value: New constant value of the variable.
@@ -37,6 +37,7 @@ class Event(Model):
             var2value,
             arg2
         )
+
 
 class Epoch(Event):
     """
@@ -285,11 +286,11 @@ class SetSize(Event):
             return False
         var2value = self.var2value(values)
         return (
-            self.pop == other.pop and
-            self._equal_args(self.t, other.t, var2value) and
-            self._equal_args(self.dyn, other.dyn, var2value) and
-            self._equal_args(self.size_pop, other.size_pop, var2value) and
-            self._equal_args(self.g, other.g, var2value)
+                self.pop == other.pop and
+                self._equal_args(self.t, other.t, var2value) and
+                self._equal_args(self.dyn, other.dyn, var2value) and
+                self._equal_args(self.size_pop, other.size_pop, var2value) and
+                self._equal_args(self.g, other.g, var2value)
         )
 
     def __ne__(self, other):
@@ -319,13 +320,13 @@ class MoveLineages(Event):
         if not isinstance(other, MoveLineages):
             return False
         return (
-            self.pop_from == other.pop_from and
-            self.pop == other.pop and
-            self.t == other.t and
-            self.p == other.p and
-            self.dyn == other.dyn and
-            self.size_pop == other.size_pop and
-            self.g == other.g
+                self.pop_from == other.pop_from and
+                self.pop == other.pop and
+                self.t == other.t and
+                self.p == other.p and
+                self.dyn == other.dyn and
+                self.size_pop == other.size_pop and
+                self.g == other.g
         )
 
     def equals(self, other, values):
@@ -383,11 +384,11 @@ class Leaf(Event):
             return False
         var2value = self.var2value(values)
         return (
-            self.pop == other.pop and
-            self._equal_args(self.t, other.t, var2value) and
-            self._equal_args(self.dyn, other.dyn, var2value) and
-            self._equal_args(self.size_pop, other.size_pop, var2value) and
-            self._equal_args(self.g, other.g, var2value)
+                self.pop == other.pop and
+                self._equal_args(self.t, other.t, var2value) and
+                self._equal_args(self.dyn, other.dyn, var2value) and
+                self._equal_args(self.size_pop, other.size_pop, var2value) and
+                self._equal_args(self.g, other.g, var2value)
         )
 
     def __ne__(self, other):
