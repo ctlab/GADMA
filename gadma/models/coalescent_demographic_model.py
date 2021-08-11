@@ -82,7 +82,6 @@ class CoalescentDemographicModel(DemographicModel):
                     event_visited[i] = True
         return event_visited == [True for _ in self.events]
 
-
     @classmethod
     def create_from(cls, model, values):
         if isinstance(model, EpochDemographicModel):
@@ -398,8 +397,9 @@ class CoalescentDemographicModel(DemographicModel):
         self.events.append(new_set_size)
         self.add_variables(new_set_size.variables)
 
+    # TODO g = 0, explaining
     def move_lineages(self, pop_from, pop, t, dyn='Sud',
-                      size_pop=None, g=None, p=1):
+                      size_pop=None, g=0, p=1):
         """
         Move each lineage in pop_from to pop at time t with probability p.
 
@@ -432,7 +432,7 @@ class CoalescentDemographicModel(DemographicModel):
         self.events.append(new_move_lineages)
         self.add_variables(new_move_lineages.variables)
 
-    def add_leaf(self, pop, t=0, dyn='Sud', size_pop=None, g=None):
+    def add_leaf(self, pop, t=0, dyn='Sud', size_pop=None, g=0):
         """
         Add a sampled leaf population to the model.
 

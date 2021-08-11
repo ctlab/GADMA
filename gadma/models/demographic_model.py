@@ -480,6 +480,7 @@ class EpochDemographicModel(DemographicModel):
             current_sizes = [self.Nanc_size]
             current_dyn = ["Sud"]
             current_g = [0]
+            # TODO wrong size for population (probably in this cycle)
             for event in self.events:
                 if isinstance(event, Epoch):
                     for i in range(len(current_sizes)):
@@ -525,16 +526,17 @@ class EpochDemographicModel(DemographicModel):
                             model.change_pop_size(
                                 pop=i,
                                 t=current_time,
-                                size_pop=size_pop,
+                                size_pop=current_sizes[i],
                                 dyn=dyn,
                                 g=g
                             )
-                        current_time = operation_creation(
-                            operation=Subtraction,
-                            arg1=current_time,
-                            arg2=event.time_arg
-                        )
-                        current_dyn = event.dyn_args if event.dyn_args is not None else ["Sud" for _ in current_sizes]
+                            current_sizes[i] = size_pop
+                    current_time = operation_creation(
+                        operation=Subtraction,
+                        arg1=current_time,
+                        arg2=event.time_arg
+                    )
+                    current_dyn = event.dyn_args if event.dyn_args is not None else ["Sud" for _ in current_sizes]
                 else:
                     assert isinstance(event, Split)
                     pop_to_div = event.pop_to_div
