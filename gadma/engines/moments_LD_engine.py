@@ -1,4 +1,3 @@
-# Need some imports
 import numpy as np
 
 from . import register_engine
@@ -14,68 +13,97 @@ from moments.LD import LDstats
 
 # This function will be transferred to utils very soon (after finishing)
 
-def check_all_ld_data_correct(data_holder):
-    data_holder_local = data_holder
+def check_ld_data_holder(data_holder):
+    """
+    Check correctness of data for computing ld stored in data_holder,
+    if find wrong data raises Errors or trying to fix.
 
-    if data_holder_local.bed_file:
-        extension = data_holder_local.bed_file[-4:]
+    :param data_holder: holder of the data.
+    :type data_holder: :class:`VCFDataHolder`
+    """
+    if data_holder.bed_file:
+        extension = data_holder.bed_file[-4:]
         if extension != '.bed':
-            raise FileExistsError("Check passed bed file. It doesn't have"
+            raise FileExistsError("Check passed bed file. It doesn't have "
                                   ".bed extension.")
 
-    if data_holder_local.bed_file and data_holder_local.bed_files_dir:
-        raise ValueError('Single bed file and bed files directory'
-                         ' passed in the same time. Please, delete one of them '
+    if data_holder.bed_file and data_holder.bed_files_dir:
+        raise ValueError('Single bed file and bed files directory '
+                         'passed in the same time. Please, delete one of them '
                          'and try again.')
 
-    if data_holder_local.bed_files_dir:
-        if not isinstance(data_holder_local.bed_files_dir, list):
-        # need to read all file names and collect them in the list
-            bed_files_list = listdir(data_holder_local.bed_files_dir)
-            bed_files_list = [(data_holder_local.bed_files_dir + '/' + file) for file in bed_files_list]
+    if all(
+        [
+            data_holder.bed_files_dir,
+            len(listdir(data_holder.bed_files_dir)) == 0
+        ]
+    ):
+        raise ValueError('You passed empty bed files directory! '
+                         'Check it.')
 
-            if not bed_files_list:
-                raise ValueError("You passed empty directory as bed_files_dir!"
-                                 "Please, check you dir. Delete bed_files_dir "
-                                 "argument from param file if you don't want to use bed files"
-                                 "and try again.")
+    elif len(listdir(data_holder.bed_files_dir)) == 1 and not data_holder.bed_file:
+        data_holder.bed_file = (
+            data_holder.bed_files_dir
+            + "/"
+            + listdir(data_holder.bed_files_dir)[0]
+        )
+        data_holder.bed_files_dir = None
+        print("You've passed directory with single bed file.")
 
-            for bed_file in bed_files_list:
-                if bed_file[-4:] != '.bed':
-                    raise FileExistsError('Bed files directory contains files with'
-                                          'wrong extension. Please, delete unsupported files'
-                                          'and try again.')
+    elif data_holder.bed_files_dir:
+        for bed_file in listdir(data_holder.bed_files_dir):
+            if bed_file[-4:] != '.bed':
+                raise FileExistsError('Bed files directory contains files with '
+                                      'wrong extension. Please, delete unsupported files '
+                                      'and try again.')
 
-            if len(bed_files_list) == 1 and not data_holder_local.bed_file:
-                data_holder_local.bed_file = bed_files_list[0]
-                data_holder_local.bed_files_dir = None
-
-                print("You've passed directory with single bed file.")
-        # else:
-        #     data_holder_local.bed_files_dir = sorted(bed_files_list)
-
-    if data_holder_local.ld_kwargs:
-        if 'r_bins' in data_holder_local.ld_kwargs:
-            data_holder_local.ld_kwargs['r_bins'] = eval(
-                data_holder_local.ld_kwargs['r_bins']
+    if data_holder.ld_kwargs:
+        if 'r_bins' in data_holder.ld_kwargs:
+            data_holder.ld_kwargs['r_bins'] = eval(
+                data_holder.ld_kwargs['r_bins']
             )
-        elif ('r_bins' not in data_holder_local.ld_kwargs
-              and data_holder_local.recombination_map is not None):
+        elif ('r_bins' not in data_holder.ld_kwargs
+              and data_holder.recombination_map is not None):
             raise ValueError("You didn't provided r_bins argument in "
                              "dictionary with arguments for computing LD stats "
                              "but provided recombination map! "
                              "Please check your param file and add r_bins.")
 
-        if 'bp_bins' in data_holder_local.ld_kwargs:
-            if isinstance(data_holder_local.ld_kwargs['bp_bins'], str):
-                data_holder_local.ld_kwargs['bp_bins'] = eval(
-                    data_holder_local.ld_kwargs['bp_bins']
+        if 'bp_bins' in data_holder.ld_kwargs:
+            if isinstance(data_holder.ld_kwargs['bp_bins'], str):
+                data_holder.ld_kwargs['bp_bins'] = eval(
+                    data_holder.ld_kwargs['bp_bins']
                 )
 
-    return data_holder_local
+    if (data_holder.population_labels
+            and 'pops' not in data_holder.ld_kwargs):
+        data_holder.ld_kwargs.update({'pops': data_holder.population_labels})
+
+    elif (data_holder.population_labels
+          and 'pops' in data_holder.ld_kwargs):
+        if data_holder.population_labels != data_holder.ld_kwargs['pops']:
+            raise KeyError('Different population labels passed twice! '
+                           'Check you param file and remove one of labels')
+
+    return data_holder
 
 
 class MomentsLD(Engine):
+    """
+    Engine for using :py:mod:`momentsLD` for demographic inference.
+
+    Citation of :py:mod:`momentsLD`:
+
+    Ragsdale Aaron P and Simon Gravel(2019)
+    Models of archaic admixture and recent history from two-locus statistics
+    PLoS Genetics, 15(6), e1008204.
+    https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1008204
+
+    Ragsdale Aaron P and Simon Gravel(2020)
+    Unbiased estimation of linkage disequilibrium from unphased data
+    Molecular Biology and Evolution 37.3 (2020): 923-932
+    https://academic.oup.com/mbe/article/37/3/923/5614437
+    """
     id = "momentsLD"
 
     if moments_LD_available:
@@ -93,46 +121,41 @@ class MomentsLD(Engine):
     # Genotype array?
     @classmethod
     def _read_data(cls, data_holder):
+        """
+        Reads LD statistics data from `data_holder`.
 
-        data_holder = check_all_ld_data_correct(data_holder)
+        :param data_holder: holder of the data.
+        :type data_holder: :class:`VCFDataHolder`
+        """
+        data_holder = check_ld_data_holder(data_holder)
 
         assert isinstance(data_holder, VCFDataHolder)
-        bed_file = data_holder.bed_file
-        vcf_path = data_holder.filename
-        recombibation_map = data_holder.recombination_map
-        pop_file = data_holder.popmap_file
-        bed_files_dir = data_holder.bed_files_dir
-        kwargs = data_holder.ld_kwargs
 
-        if data_holder.population_labels is not None and 'pops' not in kwargs:
-            kwargs.update({'pops': data_holder.population_labels})
-        elif data_holder.population_labels is not None and 'pops' in kwargs:
-            if data_holder.population_labels != kwargs['pops']:
-                raise KeyError('Different population labels passed twice! '
-                               'Check you param file and remove one of labels')
-
-        if bed_files_dir:
-            iter = 0
+        if data_holder.bed_files_dir:
+            reg_num = 0
             region_stats = {}
-            for file in listdir(bed_files_dir):
+            for file in listdir(data_holder.bed_files_dir):
                 region_stats.update(
                     {
-                        f"{iter}": moments.LD.Parsing.compute_ld_statistics(
-                            vcf_path,
-                            rec_map_file=recombibation_map,
-                            pop_file=pop_file,
-                            bed_file=f"{bed_files_dir}/{file}",
-                            **kwargs)
+                        f"{reg_num}": moments.LD.Parsing.compute_ld_statistics(
+                            data_holder.filename,
+                            rec_map_file=data_holder.recombination_map,
+                            pop_file=data_holder.popmap_file,
+                            bed_file=f"{data_holder.bed_files_dir}/{file}",
+                            **data_holder.ld_kwargs)
                     }
                 )
-                iter += 1
-
+                reg_num += 1
+            # bootstrap data
             data = moments.LD.Parsing.bootstrap_data(region_stats)
 
         else:
             data = moments.LD.Parsing.compute_ld_statistics(
-                vcf_path, rec_map_file=recombibation_map,
-                pop_file=pop_file, bed_file=bed_file, **kwargs
+                data_holder.filename,
+                rec_map_file=data_holder.recombination_map,
+                pop_file=data_holder.popmap_file,
+                bed_file=data_holder.bed_file,
+                **data_holder.ld_kwargs
             )
 
             data = moments.LD.Parsing.means_from_region_data(
@@ -143,6 +166,14 @@ class MomentsLD(Engine):
 
     @staticmethod
     def _get_kwargs(event, var2value):
+        """
+        Builds kwargs for moments.LD.Integration functions.
+
+        :param event: build for this event
+        :type event: event.Epoch
+        :param var2value: dictionary {variable: value}, it is required because
+            the dynamics values should be fixed.
+        """
         ret_dict = {'tf': event.time_arg}
 
         if event.dyn_args is not None:
@@ -170,12 +201,12 @@ class MomentsLD(Engine):
         return ret_dict
 
     def simulate(self, values):
-
         """
-        Simulate expected LDstats for proposed values of variables
+        Simulates expected LD statistics for proposed values of variables.
 
-        :params_shamarms
-        Generate function using API of moments.LD
+        :param values: Values of the model parameters, it could be list of
+        values or dictionary {variable name: value}.
+        :type values: list or dict
         """
 
         var2value = self.model.var2value(values)
@@ -184,11 +215,13 @@ class MomentsLD(Engine):
             return 'Here is CustomDemographicModel'
 
         moments.LD = self.base_module
-        # rho from r_bins
-        rho_m1 = 4 * 10000 * np.logspace(-6, -3, 7)
-        theta_m1 = 0.001  # temporary
+        try:
+            rho = 4 * 10000 * eval(self.data_holder.ld_kwargs["r_bins"])
+        except: # NOQA
+            rho = 4 * 10000 * self.data_holder.ld_kwargs["r_bins"]
+        theta = 0.001  # where take theta?
 
-        ld = moments.LD.Numerics.steady_state(rho=rho_m1, theta=theta_m1)
+        ld = moments.LD.Numerics.steady_state(rho=rho, theta=theta)
         ld_stats = moments.LD.LDstats(ld, num_pops=1)
 
         addit_values = {}
@@ -243,29 +276,37 @@ class MomentsLD(Engine):
                         kwargs[x] = self.get_value_from_var2value(var2value, y)
                         kwargs[x] = addit_values.get(kwargs[x], kwargs[x])
 
-                ld_stats.integrate(**kwargs, rho=rho_m1, theta=theta_m1)
+                ld_stats.integrate(**kwargs, rho=rho, theta=theta)
 
             elif isinstance(event, Split):
                 ld_stats = ld_stats.split(event.n_pop - 1)
-        return ld_stats
+        # little data processing
+        model = moments.LD.LDstats(
+            [(y_l + y_r) / 2 for y_l, y_r in zip(ld_stats[:-2], ld_stats[1:-1])]
+            + [ld_stats[-1]],
+            num_pops=ld_stats.num_pops,
+            pop_ids=ld_stats.pop_ids,
+        )
+        model = moments.LD.Inference.sigmaD2(model)
+
+        return model
 
     def evaluate(self, values, **options):
+        """
+        Simulates LD statistics from values and evaluate log likelihood between
+        simulated LD statistics and observed LD statistics.
+
+        :param values: Values of the model parameters, it could be list of
+        values or dictionary {variable name: value}.
+        :type values: list or dict
+        """
 
         if self.data is None or self.model is None:
             raise ValueError("Please set data and model for the engine or"
                              " use set_and_evaluate function instead.")
         if self.data_holder.bed_files_dir:
             model = self.simulate(values)
-
-            model = moments.LD.LDstats(
-                [(y_l + y_r) / 2 for y_l, y_r in zip(model[:-2], model[1:-1])]
-                + [model[-1]],
-                num_pops=model.num_pops,
-                pop_ids=model.pop_ids,
-            )
-            model = moments.LD.Inference.sigmaD2(model)
             model = moments.LD.Inference.remove_normalized_lds(model)
-
             data = self.data
             means, varcovs = moments.LD.Inference.remove_normalized_data(
                 data['means'],
@@ -278,39 +319,53 @@ class MomentsLD(Engine):
             raise ValueError('There are no way no compute likelihood with one region')
 
     def draw_ld_curves(self, values, save_file):
-        pass
-        # data = self.read_data(self.data_holder)
-        # model = self.simulate(values=values)
-        #
-        # if self.data_holder.bed_file:
-        #     pass
-        # moments.LD.Util.perturb_params(p_guess, fold=0.1)
-        # uncerts = moments.LD.Godambe.GIM_uncert(
-        #     demo_func, all_boot, opt_params, mv["means"], mv["varcovs"], r_edges=r_bins,
-        # )
-        # r_bins = self.data_holder.kwargs_for_computing_ld_stats['r_bins']
-        # moments.LD.Plotting.plot_ld_curves_comp(
-        #     model,
-        #     data[:-1],
-        #     [],
-        #     rs=r_bins,
-        #     # stats_to_plot=[
-        #     #     ["DD_0_0", "DD_0_1", "DD_1_1"],
-        #     #     ["Dz_0_0_0", "Dz_0_1_1", "Dz_1_1_1"],
-        #     #     ["pi2_0_0_1_1", "pi2_0_1_0_1", "pi2_1_1_1_1"]
-        #     # ],
-        #     # labels=[[r"$D_0^2$", r"$D_0 D_1$", r"$D_1^2$"],
-        #     #         [r"$Dz_{0,0,0}$", r"$Dz_{0,1,1}$", r"$Dz_{1,1,1}$"],
-        #     #         [r"$\pi_{2;0,0,1,1}$", r"$\pi_{2;0,1,0,1}$", r"$\pi_{2;1,1,1,1}$"]
-        #     #         ],
-        #     plot_vcs=True,
-        #     fig_size=(8, 3),
-        #     show=True,
-        # )
+        """
+        Draw plots of LD curves for observed and simulated by model data.
+
+        :param values: Values of the model parameters, it could be list of
+               values or dictionary {variable name: value}.
+        :type values: list or dict
+        :param save_file: File to save picture. If None then picture will be
+                  displayed to the screen.
+        :type save_file: str
+        """
+        data = self.read_data(self.data_holder)
+        model = self.simulate(values=values)
+        stats_to_plot = [
+            [name] for name in model.names()[:-1][0] if name != 'pi2_0_0_0_0'
+        ]
+        # labels = 'Need some labels? If yes, need to prepare them'
+        r_bins = self.data_holder.ld_kwargs['r_bins']
+        if data['varcovs'] is None:
+            self.base_module.Plotting.plot_ld_curves_comp(
+                model,
+                data[:-1],
+                [],
+                stats_to_plot=stats_to_plot,
+                rs=r_bins,
+                fig_size=(9, 9),
+                show=save_file is None,
+                rows=(len(stats_to_plot)/3),
+                output=save_file,
+                plot_means=True,
+            )
+        else:
+            self.base_module.Plotting.plot_ld_curves_comp(
+                model,
+                data["means"][:-1],
+                data["varcovs"][:-1],
+                rs=r_bins,
+                stats_to_plot=stats_to_plot,
+                fig_size=(9, 9),
+                show=save_file is None,
+                rows=5,
+                output=save_file,
+                plot_means=True,
+                plot_vcs=True
+            )
 
     def generate_code(self, values, filename=None, nanc=None,
                       gen_time=None, gen_time_units="years"):
-        # last priority
         pass
 
 

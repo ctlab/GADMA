@@ -33,6 +33,15 @@ EMPTY_BED_DIR = os.path.join(DATA_PATH, 'DATA', 'vcf_ld', "empty_bed_dir")
 ONE_BED_DIR = os.path.join(DATA_PATH, 'DATA', 'vcf_ld', "one_bed_dir")
 BED_15_DIR = os.path.join(DATA_PATH, 'DATA', 'vcf_ld', 'bed_files_15')
 
+SAVE_IMAGE = os.path.join(DATA_PATH, 'DATA', 'vcf_ld', "ld_curves.jpg")
+
+DATA_HOLDER_FOR_MODELS = VCFDataHolder(
+            vcf_file=VCF_DATA, popmap_file=POP_MAP,
+            recombination_map=REC_MAP, bed_files_dir=BED_15_DIR,
+            ld_kwargs={'r_bins': 'np.logspace(-6, -3, 7)',
+                       'report': False,
+                       'pops': ["deme0", "deme1"]}
+        )
 
 class TestVCFDataHolderLD(unittest.TestCase):
 
@@ -244,6 +253,13 @@ class TestModelSimulation(unittest.TestCase):
                   'tf': tf.resample()}
 
         data = moments_one_pop_func([values[x] for x in values], rho, theta)
+        data = moments.LD.LDstats(
+            [(y_l + y_r) / 2 for y_l, y_r in zip(data[:-2], data[1:-1])]
+            + [data[-1]],
+            num_pops=data.num_pops,
+            pop_ids=data.pop_ids,
+        )
+        data = moments.LD.Inference.sigmaD2(data)
 
         dm = EpochDemographicModel()
         dm.add_epoch(tf, [nu])
@@ -257,6 +273,7 @@ class TestModelSimulation(unittest.TestCase):
                 if (var.name in values)]
         engine.set_data(data)
         engine.set_model(dm)
+        engine.data_holder = DATA_HOLDER_FOR_MODELS
         model = engine.simulate(vals)
 
         self.assertTrue(np.allclose(model[0], data[0]), msg='Simulations differs in '
@@ -293,6 +310,13 @@ class TestModelSimulation(unittest.TestCase):
         rho = 4 * 10000 * np.logspace(-6, -3, 7)
         theta = 0.001
         data = moments_two_pops_func([values[x] for x in list_for_moments_ld], rho, theta)
+        data = moments.LD.LDstats(
+            [(y_l + y_r) / 2 for y_l, y_r in zip(data[:-2], data[1:-1])]
+            + [data[-1]],
+            num_pops=data.num_pops,
+            pop_ids=data.pop_ids,
+        )
+        data = moments.LD.Inference.sigmaD2(data)
 
         dm = EpochDemographicModel()
         dm.add_epoch(t, [nu1])
@@ -306,7 +330,7 @@ class TestModelSimulation(unittest.TestCase):
         values, data, dm = self.model_two_pops_moments_ld()
         vals = [values[var.name] for var in dm.variables
                 if (var.name in values)]
-        # engine.set_data(data)
+        engine.data_holder = DATA_HOLDER_FOR_MODELS
         engine.set_model(dm)
         model = engine.simulate(vals)
         self.assertTrue(np.allclose(model[0], data[0]), msg='Simulations differs in '
@@ -359,6 +383,13 @@ class TestModelSimulation(unittest.TestCase):
         theta = 0.001
 
         simulated = moments_ld_func([values[x] for x in list_for_moments_ld], rho, theta)
+        simulated = moments.LD.LDstats(
+            [(y_l + y_r) / 2 for y_l, y_r in zip(simulated[:-2], simulated[1:-1])]
+            + [simulated[-1]],
+            num_pops=simulated.num_pops,
+            pop_ids=simulated.pop_ids,
+        )
+        simulated = moments.LD.Inference.sigmaD2(simulated)
 
         dm = EpochDemographicModel()
         dm.add_epoch(t, [nu1])
@@ -377,6 +408,7 @@ class TestModelSimulation(unittest.TestCase):
                 if (var.name in values)]
         engine = get_engine('momentsLD')
         engine.set_model(dm)
+        engine.data_holder = DATA_HOLDER_FOR_MODELS
         simulated_by_gadma = engine.simulate(vals)
         self.assertTrue(np.allclose(
             simulated_by_gadma[0],
@@ -443,6 +475,14 @@ class TestModelEvaluation(unittest.TestCase):
         theta = 0.001
 
         simulated = model_moments_ld([values[x] for x in list_for_moments_ld], rho, theta)
+        simulated = moments.LD.LDstats(
+            [(y_l + y_r) / 2 for y_l, y_r in zip(
+                simulated[:-2],
+                simulated[1:-1])] + [simulated[-1]],
+            num_pops=simulated.num_pops,
+            pop_ids=simulated.pop_ids,
+        )
+        simulated = moments.LD.Inference.sigmaD2(simulated)
 
         return values, simulated, dm
 
@@ -467,7 +507,6 @@ class TestModelEvaluation(unittest.TestCase):
 
         # simulate ld_stats with moments
         values, simulated_by_moments, dm = self.model_for_gadma_moments_evaluation()
-
         # check simulation ld_stats with GADMA
         vals = [values[var.name] for var in dm.variables
                 if (var.name in values)]
@@ -481,19 +520,10 @@ class TestModelEvaluation(unittest.TestCase):
                 msg='Simulations differs in '
                     'engine and momentsLD')
 
-        simulated_by_moments = moments.LD.LDstats(
-            [(y_l + y_r) / 2 for y_l, y_r in zip(
-                simulated_by_moments[:-2],
-                simulated_by_moments[1:-1])] + [simulated_by_moments[-1]],
-            num_pops=simulated_by_moments.num_pops,
-            pop_ids=simulated_by_moments.pop_ids,
-        )
-
         means, varcovs = moments.LD.Inference.remove_normalized_data(
             data_moments["means"],
             data_moments["varcovs"],
             num_pops=simulated_by_moments.num_pops)
-        simulated_by_moments = moments.LD.Inference.sigmaD2(simulated_by_moments)
         simulated_by_moments = moments.LD.Inference.remove_normalized_lds(
             simulated_by_moments, normalization=0)
         ll_moments = moments.LD.Inference.ll_over_bins(
@@ -504,3 +534,21 @@ class TestModelEvaluation(unittest.TestCase):
         ll_gadma = engine.evaluate(vals)
 
         self.assertEqual(ll_gadma, ll_moments)
+
+    def test_draw_curves(self):
+
+        engine = get_engine('momentsLD')
+        engine.data_holder = VCFDataHolder(
+            vcf_file=VCF_DATA, popmap_file=POP_MAP,
+            recombination_map=REC_MAP, bed_files_dir=BED_15_DIR,
+            ld_kwargs={'r_bins': 'np.logspace(-6, -3, 7)',
+                       'report': False,
+                       'pops': ["deme0", "deme1"]}
+        )
+
+        values, simulated_by_moments, dm = self.model_for_gadma_moments_evaluation()
+        vals = [values[var.name] for var in dm.variables
+                if (var.name in values)]
+        engine.set_model(dm)
+
+        engine.draw_ld_curves(values=vals, save_file=SAVE_IMAGE)
