@@ -445,6 +445,14 @@ class EpochDemographicModel(DemographicModel):
 
     @classmethod
     def create_from(cls, model, values=None):
+        """
+        Create epoch model from other type of model
+
+        :param model: model
+        :type model: CoalescentDemographicModel
+        :param values: Values of the parameters.
+        :type values: list or dict
+        """
         from .coalescent_demographic_model import CoalescentDemographicModel
         if isinstance(model, CoalescentDemographicModel):
             if values is None:
@@ -458,111 +466,137 @@ class EpochDemographicModel(DemographicModel):
         )
 
     def get_summary_duration(self):
+        """
+        Returns summary time duration of model
+        """
         time = 0
+        # сумма длительностей всех эпох
         for event in self.events:
             if isinstance(event, Epoch):
                 time = operation_creation(Addition, event.time_arg, time)
         return time
 
     def translate_to(self, ModelClass, values):
+        """
+        Translate model to the another type of model
 
+        :param ModelClass: Class of model in which we transform our model
+        :type ModelClass: type
+        :param values: Values of the parameters.
+        :type values: list or dict
+        """
         from .coalescent_demographic_model import CoalescentDemographicModel
         if issubclass(ModelClass, CoalescentDemographicModel):
-            model = CoalescentDemographicModel(
-                mutation_rate=self.mutation_rate,
-                recombination_rate=self.recombination_rate,
-                gen_time=self.gen_time,
-                theta0=self.theta0,
-                linear_constrain=self.linear_constrain
-            )
-            var2value = self.var2value(values)
-            current_time = self.get_summary_duration()
-            # TODO wrong Nanc size and think about it
-            current_sizes = [self.Nanc_size]
-            current_dyn = ["Sud"]
-            current_g = [0]
-            # TODO wrong size for population (probably in this cycle)
-            for event in self.events:
-                if isinstance(event, Epoch):
-                    for i in range(len(current_sizes)):
-                        if event.size_args[i] != current_sizes[i]:
-                            if event.dyn_args is not None:
-                                dyn = self.get_value_from_var2value(
-                                    var2value=var2value,
-                                    entity=event.dyn_args[i]
-                                )
-                            else:
-                                dyn = "Sud"
-                            # размер в конце == размер в левом конце отрезка
-                            size_pop = event.size_args[i]
-                            if dyn == "Sud":
-                                g = 0
-                            elif dyn == "Lin":
-                                # size = init_size + g * t
-                                g = operation_creation(
-                                    operation=Division,
-                                    arg1=operation_creation(
-                                            operation=Subtraction,
-                                            arg1=size_pop,
-                                            arg2=current_sizes[i]
-                                    ),
-                                    arg2=event.time_arg
-                                )
-                            else:
-                                assert dyn == "Exp"
-                                # size = init_size * exp(gt)
-                                g = operation_creation(
-                                    operation=Division,
-                                    arg1=operation_creation(
-                                        operation=Log,
-                                        arg1=operation_creation(
-                                            operation=Division,
-                                            arg1=size_pop,
-                                            arg2=current_sizes[i]
-                                        )
-                                    ),
-                                    arg2=event.time_arg
-                                )
-                            current_g[i] = g
-                            model.change_pop_size(
-                                pop=i,
-                                t=current_time,
-                                size_pop=current_sizes[i],
-                                dyn=dyn,
-                                g=g
-                            )
-                            current_sizes[i] = size_pop
-                    current_time = operation_creation(
-                        operation=Subtraction,
-                        arg1=current_time,
-                        arg2=event.time_arg
-                    )
-                    current_dyn = event.dyn_args \
-                        if event.dyn_args is not None \
-                        else ["Sud" for _ in current_sizes]
-                else:
-                    assert isinstance(event, Split)
-                    pop_to_div = event.pop_to_div
-                    model.move_lineages(
-                        pop_from=event.n_pop,
-                        pop=pop_to_div,
-                        t=current_time,
-                        dyn=current_dyn[pop_to_div],
-                        size_pop=current_sizes[pop_to_div],
-                        g=current_g[pop_to_div]
-                    )
-                    current_g.append(0)
-                    current_dyn.append("Sud")
-                current_sizes = event.size_args
-            for pop in range(len(current_sizes)):
-                model.add_leaf(
-                    pop=pop,
-                    t=0,
-                    dyn=current_dyn[pop],
-                    size_pop=current_sizes[pop],
-                    g=current_g[pop]
-                )
-            return model
+            return self._translate_to_coalescent_model(values)
         raise ValueError(
             f"Cannot translate to {ModelClass}"
         )
+
+    def _translate_to_coalescent_model(self, values):
+        from .coalescent_demographic_model import CoalescentDemographicModel
+        model = CoalescentDemographicModel(
+            mutation_rate=self.mutation_rate,
+            recombination_rate=self.recombination_rate,
+            gen_time=self.gen_time,
+            theta0=self.theta0,
+            linear_constrain=self.linear_constrain
+        )
+        var2value = self.var2value(values)
+        current_time = self.get_summary_duration()
+        current_sizes = [self.Nanc_size]
+        # считаем, что корневая всегда константа
+        current_dyn = ["Sud"]
+        current_g = [0]
+        for event in self.events:
+            if isinstance(event, Epoch):
+                # если эпоха, то единственное событие - смена размера,
+                # потому что листья в конце добавляются
+                for i in range(len(current_sizes)):
+                    if event.size_args[i] != current_sizes[i]:
+                        if event.dyn_args is not None:
+                            # или они заданы
+                            dyn = self.get_value_from_var2value(
+                                var2value=var2value,
+                                entity=event.dyn_args[i]
+                            )
+                        else:
+                            # или все константы
+                            dyn = "Sud"
+                        # размер в конце == размер в левом конце отрезка
+                        size_pop = event.size_args[i]
+                        # считаем динамику и коэфы, знаем размер в начале
+                        # и конце (а еще и длительность)
+                        if dyn == "Sud":
+                            g = 0
+                        elif dyn == "Lin":
+                            # size = init_size + g * t
+                            g = operation_creation(
+                                operation=Division,
+                                arg1=operation_creation(
+                                    operation=Subtraction,
+                                    arg1=size_pop,
+                                    arg2=current_sizes[i]
+                                ),
+                                arg2=event.time_arg
+                            )
+                        else:
+                            assert dyn == "Exp"
+                            # size = init_size * exp(gt)
+                            # TODO возможно, в моми считается g по-другому
+                            g = operation_creation(
+                                operation=Division,
+                                arg1=operation_creation(
+                                    operation=Log,
+                                    arg1=operation_creation(
+                                        operation=Division,
+                                        arg1=size_pop,
+                                        arg2=current_sizes[i]
+                                    )
+                                ),
+                                arg2=event.time_arg
+                            )
+                        current_g[i] = g
+                        model.change_pop_size(
+                            pop=i,
+                            t=current_time,
+                            size_pop=current_sizes[i],
+                            dyn=dyn,
+                            g=g
+                        )
+                        current_sizes[i] = size_pop
+                # после эпохи обновили время
+                current_time = operation_creation(
+                    operation=Subtraction,
+                    arg1=current_time,
+                    arg2=event.time_arg
+                )
+                # и динамику
+                current_dyn = event.dyn_args \
+                    if event.dyn_args is not None \
+                    else ["Sud" for _ in current_sizes]
+            else:
+                assert isinstance(event, Split)
+                pop_to_div = event.pop_to_div
+                model.move_lineages(
+                    pop_from=event.n_pop,
+                    pop=pop_to_div,
+                    t=current_time,
+                    dyn=current_dyn[pop_to_div],
+                    size_pop=current_sizes[pop_to_div],
+                    g=current_g[pop_to_div]
+                )
+                # пока что такая, потом все равно обновится
+                current_g.append(0)
+                current_dyn.append("Sud")
+            # в любом случае обновим размеры
+            current_sizes = event.size_args
+        # все, что в конце -- листья
+        for pop in range(len(current_sizes)):
+            model.add_leaf(
+                pop=pop,
+                t=0,
+                dyn=current_dyn[pop],
+                size_pop=current_sizes[pop],
+                g=current_g[pop]
+            )
+        return model
