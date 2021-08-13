@@ -64,6 +64,22 @@ def gadma_from_cfg(cfg, seed, instance):
     # Remember seed
     np.random.seed(seed)
 
+    # get number of individuals
+    p_elitism = cfg["p_elitism"]
+    p_mutation = cfg['p_mutation']
+    p_crossover = cfg["p_crossover"]
+    p_random = cfg["p_random"]
+    # normalize
+    summ = p_elitism + p_mutation + p_crossover + p_random
+    p_elitism /= summ
+    p_mutation /= summ
+    p_crossover /= summ
+    p_random /= summ
+    n_elitism = int(cfg['gen_size'] * p_elitism
+    n_mutation = int(cfg['gen_size'] * p_mutation
+    n_crossover = int(cfg['gen_size'] * p_crossover
+    n_random = int(cfg['gen_size'] - n_elitism - n_mutation - n_crossover
+
     # Run gadma
     res = gadma.Inference.optimize_ga(data, model_func, engine, args=(),
                                       lower_bound=lower_bound,
@@ -75,12 +91,13 @@ def gadma_from_cfg(cfg, seed, instance):
                                       const_mut_strength=cfg['const_mut_str'],
                                       mut_rate=cfg['mut_rate'],
                                       const_mut_rate=cfg['const_mut_rate'],
-                                      eps=cfg['eps'],
-                                      n_stuck_gen=cfg['n_stuck_gen'],
-                                      n_elitism=int(cfg['gen_size']*cfg['p_elitism']),
-                                      p_mutation=cfg['p_mutation'],
-                                      p_crossover=cfg['p_crossover'],
-                                      p_random=cfg['p_random'],
+                                      #eps=cfg['eps'],
+                                      #n_stuck_gen=cfg['n_stuck_gen'],
+                                      num_init=n_par*cfg['num_init_const'],
+                                      n_elitism=n_elitism,
+                                      p_mutation=n_mutation/float(cfg['gen_size']),
+                                      p_crossover=n_crossover/float(cfg['gen_size']),
+                                      p_random=n_random/float(cfg['gen_size']),
                                       ga_maxiter=None,
                                       ga_maxeval=n_par*ITER_PER_PAR,
                                       local_optimizer=None,
@@ -102,7 +119,7 @@ logging.getLogger().setLevel(logging.INFO)
 cs = ConfigurationSpace()
 
 # We define a few possible parameters
-gen_size = CategoricalHyperparameter('gen_size', choices=[10, 50, 100, 200],
+gen_size = CategoricalHyperparameter('gen_size', choices=[10, 50, 100],
                                      default_value=10)
 mut_strength = UniformFloatHyperparameter('mut_strength', 1e-15, 1,
                                           default_value=0.2)
@@ -112,10 +129,10 @@ mut_rate = UniformFloatHyperparameter('mut_rate', 1e-15, 1,
                                       default_value=0.2)
 const_mut_rate = UniformFloatHyperparameter('const_mut_rate', 1, 2,
                                             default_value=1.2)
-n_stuck_gen = CategoricalHyperparameter('n_stuck_gen', choices=[20, 50, 100],
-                                        default_value=100)
-eps = UniformFloatHyperparameter('eps', 1e-6, 1,
-                                 default_value=1e-2)
+#n_stuck_gen = CategoricalHyperparameter('n_stuck_gen', choices=[20, 50, 100],
+#                                        default_value=100)
+#eps = UniformFloatHyperparameter('eps', 1e-6, 1,
+#                                 default_value=1e-2)
 p_elitism = UniformFloatHyperparameter('p_elitism', 0, 1,
                                        default_value=0.2)
 p_mutation = UniformFloatHyperparameter('p_mutation', 0, 1,
@@ -124,10 +141,12 @@ p_crossover = UniformFloatHyperparameter('p_crossover', 0, 1,
                                          default_value=0.3)
 p_random = UniformFloatHyperparameter('p_random', 0, 1,
                                        default_value=0.2)
+num_init_const = CategoricalHyperparameter('num_init_const', choices=[5, 10, 20],
+                                     default_value=10)
 
 # Add the parameters to configuration space
 cs.add_hyperparameters([gen_size, mut_strength, const_mut_strength,
-                        mut_rate, const_mut_rate, n_stuck_gen, eps,
+                        mut_rate, const_mut_rate, num_init_const,
                         p_elitism, p_mutation, p_crossover, p_random])
 
 intensifier_kwargs = {'n_seeds': 50}
