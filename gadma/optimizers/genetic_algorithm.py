@@ -459,12 +459,16 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
     def _sample_mut_rate(self, mode='normal'):
         if mode == 'normal':
             # TODO: Think about std for this distribution
-            return trunc_normal_3_sigma_rule(self.cur_mut_rate, 0.0, 1.0)
+            return trunc_normal_3_sigma_rule(
+                self.run_info.cur_mut_rate,
+                0.0,
+                1.0
+            )
         elif mode == 'uniform':
             return np.random.uniform(0.0, 1.0)
 
     def _sample_number_of_changes(self, n):
-        sample = np.random.binomial(n=n, p=self.cur_mut_strength)
+        sample = np.random.binomial(n=n, p=self.run_info.cur_mut_strength)
         return max(1, int(sample))
 
     def check_x(self, variables, x, raises=False):
