@@ -117,8 +117,6 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
 
         self.mut_rate = mut_rate
         self.mut_strength = mut_strength
-        self.cur_mut_rate = mut_rate
-        self.cur_mut_strength = mut_strength
         self.const_mut_rate = const_mut_rate
         self.const_mut_strength = const_mut_strength
         self.mut_attempts = mut_attempts
@@ -133,6 +131,26 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         self.one_fifth_rule = one_fifth_rule
         super(GeneticAlgorithm, self).__init__(random_type, custom_rand_gen,
                                                log_transform, maximize)
+
+    @property
+    def mut_rate(self):
+        return self._mut_rate
+
+    @mut_rate.setter
+    def mut_rate(self, value):
+        self._mut_rate = value
+        if hasattr(self, "run_info"):
+            self.run_info.cur_mut_rate = self._mut_rate
+
+    @property
+    def mut_strength(self):
+        return self._mut_strength
+
+    @mut_strength.setter
+    def mut_strength(self, value):
+        self._mut_strength = value
+        if hasattr(self, "run_info"):
+            self.run_info.cur_mut_strength = self._mut_strength
 
     def randomize(self, variables, random_type='resample',
                   custom_rand_gen=None):
