@@ -57,7 +57,8 @@ def get_maxeval_for_bo(maxeval, maxiter):
     return min(maxit, maxev)
 
 
-def choose_kernel_if_needed(optimizer, variables, X, Y, kernels):
+def choose_kernel_if_needed(optimizer, variables, X, Y,
+                            kernels=["exponential", "matern32", "matern52", "rbf"]):
     # If needed we choose our kernel
     if optimizer.kernel_name.lower() == "auto":
         optimizer.kernel_name = get_best_kernel(
@@ -901,9 +902,9 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
         3) every 10th iteration for the last iterations
         """
         n_iter = self.run_info.result.n_iter + 1  # this is correct
-        if n_iter <= 50:
-            return True
         if n_iter <= 100:
+            return True
+        if n_iter <= 200:
             return (n_iter % 5) == 0
         return (n_iter % 10) == 0
 
@@ -1013,68 +1014,69 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
             iter_y = []
 
             # shuffle our list in-place
-            random.shuffle(combinations)
-            for mark, gp, acq, acq_opt, rh2epm in combinations:
-                X, y = rh2epm.transform(runhistory)
+            # random.shuffle(combinations)
+            mark, gp, acq, acq_opt, rh2epm = combinations[np.random.choice([0, 1])]
+            # for mark, gp, acq, acq_opt, rh2epm in combinations:
+            X, y = rh2epm.transform(runhistory)
 
-                # If all are not finite then we return nothing
-                if np.all(~np.isfinite(y)):
-                    return self.run_info.result
+            # If all are not finite then we return nothing
+            if np.all(~np.isfinite(y)):
+                return self.run_info.result
 
-                # Safeguard, just in case...
-                if np.any(~np.isfinite(y)):
-                    y[~np.isfinite(y)] = np.max(y[np.isfinite(y)])
+            # Safeguard, just in case...
+            if np.any(~np.isfinite(y)):
+                y[~np.isfinite(y)] = np.max(y[np.isfinite(y)])
 
-                t_start = time.time()
-                gp.train(X, y, optimize=do_gp_optim)
-                gp_train_time += time.time() - t_start
+            t_start = time.time()
+            gp.train(X, y, optimize=do_gp_optim)
+            gp_train_time += time.time() - t_start
 
-                t_start = time.time()
-                # we do not care what model is used here
-                predictions = gp.predict(X)[0]
-                best_index = np.argmin(predictions)
-                best_observation = y[best_index]
-                x_best_array = X[best_index]
-                gp_predict_time += time.time() - t_start
+            t_start = time.time()
+            # we do not care what model is used here
+            predictions = gp.predict(X)[0]
+            best_index = np.argmin(predictions)
+            best_observation = y[best_index]
+            x_best_array = X[best_index]
+            gp_predict_time += time.time() - t_start
 
-                t_start = time.time()
-                acq.update(
-                    model=gp.gp_model,
-                    eta=best_observation,
-                    incumbent_array=x_best_array,
-                    num_data=len(X),
-                    X=X,
-                )
-                new_config_iterator = acq_opt.maximize(
-                    runhistory=runhistory,
-                    stats=stats,
-                    num_points=10000,
-                    random_configuration_chooser=rnd_chooser,
-                )
-                accept = False
-                for next_config in new_config_iterator:
-                    if next_config in runhistory.get_all_configs():
-                        continue
-                    else:
-                        accept = True
-                        break
-                assert accept
-                acq_opt_time += time.time() - t_start
+            t_start = time.time()
+            acq.update(
+                model=gp.gp_model,
+                eta=best_observation,
+                incumbent_array=x_best_array,
+                num_data=len(X),
+                X=X,
+            )
+            new_config_iterator = acq_opt.maximize(
+                runhistory=runhistory,
+                stats=stats,
+                num_points=10000,
+                random_configuration_chooser=rnd_chooser,
+            )
+            accept = False
+            for next_config in new_config_iterator:
+                if next_config in runhistory.get_all_configs():
+                    continue
+                else:
+                    accept = True
+                    break
+            assert accept
+            acq_opt_time += time.time() - t_start
 
-                t_eval = time.time()
-                x = [next_config[var.name] for var in variables]
-                cost = f(x)
-                eval_time += time.time() - t_eval
+            t_eval = time.time()
+            x = [next_config[var.name] for var in variables]
+            cost = f(x)
+            eval_time += time.time() - t_eval
 
-                iter_configs.append((next_config, cost))
+            iter_configs.append((next_config, cost))
 
-                x = WeightedMetaArray(x)
-                x.metadata = mark
-                iter_X.append(x)
-                iter_y.append(cost)
-                if cost < y_best:
-                    x_best = x
-                    y_best = cost
+            x = WeightedMetaArray(x)
+            x.metadata = mark
+            iter_X.append(x)
+            iter_y.append(cost)
+            if cost < y_best:
+                x_best = x
+                y_best = cost
 
             for config, cost in iter_configs:
                 add_to_runhistory(config, cost)
