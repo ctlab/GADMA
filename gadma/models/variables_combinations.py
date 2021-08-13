@@ -55,6 +55,7 @@ class UnaryOperation(Operation):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    @property
     def name(self):
         """
         Generates name from variables names like:
@@ -144,7 +145,7 @@ class BinaryOperation(Operation):
     def name(self):
         """
         Generates name from variables names like:
-        `self.arg1.name operation self.arg2.name`
+        `self.arg1.name operation self.arg1.name`
         """
         if isinstance(self.arg1, (Variable, Operation)):
             arg1_name = self.arg1.name

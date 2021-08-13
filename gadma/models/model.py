@@ -168,13 +168,17 @@ class Model(object):
         """
         Returns list of arg and its value string representations
         """
-        from .variables_combinations import BinaryOperation
+        from .variables_combinations import BinaryOperation, UnaryOperation
         if isinstance(arg, Variable):
             val = self.var2value(values)[arg]
             arg_repr = f"{arg.name}"
             if arg in self.fixed_values:
                 arg_repr = ""
         elif isinstance(arg, BinaryOperation):
+            var2value = self.var2value(values)
+            val = arg.get_value([var2value[var] for var in arg.variables])
+            arg_repr = f"{arg.name}"
+        elif isinstance(arg, UnaryOperation):
             var2value = self.var2value(values)
             val = arg.get_value([var2value[var] for var in arg.variables])
             arg_repr = f"{arg.name}"
