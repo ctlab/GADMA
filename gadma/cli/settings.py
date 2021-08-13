@@ -123,7 +123,7 @@ dynamics = list(DynamicVariable.default_domain)
 # hc_stop_iter = None
 
 # Options of mutation, crossing and random generating
-random_n_a = True
+random_n_a = False
 # multinom_cross = False
 # multinom_mutate = False
 
