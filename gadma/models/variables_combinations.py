@@ -31,6 +31,14 @@ class Operation(VariablesCombination):
 
 
 class UnaryOperation(Operation):
+    """
+    Unary operation of two variables.
+
+    :param arg: First argument.
+    :type arg: :class:`gadma.Variable` or value.
+
+    :raises AssertError: if arguments are not variables.
+    """
 
     def __init__(self, arg):
         super(UnaryOperation, self).__init__()
@@ -48,6 +56,10 @@ class UnaryOperation(Operation):
         return not self.__eq__(other)
 
     def name(self):
+        """
+        Generates name from variables names like:
+        `operation self.arg.name`
+        """
         if isinstance(self.arg, (Variable, Operation)):
             arg_name = self.arg.name
             if isinstance(self.arg, Operation):
@@ -57,6 +69,12 @@ class UnaryOperation(Operation):
         return f"{self.operation_str()} {arg_name}"
 
     def get_value(self, values):
+        """
+        Returns value of the unary operation from variables values.
+
+        :param values: Values of the variables.
+        :type values: list of dict
+        """
         var2value = self.var2value(values)
         if isinstance(self.arg, Operation):
             vals = [var2value[var] for var in self.arg.variables]
@@ -66,6 +84,12 @@ class UnaryOperation(Operation):
         return self.operation(val)
 
     def string_repr(self, values):
+        """
+        Returns string representation of unary operation with defined values.
+
+        :param values: Values of the variables.
+        :type values: list of dict
+        """
         val = self.get_value(values)
         return f"{self.name}={val}"
 
@@ -120,7 +144,7 @@ class BinaryOperation(Operation):
     def name(self):
         """
         Generates name from variables names like:
-        `self.arg1.name operation self.arg1.name`
+        `self.arg1.name operation self.arg2.name`
         """
         if isinstance(self.arg1, (Variable, Operation)):
             arg1_name = self.arg1.name
@@ -289,6 +313,18 @@ class Log(UnaryOperation):
 
 
 def operation_creation(operation, arg1, arg2=None):
+    """
+    Create of operation with some simplifications.
+
+    :param operation: class of operation
+    :type operation: Name of operation
+    :param arg1: First argument.
+    :type arg1: :class:`gadma.Variable` or value.
+    :param arg2: Second argument.
+    :type arg2: :class:`gadma.Variable` or value.
+
+    :raises ValueError: if type of operation is unknown.
+    """
     if issubclass(operation, UnaryOperation):
         if arg2 is not None:
             raise ValueError(

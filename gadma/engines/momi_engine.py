@@ -35,52 +35,85 @@ class MomiEngine(Engine):
 
     def _inner_func(self, values):
 
-        def _get_value(var):
-            if isinstance(var, BinaryOperation):
-                return var.get_value(values)
-            return var2value.get(var, var)
+        var2value = self.model.var2value(values)
+        Nanc_var = self.model.get_Nanc_variable(values)
+        Nanc = self.model.get_value_from_var2value(var2value, Nanc_var)
 
-        N_a = self.model.N_a
+        values = self.model.translate_values(
+            units="genetic",
+            values=values,
+            Nanc=Nanc
+        )
 
         var2value = self.model.var2value(values)
-        for var in self.model.variables:
-            var2value[var] = var.translate_value_into(
-                units="physical",
-                value=var2value[var],
-                N_A=var2value.get(N_a, N_a),
-                gen_time=self.model.gen_time
-            )
         model = None
         if isinstance(self.model, CustomDemographicModel):
             model = self.model.function(var2value)
         elif isinstance(self.model, CoalescentDemographicModel):
+            # TODO gen_time from data
             model = self.base_module.DemographicModel(
                 N_e=self.model.N_e,
                 gen_time=self.model.gen_time,
-                muts_per_gen=self.model.mu
+                muts_per_gen=self.model.mutation_rate
             )
             for event in self.model.events:
                 if isinstance(event, Leaf):
                     name = self._get_pop_name(event.pop)
-                    model.add_leaf(pop_name=name,
-                                   t=_get_value(event.t),
-                                   N=_get_value(event.size_pop),
-                                   g=_get_value(event.g))
+                    model.add_leaf(
+                        pop_name=name,
+                        t=self.model.get_value_from_var2value(
+                            var2value,
+                            event.t
+                        ),
+                        N=self.model.get_value_from_var2value(
+                            var2value,
+                            event.size_pop
+                        ),
+                        g=self.model.get_value_from_var2value(
+                            var2value,
+                            event.g
+                        )
+                    )
                 elif isinstance(event, MoveLineages):
                     name_pop_from = self._get_pop_name(event.pop_from)
                     name_pop_to = self._get_pop_name(event.pop)
-                    model.move_lineages(pop_from=name_pop_from,
-                                        pop_to=name_pop_to,
-                                        t=_get_value(event.t),
-                                        p=_get_value(event.p),
-                                        N=_get_value(event.size_pop),
-                                        g=_get_value(event.g))
+                    model.move_lineages(
+                        pop_from=name_pop_from,
+                        pop_to=name_pop_to,
+                        t=self.model.get_value_from_var2value(
+                            var2value,
+                            event.t
+                        ),
+                        p=self.model.get_value_from_var2value(
+                            var2value,
+                            event.p
+                        ),
+                        N=self.model.get_value_from_var2value(
+                            var2value,
+                            event.size_pop
+                        ),
+                        g=self.model.get_value_from_var2value(
+                            var2value,
+                            event.g
+                        )
+                    )
                 elif isinstance(event, SetSize):
                     name_pop = self._get_pop_name(event.pop)
-                    model.set_size(pop_name=name_pop,
-                                   t=_get_value(event.t),
-                                   N=_get_value(event.size_pop),
-                                   g=_get_value(event.g))
+                    model.set_size(
+                        pop_name=name_pop,
+                        t=self.model.get_value_from_var2value(
+                            var2value,
+                            event.t
+                        ),
+                        N=self.model.get_value_from_var2value(
+                            var2value,
+                            event.size_pop
+                        ),
+                        g=self.model.get_value_from_var2value(
+                            var2value,
+                            event.g
+                        )
+                    )
         return model
 
     def evaluate(self, values):
@@ -110,14 +143,17 @@ class MomiEngine(Engine):
         model = self._inner_func(values)
 
         snp_counts = \
-            model.simulate_data(length=self.model.sequence_length,
-                                recoms_per_gen=self.model.rec_rate,
-                                muts_per_gen=self.model.mu,
-                                num_replicates=num_replicates,
-                                sampled_n_dict=sampled_n_dict)
+            model.simulate_data(
+                length=self.model.sequence_length,
+                recoms_per_gen=self.model.rec_rate,
+                muts_per_gen=self.model.mu,
+                num_replicates=num_replicates,
+                sampled_n_dict=sampled_n_dict
+            )
         return snp_counts.extract_sfs(n_blocks=100)
 
-    def generate_code(self, values, filename=None):
+    def generate_code(self, values, filename=None, nanc=None,
+                      gen_time=None, gen_time_units="years"):
         pass
 
 # if momi_available:

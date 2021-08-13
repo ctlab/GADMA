@@ -280,6 +280,8 @@ class SetSize(Event):
         )
 
     def equals(self, other, values):
+        # равенство со значениями. тут возникла проблема, что
+        # нельзя сравнивать события в отрыве от всей модели
         if self is other:
             return True
         if not isinstance(other, SetSize):
