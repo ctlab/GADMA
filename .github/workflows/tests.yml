@@ -48,8 +48,6 @@ jobs:
           pip3 install pytest
           pip3 install pytest-cov
           pip3 install pytest-timeout
-          pip3 install pytest-faulthandler
-          pip3 install gdb
 
       - name: Install dependencies for tests (Windows).
         run: |
