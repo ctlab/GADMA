@@ -5,7 +5,8 @@ import pytest
 from gadma import *
 from gadma import ContinuousVariable
 from gadma.models import *
-from gadma.models.variables_combinations import BinaryOperation
+from gadma.models.variables_combinations import BinaryOperation, operation_creation, Exp, Log
+from gadma.models.coalescent_demographic_model import CoalescentDemographicModel
 from gadma.engines import DadiEngine
 
 from .test_data import YRI_CEU_DATA
@@ -46,9 +47,8 @@ class TestModels(unittest.TestCase):
             xx = dadi.Numerics.default_grid(pts)
             phi = dadi.PhiManip.phi_1D(xx)
             phi = func(param, xx, phi)
-            sfs = dadi.Spectrum.from_phi(phi, ns, [xx] * len(ns))
+            sfs = dadi.Spectrum.from_phi(phi, ns, [xx]*len(ns))
             return sfs
-
         return wrapper
 
     def get_variables_for_gut_2009(self):
@@ -72,7 +72,7 @@ class TestModels(unittest.TestCase):
                 spec.loader.exec_module(module)
                 sys.modules['module'] = module
                 func = getattr(module, 'model_func')
-                variables = self.get_variables_for_gut_2009()[:-1]
+                variables = self.get_variables_for_gut_2009()[:-1] 
                 dm = CustomDemographicModel(func, variables)
                 dm.as_custom_string([var.resample() for var in dm.variables])
                 dm.as_custom_string({var.name: var.resample()
@@ -213,14 +213,14 @@ class TestModels(unittest.TestCase):
         dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', Dyn])
 
         dic = {'nu1F': 1.880, nu2B: 0.0724, 'nu2F': 1.764, 'm': 0.930,
-               'Tp': 0.363, 'T': 0.112, 'Dyn': 'Exp', 'SudDyn': 'Sud'}
+               'Tp':  0.363, 'T': 0.112, 'Dyn': 'Exp', 'SudDyn': 'Sud'}
 
         data = SFSDataHolder(YRI_CEU_DATA)
         d = DadiEngine(model=dm, data=data)
-        values = dic  # [dic[var.name] for var in dm.variables]
+        values = dic#[dic[var.name] for var in dm.variables]
         ll1 = d.evaluate(values, pts=[40, 50, 60])
         n_par_before = dm.get_number_of_parameters(dic)
-
+        
         dm.fix_variable(Dyn, 'Exp')
         d.model = dm
         ll2 = d.evaluate(dic, pts=[40, 50, 60])
@@ -258,9 +258,9 @@ class TestModels(unittest.TestCase):
         self.assertRaises(ValueError, dm.fix_variable, var, 3)
         self.assertRaises(ValueError, dm.unfix_variable, var)
 
-        #        dm.events[2].set_value(nu2F, 1.0)
-        #        n_par_after = dm.get_number_of_parameters(dic)
-        #        self.assertEqual(n_par_sud_model, n_par_after + 1)
+#        dm.events[2].set_value(nu2F, 1.0)
+#        n_par_after = dm.get_number_of_parameters(dic)
+#        self.assertEqual(n_par_sud_model, n_par_after + 1)
 
         model = Model()
         model.add_variables([nu1F, m, Tp, Dyn,
@@ -282,7 +282,7 @@ class TestModels(unittest.TestCase):
         dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', Dyn])
 
         dic = {'nu1F': 1.880, nu2B: 0.0724, 'f': 0.9, 'nu2F': 1.764,
-               'm': 0.930, 'Tp': 0.363, 'T': 0.112, 'Dyn': 'Exp',
+               'm': 0.930, 'Tp':  0.363, 'T': 0.112, 'Dyn': 'Exp',
                'SudDyn': 'Sud', 's': 0.1, 'dom': 0.5}
 
         data = SFSDataHolder(YRI_CEU_DATA)
@@ -331,7 +331,7 @@ class TestModels(unittest.TestCase):
         comb.__str__()
 
         binary_classes = [Addition, Subtraction, Multiplication, Division]
-        strings = ['+', '-', '*', '/']
+        strings = ['+', '-', '*', '/'] 
         for op_f, cls, op_str in zip([op.add, op.sub, op.mul, op.truediv],
                                      binary_classes,
                                      strings):
@@ -356,7 +356,7 @@ class TestModels(unittest.TestCase):
                         op_f2 = obj2.operation
                         self.assertEqual(obj.get_value(values),
                                          op_f(values[0], op_f2(values[1],
-                                                               const)))
+                                              const)))
                         obj.string_repr(values)
                         self.assertEqual(obj.name,
                                          f'nu1 {op_str} (f {op_str2} 5)')
@@ -457,7 +457,7 @@ class TestModels(unittest.TestCase):
         model3.add_epoch(t, [nu1])
         model3.add_split(0, [nu1, nu2])
         model3.add_epoch(tf, [nu2, fxnu1], [[0, m], [0, 0]], [d1, d2],
-                         [0, s], [0.1, 0.8])
+                         [0, s],  [0.1, 0.8])
         model3.add_split(1, [nu2, nu1])
         model3.add_epoch(t, [nu1, nu2, nu1], None, [d1, 'Sud', 'Sud'],
                          [s, 0, s], [h, 0.5, 0])
@@ -540,11 +540,270 @@ class TestModels(unittest.TestCase):
                         msg += f": {true_ll} != {d['ll_model']}"
                         self.assertTrue(np.allclose(true_ll, d['ll_model']),
                                         msg=msg)
+                    if description == "dadi snp file":
+                        engine.data_holder.population_labels = None
+                        self.assertRaises(ValueError, engine.generate_code,
+                                          values, None, *args, nanc=Nanc)
+                    if description == "fs without pop labels":
+                        engine.data_holder.population_labels = None
+                        engine.generate_code(values, None, *args, nanc=Nanc)
 
-                        if description == "dadi snp file":
-                            engine.data_holder.population_labels = None                        
-                            self.assertRaises(ValueError, engine.generate_code,
-                                              values, None, *args, nanc=Nanc)
-                        if description == "fs without pop labels":
-                            engine.data_holder.population_labels = None
-                            engine.generate_code(values, None, *args, nanc=Nanc)
+    def test_operation_eq(self):
+        a = PopulationSizeVariable("a")
+        b = PopulationSizeVariable("b")
+        comb1 = operation_creation(Addition, a, b)
+        comb2 = operation_creation(Addition, b, a)
+
+        self.assertEqual(comb1, comb2)
+
+        comb2 = operation_creation(Addition, a, b)
+        self.assertEqual(comb1, comb2)
+        c = TimeVariable("c")
+        comb1 = Addition(c, Multiplication(a, b))
+        comb2 = Addition(Multiplication(b, a), c)
+        self.assertEqual(comb1, comb2)
+
+        self.assertNotEqual(Division(a, b), Division(b, a))
+        self.assertNotEqual(Subtraction(a, b), Subtraction(b, a))
+        self.assertEqual(Addition(a, b), Addition(b, a))
+        self.assertEqual(Multiplication(a, b), Multiplication(b, a))
+
+        self.assertEqual(Exp(a), Exp(a))
+        self.assertNotEqual(Exp(b), Exp(a))
+
+        self.assertNotEqual(Log(b), Exp(b))
+        self.assertNotEqual(Log(b), Multiplication(a, b))
+        self.assertEqual(Exp(Multiplication(a, b)), Exp(Multiplication(b, a)))
+
+    def test_operation_creation(self):
+        self.test_creation_exp()
+        self.test_creation_log()
+        self.test_creation_add()
+        self.test_creation_subtract()
+        self.test_creation_multiplication()
+        self.test_creation_division()
+
+    def test_creation_exp(self):
+        a = PopulationSizeVariable("a")
+        b = PopulationSizeVariable("b")
+        e1 = operation_creation(Exp, a)
+
+        self.assertIsInstance(e1, Exp)
+        log_b = Log(b)
+        self.assertEqual(operation_creation(Exp, log_b), b)
+        self.assertEqual(operation_creation(Exp, 0), 1)
+
+        self.assertRaises(ValueError, operation_creation, Exp, 0, 0)
+
+    def test_creation_log(self):
+        a = PopulationSizeVariable("a")
+        b = PopulationSizeVariable("b")
+        l1 = operation_creation(Log, a)
+
+        self.assertIsInstance(l1, Log)
+        exp_b = Exp(b)
+        self.assertEqual(operation_creation(Log, exp_b), b)
+        self.assertEqual(operation_creation(Log, 1), 0)
+
+        self.assertRaises(ValueError, operation_creation, Log, 0, 0)
+
+    def test_creation_add(self):
+        a = PopulationSizeVariable("a")
+        b = PopulationSizeVariable("b")
+        self.assertEqual(operation_creation(Addition, 0, 1), 1)
+
+        self.assertEqual(operation_creation(Addition, a, 0), a)
+        self.assertEqual(operation_creation(Addition, 0, b), b)
+
+        self.assertIsInstance(operation_creation(Addition, a, 1), Addition)
+        self.assertIsInstance(operation_creation(Addition, 1, b), Addition)
+        self.assertIsInstance(operation_creation(Addition, a, b), Addition)
+        self.assertRaises(ValueError, operation_creation, Addition, 0)
+
+    def test_creation_subtract(self):
+        a = PopulationSizeVariable("a")
+        b = PopulationSizeVariable("b")
+        self.assertEqual(operation_creation(Subtraction, 1, 0), 1)
+
+        self.assertEqual(operation_creation(Subtraction, a, 0), a)
+        # (1 + a * b) - ((b * a) + 1) = 0
+        self.assertEqual(
+            operation_creation(
+                Subtraction,
+                operation_creation(
+                    Addition,
+                    1,
+                    operation_creation(
+                        Multiplication,
+                        a,
+                        b
+                    )
+                ),
+                operation_creation(
+                    Addition,
+                    operation_creation(
+                        Multiplication,
+                        b,
+                        a
+                    ),
+                    1
+                )
+            ),
+            0
+        )
+
+        self.assertRaises(ValueError, operation_creation, Subtraction, 0)
+
+    def test_creation_multiplication(self):
+        a = PopulationSizeVariable("a")
+        b = PopulationSizeVariable("b")
+
+        self.assertEqual(operation_creation(Multiplication, 2, 4), 8)
+
+        self.assertEqual(operation_creation(Multiplication, 1, a), a)
+        self.assertEqual(operation_creation(Multiplication, a, 1), a)
+
+        self.assertEqual(operation_creation(Multiplication, 0, b), 0)
+        self.assertEqual(operation_creation(Multiplication, b, 0), 0)
+
+        self.assertIsInstance(operation_creation(Multiplication, a, b), Multiplication)
+
+        self.assertRaises(ValueError, operation_creation, Multiplication, a)
+
+    def test_creation_division(self):
+        a = PopulationSizeVariable("a")
+        b = PopulationSizeVariable("b")
+
+        self.assertEqual(operation_creation(Division, 8, 2), 4)
+
+        self.assertEqual(operation_creation(Division, a, 1), a)
+        self.assertRaises(ValueError, operation_creation, Division, a, 0)
+
+        self.assertEqual(operation_creation(Division, b, b), 1)
+
+        self.assertRaises(ValueError, operation_creation, Division, a)
+
+    def test_translation_from_epoch_to_coalescent1(self):
+        from .test_coalescent_dem_model import TestCoalescentDemModel
+        N_a, nu1, nu2, nu2F, t1, t2 = TestCoalescentDemModel.get_genetic_variables_model1()
+        var2values = {
+            'nu1': 0.4,
+            'nu2F': 0.7,
+            'nu2': 0.5,
+            'N_a': 1e5,
+            't1': 1,
+            't2': 5
+        }
+        em = EpochDemographicModel(gen_time=29, Nanc_size=N_a, mutation_rate=1.25e-8)
+        em.add_split(0, [nu1, nu2])
+        em.add_epoch(operation_creation(Subtraction, t2, t1), [nu1, nu2])
+        em.add_epoch(operation_creation(Subtraction, t1, 0), [nu1, nu2F])
+        cm = CoalescentDemographicModel(gen_time=29, mutation_rate=1.25e-8)
+        cm.add_leaf(0, size_pop=nu1)
+        cm.add_leaf(1, size_pop=nu2F)
+        cm.change_pop_size(1, t=t1, size_pop=nu2)
+        cm.move_lineages(1, 0, t=t2, size_pop=N_a)
+
+        translated_model = em.translate_to(CoalescentDemographicModel, var2values)\
+
+        self.assertTrue(translated_model.equals(cm, var2values))
+
+    @staticmethod
+    def get_genetic_variables_model3():
+        N_a = PopulationSizeVariable('N_a', units="physical")
+        nu1B = PopulationSizeVariable('nu1B', units="genetic")
+        nu1 = PopulationSizeVariable('nu1', units="genetic")
+        nu1F = PopulationSizeVariable('nu1F', units="genetic")
+        nu2B = PopulationSizeVariable('nu2B', units="genetic")
+        nu2F = PopulationSizeVariable('nu2F', units="genetic")
+        t1 = TimeVariable('t1', units="genetic")
+        t2 = TimeVariable('t2', units="genetic")
+        t3 = TimeVariable('t3', units="genetic")
+        return N_a, nu1B, nu1, nu1F, nu2B, nu2F, t1, t2, t3
+
+    def test_translation_from_epoch_to_coalescent2(self):
+        N_a, nu1B, nu1, nu1F, nu2B, nu2F, t1, t2, t3 = self.get_genetic_variables_model3()
+        var2values = {
+            'N_a': 1e5,
+            'nu1B': 0.4,
+            'nu1': 0.8,
+            'nu1F': 0.1,
+            'nu2B': 0.5,
+            'nu2F': 0.2,
+            't1': 2,
+            't2': 4,
+            't3': 5
+        }
+        cm = CoalescentDemographicModel(gen_time=29, mutation_rate=1.25e-8)
+        cm.add_leaf(0, size_pop=nu1F)
+        cm.add_leaf(1, size_pop=nu2F)
+        cm.change_pop_size(0, t=t1, size_pop=nu1)
+        cm.change_pop_size(0, t=t2, size_pop=nu1B)
+        cm.change_pop_size(1, t=t2, size_pop=nu2B)
+        cm.move_lineages(1, 0, t=t3, size_pop=N_a)
+        em = EpochDemographicModel(gen_time=29, Nanc_size=N_a, mutation_rate=1.25e-8)
+        em.add_split(0, [nu1B, nu2B])
+        em.add_epoch(operation_creation(Subtraction, t3, t2), [nu1B, nu2B])
+        em.add_epoch(operation_creation(Subtraction, t2, t1), [nu1, nu2F])
+        em.add_epoch(operation_creation(Subtraction, t1, 0), [nu1F, nu2F])
+        translated_model = em.translate_to(CoalescentDemographicModel, var2values)
+        self.assertTrue(translated_model.equals(cm, var2values))
+
+    def test_translation_from_epoch_to_coalescent3(self):
+        N_a, nu1B, nu1, nu1F, nu2B, nu2F, t1, t2, t3 = self.get_genetic_variables_model3()
+        var2values = {
+            'N_a': 1e5,
+            'nu1B': 0.4,
+            'nu1': 0.8,
+            'nu1F': 0.1,
+            'nu2B': 0.2,
+            'nu2F': 0.5,
+            't1': 2,
+            't2': 4,
+            't3': 5
+        }
+        cm = CoalescentDemographicModel(gen_time=29, mutation_rate=1.25e-8)
+        cm.add_leaf(0, size_pop=nu1F)
+        cm.add_leaf(1, size_pop=nu2F)
+        cm.change_pop_size(0, t=t1, size_pop=nu1)
+        cm.change_pop_size(0, t=t2, size_pop=nu1B)
+        cm.change_pop_size(1, t=t1, size_pop=nu2B)
+        cm.move_lineages(1, 0, t=t3, size_pop=N_a)
+        em = EpochDemographicModel(gen_time=29, Nanc_size=N_a, mutation_rate=1.25e-8)
+        em.add_split(0, [nu1B, nu2B])
+        em.add_epoch(operation_creation(Subtraction, t3, t2), [nu1B, nu2B])
+        em.add_epoch(operation_creation(Subtraction, t2, t1), [nu1, nu2B])
+        em.add_epoch(operation_creation(Subtraction, t1, 0), [nu1F, nu2F])
+        translated_model = em.translate_to(CoalescentDemographicModel, var2values)
+        self.assertTrue(translated_model.equals(cm, var2values))
+
+    def test_translation_from_epoch_to_coalescent4(self):
+        N_a, nu1B, nu1, nu1F, nu2B, nu2F, t1, t2, t3 = self.get_genetic_variables_model3()
+        t4 = TimeVariable('t4', units="genetic")
+        var2values = {
+            'N_a': 1e5,
+            'nu1B': 0.4,
+            'nu1': 0.8,
+            'nu1F': 0.1,
+            'nu2B': 0.5,
+            'nu2F': 0.2,
+            't1': 2,
+            't2': 3,
+            't3': 4,
+            't4': 5
+        }
+        cm = CoalescentDemographicModel(gen_time=29, mutation_rate=1.25e-8)
+        cm.add_leaf(0, size_pop=nu1F)
+        cm.add_leaf(1, size_pop=nu2F)
+        cm.change_pop_size(0, t=t1, size_pop=nu1)
+        cm.change_pop_size(0, t=t3, size_pop=nu1B)
+        cm.change_pop_size(1, t=t2, size_pop=nu2B)
+        cm.move_lineages(1, 0, t=t4, size_pop=N_a)
+        em = EpochDemographicModel(gen_time=29, Nanc_size=N_a, mutation_rate=1.25e-8)
+        em.add_split(0, [nu1B, nu2B])
+        em.add_epoch(operation_creation(Subtraction, t4, t3), [nu1B, nu2B])
+        em.add_epoch(operation_creation(Subtraction, t3, t2), [nu1, nu2B])
+        em.add_epoch(operation_creation(Subtraction, t2, t1), [nu1, nu2F])
+        em.add_epoch(operation_creation(Subtraction, t1, 0), [nu1F, nu2F])
+        translated_model = em.translate_to(CoalescentDemographicModel, var2values)
+        self.assertTrue(translated_model.equals(cm, var2values))

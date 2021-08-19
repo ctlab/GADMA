@@ -1,4 +1,5 @@
 import numpy as np
+
 from ..utils import Variable, VariablePool, float_repr, DiscreteVariable
 
 
@@ -25,6 +26,15 @@ class Model(object):
     def variables(self, new_variables):
         self._variables = new_variables
         self.is_fixed = [False for var in new_variables]
+
+    @staticmethod
+    def get_value_from_var2value(var2value, entity):
+        if isinstance(entity, Variable):
+            return var2value[entity]
+        from .variables_combinations import BinaryOperation
+        if isinstance(entity, BinaryOperation):
+            return entity.get_value(var2value)
+        return entity
 
     def add_variable(self, variable):
         """
@@ -158,13 +168,17 @@ class Model(object):
         """
         Returns list of arg and its value string representations
         """
-        from .variables_combinations import BinaryOperation
+        from .variables_combinations import BinaryOperation, UnaryOperation
         if isinstance(arg, Variable):
             val = self.var2value(values)[arg]
             arg_repr = f"{arg.name}"
             if arg in self.fixed_values:
                 arg_repr = ""
         elif isinstance(arg, BinaryOperation):
+            var2value = self.var2value(values)
+            val = arg.get_value([var2value[var] for var in arg.variables])
+            arg_repr = f"{arg.name}"
+        elif isinstance(arg, UnaryOperation):
             var2value = self.var2value(values)
             val = arg.get_value([var2value[var] for var in arg.variables])
             arg_repr = f"{arg.name}"
