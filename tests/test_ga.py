@@ -417,10 +417,13 @@ class TestInference(unittest.TestCase):
                             func_ex = numerics.make_extrap_log_func(func)
                         else:
                             func_ex = func
-                        model = func_ex(x, data.sample_sizes, *args)
-                        y = engine.base_module.Inference.ll_multinom(data,
-                                                                     model)
-                        Y_init.append(y)
+                        try:
+                            model = func_ex(x, data.sample_sizes, *args)
+                            y = engine.base_module.Inference.ll_multinom(data,
+                                                                         model)
+                            Y_init.append(y)
+                        except AttributeError as e:
+                            Y_init.append(-np.inf)
                 time = 2 * timeit.timeit(f, number=1) / num_init
                 optimize_ga(data, func, engine.id, args=args,
                     p_ids = p_ids, maxtime_per_eval=0.1,

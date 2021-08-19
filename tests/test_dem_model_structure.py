@@ -212,6 +212,11 @@ class TestModelStructure(unittest.TestCase):
                 dm.recombination_rate = 1e-8
                 dm.Nref = 10000
 
+                # Change domain as when time is very small then our check
+                # sometimes is wrong
+                for i in range(len(dm.variables)):
+                    if isinstance(dm.variables[i], TimeVariable):
+                        dm.variables[i].domain = [1e-2, 5]
                 variables = dm.variables
                 x = [var.resample() for var in variables]
                 if has_anc:
