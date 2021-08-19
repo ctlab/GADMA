@@ -117,8 +117,6 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
 
         self.mut_rate = mut_rate
         self.mut_strength = mut_strength
-        self.cur_mut_rate = mut_rate
-        self.cur_mut_strength = mut_strength
         self.const_mut_rate = const_mut_rate
         self.const_mut_strength = const_mut_strength
         self.mut_attempts = mut_attempts
@@ -133,6 +131,26 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         self.one_fifth_rule = one_fifth_rule
         super(GeneticAlgorithm, self).__init__(random_type, custom_rand_gen,
                                                log_transform, maximize)
+
+    @property
+    def mut_rate(self):
+        return self._mut_rate
+
+    @mut_rate.setter
+    def mut_rate(self, value):
+        self._mut_rate = value
+        if hasattr(self, "run_info"):
+            self.run_info.cur_mut_rate = self._mut_rate
+
+    @property
+    def mut_strength(self):
+        return self._mut_strength
+
+    @mut_strength.setter
+    def mut_strength(self, value):
+        self._mut_strength = value
+        if hasattr(self, "run_info"):
+            self.run_info.cur_mut_strength = self._mut_strength
 
     def randomize(self, variables, random_type='resample',
                   custom_rand_gen=None):
@@ -257,6 +275,9 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                  for _ in range(attemts)]
 
         # Start mutation procedure
+        # We try to get mutant that will be different to original x
+        # If we done mutation and got the same x then we run it again
+        # But we try to do no more than 5 (i_att) times
         for attempt in range(attemts):
             i_att = 0
             while np.all(x_mut[attempt] == x) and i_att < 5:
@@ -459,12 +480,16 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
     def _sample_mut_rate(self, mode='normal'):
         if mode == 'normal':
             # TODO: Think about std for this distribution
-            return trunc_normal_3_sigma_rule(self.cur_mut_rate, 0.0, 1.0)
+            return trunc_normal_3_sigma_rule(
+                self.run_info.cur_mut_rate,
+                0.0,
+                1.0
+            )
         elif mode == 'uniform':
             return np.random.uniform(0.0, 1.0)
 
     def _sample_number_of_changes(self, n):
-        sample = np.random.binomial(n=n, p=self.cur_mut_strength)
+        sample = np.random.binomial(n=n, p=self.run_info.cur_mut_strength)
         return max(1, int(sample))
 
     def check_x(self, variables, x, raises=False):
@@ -503,11 +528,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             impr_gen = n_gen
         is_stuck = (n_gen - impr_gen) >= self.n_stuck_gen
         if maxeval is not None:
-            expect_feval = int(self.gen_size * self.p_mutation *
-                               self.mut_attempts)\
-                         + int(self.gen_size * self.p_crossover)\
-                         + int(self.gen_size * self.p_random)
-            stop_by_n_eval = (n_eval + expect_feval >= maxeval)
+            stop_by_n_eval = (n_eval >= maxeval)
         else:
             stop_by_n_eval = False
 
@@ -636,6 +657,11 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
 
             # Our n_iter was already increased so -1 is applied
             is_impr = (n_impr_gen == run_info.result.n_iter - 1)
+            # but we also check that it is not zero iteration
+            # If so then we have not improved
+            is_impr = is_impr and n_impr_gen > 0
+
+            # Update mut rate and strength
             if self.one_fifth_rule:
                 run_info.cur_mut_rate = update_by_one_fifth_rule(
                     run_info.cur_mut_rate,
