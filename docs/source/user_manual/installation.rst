@@ -30,23 +30,32 @@ To calculate confidence intervals one should install:
 Installing the latest release
 ------------------------------
 
-The latest release of GADMA is easily installed via ``pip``:
+The latest release of GADMA is easily installed via ``pip`` or ``conda`` (``bioconda``):
 
 .. code-block:: console
 
     $ pip install gadma
 
+or
+
+.. code-block:: console
+
+    $ conda install -c bioconda gadma
+
+
 .. warning::
-    Installation via ``pip`` will not install the ``moments`` library. To install it one should run:
+    Installation via ``pip`` and ``conda`` will not install the ``moments`` library. To install it one should run:
 
     .. code-block:: console
 
-        $ pip install --upgrade Cython
-        $ pip install mpmath
-        $ git clone https://bitbucket.org/simongravel/moments/
-        $ cd moments
-        $ python3 setup.py install
-        $ cd ..
+        $ pip install git+https://bitbucket.org/simongravel/moments.git
+
+    or
+
+    .. code-block:: console
+
+        $ conda install -c bioconda moments
+
 
 Manual installation
 -----------------------------
