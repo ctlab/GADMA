@@ -241,7 +241,8 @@ class TestGeneticAlg(unittest.TestCase):
                 with open(eval_file) as fl:
                     for line in fl:
                         int_lines += 1
-                self.assertTrue(int_lines <= 10)
+                # As GA stops when got maxeval n_eval could be higher
+                self.assertTrue(int_lines <= 20)
 
     def test_1pop_example_1(self):
         for engine in all_engines():
