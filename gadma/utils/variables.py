@@ -409,7 +409,7 @@ class TimeVariable(DemographicVariable, ContinuousVariable):
     :note: Values are assumed to be in genetic units.
     """
     default_domain = np.array([1e-15, 5])
-    default_rand_gen = trunc_normal_sigma_generator
+    default_rand_gen = trunc_lognormal_sigma_generator
 
     @staticmethod
     def _transform_value_from_gen_to_phys(value, Nanc):

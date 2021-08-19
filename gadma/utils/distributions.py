@@ -34,7 +34,7 @@ def trunc_normal_3_sigma_rule(mean, lower, upper):
     Truncated normal distribution with sigma according by
     three sigma rule.
     """
-    sigma = min(mean - lower, upper - mean) / 3
+    sigma = max(mean - lower, upper - mean) / 3
     return trunc_normal(mean, sigma, lower, upper)
 
 
