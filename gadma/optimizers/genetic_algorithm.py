@@ -275,6 +275,9 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                  for _ in range(attemts)]
 
         # Start mutation procedure
+        # We try to get mutant that will be different to original x
+        # If we done mutation and got the same x then we run it again
+        # But we try to do no more than 5 (i_att) times
         for attempt in range(attemts):
             i_att = 0
             while np.all(x_mut[attempt] == x) and i_att < 5:
@@ -525,11 +528,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             impr_gen = n_gen
         is_stuck = (n_gen - impr_gen) >= self.n_stuck_gen
         if maxeval is not None:
-            expect_feval = int(self.gen_size * self.p_mutation *
-                               self.mut_attempts)\
-                         + int(self.gen_size * self.p_crossover)\
-                         + int(self.gen_size * self.p_random)
-            stop_by_n_eval = (n_eval + expect_feval >= maxeval)
+            stop_by_n_eval = (n_eval >= maxeval)
         else:
             stop_by_n_eval = False
 
@@ -658,6 +657,11 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
 
             # Our n_iter was already increased so -1 is applied
             is_impr = (n_impr_gen == run_info.result.n_iter - 1)
+            # but we also check that it is not zero iteration
+            # If so then we have not improved
+            is_impr = is_impr and n_impr_gen > 0
+
+            # Update mut rate and strength
             if self.one_fifth_rule:
                 run_info.cur_mut_rate = update_by_one_fifth_rule(
                     run_info.cur_mut_rate,
