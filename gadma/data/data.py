@@ -26,8 +26,17 @@ class DataHolder(object):
 
 class SFSDataHolder(DataHolder):
     """
-    Class for SFS data holding.
-    if any parameter is None then it will be taken from the file
+    Class for SFS and fastsimcoal2 data holding.
+    if any parameter is None then it will be taken from the file (for SFS data)
+
+     Possible extensions for fastsimcoal2 data:
+     _DAFpop0.obs - single sample, derived allele (unfolded spectrum)
+     _MAFpop0.obs - single sample, minor allele (folded spectrum)
+     _jointDAFpop1_0.obs - two samples unfolded
+     _jointMAFpop1_0.obs - two samples folded
+     _DSFS.obs - multidimensional SFS for derived allele
+     _MSFS.obs - multidimensional SFS for minor allele
+
     """
     def __init__(self, sfs_file, projections=None, outgroup=None,
                  population_labels=None, sequence_length=None):
@@ -55,3 +64,29 @@ class VCFDataHolder(DataHolder):
         )
         self.popmap_file = popmap_file
         self.bed_file = bed_file
+
+
+# class FSCDataHolder(DataHolder):
+#     """
+#     Class from holding data native to fastsimcoal2
+#
+#     Possible extensions:
+#     _DAFpop0.obs - single sample, derived allele (unfolded spectrum)
+#     _MAFpop0.obs - single sample, minor allele (folded spectrum)
+#     _jointDAFpop1_0.obs - two samples unfolded
+#     _jointMAFpop1_0.obs - two samples folded
+#     _DSFS.obs - multidimensional SFS for derived allele
+#     _MSFS.obs - multidimensional SFS for minor allele
+#     """
+#     def __init__(self, filename, projections=None, outgroup=None,
+#                  population_labels=None, sequence_length=None):
+#
+#         # outgroup = any(key in filename for key in ('DAF', 'DSFS'))
+#
+#         super(FSCDataHolder, self).__init__(
+#             filename=filename,
+#             projections=projections,
+#             outgroup=outgroup,
+#             population_labels=population_labels,
+#             sequence_length=sequence_length
+#         )

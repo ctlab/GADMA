@@ -831,11 +831,11 @@ class SettingsStorage(object):
             return self
         loaded_dict = {}
         if param_file is not None:
-            with open(param_file) as fl:
+            with open(param_file, encoding="utf-8") as fl:
                 loaded_dict = ruamel.yaml.load(fl,
                                                ruamel.yaml.RoundTripLoader)
         if extra_param_file is not None:
-            with open(extra_param_file) as fl:
+            with open(extra_param_file, encoding="utf-8") as fl:
                 extra_dict = ruamel.yaml.load(fl,
                                               ruamel.yaml.RoundTripLoader)
             loaded_dict = {**loaded_dict, **extra_dict}
@@ -897,7 +897,7 @@ class SettingsStorage(object):
         saved_attrs = []
         for filename, template in zip([params_file, extra_params_file],
                                       [PARAM_TEMPLATE, EXTRA_PARAM_TEMPLATE]):
-            with open(template) as fl:
+            with open(template, encoding="utf-8") as fl:
                 readed_template = fl.read()
             loaded_template = ruamel.yaml.load(readed_template,
                                                ruamel.yaml.RoundTripLoader)
@@ -941,13 +941,13 @@ class SettingsStorage(object):
                                                              my_represent_none)
             ruamel.yaml.RoundTripRepresenter.add_representer(bool,
                                                              my_represent_bool)
-            with open(filename, 'w') as fl:
+            with open(filename, 'w', encoding="utf-8") as fl:
                 ruamel.yaml.dump(loaded_template, fl,
                                  default_flow_style=True,
                                  Dumper=ruamel.yaml.RoundTripDumper)
         # save missed attributes at the end of extra file
         final_dict = dict()
-        with open(extra_params_file, 'a') as fl:
+        with open(extra_params_file, 'a', encoding="utf-8") as fl:
             fl.write("\n#\tOther parameters of run without description:\n")
             for attr_name in set(dir(self) + dir(settings)):
                 if (attr_name.startswith("_") or
