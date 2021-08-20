@@ -1,7 +1,6 @@
 import unittest
 from gadma import *
 from gadma.engines.momi_engine import MomiEngine
-from gadma.models.coalescent_demographic_model import CoalescentDemographicModel
 
 
 class TestMomiEngine(unittest.TestCase):
