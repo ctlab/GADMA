@@ -130,6 +130,10 @@ class TestUtils(unittest.TestCase):
             sym_migs=True,
             frac_split=True,
         )
+        # we make time variables greater as it is unstable with small values
+        for i in range(len(model.variables)):
+            if isinstance(model.variables[i], TimeVariable):
+                model.variables[i].domain = [1e-2, 5]
 
         engine = get_engine("moments")
         engine.data = data_holder
