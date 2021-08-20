@@ -453,7 +453,7 @@ class EpochDemographicModel(DemographicModel):
         :param values: Values of the parameters.
         :type values: list or dict
         """
-        from .coalescent_demographic_model import TreeDemographicModel
+        from .tree_demographic_model import TreeDemographicModel
         if isinstance(model, TreeDemographicModel):
             if values is None:
                 raise ValueError(
@@ -485,7 +485,7 @@ class EpochDemographicModel(DemographicModel):
         :param values: Values of the parameters.
         :type values: list or dict
         """
-        from .coalescent_demographic_model import TreeDemographicModel
+        from .tree_demographic_model import TreeDemographicModel
         if issubclass(ModelClass, TreeDemographicModel):
             return self._translate_to_tree_model(values)
         raise ValueError(
@@ -493,7 +493,7 @@ class EpochDemographicModel(DemographicModel):
         )
 
     def _translate_to_tree_model(self, values):
-        from .coalescent_demographic_model import TreeDemographicModel
+        from .tree_demographic_model import TreeDemographicModel
         model = TreeDemographicModel(
             mutation_rate=self.mutation_rate,
             recombination_rate=self.recombination_rate,

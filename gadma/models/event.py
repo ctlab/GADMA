@@ -284,7 +284,7 @@ class  PopulationSizeChange(Event):
         # нельзя сравнивать события в отрыве от всей модели
         if self is other:
             return True
-        if not isinstance(other, SetSize):
+        if not isinstance(other, PopulationSizeChange):
             return False
         var2value = self.var2value(values)
         return (

@@ -683,8 +683,8 @@ class TestModels(unittest.TestCase):
 
         self.assertRaises(ValueError, operation_creation, Division, a)
 
-    def test_translation_from_epoch_to_coalescent1(self):
-        from .test_coalescent_dem_model import TestTreeDemModel
+    def test_translation_from_epoch_to_tree1(self):
+        from .test_tree_dem_model import TestTreeDemModel
         N_a, nu1, nu2, nu2F, t1, t2 = TestTreeDemModel.get_genetic_variables_model1()
         var2values = {
             'nu1': 0.4,
@@ -721,7 +721,7 @@ class TestModels(unittest.TestCase):
         t3 = TimeVariable('t3', units="genetic")
         return N_a, nu1B, nu1, nu1F, nu2B, nu2F, t1, t2, t3
 
-    def test_translation_from_epoch_to_coalescent2(self):
+    def test_translation_from_epoch_to_tree2(self):
         N_a, nu1B, nu1, nu1F, nu2B, nu2F, t1, t2, t3 = self.get_genetic_variables_model3()
         var2values = {
             'N_a': 1e5,
@@ -749,7 +749,7 @@ class TestModels(unittest.TestCase):
         translated_model = em.translate_to(TreeDemographicModel, var2values)
         self.assertTrue(translated_model.equals(cm, var2values))
 
-    def test_translation_from_epoch_to_coalescent3(self):
+    def test_translation_from_epoch_to_tree3(self):
         N_a, nu1B, nu1, nu1F, nu2B, nu2F, t1, t2, t3 = self.get_genetic_variables_model3()
         var2values = {
             'N_a': 1e5,
@@ -777,7 +777,7 @@ class TestModels(unittest.TestCase):
         translated_model = em.translate_to(TreeDemographicModel, var2values)
         self.assertTrue(translated_model.equals(cm, var2values))
 
-    def test_translation_from_epoch_to_coalescent4(self):
+    def test_translation_from_epoch_to_tree4(self):
         N_a, nu1B, nu1, nu1F, nu2B, nu2F, t1, t2, t3 = self.get_genetic_variables_model3()
         t4 = TimeVariable('t4', units="genetic")
         var2values = {
