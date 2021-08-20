@@ -4,16 +4,17 @@ from .variables_combinations import Subtraction, \
     operation_creation, \
     Exp
 
-from .event import SetSize, MoveLineages, Leaf
+from .event import PopulationSizeChange, LineageMovement, Leaf
 from . import DemographicModel, EpochDemographicModel
 import numpy as np
 
-from .. import Variable
+from ..utils import Variable
 
 
-class CoalescentDemographicModel(DemographicModel):
+class TreeDemographicModel(DemographicModel):
     """
-    Special class for coalescent demographic model.
+    Special class for tree demographic model. This demographic model is very
+    close to momi2 models. It is back-in-time and has tree structure.
 
     :param mutation_rate: Mutation rate per base per generation.
     :type mutation_rate: float
@@ -39,7 +40,7 @@ class CoalescentDemographicModel(DemographicModel):
         self.rec_rate = recombination_rate
         self.gen_time = gen_time
 
-        super(CoalescentDemographicModel, self).__init__(
+        super(TreeDemographicModel, self).__init__(
             gen_time=gen_time,
             theta0=theta0,
             mutation_rate=mutation_rate,
@@ -48,9 +49,14 @@ class CoalescentDemographicModel(DemographicModel):
         )
 
     def __eq__(self, other):
+        """
+        Checks that it is the same model with the same events.
+        If structure is different but it is still the same model then use
+        :meth:`equals`.
+        """
         if self is other:
             return True
-        if not isinstance(other, CoalescentDemographicModel):
+        if not isinstance(other, TreeDemographicModel):
             return False
         if len(self.events) != len(other.events):
             return False
@@ -65,9 +71,13 @@ class CoalescentDemographicModel(DemographicModel):
         return True
 
     def equals(self, other, values):
+        """
+        Checks that two models are equal ignoring their structure.
+        Just checks that all values in events are equal.
+        """
         if self is other:
             return True
-        if not isinstance(other, CoalescentDemographicModel):
+        if not isinstance(other, TreeDemographicModel):
             return False
         if len(self.events) != len(other.events):
             return False
@@ -91,7 +101,8 @@ class CoalescentDemographicModel(DemographicModel):
     @property
     def has_anc_size(self):
         """
-        If True than model has ancestral population.
+        Returns True if model is not empty. It is assumed that such models
+        always have an ancestral population.
         """
         if len(self.events) == 0:
             return False
@@ -99,9 +110,15 @@ class CoalescentDemographicModel(DemographicModel):
 
     @has_anc_size.setter
     def has_anc_size(self, val):
+        """
+        Does nothing as has_anc_size is always True.
+        """
         pass
 
     def _get_Nanc_size(self, values):
+        """
+        Returns value of ancestral population size.
+        """
         var2value = self.var2value(values)
         Nanc_var = self.get_Nanc_variable(var2value)
         return self.get_value_from_var2value(var2value, Nanc_var)
@@ -109,7 +126,7 @@ class CoalescentDemographicModel(DemographicModel):
     def get_Nanc_variable(self, values):
         var2value = self.var2value(values)
         """
-        Return size variable of ancestral population.
+        Returns variable corresponding to the ancestral population size.
 
         :param value: Values of the parameters.
         :type value: list or dict
@@ -128,17 +145,17 @@ class CoalescentDemographicModel(DemographicModel):
     def _get_size_pop(self, pop, time, var2value, inclusive=True):
 
         """
-        Return size of population `pop` in time `time`.
+        Returns size of population `pop` at the moment of time `time`.
 
         :param pop: Name of population.
         :type pop: int
         :param time: Time at which to find out the size.
         :type time: :class:`Variable`, :class:`gadma.models.BinaryOperation`,
-         float
+                    float
         :param var2value: Dictionary from variable to its value.
         :type: dict
         :param inclusive: True if event, which occurred
-         at a point in time `time`,affects the returned size.
+                          at a point in time `time`,affects the returned size.
         :type inclusive: bool
         """
         time_val = self.get_value_from_var2value(
@@ -178,7 +195,7 @@ class CoalescentDemographicModel(DemographicModel):
             before_time = None
             for event in self.events:
                 if event.pop == pop or \
-                        (isinstance(event, MoveLineages)
+                        (isinstance(event, LineageMovement)
                          and event.pop_from == pop):
                     event_time = self.get_value_from_var2value(
                         var2value=var2value,
@@ -236,7 +253,7 @@ class CoalescentDemographicModel(DemographicModel):
                           epoch_end):
 
         for epoch_event in epoch_events:
-            if isinstance(epoch_event, MoveLineages):
+            if isinstance(epoch_event, LineageMovement):
                 pop2pos[epoch_event.pop_from] = len(size_args)
                 size, dyn = self._get_size_pop(
                     pop=epoch_event.pop_from,
@@ -278,6 +295,7 @@ class CoalescentDemographicModel(DemographicModel):
 
         """
         Translate this model into its representation in `ModelClass`.
+        Supports :class:`gadma.EpochDemographicModel` only.
 
         :param ModelClass: Representation of model in which transform
          current model.
@@ -365,7 +383,7 @@ class CoalescentDemographicModel(DemographicModel):
                     epoch_events = [event]
             return epoch_model
         raise ValueError(
-            f"Can not translate coalescent demographic model into {ModelClass}"
+            f"Can not translate tree demographic model into {ModelClass}"
         )
 
     def change_pop_size(self, pop, t, size_pop=None, dyn='Sud', g=0):
@@ -385,7 +403,7 @@ class CoalescentDemographicModel(DemographicModel):
                class as well as different constants/values including\
                :class:`gadma.models.BinaryOperation` instances.
         """
-        new_set_size = SetSize(
+        new_set_size = PopulationSizeChange(
             pop=pop,
             t=t,
             dyn=dyn,
@@ -418,7 +436,7 @@ class CoalescentDemographicModel(DemographicModel):
                class as well as different constants/values including\
                :class:`gadma.models.BinaryOperation` instances.
         """
-        new_move_lineages = MoveLineages(
+        new_move_lineages = LineageMovement(
             pop_from=pop_from,
             pop=pop,
             t=t,

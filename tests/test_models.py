@@ -6,7 +6,7 @@ from gadma import *
 from gadma import ContinuousVariable
 from gadma.models import *
 from gadma.models.variables_combinations import BinaryOperation, operation_creation, Exp, Log
-from gadma.models.coalescent_demographic_model import CoalescentDemographicModel
+from gadma.models import TreeDemographicModel
 from gadma.engines import DadiEngine
 
 from .test_data import YRI_CEU_DATA
@@ -684,8 +684,8 @@ class TestModels(unittest.TestCase):
         self.assertRaises(ValueError, operation_creation, Division, a)
 
     def test_translation_from_epoch_to_coalescent1(self):
-        from .test_coalescent_dem_model import TestCoalescentDemModel
-        N_a, nu1, nu2, nu2F, t1, t2 = TestCoalescentDemModel.get_genetic_variables_model1()
+        from .test_coalescent_dem_model import TestTreeDemModel
+        N_a, nu1, nu2, nu2F, t1, t2 = TestTreeDemModel.get_genetic_variables_model1()
         var2values = {
             'nu1': 0.4,
             'nu2F': 0.7,
@@ -698,13 +698,13 @@ class TestModels(unittest.TestCase):
         em.add_split(0, [nu1, nu2])
         em.add_epoch(operation_creation(Subtraction, t2, t1), [nu1, nu2])
         em.add_epoch(operation_creation(Subtraction, t1, 0), [nu1, nu2F])
-        cm = CoalescentDemographicModel(gen_time=29, mutation_rate=1.25e-8)
+        cm = TreeDemographicModel(gen_time=29, mutation_rate=1.25e-8)
         cm.add_leaf(0, size_pop=nu1)
         cm.add_leaf(1, size_pop=nu2F)
         cm.change_pop_size(1, t=t1, size_pop=nu2)
         cm.move_lineages(1, 0, t=t2, size_pop=N_a)
 
-        translated_model = em.translate_to(CoalescentDemographicModel, var2values)\
+        translated_model = em.translate_to(TreeDemographicModel, var2values)\
 
         self.assertTrue(translated_model.equals(cm, var2values))
 
@@ -734,7 +734,7 @@ class TestModels(unittest.TestCase):
             't2': 4,
             't3': 5
         }
-        cm = CoalescentDemographicModel(gen_time=29, mutation_rate=1.25e-8)
+        cm = TreeDemographicModel(gen_time=29, mutation_rate=1.25e-8)
         cm.add_leaf(0, size_pop=nu1F)
         cm.add_leaf(1, size_pop=nu2F)
         cm.change_pop_size(0, t=t1, size_pop=nu1)
@@ -746,7 +746,7 @@ class TestModels(unittest.TestCase):
         em.add_epoch(operation_creation(Subtraction, t3, t2), [nu1B, nu2B])
         em.add_epoch(operation_creation(Subtraction, t2, t1), [nu1, nu2F])
         em.add_epoch(operation_creation(Subtraction, t1, 0), [nu1F, nu2F])
-        translated_model = em.translate_to(CoalescentDemographicModel, var2values)
+        translated_model = em.translate_to(TreeDemographicModel, var2values)
         self.assertTrue(translated_model.equals(cm, var2values))
 
     def test_translation_from_epoch_to_coalescent3(self):
@@ -762,7 +762,7 @@ class TestModels(unittest.TestCase):
             't2': 4,
             't3': 5
         }
-        cm = CoalescentDemographicModel(gen_time=29, mutation_rate=1.25e-8)
+        cm = TreeDemographicModel(gen_time=29, mutation_rate=1.25e-8)
         cm.add_leaf(0, size_pop=nu1F)
         cm.add_leaf(1, size_pop=nu2F)
         cm.change_pop_size(0, t=t1, size_pop=nu1)
@@ -774,7 +774,7 @@ class TestModels(unittest.TestCase):
         em.add_epoch(operation_creation(Subtraction, t3, t2), [nu1B, nu2B])
         em.add_epoch(operation_creation(Subtraction, t2, t1), [nu1, nu2B])
         em.add_epoch(operation_creation(Subtraction, t1, 0), [nu1F, nu2F])
-        translated_model = em.translate_to(CoalescentDemographicModel, var2values)
+        translated_model = em.translate_to(TreeDemographicModel, var2values)
         self.assertTrue(translated_model.equals(cm, var2values))
 
     def test_translation_from_epoch_to_coalescent4(self):
@@ -792,7 +792,7 @@ class TestModels(unittest.TestCase):
             't3': 4,
             't4': 5
         }
-        cm = CoalescentDemographicModel(gen_time=29, mutation_rate=1.25e-8)
+        cm = TreeDemographicModel(gen_time=29, mutation_rate=1.25e-8)
         cm.add_leaf(0, size_pop=nu1F)
         cm.add_leaf(1, size_pop=nu2F)
         cm.change_pop_size(0, t=t1, size_pop=nu1)
@@ -805,5 +805,5 @@ class TestModels(unittest.TestCase):
         em.add_epoch(operation_creation(Subtraction, t3, t2), [nu1, nu2B])
         em.add_epoch(operation_creation(Subtraction, t2, t1), [nu1, nu2F])
         em.add_epoch(operation_creation(Subtraction, t1, 0), [nu1F, nu2F])
-        translated_model = em.translate_to(CoalescentDemographicModel, var2values)
+        translated_model = em.translate_to(TreeDemographicModel, var2values)
         self.assertTrue(translated_model.equals(cm, var2values))

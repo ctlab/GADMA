@@ -256,20 +256,20 @@ class Split(Event):
         return f"[ {self.pop_to_div + 1} pop split {frac_str} {sizes_repr} ]"
 
 
-class SetSize(Event):
+class  PopulationSizeChange(Event):
     def __init__(self, pop, t, dyn='Sud', size_pop=None, g=0):
         self.pop = pop
         self.t = t
         self.dyn = dyn
         self.size_pop = size_pop
         self.g = g
-        super(SetSize, self).__init__()
+        super(PopulationSizeChange, self).__init__()
         self.add_variables([pop, t, dyn, size_pop, g])
 
     def __eq__(self, other):
         if self is other:
             return True
-        if not isinstance(other, SetSize):
+        if not isinstance(other, PopulationSizeChange):
             return False
         return (
                 self.pop == other.pop and
@@ -302,7 +302,7 @@ class SetSize(Event):
         pass
 
 
-class MoveLineages(Event):
+class LineageMovement(Event):
 
     def __init__(self, pop_from, pop, t, p=1,
                  dyn='Sud', size_pop=None, g=0):
@@ -313,13 +313,13 @@ class MoveLineages(Event):
         self.dyn = dyn
         self.size_pop = size_pop
         self.g = g
-        super(MoveLineages, self).__init__()
+        super(LineageMovement, self).__init__()
         self.add_variables([pop_from, pop, t, p, dyn, size_pop, g])
 
     def __eq__(self, other):
         if self is other:
             return True
-        if not isinstance(other, MoveLineages):
+        if not isinstance(other, LineageMovement):
             return False
         return (
                 self.pop_from == other.pop_from and
@@ -334,7 +334,7 @@ class MoveLineages(Event):
     def equals(self, other, values):
         if self is other:
             return True
-        if not isinstance(other, MoveLineages):
+        if not isinstance(other, LineageMovement):
             return False
         var2value = self.var2value(values)
         return (
@@ -354,47 +354,5 @@ class MoveLineages(Event):
         pass
 
 
-class Leaf(Event):
-
-    # TODO duplicate code of set size
-    def __init__(self, pop, t=0, dyn='Syd', size_pop=None, g=None):
-        self.pop = pop
-        self.t = t
-        self.dyn = dyn
-        self.size_pop = size_pop
-        self.g = g
-        super(Leaf, self).__init__()
-        self.add_variables([pop, t, dyn, size_pop, g])
-
-    def __eq__(self, other):
-        if self is other:
-            return True
-        if not isinstance(other, Leaf):
-            return False
-        return (
-                self.pop == other.pop and
-                self.t == other.t and
-                self.dyn == other.dyn and
-                self.size_pop == other.size_pop and
-                self.g == other.g
-        )
-
-    def equals(self, other, values):
-        if self is other:
-            return True
-        if not isinstance(other, Leaf):
-            return False
-        var2value = self.var2value(values)
-        return (
-                self.pop == other.pop and
-                self._equal_args(self.t, other.t, var2value) and
-                self._equal_args(self.dyn, other.dyn, var2value) and
-                self._equal_args(self.size_pop, other.size_pop, var2value) and
-                self._equal_args(self.g, other.g, var2value)
-        )
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def as_custom_string(self, values):
-        pass
+class Leaf(PopulationSizeChange):
+    pass

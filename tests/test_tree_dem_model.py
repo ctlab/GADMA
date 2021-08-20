@@ -1,10 +1,10 @@
 import unittest
 from gadma import *
-from gadma.models.coalescent_demographic_model import CoalescentDemographicModel
+from gadma.models import TreeDemographicModel
 from gadma.models.variables_combinations import operation_creation, Exp
 
 
-class TestCoalescentDemModel(unittest.TestCase):
+class TestTreeDemModel(unittest.TestCase):
 
     @staticmethod
     def get_variables_for_gut_2009():
@@ -43,7 +43,7 @@ class TestCoalescentDemModel(unittest.TestCase):
             't1': 1,
             't2': 5
         }
-        m = CoalescentDemographicModel(gen_time=29, mutation_rate=1.25e-8)
+        m = TreeDemographicModel(gen_time=29, mutation_rate=1.25e-8)
         m.add_leaf(0, size_pop=nu1)
         m.add_leaf(1, size_pop=nu2F)
         m.change_pop_size(1, t=t1, size_pop=nu2)
@@ -78,7 +78,7 @@ class TestCoalescentDemModel(unittest.TestCase):
             't1': 1,
             't2': 5
         }
-        m = CoalescentDemographicModel(gen_time=29, mutation_rate=1.25e-8)
+        m = TreeDemographicModel(gen_time=29, mutation_rate=1.25e-8)
         m.add_leaf(0, size_pop=nu1)
         m.add_leaf(1, size_pop=nu2F)
         m.change_pop_size(1, t=t1, size_pop=nu2, dyn="Exp", g=0.9)
@@ -124,7 +124,7 @@ class TestCoalescentDemModel(unittest.TestCase):
             't2': 4,
             't3': 5
         }
-        m = CoalescentDemographicModel(gen_time=29, mutation_rate=1.25e-8)
+        m = TreeDemographicModel(gen_time=29, mutation_rate=1.25e-8)
         m.add_leaf(0, size_pop=nu1F)
         m.add_leaf(1, size_pop=nu2F)
         m.change_pop_size(0, t=t1, size_pop=nu1)
@@ -152,7 +152,7 @@ class TestCoalescentDemModel(unittest.TestCase):
             't2': 4,
             't3': 5
         }
-        m = CoalescentDemographicModel(gen_time=29, mutation_rate=1.25e-8)
+        m = TreeDemographicModel(gen_time=29, mutation_rate=1.25e-8)
         m.add_leaf(0, size_pop=nu1F)
         m.add_leaf(1, size_pop=nu2F)
         m.change_pop_size(0, t=t1, size_pop=nu1)
@@ -182,7 +182,7 @@ class TestCoalescentDemModel(unittest.TestCase):
             't3': 4,
             't4': 5
         }
-        m = CoalescentDemographicModel(gen_time=29, mutation_rate=1.25e-8)
+        m = TreeDemographicModel(gen_time=29, mutation_rate=1.25e-8)
         m.add_leaf(0, size_pop=nu1F)
         m.add_leaf(1, size_pop=nu2F)
         m.change_pop_size(0, t=t1, size_pop=nu1)
