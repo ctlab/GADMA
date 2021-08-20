@@ -355,4 +355,21 @@ class LineageMovement(Event):
 
 
 class Leaf(PopulationSizeChange):
-    pass
+    def __init__(self, pop, t=0, dyn='Syd', size_pop=None, g=None):
+        super(Leaf, self).__init__(
+            pop=pop,
+            t=t,
+            dyn=dyn,
+            size_pop=size_pop,
+            g=g
+        )
+
+    def __eq__(self, other):
+        if not isinstance(other, Leaf):
+            return False
+        return super(Leaf, self).__eq__(other)
+
+    def equals(self, other, values):
+        if not isinstance(other, Leaf):
+            return False
+        return super(Leaf, self).equals(other, values)
