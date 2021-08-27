@@ -475,17 +475,16 @@ def _read_data_snp_type(module, data_holder):
         raise SyntaxError("Construction of data_dict failed: " + str(e))
     population_labels, has_outgroup, size = _get_default_from_snp_format(
         data_holder.filename)
-    if data_holder.projections is not None:
-        size = data_holder.projections
     if data_holder.population_labels is not None:
         if len(data_holder.population_labels) < len(population_labels):
             for label in data_holder.population_labels:
                 assert label in population_labels
-            if len(size) > len(data_holder.population_labels):
-                pop2size = {pop: siz
-                            for pop, siz in zip(population_labels, size)}
-                size = [pop2size[x] for x in data_holder.population_labels]
+        pop2size = {pop: siz
+                    for pop, siz in zip(population_labels, size)}
+        size = [pop2size[x] for x in data_holder.population_labels]
         population_labels = data_holder.population_labels
+    if data_holder.projections is not None:
+        size = data_holder.projections
     sfs = module.Spectrum.from_data_dict(dd, population_labels,
                                          projections=size,
                                          polarized=has_outgroup)

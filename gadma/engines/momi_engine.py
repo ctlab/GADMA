@@ -1,11 +1,14 @@
-from . import Engine, register_engine
+from . import Engine, register_engine, get_engine
 from ..models import CustomDemographicModel, BinaryOperation
 from ..models import TreeDemographicModel, EpochDemographicModel
 from ..models import Leaf, PopulationSizeChange, LineageMovement
 from ..data import check_and_return_projections_and_labels, read_popinfo
+from ..data import get_list_of_names_from_vcf
 from .. import SFSDataHolder, VCFDataHolder
-from .. import momi_available
+from .. import momi_available, dadi_available
 from ..code_generator import id2printfunc
+import tempfile
+import os
 
 import warnings
 
@@ -26,27 +29,56 @@ class MomiEngine(Engine):
     @classmethod
     def _read_data(cls, data_holder):
         momi = cls.base_module
-        if (isinstance(data_holder, SFSDataHolder) and
-                data_holder.filename.endswith("fs")):
-            # it could be dadi format and in fsc format
-            # TODO it is initial solution, it is bad
-            data = momi.sfs_from_dadi(data_holder.filename)
+        if isinstance(data_holder, SFSDataHolder):
+            if data_holder.filename.endswith("fs"):
+                data = momi.sfs_from_dadi(data_holder.filename)
+            else:
+                if not dadi_available and not moments_available:
+                    raise ValueError(
+                        "Dadi or moments engine is required for reading SFS "
+                        f"from file {data_holder.filename}"
+                    )
+                engine = get_engine("dadi" if dadi_available else "moments")
+                readed_sfs = engine.read_data(data_holder)
+                data = None
+                try:
+                    with tempfile.TemporaryDirectory() as tmpdirname:
+                        filename = os.path.join(tmpdirname, "dadi_sfs.fs")
+                        readed_sfs.to_file(filename)
+                        data = momi.sfs_from_dadi(filename)
+                except Exception as e:
+                    raise ValueError(
+                        f"Failed to read given file {data_holder.filename} "
+                        f"using {engine.id} engine."
+                    ) from e
         elif isinstance(data_holder, VCFDataHolder):
-            # TODO check vcf pop labels and proj
             projections, populations = check_and_return_projections_and_labels(
                 data_holder=data_holder
             )
             popmap, _ = read_popinfo(data_holder.popmap_file)
+            ind2pop = {}
+            vcf_samples = get_list_of_names_from_vcf(data_holder.filename)
+            for sample in vcf_samples:
+                if sample not in popmap:
+                    continue
+                if sample not in ind2pop and popmap[sample] in populations:
+                    ind2pop[sample] = popmap[sample]
             data = momi.SnpAlleleCounts.read_vcf(
                 vcf_file=data_holder.filename,
-                ind2pop={sample: popmap[sample] for sample in popmap
-                         if popmap[sample] in populations},
+                ind2pop=ind2pop,
             ).extract_sfs(n_blocks=100)
-            if data_holder.outgroup is False and not data.folded:
-                data = data.fold()
+            data = data.subset_populations(populations)
         else:
             raise ValueError("Unknown type of data_holder: "
                              f"{data_holder.__class__}")
+        if data_holder.outgroup is False and not data.folded:
+            data = data.fold()
+        if data_holder.population_labels is not None:
+            data = data.subset_populations(data_holder.population_labels)
+        if data_holder.projections is not None:
+            if list(data_holder.projections) != list(data.sampled_n):
+                raise ValueError("Momi cannot downsize SFS data. Got "
+                                 f"projections: {data_holder.projections}")
         return data
 
     def update_data_holder_with_inner_data(self):
