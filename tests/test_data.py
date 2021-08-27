@@ -182,8 +182,6 @@ class TestDataHolder(unittest.TestCase):
             # momi cannot downsize SFS
             if (id == "momi" and siz is not None and
                    (list(siz) == [4, 2] or list(siz) == [4])):
-                self.assertRaises(ValueError,
-                                  get_engine(id).read_data, data_holder)
                 continue
 
             engine = get_engine(id)

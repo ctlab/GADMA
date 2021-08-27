@@ -147,25 +147,37 @@ def print_momi_model(engine, values, nanc, gen_time):
 
 
 def print_data_reading(engine):
+    ret_str = ""
+    populations = engine.data_holder.population_labels
     if isinstance(engine.data_holder, SFSDataHolder):
         is_dadi_fs = dadi_generator._is_fs_via_dadi(engine.data_holder)
         if is_dadi_fs is not None:
             filename = f"'{engine.data_holder.filename}'"
-            return f"data = momi.sfs_from_dadi({filename})\n"
-        raise ValueError("Could not generate code to read format of SFS file")
+            ret_str = f"data = momi.sfs_from_dadi({filename})\n"
+        else:
+            ret_str = f"import gadma\n"
+            ret_str += "data_holder = gadma.SFSDataHolder("
+            ret_str += f"'{engine.data_holder.filename}')\n"
+            ret_str += "data = gadma.get_engine('momi').read_data(data_holder)\n"
+
     if isinstance(engine.data_holder, VCFDataHolder):
-        ret_str = f"with open('{engine.data_holder.popmap_file}') as f:\n"
-        ret_str += "\tind2pop = dict([l.split() for l in f])\n"
+        ind2pop = engine._get_ind2pop(engine.data_holder)
+        str_list = []
+        for key, value in ind2pop.items():
+            str_list.append(f"'{key}': '{value}'")
+        ret_str += "ind2pop = {" + ", ".join(str_list) + "}\n"
         ret_str += f"data = momi.SnpAlleleCounts.read_vcf("\
                   f"'{engine.data_holder.filename}', "\
                   "ind2pop=ind2pop).extract_sfs(n_blocks=100)\n"
         _, pops = read_popinfo(engine.data_holder.popmap_file)
-        if not set(engine.data_holder.population_labels) != set(pops):
-            ret_str += f"data = data.subset_populations({list(pops)})\n"
-        if engine.data_holder.outgroup is False:
-            ret_str += "data = data.fold()\n"
-        ret_str += "\n"
-        return ret_str
+        if populations is None or not set(populations) != set(pops):
+            populations = pops
+    if engine.data_holder.outgroup is False:
+        ret_str += "data = data.fold()\n"
+    if populations is not None:
+        ret_str += f"data = data.subset_populations({list(populations)})\n"
+    ret_str += "\n"
+    return ret_str
 
 
 def print_main_part(engine, values, nanc):

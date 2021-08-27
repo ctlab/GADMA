@@ -165,7 +165,7 @@ class TestUtils(unittest.TestCase):
                                    mode="rassmusen", verbose=True, do_optimize=True)
                 s2 = get_LOO_score(X_train=X, Y_train=Y, gp_model=gp,
                                    mode="gp_train", verbose=True, do_optimize=False)
-                self.assertTrue(np.isclose(s1, s2), msg=f"{s1} != {s2}")
+                self.assertTrue(np.isclose(s1, s2, rtol=1e-3), msg=f"{s1} != {s2}")
 
             name1 = get_best_kernel(
                 optimizer=optimizer, variables=model.variables, X=_X, Y=_Y,

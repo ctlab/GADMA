@@ -377,7 +377,7 @@ class TestModels(unittest.TestCase):
                SFSDataHolder(os.path.join(EXAMPLE_FOLDER, 'DATA',
                                           'sfs', '3d_sfs.fs'),
                              projections=[8, 8, 8],
-                             population_labels=['YRI', 'ASW', 'CEU'],
+                             population_labels=['YRI', 'CHB', 'CEU'],
                              outgroup=False))
         yield ("fs without pop labels",
                SFSDataHolder(os.path.join(EXAMPLE_FOLDER, 'DATA',
@@ -530,21 +530,18 @@ class TestModels(unittest.TestCase):
                         # there is an error in momi for that case
                         if description == "fs without pop labels":
                             continue
-                        if description == "dadi snp file":
-                            self.assertRaises(ValueError, engine.read_data, data)
-                            continue
                         values['d2'] = "Exp"
+                    data.sequence_length = 50818468
                     # we read data but save only updated data_holder
                     engine.data = data
                     engine.inner_data = None
-                    engine.data_holder.sequence_length = 50818468
                     engine.model = model
                     Nanc = None
                     if engine.id not in ["dadi", "moments"]:
                         Nanc = 10000
 
                     cmd = engine.generate_code(values, None, *args, nanc=Nanc)
-                    print(cmd)
+                    # print(cmd)
 
                     if engine.can_evaluate:
                         if engine.id not in ['dadi', 'moments']:
@@ -562,7 +559,8 @@ class TestModels(unittest.TestCase):
                         msg += f": {true_ll} != {d['ll_model']}"
                         self.assertTrue(np.allclose(true_ll, d['ll_model']),
                                         msg=msg)
-                        if description == "dadi snp file":
+                        if (description == "dadi snp file" and
+                                engine.id in ["dadi", "moments"]):
                             engine.data_holder.population_labels = None
                             self.assertRaises(ValueError, engine.generate_code,
                                               values, None, *args, nanc=Nanc)

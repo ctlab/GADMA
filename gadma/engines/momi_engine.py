@@ -26,6 +26,21 @@ class MomiEngine(Engine):
     can_draw = True
     can_simulate = True
 
+    @staticmethod
+    def _get_ind2pop(vcf_data_holder):
+        ind2pop = {}
+        projections, populations = check_and_return_projections_and_labels(
+            data_holder=vcf_data_holder
+        )
+        popmap, _ = read_popinfo(vcf_data_holder.popmap_file)
+        vcf_samples = get_list_of_names_from_vcf(vcf_data_holder.filename)
+        for sample in vcf_samples:
+            if sample not in popmap:
+                continue
+            if sample not in ind2pop and popmap[sample] in populations:
+                ind2pop[sample] = popmap[sample]
+        return ind2pop
+
     @classmethod
     def _read_data(cls, data_holder):
         momi = cls.base_module
@@ -55,14 +70,7 @@ class MomiEngine(Engine):
             projections, populations = check_and_return_projections_and_labels(
                 data_holder=data_holder
             )
-            popmap, _ = read_popinfo(data_holder.popmap_file)
-            ind2pop = {}
-            vcf_samples = get_list_of_names_from_vcf(data_holder.filename)
-            for sample in vcf_samples:
-                if sample not in popmap:
-                    continue
-                if sample not in ind2pop and popmap[sample] in populations:
-                    ind2pop[sample] = popmap[sample]
+            ind2pop = cls._get_ind2pop(data_holder)
             data = momi.SnpAlleleCounts.read_vcf(
                 vcf_file=data_holder.filename,
                 ind2pop=ind2pop,
@@ -77,8 +85,8 @@ class MomiEngine(Engine):
             data = data.subset_populations(data_holder.population_labels)
         if data_holder.projections is not None:
             if list(data_holder.projections) != list(data.sampled_n):
-                raise ValueError("Momi cannot downsize SFS data. Got "
-                                 f"projections: {data_holder.projections}")
+                warnings.warn("Momi cannot downsize SFS data.it is using data "
+                              "with full size.")
         return data
 
     def update_data_holder_with_inner_data(self):
