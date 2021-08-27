@@ -253,7 +253,7 @@ class TestDataHolder(unittest.TestCase):
                                     outgroup=True)
         self.assertRaises(ValueError, get_engine(id).read_data, data_holder)
 
-
+    @pytest.mark.timeout(0)
     def test_data_reading(self):
         for engine in all_engines():
             self._test_sfs_reading(engine.id)
