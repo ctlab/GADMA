@@ -168,7 +168,9 @@ class TestEngines(unittest.TestCase):
 
         engine.set_data(data)
         engine.set_model(dm)
-        model = engine.simulate(vals, ns, pts)
+        seq_len = 1e6
+        pops = None
+        model = engine.simulate(vals, ns, seq_len, pops, pts)
         self.assertTrue(np.allclose(model, data), msg="Simulations differs in"
                                                       " engine and in dadi.")
         self.assertEqual(engine.set_and_evaluate(
@@ -190,7 +192,9 @@ class TestEngines(unittest.TestCase):
 
         engine.set_data(data)
         engine.set_model(dm)
-        model = engine.simulate(vals, ns, dt_fac)
+        seq_len = 1e6
+        pops = None
+        model = engine.simulate(vals, ns, seq_len, pops, dt_fac)
         self.assertTrue(np.allclose(model, data), msg="Simulations differs in"
                                                       " engine and in dadi.")
         eng_ll = engine.set_and_evaluate(
@@ -205,7 +209,12 @@ class TestEngines(unittest.TestCase):
         dm = EpochDemographicModel(Nanc_size=10000)
         dm.add_epoch(TimeVariable("t"), [PopulationSizeVariable("nu")])
         engine.model = dm
-        engine.data = engine.simulate(values=[1, 1], ns=(10,))
+        engine.data = engine.simulate(
+            values=[1, 1],
+            ns=(10,),
+            sequence_length=1e6,
+            population_labels=["Pop1"]
+        )
         engine.model.linear_constrain = optimizers.LinearConstrain([[0, 1], [1, -1]], [0, 0], [1, 1])
         self.assertRaises(ValueError, engine.evaluate, values=[1, 1])
 
@@ -321,5 +330,10 @@ class TestEngines(unittest.TestCase):
         dm = EpochDemographicModel()
         dm.add_epoch(T, [nu])
         engine.model = dm
-        engine.data = engine.simulate(values=values, ns=[20])
+        engine.data = engine.simulate(
+            values=values,
+            ns=[20],
+            sequence_length=1e6,
+            population_labels=["Pop1"]
+        )
         engine.draw_sfs_plots(values=values, grid_sizes=0.01, save_file=None)

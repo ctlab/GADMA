@@ -44,15 +44,23 @@ def get_1pop_sim_example_1(engine_id, args=(), data_size=4):
     t = TimeVariable('t')
     nu1 = PopulationSizeVariable('nu1')
     nu2 = PopulationSizeVariable('nu2')
+    Nanc = PopulationSizeVariable("Nanc", units="physical")
 
-    dm = EpochDemographicModel()
+    Nanc_size = None
+    if engine_id not in ["dadi", "moments"]:
+        Nanc_size = Nanc
+
+    dm = EpochDemographicModel(Nanc_size=Nanc_size, mutation_rate=1e-8)
+
     dm.add_epoch(t, [nu1])
     dm.add_epoch(t, [nu2])
-    values = {'nu1': 0.1, 'nu2': 2, 't': 1.5}
+    values = {'Nanc': 10000, 'nu1': 0.1, 'nu2': 2, 't': 1.5}
 
     engine = get_engine(engine_id)
     engine.set_model(dm)
-    data = engine.simulate(values, [data_size], *args)
+    seq_len = 1e6
+    pops = None
+    data = engine.simulate(values, [data_size], seq_len, pops, *args)
     engine.set_data(data)
 
     variables = dm.variables
@@ -67,14 +75,24 @@ def get_1pop_sim_example_2(engine_id, args=(), data_size=4):
     t = TimeVariable('t')
     nu1 = PopulationSizeVariable('nu1')
     Dyn = DynamicVariable('Dyn')
+    Nanc = PopulationSizeVariable("Nanc", units="physical")
 
-    dm = EpochDemographicModel()
+    Nanc_size = None
+    if engine_id not in ["dadi", "moments"]:
+        Nanc_size = Nanc
+    if engine_id in ["momi"]:
+        Dyn.domain = ["Sud", "Exp"]
+
+    dm = EpochDemographicModel(Nanc_size=Nanc_size, mutation_rate=1e-8)
+
     dm.add_epoch(t, [nu1], dyn_args=[Dyn])
-    values = {'nu1': 5, 't': 1.5, 'Dyn': 'Exp'}
+    values = {'Nanc': 10000, 'nu1': 5, 't': 1.5, 'Dyn': 'Exp'}
 
     engine = get_engine(engine_id)
     engine.set_model(dm)
-    data = engine.simulate(values, [data_size], *args)
+    seq_len = 1e6
+    pops = None
+    data = engine.simulate(values, [data_size], seq_len, pops, *args)
     engine.set_data(data)
 
     variables = dm.variables
@@ -89,15 +107,23 @@ def get_2pop_sim_example_1(engine_id, args=(), data_size=4):
     t = TimeVariable('t')
     nu1 = PopulationSizeVariable('nu1')
     nu2 = PopulationSizeVariable('nu2')
+    Nanc = PopulationSizeVariable("Nanc", units="physical")
 
-    dm = EpochDemographicModel()
+    Nanc_size = None
+    if engine_id not in ["dadi", "moments"]:
+        Nanc_size = Nanc
+
+    dm = EpochDemographicModel(Nanc_size=Nanc_size, mutation_rate=1e-8)
+
     dm.add_split(0, [nu1, nu2])
     dm.add_epoch(t, [nu1, nu2])
-    values = {'nu1': 1, 'nu2': 0.5, 't': 1.5}
+    values = {'Nanc': 10000, 'nu1': 1, 'nu2': 0.5, 't': 1.5}
 
     engine = get_engine(engine_id)
     engine.set_model(dm)
-    data = engine.simulate(values, [data_size, data_size], *args)
+    seq_len = 1e6
+    pops = None
+    data = engine.simulate(values, [data_size, data_size], seq_len, pops, *args)
     engine.set_data(data)
 
     variables = dm.variables

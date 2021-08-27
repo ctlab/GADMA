@@ -30,6 +30,9 @@ class DemesEngine(Engine):
     def read_data(data_holder):
         pass
 
+    def update_data_holder_with_inner_data(self):
+        pass
+
     def build_demes_graph(self, values, nanc=None,
                           gen_time=None, gen_time_units="generations"):
         assert self.model is not None

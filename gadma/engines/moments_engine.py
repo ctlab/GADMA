@@ -215,7 +215,8 @@ class MomentsEngine(DadiOrMomentsEngine):
                                      gen_time_units=gen_time_units,
                                      reverse_timeline=True)
 
-    def simulate(self, values, ns, dt_fac=default_dt_fac):
+    def simulate(self, values, ns, sequence_length, population_labels,
+                 dt_fac=default_dt_fac):
         """
         Returns simulated expected SFS for :attr:`demographic_model` with
         values as parameters.
@@ -224,7 +225,12 @@ class MomentsEngine(DadiOrMomentsEngine):
         :param ns: sample sizes of the simulated SFS.
         """
         model = self._inner_func(values, ns, dt_fac)
+        if population_labels is not None:
+            model.pop_ids = population_labels
         return model
+
+    def get_N_ancestral(self, values, dt_fac=default_dt_fac):
+        return super(MomentsEngine, self).get_N_ancestral(values, dt_fac)
 
     def get_theta(self, values, dt_fac=default_dt_fac):
         return super(MomentsEngine, self).get_theta(values, dt_fac)

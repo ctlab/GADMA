@@ -6,6 +6,8 @@ import gadma
 import importlib
 import multiprocessing as mp
 from importlib.machinery import SourceFileLoader
+import inspect
+from inspect import signature
 
 
 def run_job(params):
@@ -43,9 +45,11 @@ def run_job(params):
     result = optimizer.optimize(f, custom_model.variables, x0=p0,
                                 args=grid_size, **kwargs)
     popt = result.x
-    theta = engine.get_theta(popt, *grid_size)
+    # For dadi and moments we save theta also
+    if settings.engine in ["dadi", "moments"]:
+        theta = engine.get_theta(popt, *grid_size)
+        popt = np.append(popt, theta)
 
-    popt = np.append(popt, theta)
     np.save(res_file, popt)
     return (boot_fs_filename, popt)
 
@@ -155,7 +159,11 @@ def main():
                         help="Filename with parameters, should be valid "
                              "python file. Parameters are presented in "
                              "-d/--dem_model option description upper.")
-
+    engines = [eng.id for eng in gadma.all_engines()]
+    parser.add_argument('-e', '--engine', metavar="<engine_id>", type=str,
+                        default=None,
+                        help="Engine to use for the demographic inference."
+                             f"Could be one of the following: {engines}")
     args = parser.parse_args()
 
     p0, settings = load_parameters_from_python_file(args.dem_model)
@@ -181,10 +189,10 @@ def main():
             p0 = fresh_p0
 
     settings.custom_filename = args.dem_model
-    try:
-        settings.get_model()
-    except ValueError:
-        pass  # Means that some parameters are missed
+    if settings.parameter_identifiers is None:
+        settings.parameter_identifiers = gadma.cli.get_par_labels_from_file(
+            settings.custom_filename
+        )
 
     for attr_name in loaded_attrs:
         if attr_name != 'pts' and getattr(settings, attr_name) is None:
@@ -194,11 +202,28 @@ def main():
         raise ValueError(f"Parameter `p0` (or `popt`) is missed both in "
                          "demographic model and params files")
 
-    if settings.pts is None:
-        settings.engine = 'moments'
+    model = settings.get_model()  # We check again that nothing is missed
+
+    if args.engine is None:
+        if settings.pts is None:
+            # get number of function arguments
+            func_args = signature(model.function).parameters
+            # We count only those without default values
+            n_arguments = sum([func_args[par].default is inspect._empty
+                               for par in func_args])
+            if n_arguments == 2:
+                settings.engine = "moments"
+            else:
+                raise ValueError(
+                    "It looks like engines dadi and moments are not suitable "
+                    "for the given demographic model. To avoid errors please "
+                    "specify engine with `--engine` argument."
+                )
+        else:
+            settings.engine = 'dadi'
+        print(f"Chosen engine: {settings.engine}")
     else:
-        settings.engine = 'dadi'
-    print(f"Chosen engine: {settings.engine}")
+        settings.engine = args.engine
 
     output = gadma.utils.ensure_dir_existence(args.output)
 
@@ -206,7 +231,8 @@ def main():
     all_boots = list(settings.read_bootstrap_data(True))
 
     p_ids = list(settings.parameter_identifiers)
-    p_ids.append('Theta')
+    if settings.engine in ["dadi", "moments"]:
+        p_ids.append('Theta')
 
     print(f"{len(all_boots)} bootstrapped data found.")
     print(f"Found initial parameters values: {p0}")
@@ -218,7 +244,7 @@ def main():
     if args.jobs == 1:
         result = []
         for fs_filename, fs in all_boots:
-            res = run_job((all_boots[0][0], all_boots[0][1], p0, settings))
+            res = run_job((fs_filename, fs, p0, settings))
             result.append(res)
     else:
         pool = mp.Pool(processes=args.jobs)

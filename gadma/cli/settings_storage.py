@@ -11,7 +11,8 @@ from ..optimizers import LinearConstrain
 from ..utils import check_dir_existence, check_file_existence, abspath,\
     module_name_from_path, custom_generator
 from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable,\
-    ContinuousVariable, DynamicVariable
+    ContinuousVariable, DynamicVariable, GrowthRateVariable,\
+    SelectionVariable, FractionVariable, DemographicVariable
 import warnings
 import importlib.util
 import sys
@@ -43,7 +44,46 @@ DEPRECATED_IDENTIFIERS = ["flush_delay",
                           "stop_iteration_for_hc"]
 
 
-def get_variables(parameter_identifiers, lower_bound, upper_bound):
+def get_variable_class(par_label):
+    first_letter = par_label[0].lower()
+    if first_letter not in settings.P_IDS:
+        raise ValueError(f"Unknown type of parameter: {par_label}. Should "
+                         "start with one of the following letters: "
+                         f"{settings.P_IDS.keys()}")
+    cls = settings.P_IDS[par_label[0].lower()]
+    if isinstance(cls, list):
+        assert first_letter == 'g'
+        if par_label.lower().startswith("gamma"):
+            return SelectionVariable
+        return GrowthRateVariable
+    return cls
+
+
+def _get_variable(cls, par_label, domain, engine="dadi"):
+    """
+    Returns correct variable from its label.
+    If engine is `dadi` or `moments` then variable will be in `genetic` units
+    by default if othervise is not stated. If engine is something else (`momi`)
+    then units are `physical` by default.
+
+    If parameter label has `_phys` or `_gen` at the end then it is mark about
+    the units. For example, engine is `dadi` but label is `nu_phys` that
+    means that variable will be :class:`gadma.PopulationSizeVariable` in
+    `physical` units.
+    """
+    if (cls == FractionVariable or cls is GrowthRateVariable or
+            not issubclass(cls, DemographicVariable)):
+        return cls(name=par_label, domain=domain)
+    units = "genetic" if engine in ['dadi', 'moments'] else "physical"
+    if par_label.lower().endswith("_phys"):
+        units = "physical"
+    if par_label.lower().endswith("_gen"):
+        units = "genetic"
+    return cls(name=par_label, units=units, domain=domain)
+
+
+def get_variables(parameter_identifiers, lower_bound, upper_bound,
+                  engine="dadi"):
     assert not (
         parameter_identifiers is None and
         lower_bound is None and
@@ -54,26 +94,70 @@ def get_variables(parameter_identifiers, lower_bound, upper_bound):
         (lower_bound is not None and upper_bound is not None)
     ), "Both lower and upper bounds should be set or both equal to None. "\
        f"{lower_bound} {upper_bound}"
-    var_classes = list()
-    if parameter_identifiers is not None:
-        for p_id in parameter_identifiers:
-            var_classes.append(settings.P_IDS[p_id[0].lower()])
+    if lower_bound is not None:
+        domains = list(zip(lower_bound, upper_bound))
     else:
-        for _ in lower_bound:
-            var_classes.append(ContinuousVariable)
-    names = [f"var{i}" for i in range(len(var_classes))]
+        domains = [None for _ in parameter_identifiers]
+    units = "genetic" if engine in ["dadi", "moments"] else "physical"
     if parameter_identifiers is not None:
-        p_ids = parameter_identifiers
-        if len(set(p_ids)) == len(p_ids):
-            names = p_ids
-    variables = list()
-    for i, (var_cls, name) in enumerate(zip(var_classes, names)):
-        if lower_bound is not None:
-            variables.append(var_cls(name, domain=[lower_bound[i],
-                                                   upper_bound[i]]))
-        else:
-            variables.append(var_cls(name))
+        classes = [get_variable_class(p_id) for p_id in parameter_identifiers]
+    else:
+        warnings.warn("Any parameter identifiers were not found. Please "
+                      "check the bounds and units of the parameters "
+                      f"carefully. Units will be {units}.")
+        classes = [ContinuousVariable for _ in lower_bound]
+        parameter_identifiers = [f"var{i}" for i in range(len(lower_bound))]
+    variables = []
+    for cls, name, domain in zip(classes, parameter_identifiers, domains):
+        variables.append(_get_variable(
+            cls=cls,
+            par_label=name,
+            domain=domain,
+            engine=engine,
+        ))
     return variables
+
+
+def get_par_labels_from_file(filename):
+    with open(filename) as f:
+        big_comment = False
+        big_comment_str = ""
+        found_func = False
+        for line in f:
+            if line.startswith("#") or len(line.strip()) == 0:
+                continue
+            if found_func and line.strip().startswith("'''"):
+                if big_comment and big_comment_str == "'''":
+                    big_comment = False
+                    big_comment_str = ""
+                else:
+                    big_comment = True
+                    if big_comment_str == "":
+                        big_comment_str = "'''"
+            elif found_func and line.strip().startswith('"""'):
+                if big_comment and big_comment_str == '"""':
+                    big_comment = False
+                    big_comment_str = ""
+                else:
+                    big_comment = True
+                    if big_comment_str == "":
+                        big_comment_str = '"""'
+            elif found_func and not big_comment:
+                break
+            if line.startswith("def model_func"):
+                found_func = True
+        try:
+            p_ids = line.strip().split("=")[0].split(",")
+            p_ids = [x.strip() for x in p_ids]
+            for x in p_ids:
+                get_variable_class(x)
+                if not x.isidentifier() or iskeyword(x):
+                    raise IndexError
+            return p_ids
+        except IndexError:  # two commas will create x = "" (x[0])
+            pass
+        except ValueError:  # not in P_IDS
+            pass
 
 
 class SettingsStorage(object):
@@ -325,10 +409,12 @@ class SettingsStorage(object):
                 value = [x.strip() for x in value.split(",")]
             value = [x.strip() for x in value]
             for val in value:
-                if val.lower()[0] not in settings.P_IDS:
-                    raise ValueError("Each parameter identifier should start"
-                                     " with symbol from the following list: "
-                                     f"{settings.P_IDS.keys()}")
+                get_variable_class(val)
+            # Check that identifiers are different
+            if not len(set(value)) == len(value):
+                raise ValueError("Parameter identifiers should contain unique "
+                                 "names of the parameters. Names are not "
+                                 f"unique, there are repeats: {value}")
 
         # 2. Dependencies checks
         # 2.1 Const of mutation strength and rate
@@ -496,21 +582,13 @@ class SettingsStorage(object):
                 raise ValueError(f"Lower bound {name} should be greater "
                                  "than 0.")
             domain_changed = True
-            if name.endswith('n'):
-                cls = PopulationSizeVariable
-            elif name.endswith('t'):
-                cls = TimeVariable
-            elif name.endswith('m'):
-                cls = MigrationVariable
-            elif name == "dynamics":
-                cls = DynamicVariable
+            cls = get_variable_class(name.split("_")[-1])
+            if cls == DynamicVariable:
                 if isinstance(value, str):
                     value = [x.strip() for x in value.split(",")]
                     for i in range(len(value)):
                         if value[i].isdigit():
                             value[i] = int(value[i])
-            else:
-                raise AttributeError("Check for supported variables")
 
             old_domain = np.array(cls.default_domain)
             if name.startswith('min'):
@@ -634,59 +712,27 @@ class SettingsStorage(object):
                 return self.initial_structure
             elif (name == "parameter_identifiers" and
                     self.custom_filename is not None):
-                with open(self.custom_filename) as f:
-                    big_comment = False
-                    big_comment_str = ""
-                    found_func = False
-                    for line in f:
-                        if line.startswith("#") or len(line.strip()) == 0:
-                            continue
-                        if found_func and line.strip().startswith("'''"):
-                            if big_comment and big_comment_str == "'''":
-                                big_comment = False
-                                big_comment_str = ""
-                            else:
-                                big_comment = True
-                                if big_comment_str == "":
-                                    big_comment_str = "'''"
-                        elif found_func and line.strip().startswith('"""'):
-                            if big_comment and big_comment_str == '"""':
-                                big_comment = False
-                                big_comment_str = ""
-                            else:
-                                big_comment = True
-                                if big_comment_str == "":
-                                    big_comment_str = '"""'
-                        elif found_func and not big_comment:
-                            break
-                        if line.startswith("def model_func"):
-                            found_func = True
-                    try:
-                        p_ids = line.strip().split("=")[0].split(",")
-                        p_ids = [x.strip() for x in p_ids]
-                        for x in p_ids:
-                            settings.P_IDS[x[0].lower()]
-                            if not x.isidentifier() or iskeyword(x):
-                                raise IndexError
-                        object.__setattr__(self,
-                                           "parameter_identifiers", p_ids)
-#                        print(f"Found parameter identifiers in file: {p_ids}")
-                        return p_ids
-                    except IndexError:  # two commas will create x = "" (x[0])
-                        pass
-                    except KeyError:  # not in P_IDS
-                        pass
+                p_ids = get_par_labels_from_file(self.custom_filename)
+                if p_ids is not None:
+                    object.__setattr__(self,
+                                       "parameter_identifiers", p_ids)
+                return p_ids
             elif ((name == "lower_bound" or name == "upper_bound") and
                   (self.custom_filename is not None or
                    self.model_func is not None)):
                 if self.parameter_identifiers is not None:
                     bound = list()
                     for p_id in self.parameter_identifiers:
-                        domain = settings.P_IDS[p_id[0].lower()].default_domain
+                        var = _get_variable(
+                            cls=get_variable_class(p_id),
+                            par_label=p_id,
+                            domain=None,
+                            engine=self.engine
+                        )
                         if name == "lower_bound":
-                            bound.append(domain[0])
+                            bound.append(var.domain[0])
                         else:
-                            bound.append(domain[1])
+                            bound.append(var.domain[1])
                     return bound
             if hasattr(settings, name):
                 return getattr(settings, name)
@@ -753,18 +799,20 @@ class SettingsStorage(object):
         be set.
         """
         engine = get_engine(self.engine)
-        data = engine.read_data(self.data_holder)
-        self.projections = data.sample_sizes
-        self.population_labels = data.pop_ids
-        self.outgroup = not data.folded
+        engine.data = self.data_holder  # it is reading
+        self.data_holder = engine.data_holder
+        self.projections = self.data_holder.projections
+        self.outgroup = self.data_holder.outgroup
+        self.population_labels = self.data_holder.population_labels
+        self._inner_data = engine.data
+
         if self.pts is None:
             max_n = max(self.projections)
             x = (int((max_n - 1) / 10) + 1) * 10
             super(SettingsStorage, self).__setattr__("pts",
                                                      [x, x + 10, x + 20])
-        self._inner_data = data
         self.number_of_populations = len(self.projections)
-        return data
+        return engine.data
 
     def read_bootstrap_data(self, return_filenames=False):
         """
@@ -1120,7 +1168,8 @@ class SettingsStorage(object):
                 self.lower_bound is not None and
                 self.upper_bound is not None):
             variables = get_variables(self.parameter_identifiers,
-                                      self.lower_bound, self.upper_bound)
+                                      self.lower_bound, self.upper_bound,
+                                      engine=self.engine)
             if self.model_func is not None:
                 return CustomDemographicModel(function=self.model_func,
                                               variables=variables,

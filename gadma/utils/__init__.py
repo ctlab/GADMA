@@ -1,6 +1,7 @@
 from .variables import Variable, ContinuousVariable, DiscreteVariable  # NOQA
 from .variables import TimeVariable, PopulationSizeVariable, MigrationVariable  # NOQA
 from .variables import SelectionVariable, DynamicVariable, FractionVariable  # NOQA
+from .variables import GrowthRateVariable  # NOQA
 from .variables import DemographicVariable  # NOQA
 from .variable_pool import VariablePool  # NOQA
 from .utils import logarithm_transform, exponent_transform, ident_transform  # NOQA

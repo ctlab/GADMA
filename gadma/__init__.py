@@ -30,6 +30,10 @@ try:
 except ImportError:
     dadi = None
 try:
+    import momi
+except ImportError:
+    momi = None
+try:
     import demes
 except ImportError:
     demes = None
@@ -66,6 +70,7 @@ PIL_available = PIL is not None
 matplotlib_available = matplotlib is not None
 moments_available = moments is not None
 dadi_available = dadi is not None
+momi_available = momi is not None
 demes_available = demes is not None
 demesdraw_available = demesdraw is not None
 
@@ -88,6 +93,7 @@ from .utils import warning_format, get_aic_score  # NOQA
 from .utils import Variable, ContinuousVariable, DiscreteVariable  # NOQA
 from .utils import TimeVariable, PopulationSizeVariable, MigrationVariable  # NOQA
 from .utils import SelectionVariable, DynamicVariable, FractionVariable  # NOQA
+from .utils import GrowthRateVariable  # NOQA
 from .utils import DemographicVariable, VariablePool  # NOQA
 from .utils import abspath, check_file_existence, check_dir_existence  # NOQA
 from .utils import ensure_file_existence, ensure_dir_existence  # NOQA

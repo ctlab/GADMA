@@ -1,5 +1,6 @@
 from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable,\
-                    DynamicVariable, FractionVariable
+                    DynamicVariable, FractionVariable, GrowthRateVariable,\
+                    SelectionVariable
 from .. import moments_available, dadi_available
 
 # Main options. Output and input.
@@ -156,7 +157,8 @@ local_log_transform = True
 # Additional constants
 P_IDS = {'n': PopulationSizeVariable, 't': TimeVariable,
          'm': MigrationVariable, 'd': DynamicVariable, 's': FractionVariable,
-         'f': FractionVariable, 'p': FractionVariable}
+         'f': FractionVariable, 'p': FractionVariable,
+         'r': GrowthRateVariable, 'g': [GrowthRateVariable, SelectionVariable]}
 LONG_NAME_2_SHORT = {"log-likelihood": "logLL",
                      "aic score": "aic",
                      "claic score": "claic"}

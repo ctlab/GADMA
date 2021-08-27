@@ -30,6 +30,10 @@ class Event(Model):
         raise NotImplementedError()
 
     def _equal_args(self, arg1, arg2, var2value):
+        if isinstance(arg1, Variable) and arg1 not in self.variables:
+            return False
+        if isinstance(arg2, Variable) and arg2 not in self.variables:
+            return False
         return self.get_value_from_var2value(
             var2value,
             arg1
@@ -181,6 +185,7 @@ class Epoch(Event):
                 sels_repr = f"[{', '.join(sels_repr)}]"
             all_repr.append(sels_repr)
         if self.dyn_args is not None:
+            print(self.dyn_args)
             dyns_repr = [help_f(arg) for arg in self.dyn_args]
             dyns_repr = f"[{', '.join(dyns_repr)}]"
         else:
@@ -256,7 +261,7 @@ class Split(Event):
         return f"[ {self.pop_to_div + 1} pop split {frac_str} {sizes_repr} ]"
 
 
-class  PopulationSizeChange(Event):
+class PopulationSizeChange(Event):
     def __init__(self, pop, t, dyn='Sud', size_pop=None, g=0):
         self.pop = pop
         self.t = t
@@ -300,6 +305,18 @@ class  PopulationSizeChange(Event):
 
     def as_custom_string(self, values):
         pass
+
+    def __str__(self):
+        def rep(arg):
+            if hasattr(arg, "name"):
+                return arg.name
+            return str(arg)
+        return f"PopulationSizeChange t={rep(self.t)}, pop={rep(self.pop)}, "\
+               f"size={rep(self.size_pop)}, dyn={rep(self.dyn)}, "\
+               f"g={rep(self.g)}"
+
+    def __repr__(self):
+        return self.__str__()
 
 
 class LineageMovement(Event):
@@ -353,6 +370,19 @@ class LineageMovement(Event):
     def as_custom_string(self, values):
         pass
 
+    def __str__(self):
+        def rep(arg):
+            if hasattr(arg, "name"):
+                return arg.name
+            return str(arg)
+        return f"LineageMovement t={rep(self.t)}, "\
+               f"pop_from={rep(self.pop_from)}, "\
+               f"pop_to={rep(self.pop)}, size={rep(self.size_pop)}, "\
+               f"dyn={rep(self.dyn)}, g={rep(self.g)}"
+
+    def __repr__(self):
+        return self.__str__()
+
 
 class Leaf(PopulationSizeChange):
     def __init__(self, pop, t=0, dyn='Syd', size_pop=None, g=None):
@@ -373,3 +403,15 @@ class Leaf(PopulationSizeChange):
         if not isinstance(other, Leaf):
             return False
         return super(Leaf, self).equals(other, values)
+
+    def __str__(self):
+        def rep(arg):
+            if hasattr(arg, "name"):
+                return arg.name
+            return str(arg)
+        return f"Leaf t={rep(self.t)}, pop={rep(self.pop)}, "\
+               f"size={rep(self.size_pop)}, dyn={rep(self.dyn)}, "\
+               f"g={rep(self.g)}"
+
+    def __repr__(self):
+        return self.__str__()

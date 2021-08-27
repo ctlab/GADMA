@@ -114,6 +114,8 @@ class CoreRun(object):
                     for engine in all_available_engines():
                         if engine.id == "demes" and demes_will_not_work:
                             continue
+                        if engine.id == "momi" and demes_will_not_work:
+                            continue
                         engine_dir = os.path.join(self.code_dir, engine.id)
                         ensure_dir_existence(engine_dir)
         # Set counters to zero for callbacks to count number of their calls
@@ -245,7 +247,7 @@ class CoreRun(object):
                     save_file = os.path.join(self.code_dir, engine.id,
                                              filename)
                     args = self.settings.get_engine_args(engine.id)
-                    engine.set_data(self.engine.data)
+                    # engine.set_data(self.engine.data)
                     engine.data_holder = self.engine.data_holder
                     engine.set_model(self.engine.model)
                     try:

@@ -56,6 +56,11 @@ class DadiOrMomentsEngine(Engine):
             data = read_vcf_data(cls.base_module, data_holder)
         return data
 
+    def update_data_holder_with_inner_data(self):
+        self.data_holder.projections = self.inner_data.sample_sizes
+        self.data_holder.population_labels = self.inner_data.pop_ids
+        self.data_holder.outgroup = not self.inner_data.folded
+
     @property
     def multinom(self):
         return not self.model.has_anc_size
@@ -177,7 +182,13 @@ class DadiOrMomentsEngine(Engine):
         show = save_file is None
         n_pop = len(self.data.sample_sizes)
         # Get simulated data
-        model = self.simulate(values, self.data.sample_sizes, grid_sizes)
+        model = self.simulate(
+            values,
+            self.data.sample_sizes,
+            None,
+            None,
+            grid_sizes
+        )
         # Draw
         if n_pop == 1:
             self.base_module.Plotting.plot_1d_comp_multinom(model, self.data)
@@ -204,6 +215,8 @@ class DadiOrMomentsEngine(Engine):
                                                  time_in_generations=False)
         model_sfs = self.simulate(values_gen,
                                   self.data.sample_sizes,
+                                  None,
+                                  None,
                                   grid_sizes)
         # TODO: process it
         if not self.multinom and self.model.linear_constrain is not None:
@@ -256,7 +269,13 @@ class DadiOrMomentsEngine(Engine):
                 p[is_not_discrete] = x
             else:
                 p = x
-            return self.simulate(p, self.data.sample_sizes, grid_sizes)
+            return self.simulate(
+                p,
+                self.data.sample_sizes,
+                None,
+                None,
+                grid_sizes
+            )
 
         cached_simul = cache_func(simul_func)
 

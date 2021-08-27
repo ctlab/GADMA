@@ -7,6 +7,7 @@ from gadma import *
 import itertools
 import shutil
 import warnings
+import copy
 warnings.filterwarnings(action='ignore', category=UserWarning,
                         module='.*\.stats', lineno=21604)
 
@@ -28,21 +29,36 @@ class TestConfidenceIntervals(unittest.TestCase):
             no_ids_model_name = os.path.join(DATA_DIR, "MODELS",
                                              "small_1pop_dem_model_no_ids.py")
             p0 = [2, 0.1, 0.5, 2]  # nuB, nuF, TB, TF
+            if engine.id not in ["dadi", "moments"]:
+                # translate units to physical
+                p0 = [20000, 1000, 10000, 40000]
             output_dir = os.path.join(DATA_DIR, f"run_ls_out_{engine.id}")
+            if os.path.exists(output_dir):
+                shutil.rmtree(output_dir)
             jobs = 1
             with open(params_file, 'w') as f:
                 f.write(f"p0 = {p0}\n")
                 if engine.id == 'dadi':
                     f.write(f"pts = [4, 6, 8]")
                     jobs = 4
-            sys.argv = ["gadma-run_ls_on_boot_data",  "-b", dir_boot,
+            basic_argv = ["gadma-run_ls_on_boot_data",  "-b", dir_boot,
                         "-d", model_name, "-o", output_dir, "-p", params_file,
                         "-j", str(jobs)]
             try:
                 for opt in ['optimize_lbfgsb', 'log']: #all_local_optimizers():
+                    sys.argv = copy.copy(basic_argv)
                     sys.argv.extend(["--opt", opt])
-                    gadma.run_ls_on_boot_data.main()
-                    gadma.run_ls_on_boot_data.main()
+                    # for dadi and moments engine is defined automatically
+                    if engine.id in ["dadi", "moments"]:
+                        gadma.run_ls_on_boot_data.main()
+                        gadma.run_ls_on_boot_data.main()
+                    else:
+                        # error about engine specification
+                        self.assertRaises(ValueError,
+                                          gadma.run_ls_on_boot_data.main)
+                        sys.argv.extend(["--engine", engine.id])
+                        gadma.run_ls_on_boot_data.main()
+                        gadma.run_ls_on_boot_data.main()
             finally:
                 if os.path.exists(params_file):
                     os.remove(params_file)

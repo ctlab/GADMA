@@ -124,13 +124,13 @@ class TreeDemographicModel(DemographicModel):
         return self.get_value_from_var2value(var2value, Nanc_var)
 
     def get_Nanc_variable(self, values):
-        var2value = self.var2value(values)
         """
         Returns variable corresponding to the ancestral population size.
 
         :param value: Values of the parameters.
         :type value: list or dict
         """
+        var2value = self.var2value(values)
         event = max(
             self.events,
             key=lambda x: self.get_value_from_var2value(var2value, x.t)
@@ -141,6 +141,9 @@ class TreeDemographicModel(DemographicModel):
             var2value=var2value
         )
         return Nanc_var
+
+    def get_number_of_populations(self):
+        return sum([isinstance(event, Leaf) for event in self.events])
 
     def _get_size_pop(self, pop, time, var2value, inclusive=True):
 
@@ -184,12 +187,13 @@ class TreeDemographicModel(DemographicModel):
 
         size = after_event.size_pop
         dyn = after_event.dyn
+        dyn_value = self.get_value_from_var2value(var2value, dyn)
         g = after_event.g
-        if dyn == "Sud":
+        if dyn_value == "Sud":
             return size, dyn
-        if dyn == "Lin":
+        if dyn_value == "Lin":
             raise NotImplementedError("Cannot work with linear function.")
-        if dyn == "Exp":
+        if dyn_value == "Exp":
             # P = P_0 * e^{g*t}
             before_event = None
             before_time = None
@@ -330,15 +334,11 @@ class TreeDemographicModel(DemographicModel):
             epoch_model = EpochDemographicModel(
                 gen_time=self.gen_time,
                 theta0=self.theta0,
+                Nanc_size=Nanc_var,
                 mutation_rate=self.mutation_rate,
                 recombination_rate=self.recombination_rate,
                 linear_constrain=self.linear_constrain
             )
-
-            if isinstance(Nanc, Variable) and Nanc_var.units != "physical":
-                raise ValueError(
-                    "Nanc variable must be in physical units for translation"
-                )
 
             values = self.translate_values(
                 units="genetic",

@@ -143,7 +143,7 @@ class StructureDemographicModel(EpochDemographicModel):
             mutation_rate=self.mutation_rate,
             recombination_rate=self.recombination_rate,
             has_anc_size=self.has_anc_size,
-            Nanc_size=self.Nanc_size
+            Nanc_size=self._Nanc_size
         )
         if not (np.all(np.array(structure) >= self.initial_structure)):
             raise ValueError(f"Elements of model structure ({structure}) "
@@ -160,7 +160,7 @@ class StructureDemographicModel(EpochDemographicModel):
 
         i_int = 0
         if self.frac_split:
-            size_vars = [1.0]
+            size_vars = [self._get_Nanc_size()]
         else:
             size_vars = [PopulationSizeVariable('nu')]
         for n_pop in range(1, len(structure) + 1):
@@ -363,7 +363,7 @@ class StructureDemographicModel(EpochDemographicModel):
                 oldvar2newvar[old_var] = new_var
         if self.has_anc_size:
             assert self.has_anc_size
-            oldvar2newvar[old_model.Nanc_size] = self.Nanc_size
+            oldvar2newvar[old_model._Nanc_size] = self._Nanc_size
         if old_model.has_inbreeding:
             assert self.has_inbreeding
             for old_inbr_arg, new_inbr_arg in zip(old_model.inbreeding_args,
@@ -383,6 +383,9 @@ class StructureDemographicModel(EpochDemographicModel):
                              if var.name in varname2value}
             for var in var2value:
                 new_var2value[oldvar2newvar[var]] = var2value[var]
+            # To fix a lot of thing we set Nanc to 1 and change it back later
+            if self.has_anc_size:
+                new_var2value[self._Nanc_size] = 1.0
             event1 = self.events[event_index]  # our new event
             event2 = self.events[event_index + 1]  # base event
             # Time / 2
@@ -418,6 +421,11 @@ class StructureDemographicModel(EpochDemographicModel):
             for var1, var2 in zip(event1.variables, event2.variables):
                 if var1 not in new_var2value:
                     new_var2value[var1] = new_var2value[var2]
+            # change Nanc back
+            if self.has_anc_size:
+                new_var2value[self._Nanc_size] = old_model._get_Nanc_size(
+                    values=var2value
+                )
             new_X.append([new_var2value[var] for var in self.variables])
 
         return self, new_X
@@ -495,7 +503,10 @@ class StructureDemographicModel(EpochDemographicModel):
                 nu1_after_split_name = "nu%d%d_1" % (ind_before_split,
                                                      n_split)
                 if n_split == 1 and self.get_structure()[0] == 1:
-                    size_before_split_name = 1.0
+                    size_before_split_name = model.get_value_from_var2value(
+                        other_varname2value,
+                        model._get_Nanc_size()
+                    )
                     size_after_split_time = other_varname2value["nu_1"]
                 else:
                     size_before_split_name = other_varname2value[

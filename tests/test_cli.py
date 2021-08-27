@@ -315,6 +315,7 @@ class TestCLI(unittest.TestCase):
         # min and max bound of variables
         settings.min_n = 0.1
         settings.max_n = 1000
+        print(PopulationSizeVariable.default_domain)
         self.assertRaises(ValueError, settings.__setattr__,
                           'min_n', 0)
         self.assertTrue(

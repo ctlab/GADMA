@@ -394,10 +394,16 @@ class TestInference(unittest.TestCase):
                 sys.modules['module'] = module
                 func = getattr(module, 'model_func')
 
-                data = engine.base_module.Spectrum.from_file(EXAMPLE_DATA)
+                if engine.id in ["dadi", "moments"]:
+                    data = engine.base_module.Spectrum.from_file(EXAMPLE_DATA)
+                elif engine.id == 'momi':
+                    data = engine.base_module.sfs_from_dadi(EXAMPLE_DATA)
+                else:
+                    raise ValueError(f"Add new engine {engine.id} here for "
+                                     "correct data reading in tests.")
 
                 num_init = 10
-                p_ids = ['n', 'n', 'n', 'm', 't', 't']
+                p_ids = gadma.cli.get_par_labels_from_file(location)
                 variables = gadma.cli.get_variables(parameter_identifiers=p_ids,
                                                     lower_bound=None,
                                                     upper_bound=None)
@@ -408,13 +414,25 @@ class TestInference(unittest.TestCase):
                     for x in X_init:
                         if engine.id == 'dadi':
                             numerics = engine.base_module.Numerics
-                            func_ex = numerics.make_extrap_log_func(func)
+                            get_model_func = numerics.make_extrap_log_func(func)
+                            func_args = (data.sample_sizes, *args)
+                            get_ll_func = engine.base_module.Inference.ll_multinom
+                        elif engine.id == 'moments':
+                            get_model_func = func
+                            func_args = (data.sample_sizes, *args)
+                            get_ll_func = engine.base_module.Inference.ll_multinom
+                        elif engine.id == 'momi':
+                            get_model_func = func
+                            func_args = ()
+                            def get_ll_func(data, model):
+                                model.set_data(data, length=1e8)
+                                return model.log_likelihood()
                         else:
-                            func_ex = func
+                            raise ValueError(f"Add new engine {engine.id} here"
+                                             "for correct evaluation in tests.")
                         try:
-                            model = func_ex(x, data.sample_sizes, *args)
-                            y = engine.base_module.Inference.ll_multinom(data,
-                                                                         model)
+                            model = get_model_func(x, *func_args)
+                            y = get_ll_func(data, model)
                             Y_init.append(y)
                         except AttributeError as e:
                             Y_init.append(-np.inf)

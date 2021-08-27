@@ -234,9 +234,15 @@ def print_runs_summary(start_time, shared_dict, settings):
                 ), f"default model is instance of {default_model.__class__}"
                 super(Engine, engine).__setattr__("_model", default_model)
             # Get theta and N ancestral
-            theta = engine.get_theta(x, *settings.get_engine_args())
-            Nanc = engine.get_N_ancestral_from_theta(theta)
-            addit_str = f"(theta = {theta: .2f})"
+            addit_str = ""
+            if engine.id in ["dadi", "moments"]:
+                # dadi and moments has the same function get_N_ancestral
+                # but we want to print theta
+                theta = engine.get_theta(x, *settings.get_engine_args())
+                Nanc = engine.get_N_ancestral_from_theta(theta)
+                addit_str += f"(theta = {theta: .2f})"
+            else:
+                Nanc = engine.get_N_ancestral(x, *settings.get_engine_args())
             if Nanc is not None or Nanc == 0:
                 if settings.relative_parameters:
                     addit_str += f" (Nanc = {int(Nanc)})"

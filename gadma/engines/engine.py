@@ -1,6 +1,5 @@
 from ..data import DataHolder
 from ..models import Model
-from ..data import update_data_holder_with_inner_data
 import copy
 
 _registered_engines = {}
@@ -189,15 +188,15 @@ class Engine(object):
         if isinstance(data, DataHolder):
             self.inner_data = self.read_data(data)
             self.data_holder = copy.deepcopy(data)
-            self.data_holder = update_data_holder_with_inner_data(
-                data_holder=self.data_holder,
-                inner_data=self.inner_data
-            )
+            self.update_data_holder_with_inner_data()
         elif (self.inner_data_type is not None and
                 isinstance(data, self.inner_data_type)):
             self.inner_data = data
             self.data_holder = None
         self.saved_add_info = {}
+
+    def update_data_holder_with_inner_data(self):
+        raise NotImplementedError
 
     @property
     def data(self):

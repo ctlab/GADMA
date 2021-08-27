@@ -145,7 +145,7 @@ class DadiEngine(DadiOrMomentsEngine):
 
         return sfs
 
-    def simulate(self, values, ns, pts):
+    def simulate(self, values, ns, sequence_length, population_labels, pts):
         """
         Returns simulated expected SFS for :attr:`demographic_model` with
         values as parameters. Simulation is performed with :attr:`self.pts`
@@ -158,6 +158,8 @@ class DadiEngine(DadiOrMomentsEngine):
         func_ex = dadi.Numerics.make_extrap_log_func(self._inner_func)
         # print(values, ns, pts)
         model = func_ex(values, ns, pts)
+        if population_labels is not None:
+            model.pop_ids = population_labels
         # TODO: Nref
         return model
 

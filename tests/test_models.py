@@ -8,6 +8,7 @@ from gadma.models import *
 from gadma.models.variables_combinations import BinaryOperation, operation_creation, Exp, Log
 from gadma.models import TreeDemographicModel
 from gadma.engines import DadiEngine
+from gadma.cli import get_par_labels_from_file, get_variables
 
 from .test_data import YRI_CEU_DATA
 import importlib
@@ -84,8 +85,9 @@ class TestModels(unittest.TestCase):
         self.assertFalse(dm.has_anc_size)
         self.assertEqual(dm.Nanc_size, 1)
 
+        # no Nanc_size so has_anc_size is False
         dm = EpochDemographicModel(has_anc_size=True)
-        self.assertTrue(dm.has_anc_size)
+        self.assertFalse(dm.has_anc_size)
 
         dm = EpochDemographicModel(Nanc_size=10000)
         self.assertTrue(dm.has_anc_size)
@@ -117,7 +119,7 @@ class TestModels(unittest.TestCase):
         pts = [40, 50, 60]
         d = get_engine('dadi')
         d.set_model(dm)
-        got = d.simulate([], ns, pts)
+        got = d.simulate([], ns, 1e6, None, pts)
         self.assertTrue(np.allclose(got, real))
         self.assertEqual(dm.number_of_populations(), 1)
 
@@ -142,7 +144,7 @@ class TestModels(unittest.TestCase):
         dm.add_epoch(T, [nu], sel_args=[sl])
         d = get_engine('dadi')
         d.set_model(dm)
-        got = d.simulate(param, ns, pts)
+        got = d.simulate(param, ns, 1e6, None, pts)
         self.assertTrue(np.allclose(got, real))
         self.assertEqual(dm.number_of_populations(), 1)
         dm.as_custom_string(param)
@@ -174,7 +176,7 @@ class TestModels(unittest.TestCase):
         dm.add_inbreeding(inbr_args=[F])
         d = get_engine('dadi')
         d.set_model(dm)
-        got = d.simulate(param, ns, pts)
+        got = d.simulate(param, ns, 1e6, None, pts)
 
         self.assertTrue(np.allclose(got, real))
         self.assertEqual(dm.number_of_populations(), 1)
@@ -274,41 +276,41 @@ class TestModels(unittest.TestCase):
         Dyn2 = DynamicVariable('SudDyn')
         sel = SelectionVariable('s')
         dom = FractionVariable('dom')
+        Nanc = PopulationSizeVariable("Nanc", units="physical")
 
         dm = EpochDemographicModel()
         dm.add_epoch(Tp, [nu1F], dyn_args=[Dyn2],
                      sel_args=[sel], dom_args=[dom])
         dm.add_split(0, [nu1F, Multiplication(f, nu2B)])
         dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', Dyn])
+        dm.mutation_rate = 1e-8
 
         dic = {'nu1F': 1.880, nu2B: 0.0724, 'f': 0.9, 'nu2F': 1.764,
                'm': 0.930, 'Tp':  0.363, 'T': 0.112, 'Dyn': 'Exp',
-               'SudDyn': 'Sud', 's': 0.1, 'dom': 0.5}
+               'SudDyn': 'Sud', 's': 0.1, 'dom': 0.5, 'Nanc': 7300}
 
-        data = SFSDataHolder(YRI_CEU_DATA)
+        data = SFSDataHolder(YRI_CEU_DATA, sequence_length=4e6)
         for engine in all_engines():
             with self.subTest(engine=engine.id):
                 if engine.id == 'dadi':
                     args = ([5, 10, 15],)
                 else:
                     args = ()
-                engine.set_model(dm)
+                model = copy.deepcopy(dm)
+                if engine.id not in ['dadi', "moments"]:
+                    model.Nanc_size = Nanc
+                engine.set_model(model)
                 engine.set_data(data)
-                Nanc = engine.get_theta(dic, *args)
+                Nanc = engine.get_N_ancestral(dic, *args)
                 tr = dm.translate_values("physical", dic, Nanc)
                 _tr = dm.translate_values("genetic", dic, Nanc)
-                dm.Nref = 1
-                dm.translate_values("physical", dic, Nanc, rescale_back=True)
-                dm_copy = copy.deepcopy(dm)
-                # raise error if not demographic parameters
-                # dm_copy.add_variable(ContinuousVariable("some", [-1, 10]))
-                # dic['some'] = 0
-                # self.assertRaises(ValueError, dm_copy.translate_values,
-                #                    "genetic", dic, Nanc)
-                dm.as_custom_string(dic)
+                model.Nref = 1
+                model.translate_values("physical", dic, Nanc, rescale_back=True)
+                model.as_custom_string(dic)
 
         # test failures
         # hack
+        assert not dm.has_anc_size
         phys_var = PopulationSizeVariable("nu", units="physical")
         super(DemographicModel, dm).add_variable(phys_var)
         self.assertRaises(ValueError, dm.translate_values, "genetic", dic, Nanc=None)
@@ -490,9 +492,10 @@ class TestModels(unittest.TestCase):
         values = {nu1: 2, nu2: 0.5, nu3: 0.5, t_copy: 0.3,
                   t2: 0.5, m: 0.1, s: 0.1, d1: 'Exp', d2: 'Lin',
                   f: 0.5, h: 0.3, f1: 0.1, f2: 0.3,
-                  Nanc: 10000, Nu2: 5000, T3: 4000}
+                  Nanc: 10000, Nu2: 5000, T3: 4000,
+                  'N_1F':20000, 'r_2': -1e-5, 'N_2F': 5000, 'Tp': 500}
 
-        for engine in all_available_engines():
+        for engine in [get_engine("momi")]:#all_available_engines():
             models = [model1, model2, model3, model5, model6]
             if engine.can_evaluate:
                 customfile = os.path.join(
@@ -505,7 +508,8 @@ class TestModels(unittest.TestCase):
                 spec.loader.exec_module(module)
                 sys.modules[f'module_{engine.id}'] = module
                 func = module.model_func
-                variables = [nu1, nu2, nu3, m, t, t2]
+                par_labels = get_par_labels_from_file(customfile)
+                variables = get_variables(par_labels, None, None, engine=engine.id)
 
                 model7 = CustomDemographicModel(func, variables)
                 models.append(model7)
@@ -514,6 +518,7 @@ class TestModels(unittest.TestCase):
                 for description, data in self._sfs_datasets():
                     msg = f"for model {ind + 1} and {description} data and " \
                           f"{engine.id} engine"
+                    print(msg)
                     if engine.id == 'dadi':
                         options = {'pts': [4, 6, 8]}
                         args = (options['pts'],)
@@ -521,32 +526,52 @@ class TestModels(unittest.TestCase):
                         options = {}
                         args = ()
 
+                    if engine.id == "momi":
+                        # there is an error in momi for that case
+                        if description == "fs without pop labels":
+                            continue
+                        if description == "dadi snp file":
+                            self.assertRaises(ValueError, engine.read_data, data)
+                            continue
+                        values['d2'] = "Exp"
+                    # we read data but save only updated data_holder
                     engine.data = data
+                    engine.inner_data = None
+                    engine.data_holder.sequence_length = 50818468
                     engine.model = model
                     Nanc = None
-                    if engine.id == "demes":
+                    if engine.id not in ["dadi", "moments"]:
                         Nanc = 10000
-                        n_pop = len(model.events[-1].size_args)
-                        labels = [f"Pop_{i}" for i in range(n_pop)]
-                        engine.data_holder.population_labels = labels
 
                     cmd = engine.generate_code(values, None, *args, nanc=Nanc)
+                    print(cmd)
 
                     if engine.can_evaluate:
+                        if engine.id not in ['dadi', 'moments']:
+                            model = copy.deepcopy(model)
+                            model.Nanc_size = Nanc
+                            engine.model = model
+                        # read data
+                        engine.data = data
+
                         true_ll = engine.evaluate(values, **options)
+
                         d = {}
                         exec(cmd, d)
 
                         msg += f": {true_ll} != {d['ll_model']}"
                         self.assertTrue(np.allclose(true_ll, d['ll_model']),
                                         msg=msg)
-                    if description == "dadi snp file":
-                        engine.data_holder.population_labels = None
-                        self.assertRaises(ValueError, engine.generate_code,
-                                          values, None, *args, nanc=Nanc)
-                    if description == "fs without pop labels":
-                        engine.data_holder.population_labels = None
-                        engine.generate_code(values, None, *args, nanc=Nanc)
+                        if description == "dadi snp file":
+                            engine.data_holder.population_labels = None
+                            self.assertRaises(ValueError, engine.generate_code,
+                                              values, None, *args, nanc=Nanc)
+                        if description == "fs without pop labels":
+                            engine.data_holder.population_labels = None
+                            engine.generate_code(values, None, *args, nanc=Nanc)
+                    if engine.id == "momi":
+                        values['d2'] = "Lin"
+
 
     def test_operation_eq(self):
         a = PopulationSizeVariable("a")
@@ -698,13 +723,16 @@ class TestModels(unittest.TestCase):
         em.add_split(0, [nu1, nu2])
         em.add_epoch(operation_creation(Subtraction, t2, t1), [nu1, nu2])
         em.add_epoch(operation_creation(Subtraction, t1, 0), [nu1, nu2F])
+
         cm = TreeDemographicModel(gen_time=29, mutation_rate=1.25e-8)
         cm.add_leaf(0, size_pop=nu1)
         cm.add_leaf(1, size_pop=nu2F)
         cm.change_pop_size(1, t=t1, size_pop=nu2)
         cm.move_lineages(1, 0, t=t2, size_pop=N_a)
 
-        translated_model = em.translate_to(TreeDemographicModel, var2values)\
+        translated_model, _ = em.translate_to(TreeDemographicModel, var2values)
+        for event in translated_model.events:
+            print(event)
 
         self.assertTrue(translated_model.equals(cm, var2values))
 
@@ -741,12 +769,13 @@ class TestModels(unittest.TestCase):
         cm.change_pop_size(0, t=t2, size_pop=nu1B)
         cm.change_pop_size(1, t=t2, size_pop=nu2B)
         cm.move_lineages(1, 0, t=t3, size_pop=N_a)
+
         em = EpochDemographicModel(gen_time=29, Nanc_size=N_a, mutation_rate=1.25e-8)
         em.add_split(0, [nu1B, nu2B])
         em.add_epoch(operation_creation(Subtraction, t3, t2), [nu1B, nu2B])
         em.add_epoch(operation_creation(Subtraction, t2, t1), [nu1, nu2F])
         em.add_epoch(operation_creation(Subtraction, t1, 0), [nu1F, nu2F])
-        translated_model = em.translate_to(TreeDemographicModel, var2values)
+        translated_model, _ = em.translate_to(TreeDemographicModel, var2values)
         self.assertTrue(translated_model.equals(cm, var2values))
 
     def test_translation_from_epoch_to_tree3(self):
@@ -774,7 +803,7 @@ class TestModels(unittest.TestCase):
         em.add_epoch(operation_creation(Subtraction, t3, t2), [nu1B, nu2B])
         em.add_epoch(operation_creation(Subtraction, t2, t1), [nu1, nu2B])
         em.add_epoch(operation_creation(Subtraction, t1, 0), [nu1F, nu2F])
-        translated_model = em.translate_to(TreeDemographicModel, var2values)
+        translated_model, _ = em.translate_to(TreeDemographicModel, var2values)
         self.assertTrue(translated_model.equals(cm, var2values))
 
     def test_translation_from_epoch_to_tree4(self):
@@ -805,5 +834,5 @@ class TestModels(unittest.TestCase):
         em.add_epoch(operation_creation(Subtraction, t3, t2), [nu1, nu2B])
         em.add_epoch(operation_creation(Subtraction, t2, t1), [nu1, nu2F])
         em.add_epoch(operation_creation(Subtraction, t1, 0), [nu1F, nu2F])
-        translated_model = em.translate_to(TreeDemographicModel, var2values)
+        translated_model, _ = em.translate_to(TreeDemographicModel, var2values)
         self.assertTrue(translated_model.equals(cm, var2values))
