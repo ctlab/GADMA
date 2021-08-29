@@ -9,7 +9,10 @@ from multiprocessing import Process, Queue, queues
 import warnings
 import copy
 import math
+import allel
+import pandas
 from .. import smac_available
+from pathlib import Path
 if smac_available:
     from smac.runhistory.runhistory import RunHistory
     from smac.tae.execute_ta_run import StatusType
@@ -737,3 +740,45 @@ class bcolors:
 def warning_format(message, category, filename, lineno, file=None, line=None):
     return f"{bcolors.WARNING}{category.__name__}: {message}"\
            f"{bcolors.ENDC} ({filename}:{lineno})\n"
+
+
+def create_bed_files(vcf_file, output_dir):
+    optimal_region_len = 6400000
+    minimal_region_number = 15
+    # Написать в документации о том, что либо каждая хромосома будет разделена
+    # на участки по 6400000 bp, либо на 7 равномерных регионов меньшей длины
+    read_vcf = allel.read_vcf(vcf_file)
+    all_chromosomes = {ii: 0 for ii in set(read_vcf['variants/CHROM'])}
+
+    # Найдем длину хромосомы
+    for chrom in all_chromosomes:
+        all_chromosomes[chrom] = max(
+            read_vcf['variants/POS'][read_vcf['variants/CHROM'] == chrom]
+        )
+
+    Path(f"{output_dir}/bed_files/").mkdir(parents=True, exist_ok=True)
+
+    for chrom in all_chromosomes:
+        stop_position = 0
+        if round(all_chromosomes[chrom] / optimal_region_len) > minimal_region_number:
+            for num in range(1, round(all_chromosomes[chrom] / optimal_region_len) + 1):
+                with open(f"{output_dir}/bed_files/bed_file_{chrom}_{num}.bed", "w") as file:
+                    start_position = stop_position
+                    stop_position = int(optimal_region_len * num)
+                    file.write(f"{chrom}\t{start_position}\t{stop_position}")
+            all_chromosomes[chrom] = round(all_chromosomes[chrom] / optimal_region_len)
+        else:
+            region_len = all_chromosomes[chrom] / minimal_region_number
+            for num in range(1, minimal_region_number + 1):
+                with open(f"{output_dir}/bed_files/bed_file_{chrom}_{num}.bed", "w") as file:
+                    start_position = stop_position
+                    stop_position = int(region_len * num)
+                    file.write(f"{chrom}\t{start_position}\t{stop_position}")
+            all_chromosomes[chrom] = (minimal_region_number + 1)
+
+    return all_chromosomes
+
+
+def read_pops(pop_map):
+    data = pandas.read_csv(pop_map, sep="\t")
+    return list(set(data[(data.columns[1])]))

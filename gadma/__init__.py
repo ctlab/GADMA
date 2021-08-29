@@ -27,9 +27,9 @@ except ImportError:
     moments = None
 try:
     import moments.LD
-    moments_LD = 1
+    momentsLD = 1
 except ImportError:
-    moments_LD = None
+    momentsLD = None
 try:
     import dadi
 except ImportError:
@@ -70,7 +70,7 @@ import warnings
 PIL_available = PIL is not None
 matplotlib_available = matplotlib is not None
 moments_available = moments is not None
-moments_LD_available = moments_LD is not None
+moments_LD_available = momentsLD is not None
 dadi_available = dadi is not None
 demes_available = demes is not None
 demesdraw_available = demesdraw is not None

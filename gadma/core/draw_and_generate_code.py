@@ -84,12 +84,19 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
     else:
         save_file_sfs = filename[:pos] + '_sfs' + filename[pos:]
     # 1.2 Draw plot to save_file
-    sfs_plot_engine.draw_sfs_plots(
-        x,
-        *settings.get_engine_args(sfs_plot_engine.id),
-        save_file=save_file_sfs,
-        vmin=settings.vmin
-    )
+    if sfs_plot_engine.id == 'momentsLD':
+        sfs_plot_engine.draw_ld_curves(
+            x,
+            *settings.get_engine_args(sfs_plot_engine.id),
+            save_file=save_file_sfs
+        )
+    else:
+        sfs_plot_engine.draw_sfs_plots(
+            x,
+            *settings.get_engine_args(sfs_plot_engine.id),
+            save_file=save_file_sfs,
+            vmin=settings.vmin
+        )
     if bad_model:
         return
 
@@ -106,6 +113,7 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
     # 2.2 Draw model plot with moments engine
     # We use try except to be careful
     try:
+        print('draw_schematic_model_plot, why not?')
         model_plot_engine.draw_schematic_model_plot(
             values=x,
             save_file=save_file_model,
@@ -179,17 +187,29 @@ def generate_code_to_file(x, engine, settings, filename):
     else:
         engines = [copy.deepcopy(engine)]
     failes = {}  # engine.id: reason
-    for other_engine in engines:
-        save_file = prefix + f"_{other_engine.id}_code.py"
-        other_engine.set_data(engine.data)
-        other_engine.data_holder = copy.deepcopy(engine.data_holder)
-        other_engine.set_model(engine.model)
-        args = settings.get_engine_args(other_engine.id)
+    if engine.id == 'momentsLD':
+        save_file = prefix + f"_{engine.id}_code.py"
+        engine.set_data(engine.data)
+        engine.data_holder = copy.deepcopy(engine.data_holder)
+        engine.set_model(engine.model)
+        args = settings.get_engine_args(engine.id)
         try:
-            other_engine.generate_code(x, save_file, *args, Nanc, gen_time,
-                                       gen_time_units)
+            engine.generate_code(x, save_file, *args, Nanc, gen_time,
+                                 gen_time_units)
         except Exception as e:
-            failes[other_engine.id] = str(e)
+            failes[engine.id] = str(e)
+    else:
+        for other_engine in engines:
+            save_file = prefix + f"_{other_engine.id}_code.py"
+            other_engine.set_data(engine.data)
+            other_engine.data_holder = copy.deepcopy(engine.data_holder)
+            other_engine.set_model(engine.model)
+            args = settings.get_engine_args(other_engine.id)
+            try:
+                other_engine.generate_code(x, save_file, *args, Nanc, gen_time,
+                                           gen_time_units)
+            except Exception as e:
+                failes[other_engine.id] = str(e)
     if len(failes) > 0:
         raise ValueError("; ".join([f"{id}: {failes[id]}" for id in failes]))
 
@@ -286,12 +306,20 @@ def print_runs_summary(start_time, shared_dict, settings):
         drawn = True
         gener = True
         try:
+            print("trying to draw_plots_to_file")
+            print("\nENGINE\n")
+            print(engine)
+            print("\nENGINE\n")
             draw_plots_to_file(x, engine, settings, save_plot_file, fig_title)
         except Exception as e:
             drawn = False
             print(f"{bcolors.WARNING}Run {index} warning: failed to draw model"
                   f" due to the following exception: {e}{bcolors.ENDC}.")
         try:
+            print("trying to generate_code_to_file")
+            print("\nENGINE\n")
+            print(engine)
+            print("\nENGINE\n")
             generate_code_to_file(x, engine, settings, save_code_file)
         except Exception as e:
             gener = False

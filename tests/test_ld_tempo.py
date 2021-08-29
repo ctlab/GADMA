@@ -1,11 +1,12 @@
+import shutil
 import unittest
 import sys
 import os
-from os import listdir
 import pickle
 import moments.LD
 import numpy as np
 from gadma import *
+from pathlib import Path
 
 try:
     import moments.LD
@@ -16,68 +17,61 @@ except ImportError:
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
 
-POP_MAP = os.path.join(DATA_PATH, 'DATA', 'vcf_ld', "pop_map.txt")
-REC_MAP = os.path.join(DATA_PATH, 'DATA', 'vcf_ld', "rec_map.txt")
-VCF_DATA = os.path.join(DATA_PATH, 'DATA', 'vcf_ld', "vcf_data.vcf")
-BED_FILE = os.path.join(DATA_PATH, 'DATA', 'vcf_ld', "solo_bed.bed")
-BED_FILE_IN_ONE_BED_DIR = os.path.join(DATA_PATH, 'DATA', 'vcf_ld', "one_bed_dir", "solo_bed.bed")
-BED_FILE_FIRST_FROM_THREE = os.path.join(DATA_PATH, 'DATA', 'vcf_ld', "bed_dir_1", 'region_1.bed')
-BED_FILE_SECOND_FROM_THREE = os.path.join(DATA_PATH, 'DATA', 'vcf_ld', "bed_dir_1", 'region_2.bed')
-BED_FILE_THIRD_FROM_THREE = os.path.join(DATA_PATH, 'DATA', 'vcf_ld', "bed_dir_1", 'region_3.bed')
-FEW_BEDS = [BED_FILE_FIRST_FROM_THREE, BED_FILE_SECOND_FROM_THREE, BED_FILE_THIRD_FROM_THREE]
+POP_MAP = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "pop_map.txt")
+REC_MAPS_DIR = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "rec_maps")
+VCF_DATA_FEW_CHR = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "vcf_data_few_chr.vcf")
+VCF_DATA = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "vcf_data.vcf")
+TEST_OUTPUT = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "test_output")
+TEST_BED_FILES = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "test_bed_files")
 
-PREPROCESSED_DATA = os.path.join(DATA_PATH, 'DATA', 'vcf_ld', "preprocessed_data.bp")
+PREPROCESSED_DATA = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "preprocessed_data.bp")
 
-BED_FILES_DIR = os.path.join(DATA_PATH, 'DATA', 'vcf_ld', "bed_dir_1")
-EMPTY_BED_DIR = os.path.join(DATA_PATH, 'DATA', 'vcf_ld', "empty_bed_dir")
-ONE_BED_DIR = os.path.join(DATA_PATH, 'DATA', 'vcf_ld', "one_bed_dir")
-BED_15_DIR = os.path.join(DATA_PATH, 'DATA', 'vcf_ld', 'bed_files_15')
-
-SAVE_IMAGE = os.path.join(DATA_PATH, 'DATA', 'vcf_ld', "ld_curves.jpg")
+SAVE_IMAGE = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "ld_curves.jpg")
 
 DATA_HOLDER_FOR_MODELS = VCFDataHolder(
-            vcf_file=VCF_DATA, popmap_file=POP_MAP,
-            recombination_map=REC_MAP, bed_files_dir=BED_15_DIR,
-            ld_kwargs={'r_bins': 'np.logspace(-6, -3, 7)',
-                       'report': False,
-                       'pops': ["deme0", "deme1"]}
-        )
+            vcf_file=VCF_DATA_FEW_CHR,
+            popmap_file=POP_MAP,
+            recombination_maps=REC_MAPS_DIR,
+            ld_kwargs={
+                'r_bins': 'np.logspace(-6, -3, 7)',
+                'report': False,
+                'pops': ["deme0", "deme1"]
+            }
+)
+
 
 class TestVCFDataHolderLD(unittest.TestCase):
 
+    def tearDown(self):
+        if Path(f"{TEST_OUTPUT}/bed_files/").exists():
+            shutil.rmtree(f"{TEST_OUTPUT}/bed_files/")
+
     def test_vcf_data_holder_ld_init(self):
-        ld_data = VCFDataHolder(vcf_file=VCF_DATA, popmap_file=POP_MAP,
-                                recombination_map=REC_MAP, bed_file=BED_FILE)
+        ld_data = VCFDataHolder(
+            vcf_file=VCF_DATA,
+            popmap_file=POP_MAP,
+            recombination_maps=REC_MAPS_DIR,
+            output_directory=TEST_OUTPUT
+        )
         self.assertEqual(ld_data.filename, VCF_DATA)
         self.assertEqual(ld_data.popmap_file, POP_MAP)
-        self.assertEqual(ld_data.recombination_map, REC_MAP)
-        self.assertEqual(ld_data.bed_file, BED_FILE)
-
-        ld_data_2 = VCFDataHolder(vcf_file=VCF_DATA, popmap_file=POP_MAP,
-                                  recombination_map=REC_MAP, bed_files_dir=BED_FILES_DIR)
-
-        self.assertEqual(ld_data_2.bed_files_dir, BED_FILES_DIR)
-
-        ld_data_3 = VCFDataHolder(vcf_file=VCF_DATA, popmap_file=POP_MAP,
-                                  recombination_map=REC_MAP, bed_files_dir=EMPTY_BED_DIR)
-
+        self.assertEqual(ld_data.recombination_maps, REC_MAPS_DIR)
+        # Зачем эта часть ниже?
         settings = SettingsStorage()
-        settings.data_holder = ld_data_3
         settings.engine = 'momentsLD'
-        self.assertRaises(ValueError, settings.read_data)
-
-        ld_data_4 = VCFDataHolder(vcf_file=VCF_DATA, popmap_file=POP_MAP,
-                                  recombination_map=REC_MAP, bed_files_dir=ONE_BED_DIR,
-                                  ld_kwargs={'r_bins': 'np.logspace(-6, -3, 7)',
-                                             'report': False,
-                                             'pops': ["deme0", "deme1"]})
-
-        settings = SettingsStorage()
-        settings.data_holder = ld_data_4
-        settings.engine = 'momentsLD'
+        settings.data_holder = ld_data
         settings.read_data()
-        self.assertTrue(ld_data_4.bed_files_dir is None)
-        self.assertEqual(ld_data_4.bed_file, BED_FILE_IN_ONE_BED_DIR)
+
+    def test_bed_files_creation(self):
+        pass
 
 
 def get_settings_test():
@@ -87,150 +81,75 @@ def get_settings_test():
 
 
 class TestSettingStorageLDStats(unittest.TestCase):
+    def tearDown(self):
+        if Path(f"{TEST_OUTPUT}/bed_files/").exists():
+            shutil.rmtree(f"{TEST_OUTPUT}/bed_files/")
 
     def test_param_file_with_ld(self):
-        param_file = os.path.join(DATA_PATH, "PARAMS", 'ld_params_with_one_bed_file')
+        param_file = os.path.join(DATA_PATH, "PARAMS", 'ld_params_test_correct')
 
-        sys.argv = ['gadma', '-p', param_file, '-o', 'some_dir']
+        sys.argv = ['gadma', '-p', param_file]
         settings, _ = get_settings_test()
         settings.read_data()
 
-        self.assertEqual(settings.output_directory, abspath('some_dir'))
+        self.assertEqual(settings.output_directory, abspath(TEST_OUTPUT))
         self.assertEqual(settings.data_holder.filename, VCF_DATA)
         self.assertEqual(settings.data_holder.popmap_file, POP_MAP)
-        self.assertEqual(settings.data_holder.recombination_map, REC_MAP)
-        self.assertEqual(settings.data_holder.bed_file, BED_FILE)
-
-        settings.data_holder.ld_kwargs.pop('r_bins')
-        self.assertRaises(ValueError, settings.read_data)
-
-    def test_data_holder_bed_dir_adding_abspath(self):
-        param_file = os.path.join(DATA_PATH, "PARAMS", 'ld_params_with_3_bed_files_in_dir')
-
-        BED_FILE_ABS_1 = "region_1.bed"
-        BED_FILE_ABS_2 = "region_2.bed"
-        BED_FILE_ABS_3 = "region_3.bed"
-
-        sys.argv = ['gadma', '-p', param_file, '-o', 'some_dir']
-        settings, _ = get_settings_test()
-        settings.read_data()
-        self.assertTrue(
-            all(
-                [
-                    BED_FILE_ABS_1 in listdir(settings.data_holder.bed_files_dir),
-                    BED_FILE_ABS_2 in listdir(settings.data_holder.bed_files_dir),
-                    BED_FILE_ABS_3 in listdir(settings.data_holder.bed_files_dir)
-                ]
-            )
-        )
+        self.assertEqual(settings.data_holder.recombination_maps, REC_MAPS_DIR)
 
     def test_errors_in_param_file(self):
         param_file = os.path.join(DATA_PATH, "PARAMS", 'ld_param_file_with_wrong_keys_in_dict')
-        sys.argv = ['gadma', '-p', param_file, '-o', 'some_dir']
+        sys.argv = ['gadma', '-p', param_file]
         self.assertRaises(KeyError, get_settings_test)
 
         param_file = os.path.join(DATA_PATH, "PARAMS", 'ld_param_file_with_dict_and_wrong_engine')
-        sys.argv = ['gadma', '-p', param_file, '-o', 'some_dir']
+        sys.argv = ['gadma', '-p', param_file]
         self.assertRaises(ValueError, get_settings_test)
 
-        param_file = os.path.join(DATA_PATH, "PARAMS", 'ld_param_file_with_labels_twice')
-        sys.argv = ['gadma', '-p', param_file, '-o', 'some_dir']
-        settings, _ = get_settings_test()
-        self.assertRaises(KeyError, settings.read_data)
-
-        param_file = os.path.join(DATA_PATH, "PARAMS", 'ld_params_with_wrong_bed_file_extension')
-        sys.argv = ['gadma', '-p', param_file, '-o', 'some_dir']
-        settings, _ = get_settings_test()
-        self.assertRaises(FileExistsError, settings.read_data)
-
-    def test_correct_LD_small_data_processing(self):
+    def test_correct_LD_data_processing(self):
         try:
             with open(PREPROCESSED_DATA, "rb") as fin:
                 ld_stats_moments = pickle.load(fin)
-        except FileNotFoundError:
+        except: # NOQA
             pops = ["deme0", "deme1"]
             r_bins = np.logspace(-6, -3, 7)
-            ld_stats_moments = moments.LD.Parsing.compute_ld_statistics(
-                VCF_DATA,
-                rec_map_file=REC_MAP,
-                pop_file=POP_MAP,
-                pops=pops,
-                r_bins=r_bins,
-                report=True,
-            )
-            with open(f"./preprocessed_data.bp", "wb+") as fout:
-                pickle.dump(ld_stats_moments, fout)
-        ld_stats_moments = moments.LD.Parsing.means_from_region_data(
-            {0: ld_stats_moments}, ld_stats_moments["stats"], norm_idx=0
-        )
+            moments_regions = {}
 
-        param_file = os.path.join(DATA_PATH, "PARAMS", 'ld_params_test_correct_small_data_processing_1')
-        sys.argv = ['gadma', '-p', param_file, '-o', 'some_dir']
+            for ii in range(1, 8):
+                moments_regions.update(
+                    {
+                        f"{ii}": moments.LD.Parsing.compute_ld_statistics(
+                            VCF_DATA,
+                            rec_map_file=f"{REC_MAPS_DIR}/rec_map_1.txt",
+                            pop_file=POP_MAP,
+                            bed_file=f"{TEST_BED_FILES}/bed_file_1_{ii}.bed",
+                            pops=pops,
+                            r_bins=r_bins,
+                            report=False,
+                        )
+                    }
+                )
+
+            ld_stats_moments = moments.LD.Parsing.bootstrap_data(moments_regions)
+            with open(f"{PREPROCESSED_DATA}", "wb+") as fout:
+                pickle.dump(ld_stats_moments, fout)
+        param_file = os.path.join(DATA_PATH, "PARAMS", 'ld_params_test_correct')
+        sys.argv = ['gadma', '-p', param_file]
         settings, _ = get_settings_test()
         ld_stats_gadma = settings.read_data()
         self.assertEqual(len(ld_stats_moments), len(ld_stats_gadma))
-        for arr in range(len(ld_stats_moments)):
-            self.assertTrue(np.allclose(ld_stats_moments[arr], ld_stats_gadma[arr]))
-
-    def test_correct_LD_data_processing_2_one_bed(self):
-        r_bins = np.logspace(-6, -3, 7)
-        pops = ["deme0", "deme1"]
-        ld_stats_2 = moments.LD.Parsing.compute_ld_statistics(
-            VCF_DATA,
-            rec_map_file=REC_MAP,
-            pop_file=POP_MAP,
-            pops=pops,
-            r_bins=r_bins,
-            bed_file=BED_FILE,
-            report=False
-        )
-
-        data_means_from_moments = moments.LD.Parsing.means_from_region_data(
-            {0: ld_stats_2}, ld_stats_2["stats"], norm_idx=0
-        )
-
-        param_file = os.path.join(DATA_PATH, "PARAMS", 'ld_params_with_one_bed_file')
-
-        sys.argv = ['gadma', '-p', param_file, '-o', 'some_dir']
-
-        settings, _ = get_settings_test()
-        ld_stats_gadma_2 = settings.read_data()
-
-        self.assertEqual(len(data_means_from_moments), len(ld_stats_gadma_2))
-        for arr in range(len(data_means_from_moments)):
-            self.assertTrue(all(((a == b) | (np.isnan(a) & np.isnan(b))) for a, b in zip(
-                data_means_from_moments[arr], ld_stats_gadma_2[arr]
-            )))
-
-    def test_correct_LD_data_processing_3_few_bed(self):
-        r_bins = np.logspace(-6, -3, 7)
-        pops = ["deme0", "deme1"]
-        region_stats = {}
-
-        for region_num in range(len(FEW_BEDS)):
-            region_stats.update(
-                {
-                    region_num: moments.LD.Parsing.compute_ld_statistics(
-                        VCF_DATA, rec_map_file=REC_MAP,
-                        pop_file=POP_MAP, pops=pops, r_bins=r_bins,
-                        bed_file=FEW_BEDS[region_num], report=False)
-                }
-            )
-
-        data_from_moments_3 = moments.LD.Parsing.bootstrap_data(region_stats)
-        param_file = os.path.join(DATA_PATH, "PARAMS", 'ld_params_with_3_bed_files_in_dir')
-        sys.argv = ['gadma', '-p', param_file, '-o', 'some_dir']
-        settings, _ = get_settings_test()
-        ld_stats_gadma_3 = settings.read_data()
-
-        self.assertEqual(len(data_from_moments_3), len(ld_stats_gadma_3))
-        for arr in range(len(data_from_moments_3['means'])):
-            self.assertTrue(all((np.allclose(a, b) | (np.isnan(a) & np.isnan(b))) for a, b in zip(
-                data_from_moments_3['means'][arr], ld_stats_gadma_3['means'][arr]
-            )))
+        for arr in range(len(ld_stats_moments["means"])):
+            self.assertTrue(np.allclose(
+                ld_stats_moments["means"][arr],
+                ld_stats_gadma["means"][arr]))
+        # Falls sometimes
 
 
 class TestModelSimulation(unittest.TestCase):
+
+    def tearDown(self):
+        if Path(f"{TEST_OUTPUT}/bed_files/").exists():
+            shutil.rmtree(f"{TEST_OUTPUT}/bed_files/")
 
     def model_one_pop_moments_ld(self):
         import moments.LD
@@ -246,13 +165,13 @@ class TestModelSimulation(unittest.TestCase):
 
         nu = PopulationSizeVariable('nu')
         tf = TimeVariable('tf')
-        rho = 4 * 10000 * np.logspace(-6, -3, 7)
-        theta = 0.001
+        rhos = 4 * 10000 * np.logspace(-6, -3, 7)
+        theta = 4 * 10000 * 6.0e-5
 
         values = {'nu': nu.resample(),
                   'tf': tf.resample()}
 
-        data = moments_one_pop_func([values[x] for x in values], rho, theta)
+        data = moments_one_pop_func([values[x] for x in values], rhos, theta)
         data = moments.LD.LDstats(
             [(y_l + y_r) / 2 for y_l, y_r in zip(data[:-2], data[1:-1])]
             + [data[-1]],
@@ -273,6 +192,8 @@ class TestModelSimulation(unittest.TestCase):
                 if (var.name in values)]
         engine.set_data(data)
         engine.set_model(dm)
+        engine.model.Nanc_size = 10000
+        engine.model.mutation_rate = 6.0e-5
         engine.data_holder = DATA_HOLDER_FOR_MODELS
         model = engine.simulate(vals)
 
@@ -307,9 +228,9 @@ class TestModelSimulation(unittest.TestCase):
                   'dyn_exp': 'Exp'}
 
         list_for_moments_ld = ['nu1', 'nu2', 't']
-        rho = 4 * 10000 * np.logspace(-6, -3, 7)
-        theta = 0.001
-        data = moments_two_pops_func([values[x] for x in list_for_moments_ld], rho, theta)
+        rhos = 4 * 10000 * np.logspace(-6, -3, 7)
+        theta = 4 * 10000 * 6.0e-5
+        data = moments_two_pops_func([values[x] for x in list_for_moments_ld], rhos, theta)
         data = moments.LD.LDstats(
             [(y_l + y_r) / 2 for y_l, y_r in zip(data[:-2], data[1:-1])]
             + [data[-1]],
@@ -332,6 +253,8 @@ class TestModelSimulation(unittest.TestCase):
                 if (var.name in values)]
         engine.data_holder = DATA_HOLDER_FOR_MODELS
         engine.set_model(dm)
+        engine.model.Nanc_size = 10000
+        engine.model.mutation_rate = 6.0e-5
         model = engine.simulate(vals)
         self.assertTrue(np.allclose(model[0], data[0]), msg='Simulations differs in '
                                                             'engine and momentsLD')
@@ -379,10 +302,10 @@ class TestModelSimulation(unittest.TestCase):
                   'dyn_exp': 'Exp'}
         list_for_moments_ld = ['nu1', 'nu2', 'nu3', 'nu4', 't', 'm12']
 
-        rho = 4 * 10000 * np.logspace(-6, -3, 7)
-        theta = 0.001
+        rhos = 4 * 10000 * np.logspace(-6, -3, 7)
+        theta = 4 * 10000 * 6.0e-5
 
-        simulated = moments_ld_func([values[x] for x in list_for_moments_ld], rho, theta)
+        simulated = moments_ld_func([values[x] for x in list_for_moments_ld], rhos, theta)
         simulated = moments.LD.LDstats(
             [(y_l + y_r) / 2 for y_l, y_r in zip(simulated[:-2], simulated[1:-1])]
             + [simulated[-1]],
@@ -408,6 +331,8 @@ class TestModelSimulation(unittest.TestCase):
                 if (var.name in values)]
         engine = get_engine('momentsLD')
         engine.set_model(dm)
+        engine.model.Nanc_size = 10000
+        engine.model.mutation_rate = 6.0e-5
         engine.data_holder = DATA_HOLDER_FOR_MODELS
         simulated_by_gadma = engine.simulate(vals)
         self.assertTrue(np.allclose(
@@ -425,6 +350,11 @@ class TestModelSimulation(unittest.TestCase):
 
 
 class TestModelEvaluation(unittest.TestCase):
+
+    def tearDown(self):
+        if Path(f"{TEST_OUTPUT}/").exists():
+            shutil.rmtree(f"{TEST_OUTPUT}/")
+        os.makedirs(TEST_OUTPUT)
 
     def model_for_gadma_moments_evaluation(self):
         def model_moments_ld(params, rho, theta):
@@ -471,10 +401,10 @@ class TestModelEvaluation(unittest.TestCase):
                   'dyn2': 'Exp'}
         list_for_moments_ld = ['nu', 'nu1', 'nu2', 'tf', 'm12', 'm21']
 
-        rho = 4 * 10000 * np.logspace(-6, -3, 7)
-        theta = 0.001
+        rhos = 4 * 10000 * np.logspace(-6, -3, 7)
+        theta = 4 * 10000 * 6.0e-5
 
-        simulated = model_moments_ld([values[x] for x in list_for_moments_ld], rho, theta)
+        simulated = model_moments_ld([values[x] for x in list_for_moments_ld], rhos, theta)
         simulated = moments.LD.LDstats(
             [(y_l + y_r) / 2 for y_l, y_r in zip(
                 simulated[:-2],
@@ -491,10 +421,8 @@ class TestModelEvaluation(unittest.TestCase):
         engine = get_engine('momentsLD')
         engine.data_holder = VCFDataHolder(
             vcf_file=VCF_DATA, popmap_file=POP_MAP,
-            recombination_map=REC_MAP, bed_files_dir=BED_15_DIR,
-            ld_kwargs={'r_bins': 'np.logspace(-6, -3, 7)',
-                       'report': False,
-                       'pops': ["deme0", "deme1"]}
+            recombination_maps=REC_MAPS_DIR,
+            output_directory=TEST_OUTPUT
         )
         engine.set_data(engine.data_holder)
         data_gadma = engine.data
@@ -511,6 +439,8 @@ class TestModelEvaluation(unittest.TestCase):
         vals = [values[var.name] for var in dm.variables
                 if (var.name in values)]
         engine.set_model(dm)
+        engine.model.Nanc_size = 10000
+        engine.model.mutation_rate = 6.0e-5
         simulated_by_gadma = engine.simulate(values=vals)
         for ii in range(len(simulated_by_gadma)):
             self.assertTrue(np.allclose(
@@ -540,15 +470,15 @@ class TestModelEvaluation(unittest.TestCase):
         engine = get_engine('momentsLD')
         engine.data_holder = VCFDataHolder(
             vcf_file=VCF_DATA, popmap_file=POP_MAP,
-            recombination_map=REC_MAP, bed_files_dir=BED_15_DIR,
-            ld_kwargs={'r_bins': 'np.logspace(-6, -3, 7)',
-                       'report': False,
-                       'pops': ["deme0", "deme1"]}
+            recombination_maps=REC_MAPS_DIR,
+            output_directory=TEST_OUTPUT
         )
 
         values, simulated_by_moments, dm = self.model_for_gadma_moments_evaluation()
         vals = [values[var.name] for var in dm.variables
                 if (var.name in values)]
         engine.set_model(dm)
+        engine.model.Nanc_size = 10000
+        engine.model.mutation_rate = 6.0e-5
 
-        engine.draw_ld_curves(values=vals, save_file=SAVE_IMAGE)
+        engine.draw_ld_curves(values=vals, save_file=SAVE_IMAGE,)

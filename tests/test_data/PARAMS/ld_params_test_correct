@@ -3,5 +3,8 @@ Engine : momentsLD
 initial_structure: 1,1
 final_structure: 1,2
 recombination_maps: test_data/DATA/vcf_ld/rec_maps
-ld_kwargs: {'cM': False, 'pops': ["deme0", "deme1"], 'report': True, 'r_bins': 'np.logspace(-6, -3, 7)', 'use_genomes_shmenomes': False}
 output_directory: test_data/DATA/vcf_ld/test_output
+ancestral_size_as_parameter: True
+Mutation rate: 2.35e-8
+Number of repeats : 10
+Number of processes : 1

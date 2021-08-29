@@ -127,13 +127,13 @@ class SettingsStorage(object):
                          'const_for_mutation_rate', 'vmin',
                          'parameter_identifiers', 'migration_masks']
         exist_file_attrs = ['input_data', 'custom_filename',
-                            'bed_file', 'recombination_map']
-        exist_dir_attrs = ['directory_with_bootstrap', 'resume_from', 'bed_files_dir']
+                            'bed_file']
+        exist_dir_attrs = ['directory_with_bootstrap', 'resume_from', 'recombination_maps']
         empty_dir_attrs = ['output_directory']
         data_holder_attrs = ['projections', 'outgroup',
                              'population_labels', 'sequence_length',
-                             'bed_file', 'recombination_map', 'bed_files_dir',
-                             'ld_kwargs']
+                             'recombination_maps', 'ld_kwargs',
+                             'output_directory', "bed_file"]
         bounds_attrs = ['min_n', 'max_n', 'min_t', 'max_t', 'min_m', 'max_m',
                         'dynamics']
         bounds_lists = ['lower_bound', 'upper_bound', 'parameter_identifiers']
@@ -326,7 +326,6 @@ class SettingsStorage(object):
 
         # 1.10 Check that identifiers are good:
         if name == "parameter_identifiers" and value is not None:
-            # print(name, value)
             if isinstance(value, str):
                 value = [x.strip() for x in value.split(",")]
             value = [x.strip() for x in value]
@@ -376,9 +375,9 @@ class SettingsStorage(object):
                     outgroup=self.outgroup,
                     population_labels=self.population_labels,
                     sequence_length=self.sequence_length,
-                    recombination_map=self.recombination_map,
-                    bed_file=self.bed_file,
-                    ld_kwargs=self.ld_kwargs
+                    recombination_maps=self.recombination_maps,
+                    ld_kwargs=self.ld_kwargs,
+                    output_directory=self.output_directory
                 )
             else:
                 data_holder = SFSDataHolder(
@@ -627,28 +626,6 @@ class SettingsStorage(object):
                 transformed_value.append(new_mask)
             value = transformed_value
 
-        # # 3.13 Check keys in dict for computing LD stats from vcf file
-        # if name in dict_attrs:
-        #     if self.engine == 'moments.LD':
-        #         import moments.LD
-        #         Full_arg_spec = inspect.getfullargspec(moments.LD.Parsing.compute_ld_statistics)
-        #         args_parsing_ld = Full_arg_spec[0]
-        #         for key in value:
-        #             if key not in args_parsing_ld:
-        #                 raise KeyError("Computing_ld_stats function hasn't "
-        #                                f"argument {key}! Check your param_file "
-        #                                f"and remove unexpected args.")
-        #         if all(['rec_map_name' not in list(value),
-        #                 'report' in list(value),
-        #                 value['report'] == False]):
-        #             print('No recombination map name given, using first column.')
-        #     else:
-        #         raise ValueError("You can't pass dictionary with arguments for "
-        #                          "computing LDStats if you don't use"
-        #                          "moments.LD engine. Your current engine is"
-        #                          f"{self.engine}. Change engine or delete dict"
-        #                          f"argument.")
-
         if setattr_at_the_end:
             super(SettingsStorage, self).__setattr__(name, value)
             # assert(self.__getattr__(name) == value)
@@ -786,8 +763,8 @@ class SettingsStorage(object):
         """
         engine = get_engine(self.engine)
 
-        data = engine.read_data(self.data_holder)
         if self.engine != 'momentsLD':
+            data = engine.read_data(self.data_holder)
             self.projections = data.sample_sizes
             self.population_labels = data.pop_ids
             self.outgroup = not data.folded
@@ -800,6 +777,9 @@ class SettingsStorage(object):
             self.number_of_populations = len(self.projections)
             return data
         else:
+            data = engine.read_data(self.data_holder)
+            self.population_labels = data["pops"]
+            self.number_of_populations = len(self.population_labels)
             self._inner_data = data
             return data
 
@@ -1007,6 +987,7 @@ class SettingsStorage(object):
         settings.
         """
         opt = get_global_optimizer(self.global_optimizer)
+        print("")
         if self.global_optimizer.lower() == "genetic_algorithm":
             opt.gen_size = self.size_of_generation
             opt.n_elitism = self.n_elitism
@@ -1120,6 +1101,7 @@ class SettingsStorage(object):
         """
         Returns demographic model to use according to current settings.
         """
+        print("CoreRun.get_model  ")
         gen_time = self.time_for_generation
         theta0 = self.theta0
         mut_rate = self.mutation_rate
@@ -1151,6 +1133,7 @@ class SettingsStorage(object):
             )
             constrain = self.get_linear_constrain_for_model(model)
             model.linear_constrain = constrain
+            print('Created StructureDemographicModel  ')
             return model
         elif ((self.custom_filename is not None or
                 self.model_func is not None) and
