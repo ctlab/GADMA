@@ -246,6 +246,27 @@ class MomiEngine(Engine):
         )
         return snp_counts.extract_sfs(n_blocks=100)
 
+    def draw_schematic_model_plot(self, values, save_file=None,
+                                  fig_title="Demographic Model from GADMA",
+                                  nref=None, gen_time=1,
+                                  gen_time_units="Generations"):
+        # get population labels
+        if self.inner_data is not None:
+            pop_labels = self.inner_data.sampled_pops
+        else:
+            assert self.data_holder is not None
+            pop_labels = self.data_holder.population_labels
+        model = self.get_momi_model()
+        title += f" time in {gen_time_units}"
+        model.gen_time = gen_time
+        self.base_module.DemographyPlot(
+            model,
+            pop_x_positions=pop_labels,
+            figsize=(6,8),
+            linthreshy=1e5,
+            pulse_color_bounds=(0,.25)
+        )
+
     def generate_code(self, values, filename=None, nanc=None,
                       gen_time=None, gen_time_units="years"):
         """

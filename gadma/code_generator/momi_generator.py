@@ -209,9 +209,24 @@ def print_main_part(engine, values, nanc):
     ret_str += "ll_model = model.log_likelihood()\n"
     ret_str += "print(f'Value of log-likelihood: {ll_model}')"
     return ret_str
+
+
+def print_plotting_part(engine):
+    ret_str = "\nfrom matplotlib import pyplot as plt"
+    ret_str +=  "momi.DemographyPlot(\n"
+    ret_str += "\tmodel,\n"
+    ret_str += "\tpop_x_positions=data.sampled_pops,\n"
+    ret_str += "\tfigsize=(6,8),\n"
+    ret_str += "\tlinthreshy=1e5,\n"
+    ret_str += "\tpulse_color_bounds=(0,.25)\n"
+    ret_str += ")\n"
+    ret_str += "plt.savefig('model_from_GADMA.png')\n"
+    return ret_str
+
     
 def print_momi_code(engine, values, filename,
                     nanc=None, gen_time=1, gen_time_units=None):
+    assert gen_time_units.lower() in ["generations", "years"]
     # check for dynamics
     var2value = engine.model.var2value(values)
     assert "Lin" not in var2value.values(), ("Linear size function is "
@@ -222,6 +237,7 @@ def print_momi_code(engine, values, filename,
                " code there is no downsizing.\n"
     ret_str += print_data_reading(engine)
     ret_str += print_main_part(engine, values, nanc)
+    ret_str += print_plotting_part(engine)
     if filename is None:
         return ret_str
     with open(filename, 'w') as f:

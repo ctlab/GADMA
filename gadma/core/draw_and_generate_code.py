@@ -71,7 +71,7 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
         bad_model = isinstance(engine.model, CustomDemographicModel)
 
     # Check that plots will be drawn
-    draw_comp_plot = comp_plot_engine.can_plot_comparison
+    draw_comp_plot = comp_plot_engine.can_draw_comp
     draw_model_plot = not bad_model and model_plot_engine.can
 
     # 1. Draw data comparison
@@ -185,7 +185,7 @@ def generate_code_to_file(x, engine, settings, filename):
         except Exception as e:
             fails[other_engine.id] = str(e)
     if len(fails) > 0:
-        raise ValueError("; ".join([f"{id}: {failes[id]}" for id in failes]))
+        raise ValueError("; ".join([f"{id}: {fails[id]}" for id in fails]))
 
 
 def print_runs_summary(start_time, shared_dict, settings):
