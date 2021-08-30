@@ -480,7 +480,7 @@ class SettingsStorage(object):
                                  f"{[engine.id in all_engines()]}")
         elif name == 'model_plot_engine':
             engine = get_engine(value)
-            if not engine.can_draw:
+            if not engine.can_draw_model:
                 raise ValueError(f"Engine {value} cannot draw model plots. "
                                  f"Available engines are: "
                                  f"{[engine.id in all_drawing_engines()]}")

@@ -72,7 +72,12 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
 
     # Check that plots will be drawn
     draw_comp_plot = comp_plot_engine.can_draw_comp
-    draw_model_plot = not bad_model and model_plot_engine.can
+    draw_model_plot = not bad_model and model_plot_engine.can_draw_model
+
+    if not draw_comp_plot and not draw_model_plot:
+        raise ValueError(f"Plot is missed: engine {engine.id} cannot "
+                         "draw data comparison and engine "
+                         f"{model_plot_engine.id} cannot draw models.")
 
     # 1. Draw data comparison
     if draw_comp_plot:

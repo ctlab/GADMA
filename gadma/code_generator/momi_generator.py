@@ -46,6 +46,13 @@ def get_anc_model(original_model, values, nanc):
     model = copy.deepcopy(original_model)
     var2value = original_model.var2value(values)
 
+    # fix dynamics as we will not need them
+    model.fix_dynamics(values)
+    # we have to miss values of dynamics in `values`
+    varname2value = {var.name: var2value[var]
+                     for var in original_model.variables}
+    model_values = [varname2value[var.name] for var in model.variables]
+
     # We set ancestral size just if it is missed
     if nanc is not None:
         if original_model.has_anc_size:
@@ -57,12 +64,8 @@ def get_anc_model(original_model, values, nanc):
         else:
             model.Nanc_size = nanc
 
-    # fix dynamics as we will not need them
-    model.fix_dynamics(values)
-    model_values = values
-
     if isinstance(model, EpochDemographicModel):
-        model, model_values = model.translate_to(TreeDemographicModel, values)
+        model, model_values = model.translate_to(TreeDemographicModel, model_values)
 
     return model, model_values
 
@@ -212,7 +215,7 @@ def print_main_part(engine, values, nanc):
 
 
 def print_plotting_part(engine):
-    ret_str = "\nfrom matplotlib import pyplot as plt"
+    ret_str = "\nfrom matplotlib import pyplot as plt\n"
     ret_str +=  "momi.DemographyPlot(\n"
     ret_str += "\tmodel,\n"
     ret_str += "\tpop_x_positions=data.sampled_pops,\n"

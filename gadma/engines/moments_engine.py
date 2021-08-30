@@ -22,7 +22,7 @@ class MomentsEngine(DadiOrMomentsEngine):
         import moments as base_module
         inner_data_type = base_module.Spectrum  #:
     default_dt_fac = 0.01  #:
-    can_draw = True
+    can_draw_model = True
 
     @staticmethod
     def _get_kwargs(event, var2value):
