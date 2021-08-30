@@ -52,6 +52,8 @@ class DemographicModel(Model):
         :param variable: variable to add.
         :type variable: :class:`Variable`
         """
+        if variable in self._variables:
+            return
         if (not self.has_anc_size and
                 isinstance(variable, DemographicVariable) and
                 variable.units == "physical"):
@@ -189,12 +191,19 @@ class EpochDemographicModel(DemographicModel):
             has_anc_size=has_anc_size,
             linear_constrain=linear_constrain
         )
-        self.Nanc_size = Nanc_size
+        if not has_anc_size:
+            assert Nanc_size is None, str(Nanc_size)
+            # We create variable and fix its value to relative 1.0
+            Nanc_size = PopulationSizeVariable("_Nanc_size", units="physical")
+            self._Nanc_size = Nanc_size
+            self.variables = [self._Nanc_size]  # to avoid checks for units
+            super(DemographicModel, self).fix_variable(self.Nanc_size, 1.0)
+        else:
+            # to run checks
+            self.Nanc_size = Nanc_size
 
     @property
     def Nanc_size(self):
-        if self._Nanc_size is None:
-            return 1.0
         return self._Nanc_size
 
     @Nanc_size.setter
@@ -412,16 +421,24 @@ class EpochDemographicModel(DemographicModel):
         :param values: Values of the demographic model.
         """
         strings = []
-        values = {var.name: val
-                  for var, val in self.var2value(values).items()}
+        var2value = self.var2value(values)
+        values_dict = {var.name: val for var, val in var2value.items()}
+        if self.has_anc_size:
+            if isinstance(self.Nanc_size, Variable):
+                Nanc_str = f"[{self.Nanc_size.name}"
+            else:
+                Nanc_str = f"[Nanc"
+            size = self.get_value_from_var2value(var2value, self.Nanc_size)
+            Nanc_str += f" = {int(size)}]"
+            strings.append(Nanc_str)
 
         for event in self.events:
-            strings.append(event.as_custom_string(values))
+            strings.append(event.as_custom_string(values_dict))
 
         if self.has_inbreeding:
             inbr_coefficients = []
             for inbreeding in self.inbreeding_args:
-                inbr_value = round(values[inbreeding.name], 3)
+                inbr_value = round(values_dict[inbreeding.name], 3)
                 inbr_coefficients.append(f"{inbr_value} ({inbreeding.name})")
 
             inbr_string = ", ".join(inbr_coefficients)

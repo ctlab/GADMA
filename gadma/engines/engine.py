@@ -65,7 +65,7 @@ def all_drawing_engines():
     log-likelihood for the demographic inference.
     """
     for engine in _registered_engines.values():
-        if engine.can_draw:
+        if engine.can_draw_model:
             yield engine()
 
 

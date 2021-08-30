@@ -293,11 +293,8 @@ class TestCLI(unittest.TestCase):
             settings.engine = engine.id
         # check errors for bad engines
         settings.model_plot_engine = "demes"
-        settings.sfs_plot_engine = "dadi"
         self.assertRaises(ValueError,  settings.__setattr__,
                           'engine', 'demes')
-        self.assertRaises(ValueError,  settings.__setattr__,
-                          'sfs_plot_engine', 'demes')
         self.assertRaises(ValueError,  settings.__setattr__,
                           'model_plot_engine', 'dadi')
 

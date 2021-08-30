@@ -254,6 +254,15 @@ class MomentsEngine(DadiOrMomentsEngine):
                                                         dt_fac, nanc, gen_time,
                                                         gen_time_units)
 
+    def draw_data_comp_plot(self, values, dt_fac=default_dt_fac,
+                            save_file=None, vmin=None):
+        return super(MomentsEngine, self).draw_data_comp_plot(
+            values=values,
+            grid_sizes=dt_fac,
+            save_file=save_file,
+            vmin=vmin
+        )
+
 
 if moments_available:
     register_engine(MomentsEngine)

@@ -175,6 +175,14 @@ class DadiEngine(DadiOrMomentsEngine):
                                                      nanc, gen_time,
                                                      gen_time_units)
 
+    def draw_data_comp_plot(self, values, pts, save_file=None, vmin=None):
+        return super(DadiEngine, self).draw_data_comp_plot(
+            values=values,
+            grid_sizes=pts,
+            save_file=save_file,
+            vmin=vmin
+        )
+
 
 if dadi_available:
     register_engine(DadiEngine)

@@ -137,14 +137,18 @@ class StructureDemographicModel(EpochDemographicModel):
         :param structure: Structure of the model.
         :type structure: list of ints
         """
+        if self.has_anc_size:
+            Nanc_size = self.Nanc_size
+        else:
+            Nanc_size = None
         super(StructureDemographicModel, self).__init__(
             gen_time=self.gen_time,
             theta0=self.theta0,
             mutation_rate=self.mutation_rate,
             recombination_rate=self.recombination_rate,
-            has_anc_size=self.has_anc_size,
-            Nanc_size=self._Nanc_size
+            Nanc_size=Nanc_size
         )
+
         if not (np.all(np.array(structure) >= self.initial_structure)):
             raise ValueError(f"Elements of model structure ({structure}) "
                              f"could not be smaller than elements of the "
@@ -369,6 +373,8 @@ class StructureDemographicModel(EpochDemographicModel):
             for old_inbr_arg, new_inbr_arg in zip(old_model.inbreeding_args,
                                                   self.inbreeding_args):
                 oldvar2newvar[old_inbr_arg] = new_inbr_arg
+        # we have to add info about Nanc_size variable
+        oldvar2newvar[old_model.Nanc_size] = self.Nanc_size
     #    print(oldvar2newvar)
         new_X = []
         for x in X:
@@ -466,6 +472,8 @@ class StructureDemographicModel(EpochDemographicModel):
                     var2value[var] = other_varname2value[var.name]
             elif var.name in other_varname2value:
                 var2value[var] = other_varname2value[var.name]
+        # do not forget about Nanc_size
+        var2value[self.Nanc_size] = other_var2value[model.Nanc_size]
 
         # Transform other values
         varname2value = {}
@@ -504,7 +512,7 @@ class StructureDemographicModel(EpochDemographicModel):
                                                      n_split)
                 if n_split == 1 and self.get_structure()[0] == 1:
                     size_before_split_name = model.get_value_from_var2value(
-                        other_varname2value,
+                        other_var2value,
                         model._get_Nanc_size()
                     )
                     size_after_split_time = other_varname2value["nu_1"]

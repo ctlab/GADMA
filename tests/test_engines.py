@@ -325,7 +325,7 @@ class TestEngines(unittest.TestCase):
         engine.model = dm
 
         engine.draw_schematic_model_plot(values, save_file="plot.png")
-        engine.draw_sfs_plots(values=values, grid_sizes=0.01, save_file=None)
+        engine.draw_data_comp_plot(values=values, save_file=None)
 
         dm = EpochDemographicModel()
         dm.add_epoch(T, [nu])
@@ -336,4 +336,88 @@ class TestEngines(unittest.TestCase):
             sequence_length=1e6,
             population_labels=["Pop1"]
         )
-        engine.draw_sfs_plots(values=values, grid_sizes=0.01, save_file=None)
+        engine.draw_data_comp_plot(values=values, save_file=None)
+
+    def get_data_holder(self):
+        # we take the most common data
+        vcf_path = os.path.join(DATA_PATH, "DATA", "vcf")
+        data_holder = VCFDataHolder(
+            os.path.join(vcf_path, "out_of_africa_chr22_sim.vcf"),
+            popmap_file=os.path.join(vcf_path, "out_of_africa_chr22_sim_3pop.popmap"),
+            projections=[4, 4, 4],
+            population_labels=["YRI", "CEU", "CHB"],
+            sequence_length=50818468  # chr22
+        )
+        return data_holder
+
+    def get_model(self):
+        dm = StructureDemographicModel(
+            initial_structure=[2, 1, 1],
+            final_structure=[2, 1, 1],
+            has_anc_size=True,
+            has_migs=False,
+            has_sels=False,
+            has_dyns=True,
+            sym_migs=False,
+            frac_split=False,
+        )
+        dm.mutation_rate = 1e-8
+        dm.recombination_rate = 1e-8
+        return dm
+
+    def test_drawing_engines(self):
+        data_holder = self.get_data_holder()
+        dm = self.get_model()
+
+        values = [var.resample() for var in dm.variables]
+        values = [el if el != "Lin" else "Exp" for el in values]
+
+        for engine in all_available_engines():
+            if not engine.can_draw_comp:
+                continue
+            engine.model = dm
+            engine.data = data_holder
+            kwargs = {}
+            if engine.id == "dadi":
+                kwargs["pts"] = [5, 10, 15]  # pts
+
+            engine.draw_data_comp_plot(values, **kwargs, save_file=None)
+
+            if engine.can_simulate:
+                engine.data = engine.simulate(
+                    values=values,
+                    ns=engine.data_holder.projections,
+                    sequence_length=engine.data_holder.sequence_length,
+                    population_labels=engine.data_holder.population_labels,
+                    **kwargs,
+                )
+                engine.draw_data_comp_plot(values, **kwargs, save_file=None)
+
+        for engine in all_available_engines():
+            if not engine.can_draw_model:
+                continue
+            engine.model = dm
+            engine.data_holder = data_holder
+            engine.draw_schematic_model_plot(
+                values=values,
+                gen_time = 10,
+                gen_time_units = 'Years',
+                save_file="plot.png"
+            )
+
+    def test_evaluating_engines(self):
+        data_holder = self.get_data_holder()
+        dm = self.get_model()
+
+        values = [var.resample() for var in dm.variables]
+        values = [el if el != "Lin" else "Exp" for el in values]
+
+        for engine in all_available_engines():
+            kwargs = {}
+            if engine.id == "dadi":
+                kwargs["pts"] = [5, 10, 15]  # pts
+
+            if engine.can_evaluate:
+                engine.data = data_holder
+                engine.model = dm
+                engine.evaluate(values, **kwargs)

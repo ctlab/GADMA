@@ -256,14 +256,13 @@ class MomiEngine(Engine):
         else:
             assert self.data_holder is not None
             pop_labels = self.data_holder.population_labels
-        model = self.get_momi_model()
-        title += f" time in {gen_time_units}"
+        model = self.get_momi_model(values)
         model.gen_time = gen_time
         self.base_module.DemographyPlot(
             model,
             pop_x_positions=pop_labels,
             figsize=(6,8),
-            linthreshy=1e5,
+            linthreshy=0,
             pulse_color_bounds=(0,.25)
         )
 

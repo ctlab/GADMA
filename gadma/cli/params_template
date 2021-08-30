@@ -266,11 +266,6 @@ Print models' code every N iteration :
 #   Default: moments
 Model plot engine : 
 
-#   Engine that will draw SFS plots.
-#   If None then it will be the same as engine that is used for inference.
-#   Default: None
-SFS plot engine : 
-
 #	One can automatically draw models every N iteration. 
 #	If 0 then never.
 #	Pictures are saved in GA's directory in the picture folder.

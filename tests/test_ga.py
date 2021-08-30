@@ -287,8 +287,9 @@ class TestGeneticAlg(unittest.TestCase):
         res = ga.optimize(f, dm.variables, verbose=0, maxeval=30)
         # print(res)
 
+        var2value = engine.model.var2value(res.x)
         engine.model.fix_dynamics(res.x)
-        x0 = res.x[np.array(engine.model.is_fixed) == False]
+        x0 = [var2value[var] for var in engine.model.variables]
         ls = get_local_optimizer("BFGS")
         ls.maximize = True
         # print(ls.optimize(f, engine.model.variables, x0, verbose=0, maxiter=1))

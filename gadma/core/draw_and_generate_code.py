@@ -241,17 +241,23 @@ def print_runs_summary(start_time, shared_dict, settings):
                 addit_str += f"(theta = {theta: .2f})"
             else:
                 Nanc = engine.get_N_ancestral(x, *settings.get_engine_args())
-            if Nanc is not None or Nanc == 0:
-                if settings.relative_parameters:
+            # Nanc can be None if we have custom demographic model and
+            # we cannot get Nanc size from theta
+            model_str = ""
+            if settings.relative_parameters:
+                x_translated = engine.model.translate_values(
+                    units="genetic", values=x, Nanc=Nanc
+                )
+                if Nanc is not None:
                     addit_str += f" (Nanc = {int(Nanc)})"
-                    model_str = engine.model.as_custom_string(x)
-                else:
-                    model_str = f" [Nanc = {int(Nanc)}] "
-                    x_translated = engine.model.translate_values(
-                        units="physical", values=x, Nanc=Nanc)
-                    model_str += engine.model.as_custom_string(x_translated)
             else:
-                model_str = engine.model.as_custom_string(x)
+                if not engine.model.has_anc_size and Nanc is not None:
+                    model_str += f" [Nanc = {int(Nanc)}] "
+                x_translated = engine.model.translate_values(
+                    units="physical", values=x, Nanc=Nanc
+                )
+            model_str += engine.model.as_custom_string(x_translated)
+
             if hasattr(x, "metadata"):
                 model_str += f"\t{x.metadata}"
             # Begin to print

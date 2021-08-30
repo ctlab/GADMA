@@ -191,13 +191,19 @@ class DadiOrMomentsEngine(Engine):
             None,
             grid_sizes
         )
+        # check for the multinom
+        if self.multinom:
+            model = self.base_module.Inference.optimally_scaled_sfs(
+                model=model,
+                data=self.data
+            )
         # Draw
         if n_pop == 1:
-            self.base_module.Plotting.plot_1d_comp_multinom(model, self.data)
+            self.base_module.Plotting.plot_1d_comp_Poisson(model, self.data)
             if show:
                 plt.show()
         else:
-            func_name = f"plot_{n_pop}d_comp_multinom"
+            func_name = f"plot_{n_pop}d_comp_Poisson"
             plotting_func = getattr(self.base_module.Plotting, func_name)
             plotting_func(model, self.data, vmin=vmin, show=show)
         if not show:

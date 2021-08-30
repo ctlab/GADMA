@@ -9,7 +9,7 @@ from ..models import StructureDemographicModel, CustomDemographicModel
 from ..optimizers import get_local_optimizer, get_global_optimizer
 from ..optimizers import LinearConstrain
 from ..utils import check_dir_existence, check_file_existence, abspath,\
-    module_name_from_path, custom_generator
+    module_name_from_path, custom_generator, ensure_dir_existence
 from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable,\
     ContinuousVariable, DynamicVariable, GrowthRateVariable,\
     SelectionVariable, FractionVariable, DemographicVariable
@@ -222,7 +222,7 @@ class SettingsStorage(object):
                         'model_func', 'get_engine_args', 'data_holder',
                         'units_of_time_in_drawing', 'resume_from_settings',
                         'dadi_available', 'moments_available',
-                        'model_plot_engine', 'sfs_plot_engine',
+                        'model_plot_engine',
                         'kernel', 'acquisition_function']
 
         super_hasattr = True
@@ -484,11 +484,6 @@ class SettingsStorage(object):
                 raise ValueError(f"Engine {value} cannot draw model plots. "
                                  f"Available engines are: "
                                  f"{[engine.id in all_drawing_engines()]}")
-        elif name == 'sfs_plot_engine' and value is not None:
-            engine = get_engine(value)
-            if not hasattr(engine, "draw_sfs_plots"):
-                raise ValueError(f"Engine {value} cannot draw sfs plots. "
-                                 f"Available engines are: dadi, moments")
         # 3.4 For local and global optimizer we need check existence
         elif name == 'global_optimizer':
             get_global_optimizer(value)
@@ -1199,3 +1194,42 @@ class SettingsStorage(object):
         else:
             raise ValueError("Some settings are missed so no model is "
                              "generated")
+
+    def is_valid(self):
+        """
+        Checks that settings are fine. Rises arrors if something is not right.
+        """
+        if (self.input_data is None and
+                self.resume_from is None):
+            raise AttributeError("Input file is required. It could be set by "
+                                 "-i/--input option or via parameters file.")
+        if (self.output_directory is None and
+                self.resume_from is None):
+            raise AttributeError(
+                "Output directory is required. It could be set by -o/--output "
+                "option or via parameters file."
+            )
+        assert self.output_directory is not None
+
+        ensure_dir_existence(self.output_directory,
+                             check_emptiness=True)
+
+        if self.inbreeding:
+            if self.projections is not None:
+                warnings.warn(
+                    "For correct inference of the inbreeding input data should"
+                    " not be projected. Projections were taken as"
+                    f" {self.projections}, please check that data is not "
+                    "downsized."
+                )
+            if self.engine != "dadi":
+                raise ValueError(
+                    "Please check your engine. If you want to infer "
+                    "inbreeding please change engine to `dadi`"
+                )
+        if (self.recombination_rate is not None and
+                self.recombination_rate != 0):
+            if self.engine in ['moments', 'dadi']:
+                warnings.warn(f"Engine {self.engine} will ignore "
+                              "not-zero recombination rate.")
+

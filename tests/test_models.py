@@ -83,7 +83,8 @@ class TestModels(unittest.TestCase):
         dm = EpochDemographicModel()
         self.assertEqual(len(dm.variables), 0)
         self.assertFalse(dm.has_anc_size)
-        self.assertEqual(dm.Nanc_size, 1)
+        self.assertTrue(dm.Nanc_size in dm.fixed_values)
+        self.assertEqual(dm.fixed_values[dm.Nanc_size], 1)
 
         # no Nanc_size so has_anc_size is False
         dm = EpochDemographicModel(has_anc_size=True)
