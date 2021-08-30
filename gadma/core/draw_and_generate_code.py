@@ -178,7 +178,7 @@ def generate_code_to_file(x, engine, settings, filename):
                 engine.model.theta0 is not None or mu_and_L):
             if "demes" in engines_ids:
                 engines_ids.remove("demes")
-        engines = [get_engine(eng_id) for eng_id in engines_ids]
+        engines = [get_engine(engine_id) for engine_id in engines_ids]
     else:
         engines = [copy.deepcopy(engine)]
     failes = {}  # engine.id: reason
