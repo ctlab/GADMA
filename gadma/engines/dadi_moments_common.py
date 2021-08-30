@@ -28,8 +28,10 @@ class DadiOrMomentsEngine(Engine):
                         CustomDemographicModel]  #:
     supported_data = [VCFDataHolder, SFSDataHolder]  #:
     inner_data_type = None  # base_module.Spectrum  #:
+
     can_evaluate = True
-    can_draw = False  # dadi cannot
+    can_draw_model = False  # dadi cannot
+    can_draw_comp = True  # draw comparison between simulated AFS and real one
     can_simulate = True
 
     @classmethod
@@ -157,7 +159,7 @@ class DadiOrMomentsEngine(Engine):
         theta = self.get_theta(values, grid_sizes)
         return self.get_N_ancestral_from_theta(theta)
 
-    def draw_sfs_plots(self, values, grid_sizes, save_file=None, vmin=None):
+    def draw_data_comp_plot(self, values, grid_sizes, save_file=None, vmin=None):
         """
         Draws plots of SFS data for observed data and simulated by model data.
 

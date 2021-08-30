@@ -88,9 +88,11 @@ class Engine(object):
     supported_models = []
     supported_data = []
     inner_data_type = None
-    can_evaluate = False
-    can_draw = False
-    can_simulate = False
+
+    can_evaluate = False  # evaluate value of similarity between model and data
+    can_draw_model = False  # draw picture of the demographic history
+    can_draw_comp = False  # draw comparison of simulated and real data
+    can_simulate = False  # simulate data from proposed demographic history
 
     def __init__(self, data=None, model=None):
         self.data = data

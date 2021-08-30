@@ -23,7 +23,8 @@ class MomiEngine(Engine):
                         EpochDemographicModel]  #:
     supported_data = [VCFDataHolder, SFSDataHolder]  #:
     can_evaluate = True
-    can_draw = True
+    can_draw_model = True
+    can_draw_comp = False
     can_simulate = True
 
     @staticmethod

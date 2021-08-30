@@ -24,7 +24,8 @@ class DemesEngine(Engine):
 
     can_evaluate = False
     can_simulate = False
-    can_draw = True
+    can_draw_model = True
+    can_draw_comp = False
 
     @staticmethod
     def read_data(data_holder):

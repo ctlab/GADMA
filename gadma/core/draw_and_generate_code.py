@@ -50,12 +50,7 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
     model_plot_engine = get_engine(settings.model_plot_engine)
     model_plot_engine.data_holder = engine.data_holder
     model_plot_engine.model = engine.model
-    if settings.sfs_plot_engine is None:
-        sfs_plot_engine = engine
-    else:
-        sfs_plot_engine = get_engine(settings.sfs_plot_engine)
-        sfs_plot_engine.data_holder = engine.data_holder
-        sfs_plot_engine.model = engine.model
+    comp_plot_engine = engine
 
     Nanc, gen_time, gen_time_units = get_Nanc_gen_time_and_units(
         x=x,
@@ -75,59 +70,57 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
     if engine.id != model_plot_engine.id:
         bad_model = isinstance(engine.model, CustomDemographicModel)
 
-    # 1. Draw sfs
-    # 1.1 Set file or buffer to save plot
-    if PIL_available and not bad_model:  # then we will concatenate plots later
-        if not moments_available:  # then we won't draw model plot
-            save_file_sfs = filename
-        else:  # future concatenation
-            save_file_sfs = io.BytesIO()
-    else:
-        save_file_sfs = filename[:pos] + '_sfs' + filename[pos:]
-    # 1.2 Draw plot to save_file
-    sfs_plot_engine.draw_sfs_plots(
-        x,
-        *settings.get_engine_args(sfs_plot_engine.id),
-        save_file=save_file_sfs,
-        vmin=settings.vmin
-    )
-    if bad_model:
-        return
+    # Check that plots will be drawn
+    draw_comp_plot = comp_plot_engine.can_plot_comparison
+    draw_model_plot = not bad_model and model_plot_engine.can
+
+    # 1. Draw data comparison
+    if draw_comp_plot:
+        # 1.1 Set file or buffer to save plot
+        if PIL_available and draw_model_plot:
+            save_file_comp = io.BytesIO()
+        else:
+            save_file_comp = filename[:pos] + '_data_comp' + filename[pos:]
+        # 1.2 Draw plot to save_file
+        comp_plot_engine.draw_data_comp_plot(
+            x,
+            *settings.get_engine_args(comp_plot_engine.id),
+            save_file=save_file_comp,
+            vmin=settings.vmin
+        )
 
     # 2 Draw schematic model plot
-    # 2.0 Check that moments is available, it not we return
-    if not moments_available:
-        raise ValueError("Moments is required to draw schematic model plots.")
-
-    # 2.1 Set file or buffer to save plot
-    if PIL_available:
-        save_file_model = io.BytesIO()
-    else:
-        save_file_model = filename[:pos] + '_model' + filename[pos:]
-    # 2.2 Draw model plot with moments engine
-    # We use try except to be careful
-    try:
-        model_plot_engine.draw_schematic_model_plot(
-            values=x,
-            save_file=save_file_model,
-            fig_title=fig_title,
-            nref=Nanc,
-            gen_time=gen_time,
-            gen_time_units=gen_time_units
-        )
-    except Exception as e:
-        save_file_sfs.seek(0)
-        with open(filename, 'wb') as fl:
-            fl.write(save_file_sfs.read())
-        raise e
+    if draw_model_plot:
+        # 2.1 Set file or buffer to save plot
+        if PIL_available and draw_comp_plot:
+            save_file_model = io.BytesIO()
+        else:
+            save_file_model = filename[:pos] + '_model' + filename[pos:]
+        # 2.2 Draw model plot with moments engine
+        # We use try except to be careful
+        try:
+            model_plot_engine.draw_schematic_model_plot(
+                values=x,
+                save_file=save_file_model,
+                fig_title=fig_title,
+                nref=Nanc,
+                gen_time=gen_time,
+                gen_time_units=gen_time_units
+            )
+        except Exception as e:
+            if draw_comp_plot:
+                save_file_comp.seek(0)
+                with open(filename, 'wb') as fl:
+                    fl.write(save_file_comp.read())
+            raise e
 
     # 3. Concatenate plots if PIL is available
-    if PIL_available:
-        save_file_sfs.seek(0)
+    if PIL_available and draw_comp_plot and draw_model_plot:
+        save_file_comp.seek(0)
         save_file_model.seek(0)
 
         img1 = Image.open(save_file_model)
-        img2 = Image.open(save_file_sfs)
+        img2 = Image.open(save_file_comp)
 
         if img2.size[1] < img1.size[1]:
             img2 = img2.resize(
@@ -171,7 +164,7 @@ def generate_code_to_file(x, engine, settings, filename):
     )
     # Generate code
     if isinstance(engine.model, EpochDemographicModel):
-        engines = all_available_engines()
+        engines = list(all_available_engines())
         mu_and_L = engine.model.mutation_rate is not None and \
             settings.sequence_length is not None
         if not (engine.model.has_anc_size or
@@ -179,10 +172,10 @@ def generate_code_to_file(x, engine, settings, filename):
             engines.remove("demes")
     else:
         engines = [copy.deepcopy(engine)]
-    failes = {}  # engine.id: reason
+    fails = {}  # engine.id: reason
     for other_engine in engines:
         save_file = prefix + f"_{other_engine.id}_code.py"
-        other_engine.set_data(engine.data)
+        #other_engine.set_data(engine.data)
         other_engine.data_holder = copy.deepcopy(engine.data_holder)
         other_engine.set_model(engine.model)
         args = settings.get_engine_args(other_engine.id)
@@ -190,8 +183,8 @@ def generate_code_to_file(x, engine, settings, filename):
             other_engine.generate_code(x, save_file, *args, Nanc, gen_time,
                                        gen_time_units)
         except Exception as e:
-            failes[other_engine.id] = str(e)
-    if len(failes) > 0:
+            fails[other_engine.id] = str(e)
+    if len(fails) > 0:
         raise ValueError("; ".join([f"{id}: {failes[id]}" for id in failes]))
 
 
