@@ -171,12 +171,14 @@ def generate_code_to_file(x, engine, settings, filename):
     )
     # Generate code
     if isinstance(engine.model, EpochDemographicModel):
-        engines = list(all_available_engines())
+        engines_ids = [eng.id for eng in all_available_engines()]
         mu_and_L = engine.model.mu is not None and \
             settings.sequence_length is not None
         if not (engine.model.has_anc_size or
                 engine.model.theta0 is not None or mu_and_L):
-            engines.remove("demes")
+            if "demes" in engines_ids:
+                engines_ids.remove("demes")
+        engines = [get_engine(eng_id) for eng_id in engines_ids]
     else:
         engines = [copy.deepcopy(engine)]
     failes = {}  # engine.id: reason
