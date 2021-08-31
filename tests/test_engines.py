@@ -34,6 +34,8 @@ class TestEngines(unittest.TestCase):
         self.assertRaises(NotImplementedError, engine._read_data, "some")
         self.assertRaises(NotImplementedError, engine.evaluate, [])
         self.assertRaises(NotImplementedError, engine.generate_code, [])
+        self.assertRaises(NotImplementedError,
+                          engine.update_data_holder_with_inner_data)
 
         dadi_engine = get_engine('dadi')
         model = Model()

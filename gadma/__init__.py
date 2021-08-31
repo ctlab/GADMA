@@ -108,10 +108,4 @@ from .run_ls_on_boot_data import load_parameters_from_python_file  # NOQA
 from . import get_confidence_intervals  # NOQA
 
 warnings.simplefilter('always', UserWarning)
-warnings.filterwarnings(action='ignore', category=UserWarning,
-                        module='matplotlib')
-warnings.filterwarnings(action='ignore', category=UserWarning,
-                        module='moments')
-warnings.filterwarnings(action='ignore', category=UserWarning,
-                        module='dadi')
 warnings.formatwarning = warning_format

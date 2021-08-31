@@ -254,17 +254,34 @@ class TestDataHolder(unittest.TestCase):
         self.assertRaises(ValueError, get_engine(id).read_data, data_holder)
 
     @pytest.mark.timeout(0)
-    def test_data_reading(self):
+    def test_sfs_data_reading(self):
         for engine in all_engines():
-            self._test_sfs_reading(engine.id)
+            if SFSDataHolder in engine.supported_data:
+                self._test_sfs_reading(engine.id)
+
+    @pytest.mark.timeout(0)
+    def test_vcf_data_reading(self):
+        for engine in all_engines():
             self._test_vcf_reading(engine.id)
 
     @unittest.skipIf(DADI_NOT_AVAILABLE, "Dadi module is not installed")
     def test_dadi_reading_fails(self):
+        warnings.filterwarnings(action='ignore', category=UserWarning,
+                        module='.*\.data_utils', lineno=106)
+        warnings.filterwarnings(action='ignore', category=UserWarning,
+                        module='.*\.data_utils', lineno=110)
+        warnings.filterwarnings(action='ignore', category=UserWarning,
+                        module='.*\.dadi_moments_common', lineno=693)
         self._test_read_fails('dadi')
 
     @unittest.skipIf(MOMENTS_NOT_AVAILABLE, "Moments module is not installed")
     def test_moments_reading_fails(self):
+        warnings.filterwarnings(action='ignore', category=UserWarning,
+                        module='.*\.data_utils', lineno=106)
+        warnings.filterwarnings(action='ignore', category=UserWarning,
+                        module='.*\.data_utils', lineno=110)
+        warnings.filterwarnings(action='ignore', category=UserWarning,
+                        module='.*\.dadi_moments_common', lineno=693)
         self._test_read_fails('moments')
 
     @unittest.skipIf(MOMENTS_NOT_AVAILABLE or DADI_NOT_AVAILABLE,
@@ -281,6 +298,20 @@ class TestDataHolder(unittest.TestCase):
 
 
 def test_fsc_reading():
+    # old format
+    warnings.filterwarnings(action='ignore', category=UserWarning,
+                    module='.*\.dadi_moments_common', lineno=350)
+    # missed lines in vcf
+    warnings.filterwarnings(action='ignore', category=UserWarning,
+                    module='.*\.dadi_moments_common', lineno=693)
+    warnings.filterwarnings(action='ignore', category=UserWarning,
+                    module='.*\.dadi_moments_common', lineno=703)
+    # repeats in vcf file
+    warnings.filterwarnings(action='ignore', category=UserWarning,
+                    module='.*\.dadi_moments_common', lineno=710)
+    # repeats in vcf file
+    warnings.filterwarnings(action='ignore', category=UserWarning,
+                    module='.*\.dadi_moments_common', lineno=521)
 
     TestInfo = namedtuple('TestInfo',
         'file population_labels projections outgroup')

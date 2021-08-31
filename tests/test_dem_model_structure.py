@@ -309,7 +309,7 @@ class TestModelStructure(unittest.TestCase):
             self.assertRaises(ValueError, model.increase_structure, [2, 2])
 
     def test_transform(self):
-        for structure in TEST_STRUCTURES:
+        for structure in BASE_TEST_STRUCTURES:
             for base_migs, base_sels, base_dyns, base_symms, base_fracs, base_inbr in\
                     list(itertools.product([False, True],repeat=6)):
                 base_mig_masks = [None, self._generate_mig_mask(structure,

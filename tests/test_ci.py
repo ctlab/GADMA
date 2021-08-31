@@ -72,6 +72,8 @@ class TestConfidenceIntervals(unittest.TestCase):
             self.assertRaises(ValueError, gadma.run_ls_on_boot_data.main)
 
     def test_run_ci_evaluation(self):
+        warnings.filterwarnings(action='ignore', category=UserWarning,
+                        module='.*\.stats', lineno=1604)
         for engine in all_engines():
             output_dir = os.path.join(DATA_DIR, f"run_ls_out_{engine.id}")
             table = os.path.join(output_dir, 'result_table')

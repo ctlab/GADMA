@@ -112,10 +112,8 @@ def print_momi_model(engine, values, nanc, gen_time):
                    f"upper={var.domain[1]})\n"
     ret_str += "\n"
 
-    population_labels = engine.data_holder.population_labels
-    if population_labels is None:
-        n_pop = engine.model.number_of_populations()
-        population_labels = [f"pop{i}" for i in range(n_pop)]
+    n_pop = engine.model.number_of_populations()
+    population_labels = [engine._get_pop_name(i) for i in range(n_pop)]
     for event in model.events:
         if isinstance(event, (Leaf, PopulationSizeChange)):
             name = population_labels[event.pop]

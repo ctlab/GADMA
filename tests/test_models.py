@@ -383,7 +383,7 @@ class TestModels(unittest.TestCase):
         yield ("fs without pop labels",
                SFSDataHolder(os.path.join(EXAMPLE_FOLDER, 'DATA',
                                           'sfs', '3d_sfs_no_name.fs'),
-                             population_labels=['1', '2', '3']))
+                             population_labels=['Pop1', 'Pop2', 'Pop3']))
         yield ("dadi snp file",
                SFSDataHolder(os.path.join(EXAMPLE_FOLDER, 'DATA', 'sfs',
                                           'dadi_snp_file.txt')))
@@ -422,6 +422,22 @@ class TestModels(unittest.TestCase):
             dm.add_epoch(T, [nu1, nu2], [[None, m], [m, None]], ['Sud', 'Exp'])
 
     def test_code_generation(self):
+        # old format
+        warnings.filterwarnings(action='ignore', category=UserWarning,
+                        module='.*\.dadi_moments_common', lineno=350)
+        # missed lines in vcf
+        warnings.filterwarnings(action='ignore', category=UserWarning,
+                        module='.*\.dadi_moments_common', lineno=693)
+        warnings.filterwarnings(action='ignore', category=UserWarning,
+                        module='.*\.dadi_moments_common', lineno=703)
+        # repeats in vcf file
+        warnings.filterwarnings(action='ignore', category=UserWarning,
+                        module='.*\.dadi_moments_common', lineno=710)
+        # Theta0 is not set and translation of Nanc variable with theta0=1 could be wrong
+        warnings.filterwarnings(action='ignore', category=UserWarning,
+                        module='.*\.dadi_moments_common', lineno=237)
+        warnings.filterwarnings(action='ignore', category=UserWarning,
+                        module='.*\.momi_engine', lineno=89)       
         nu1 = PopulationSizeVariable('nu1')
         nu2 = PopulationSizeVariable('nu2')
         nu3 = PopulationSizeVariable('nu3')
@@ -468,7 +484,7 @@ class TestModels(unittest.TestCase):
         # create models with ancestral size
         Nanc = PopulationSizeVariable("Nanc", units="physical")
         Nu2 = PopulationSizeVariable("N2", units="physical")
-        T3 = TimeVariable("T", units="physical")
+        T3 = TimeVariable("T3", units="physical")
 
         model4 = EpochDemographicModel(Nanc_size=Nanc)
         model4.add_epoch(t, [nu1])
@@ -494,9 +510,11 @@ class TestModels(unittest.TestCase):
                   t2: 0.5, m: 0.1, s: 0.1, d1: 'Exp', d2: 'Lin',
                   f: 0.5, h: 0.3, f1: 0.1, f2: 0.3,
                   Nanc: 10000, Nu2: 5000, T3: 4000,
-                  'N_1F':20000, 'r_2': -1e-5, 'N_2F': 5000, 'Tp': 500}
+                  'nu1F': 1.0, 'nu2B': 0.7, 'nu2F': 1.0, 'T': 0.5, 'Tp': 0.3,
+                  'N_1F':20000, 'r_2': -1e-5, 'N_2F': 5000,
+                  'T_1': 500, 'T_2':100}
 
-        for engine in [get_engine("momi")]:#all_available_engines():
+        for engine in all_available_engines():
             models = [model1, model2, model3, model5, model6]
             if engine.can_evaluate:
                 customfile = os.path.join(

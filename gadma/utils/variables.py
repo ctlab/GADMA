@@ -236,7 +236,7 @@ class DemographicVariable(Variable):
     def __init__(self, name, units="genetic", domain=None, rand_gen=None):
         if units != "physical" and units != "genetic" and units != "universal":
             raise ValueError(f"Units {units} is incorrect")
-        if units == "universal":
+        if units == "universal" or domain is not None:
             self.units = units
         else:
             self.units = "genetic"
@@ -246,12 +246,12 @@ class DemographicVariable(Variable):
             var_type = "unknown"
             super(DemographicVariable, self).__init__(name, var_type,
                                                       domain, rand_gen)
-
-        self.translate_units_to(
-            units=units,
-            Nanc_domain=self.default_domain_in_phys,
-            Nanc_mean=self.default_mean_size_in_phys,
-        )
+        if domain is None:
+            self.translate_units_to(
+                units=units,
+                Nanc_domain=self.default_domain_in_phys,
+                Nanc_mean=self.default_mean_size_in_phys,
+            )
 
     @staticmethod
     def _transform_value_from_gen_to_phys(value, Nanc):

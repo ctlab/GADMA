@@ -319,6 +319,7 @@ class TestLocalOpt(TestBaseOptClass):
                                verbose=1, maxiter=maxit, maxeval=maxev,
                                eval_file=eval_file,
                                save_file=save_file, report_file=report_file)
+            self.assertTrue(calc_func(x0, 5) >= calc_func(res.x, 5))
             self.assertTrue(res.n_iter <= maxit)
             method = None
             if isinstance(opt, ScipyOptimizer):
@@ -348,133 +349,133 @@ class TestLocalOpt(TestBaseOptClass):
             os.remove(save_file)
             os.remove(report_file)
 
-    def get_yri_ceu_ll(self, x_dict, ns=[20,20]):
-        def func(x_dict, ns, pts):
-            # Define the grid we'll use
-            xx = yy = dadi.Numerics.default_grid(pts)
-
-            # phi for the equilibrium ancestral population
-            phi = dadi.PhiManip.phi_1D(xx)
-            # Now do the population growth event.
-            phi = dadi.Integration.one_pop(phi, xx, x_dict['Tp'],
-                                           nu=x_dict['nu1F'])
-
-            # The divergence
-            phi = dadi.PhiManip.phi_1D_to_2D(xx, phi)
-            # We need to define a function to describe the non-constant
-            # population 2 size. lambda is a convenient way to do so.
-            nu2_func = lambda t: x_dict['nu2B'] * (x_dict['nu2F'] / x_dict['nu2B'])**(t/x_dict['T'])  # NOQA
-            phi = dadi.Integration.two_pops(phi, xx, x_dict['T'],
-                                            nu1=x_dict['nu1F'], nu2=nu2_func,
-                                            m12=x_dict['m'], m21=x_dict['m'])
-
-            sfs = dadi.Spectrum.from_phi(phi, ns, (xx, yy))
-            return sfs
-
-        pts = [40, 50, 60]
-        data = dadi.Spectrum.from_file(YRI_CEU_DATA)
-        data = data.project(ns)
-        func_ex = dadi.Numerics.make_extrap_log_func(func)
-
-        model = func_ex(x_dict, data.sample_sizes, pts)
-        ll_model = dadi.Inference.ll_multinom(model, data)
-        return ll_model
-
-    def test_yri_ceu_example(self):
-        nu1F = PopulationSizeVariable('nu1F')
-        nu2B = PopulationSizeVariable('nu2B')
-        nu2F = PopulationSizeVariable('nu2F')
-        m = MigrationVariable('m')
-        Tp = TimeVariable('Tp')
-        T = TimeVariable('T')
-        Dyn = DynamicVariable('Dyn')
-
-        dm = EpochDemographicModel()
-        dm.add_epoch(Tp, [nu1F])
-        dm.add_split(0, [nu1F, nu2B])
-        dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', 'Exp'])
-        dic = {'nu1F': 2.0, 'nu2B': 0.1, 'nu2F': 2, 'm': 1,
-               'Tp':  0.2, 'T': 0.2}
-
-        proj = (4, 4)
-        data = SFSDataHolder(YRI_CEU_DATA, projections=proj)
-        d = DadiEngine(model=dm, data=data)
-        values = [dic[var.name] for var in dm.variables]
-
-        d = get_engine('dadi')
-        d.set_data(data)
-        d.set_model(dm)
-
-        args = ([40, 50, 60],)
-        def f(x, *args):
-                y = - d.evaluate(list(x), *args)
-                #print(x, y)
-                return y
-
-        for opt in all_global_optimizers():
-            with self.subTest(optimizer=opt.id):
-                if hasattr(opt, "kernel_name"):
-                    opt.kernel_name = "auto"
-                res = opt.optimize(f, dm.variables, num_init=10,
-                                   args=args, maxeval=15, maxiter=3)
-        for opt_name in ["BFGS", "L-BFGS-B"]: #all_local_optimizers():
-            opt = get_local_optimizer(opt_name)
-            with self.subTest(local_optimizer=opt.id):
-                res = opt.optimize(f, dm.variables, x0=values,
-                                   args=args, maxiter=2)
-                self.assertEqual(res.y, f(res.x, *args))
-                self.assertEqual(res.y, -self.get_yri_ceu_ll(
-                    {var.name: val for var, val in zip(dm.variables, res.x)},
-                    proj))
-                self.assertTrue(res.y <= f(values, *args))
-
-    def run_example(self, engine_id, example_func, will_collapse=False):
-        args = ()
-        if engine_id == 'dadi':
-            args = ([40,50,60],)
-        f, variables = example_func(engine_id, args)
-        x0 = [var.resample() for var in variables]
-
-        def callback(x, y):
-            pass
-
-#        save_file = 'save_file'
-        report_file = 'report_file'
-        eval_file = 'eval_file'
-
-        for opt in all_local_optimizers():
-            with self.subTest(local_optimizer=opt.id):
-#                print(opt.id)
-                msg = f"(optimization {opt.id}, engine {engine_id})"
-                if will_collapse and opt.id != 'None' and opt.id != None:
-                    self.assertRaises(AssertionError, opt.optimize, f,
-                                      variables, x0=x0, args=args,
-                                      maxeval=10, maxiter=2,
-                                      callback=callback,
-                                      report_file=report_file,
-#                                      save_file=save_file,
-                                      eval_file=eval_file)
-                else:
-                    res = opt.optimize(f, variables, x0=x0,
-                                       args=args, maxiter=2, maxeval=10,
-                                       callback=callback,
-                                       verbose=1,
-                                       report_file=report_file,
-#                                       save_file=save_file,
-                                       eval_file=eval_file)
-                    self.assertEqual(res.y, f(res.x, *args), msg=msg)
-                    self.assertTrue(res.y <= f(x0, *args),
-                                    msg=msg + f" {res.y} > {f(x0, *args)}")
-
-    def test_1pop_example_1(self):
-        for engine in all_engines():
-            self.run_example(engine.id, get_1pop_sim_example_1)
-
-    def test_1pop_example_2(self):
-        for engine in all_engines():
-            self.run_example(engine.id, get_1pop_sim_example_2,
-                             will_collapse=True)
-
+#    def get_yri_ceu_ll(self, x_dict, ns=[20,20]):
+#        def func(x_dict, ns, pts):
+#            # Define the grid we'll use
+#            xx = yy = dadi.Numerics.default_grid(pts)
+#
+#            # phi for the equilibrium ancestral population
+#            phi = dadi.PhiManip.phi_1D(xx)
+#            # Now do the population growth event.
+#            phi = dadi.Integration.one_pop(phi, xx, x_dict['Tp'],
+#                                           nu=x_dict['nu1F'])
+#
+#            # The divergence
+#            phi = dadi.PhiManip.phi_1D_to_2D(xx, phi)
+#            # We need to define a function to describe the non-constant
+#            # population 2 size. lambda is a convenient way to do so.
+#            nu2_func = lambda t: x_dict['nu2B'] * (x_dict['nu2F'] / x_dict['nu2B'])**(t/x_dict['T'])  # NOQA
+#            phi = dadi.Integration.two_pops(phi, xx, x_dict['T'],
+#                                            nu1=x_dict['nu1F'], nu2=nu2_func,
+#                                            m12=x_dict['m'], m21=x_dict['m'])
+#
+#            sfs = dadi.Spectrum.from_phi(phi, ns, (xx, yy))
+#            return sfs
+#
+#        pts = [40, 50, 60]
+#        data = dadi.Spectrum.from_file(YRI_CEU_DATA)
+#        data = data.project(ns)
+#        func_ex = dadi.Numerics.make_extrap_log_func(func)
+#
+#        model = func_ex(x_dict, data.sample_sizes, pts)
+#        ll_model = dadi.Inference.ll_multinom(model, data)
+#        return ll_model
+#
+#    def test_yri_ceu_example(self):
+#        nu1F = PopulationSizeVariable('nu1F')
+#        nu2B = PopulationSizeVariable('nu2B')
+#        nu2F = PopulationSizeVariable('nu2F')
+#        m = MigrationVariable('m')
+#        Tp = TimeVariable('Tp')
+#        T = TimeVariable('T')
+#        Dyn = DynamicVariable('Dyn')
+#
+#        dm = EpochDemographicModel()
+#        dm.add_epoch(Tp, [nu1F])
+#        dm.add_split(0, [nu1F, nu2B])
+#        dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', 'Exp'])
+#        dic = {'nu1F': 2.0, 'nu2B': 0.1, 'nu2F': 2, 'm': 1,
+#               'Tp':  0.2, 'T': 0.2}
+#
+#        proj = (4, 4)
+#        data = SFSDataHolder(YRI_CEU_DATA, projections=proj)
+#        d = DadiEngine(model=dm, data=data)
+#        values = [dic[var.name] for var in dm.variables]
+#
+#        d = get_engine('dadi')
+#        d.set_data(data)
+#        d.set_model(dm)
+#
+#        args = ([40, 50, 60],)
+#        def f(x, *args):
+#                y = - d.evaluate(list(x), *args)
+#                #print(x, y)
+#                return y
+#
+#        for opt in all_global_optimizers():
+#            with self.subTest(optimizer=opt.id):
+#                if hasattr(opt, "kernel_name"):
+#                    opt.kernel_name = "auto"
+#                res = opt.optimize(f, dm.variables, num_init=10,
+#                                   args=args, maxeval=15, maxiter=3)
+#        for opt_name in ["BFGS", "L-BFGS-B"]: #all_local_optimizers():
+#            opt = get_local_optimizer(opt_name)
+#            with self.subTest(local_optimizer=opt.id):
+#                res = opt.optimize(f, dm.variables, x0=values,
+#                                   args=args, maxiter=2)
+#                self.assertEqual(res.y, f(res.x, *args))
+#                self.assertEqual(res.y, -self.get_yri_ceu_ll(
+#                    {var.name: val for var, val in zip(dm.variables, res.x)},
+#                    proj))
+#                self.assertTrue(res.y <= f(values, *args))
+#
+#    def run_example(self, engine_id, example_func, will_collapse=False):
+#        args = ()
+#        if engine_id == 'dadi':
+#            args = ([40,50,60],)
+#        f, variables = example_func(engine_id, args)
+#        x0 = [var.resample() for var in variables]
+#
+#        def callback(x, y):
+#            pass
+#
+##        save_file = 'save_file'
+#        report_file = 'report_file'
+#        eval_file = 'eval_file'
+#
+#        for opt in all_local_optimizers():
+#            with self.subTest(local_optimizer=opt.id):
+##                print(opt.id)
+#                msg = f"(optimization {opt.id}, engine {engine_id})"
+#                if will_collapse and opt.id != 'None' and opt.id != None:
+#                    self.assertRaises(AssertionError, opt.optimize, f,
+#                                      variables, x0=x0, args=args,
+#                                      maxeval=10, maxiter=2,
+#                                      callback=callback,
+#                                      report_file=report_file,
+##                                      save_file=save_file,
+#                                      eval_file=eval_file)
+#                else:
+#                    res = opt.optimize(f, variables, x0=x0,
+#                                       args=args, maxiter=2, maxeval=10,
+#                                       callback=callback,
+#                                       verbose=1,
+#                                       report_file=report_file,
+##                                       save_file=save_file,
+#                                       eval_file=eval_file)
+#                    self.assertEqual(res.y, f(res.x, *args), msg=msg)
+#                    self.assertTrue(res.y <= f(x0, *args),
+#                                    msg=msg + f" {res.y} > {f(x0, *args)}")
+#
+#    def test_1pop_example_1(self):
+#        for engine in all_engines():
+#            self.run_example(engine.id, get_1pop_sim_example_1)
+#
+#    def test_1pop_example_2(self):
+#        for engine in all_engines():
+#            self.run_example(engine.id, get_1pop_sim_example_2,
+#                             will_collapse=True)
+#
     def test_combinations_misses(self):
         ls_opt = get_local_optimizer("BFGS")
         ls_opt.maximize = False

@@ -268,9 +268,15 @@ class TestCLI(unittest.TestCase):
                           'directory_with_bootstrap', 'not_existing_dir')
         self.assertRaises(ValueError, settings.__setattr__,
                           'input_data', 'not_existing_file')
+
+        # par ids
         settings.parameter_identifiers = 'nu, t, f, s'
         self.assertRaises(ValueError, settings.__setattr__,
                           'parameter_identifiers', 'e, t')
+        # repeats of names
+        self.assertRaises(ValueError, settings.__setattr__,
+                          'parameter_identifiers', ['n', 't', 's', 'n'])
+
 
         settings.const_for_mutation_strength = 1.5
         settings.const_for_mutation_rate = 1.04
@@ -361,6 +367,12 @@ class TestCLI(unittest.TestCase):
         self.assertTrue(settings.initial_structure == [1, 1])
 
     def test_old_param_file(self):
+        # ignore warnings about deprecation and renaming
+        warnings.filterwarnings(action='ignore', category=UserWarning,
+                        module='.*\.settings_storage', lineno=900)
+        warnings.filterwarnings(action='ignore', category=UserWarning,
+                        module='.*\.settings_storage', lineno=906)
+
         old_param_file = os.path.join(DATA_PATH, "PARAMS",
                                       'example_params_old')
         settings = SettingsStorage()
@@ -554,12 +566,17 @@ class TestCLI(unittest.TestCase):
             self.assertIsInstance(variables[1], PopulationSizeVariable)
             self.assertIsInstance(variables[2], PopulationSizeVariable)
             self.assertIsInstance(variables[3], MigrationVariable)
+            self.assertEqual(variables[3].units, "genetic")
             self.assertIsInstance(variables[4], TimeVariable)
+            self.assertEqual(variables[4].units, "physical")
             self.assertIsInstance(variables[5], FractionVariable)
+            self.assertIsInstance(variables[6], GrowthRateVariable)
+            self.assertEqual(variables[6].units, "universal")  # TODO it is not correct behavior
+            self.assertIsInstance(variables[7], SelectionVariable)
 
-        p_ids = ['nu1', 'nu2', 'n', 'm', 't', 'p']
-        lower_bound = [1e-2, 1e-2, 1e-5, 0, 0, 0]
-        upper_bound = [10, 1, 3, 4, 6, 1]
+        p_ids = ['nu1', 'nu2', 'n', 'm_gen', 't_phys', 'p', 'g_1', 'gamma']
+        lower_bound = [1e-2, 1e-2, 1e-5, 0, 0, 0, -1e-3, 0]
+        upper_bound = [10, 1, 3, 4, 10000, 1, 1e-3, 5]
 
         variables = get_variables(p_ids, lower_bound, upper_bound)
         check(variables)
@@ -570,8 +587,14 @@ class TestCLI(unittest.TestCase):
         variables = get_variables(p_ids, None, None)
         check(variables)
         for var in variables:
-            self.assertEqual(list(var.domain),
-                             list(var.__class__.default_domain))
+            if var.units != "physical":
+                self.assertEqual(list(var.domain),
+                                 list(var.__class__.default_domain))
+            else:
+                self.assertEqual(var.name, "t_phys")
+                self.assertNotEqual(list(var.domain),
+                                    list(var.__class__.default_domain))
+
 
         variables = get_variables(None, lower_bound, upper_bound)
         for var, lb, ub in zip(variables, lower_bound, upper_bound):

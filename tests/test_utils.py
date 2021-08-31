@@ -11,8 +11,8 @@ import time
 import os
 
 
-def f_sleep_10(x):
-    time.sleep(10)
+def f_sleep_1(x):
+    time.sleep(1)
     return x
 
 
@@ -81,9 +81,9 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(q.get(), 10)
 
     def test_timeout(self):
-        g = timeout(f_sleep_10, time=5)
+        g = timeout(f_sleep_1, time=0.5)
         self.assertEqual(g(0), None)
-        g = timeout(f_sleep_10, time=15)
+        g = timeout(f_sleep_1, time=2)
         self.assertEqual(g(0), 0)
 
     def test_weighted_meta_array(self):
@@ -120,7 +120,7 @@ class TestUtils(unittest.TestCase):
             return
         DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
         data_path = os.path.join(DATA_PATH, "DATA", "sfs", "YRI_CEU.fs")
-        data_holder = SFSDataHolder(data_path, projections=[10, 10])
+        data_holder = SFSDataHolder(data_path, projections=[4, 4])
 
         model = StructureDemographicModel(
             initial_structure=[2, 1],

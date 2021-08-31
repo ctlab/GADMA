@@ -181,24 +181,3 @@ def check_and_return_projections_and_labels(data_holder):
                           f"and got projections {holder_proj}.")
         projections = holder_proj
     return projections, populations
-
-
-def update_data_holder_with_inner_data(data_holder, inner_data):
-    """
-    Updates given data_holder with given data that was read from it.
-    """
-    if hasattr(inner_data, "sample_sizes"):
-        data_holder.projections = inner_data.sample_sizes
-    if hasattr(inner_data, "pop_ids"):
-        data_holder.population_labels = inner_data.pop_ids
-    if hasattr(inner_data, "folded"):
-        data_holder.outgroup = not inner_data.folded
-    if isinstance(data_holder, VCFDataHolder):
-        projections, pop_labels = check_and_return_projections_and_labels(
-            data_holder
-        )
-        data_holder.projections = projections
-        data_holder.population_labels = pop_labels
-        # TODO: valid only for dical2
-        # data_holder.outgroup = data_holder.reference_file is not None
-    return data_holder
