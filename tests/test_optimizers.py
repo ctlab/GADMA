@@ -294,6 +294,7 @@ class TestLocalOpt(TestBaseOptClass):
         var1 = ContinuousVariable('var1', domain=[0, 1])
         var2 = ContinuousVariable('var2', domain=[1, 2])
         var3 = ContinuousVariable('var3', domain=[0, 20])
+        variables = [var1, var2, var3]
         x0 = [0.5, 1.5, 10]
         eval_file = 'eval_file'
         save_file = 'save_file'
@@ -315,7 +316,7 @@ class TestLocalOpt(TestBaseOptClass):
             maxit = 30
             maxev = 10
             wrap.counter = 0
-            res = opt.optimize(wrap, [var1, var2, var3], x0, args=(5,),
+            res = opt.optimize(wrap, variables, x0, args=(5,),
                                verbose=1, maxiter=maxit, maxeval=maxev,
                                eval_file=eval_file,
                                save_file=save_file, report_file=report_file)
@@ -345,9 +346,20 @@ class TestLocalOpt(TestBaseOptClass):
             self.assertEqual(res.n_eval + 1, nlines(eval_file))
             self.assertTrue(os.path.getsize(save_file) > 0)
             self.assertTrue(os.path.getsize(report_file) > 0)
+
+            # maxiter = 0
+            res2 = opt.optimize(wrap, variables, res.x, args=(5,),
+                               verbose=1, maxiter=0, maxeval=maxev,
+                               eval_file=eval_file,
+                               save_file=save_file, report_file=report_file)
+            self.assertEqual(res.y, res2.y)
+            self.assertEqual(calc_func(res.x, 5), calc_func(res2.x, 5))
+            self.assertEqual(res2.n_iter, 0)
+            self.assertEqual(res2.n_eval, 1)
+
             os.remove(eval_file)
             os.remove(save_file)
-            os.remove(report_file)
+            os.remove(report_file)        
 
 #    def get_yri_ceu_ll(self, x_dict, ns=[20,20]):
 #        def func(x_dict, ns, pts):
@@ -679,6 +691,41 @@ class TestGlobalOptimizer(unittest.TestCase):
         self.assertEqual(_X[:len(Y_init)-1], X_init[:-1])
         self.assertEqual(_X[len(Y_init)-1:len(Y_out)-1+len(Y_out)], X_out)
         self.assertEqual(len(_X), len(X))
+
+    def test_optimizer_run(self):
+        f = scipy.optimize.rosen
+        variables = [
+            PopulationSizeVariable("nu", domain=[0, 2]),
+            ContinuousVariable("var1", domain=[-1, 1.5]),
+            DiscreteVariable("d1", domain=[0, 1]),
+        ]
+
+        for opt in all_global_optimizers():
+            print(opt.id)
+            report_file = "report_file"
+            if os.path.isfile(report_file):
+                os.remove(report_file)
+
+            kwargs = {
+                "f": f,
+                "variables": variables,
+                "verbose": 1,
+                "report_file": report_file,
+                "num_init": 2,
+            }
+            if opt.id == "Genetic_algorithm":
+                opt.gen_size = 2
+
+            res1 = opt.optimize(**kwargs, maxiter=None, maxeval=5)
+            res2 = opt.optimize(**kwargs, maxiter=5, maxeval=None)
+            res3 = opt.optimize(**kwargs, maxiter=5, maxeval=5)
+
+            self.assertTrue(res1.n_eval <= 5)
+            self.assertTrue(res2.n_iter <= 5)
+            self.assertTrue(res3.n_eval <= 5)
+            self.assertTrue(res3.n_iter <= 5)
+
+            os.remove(report_file)
 
 
 class TestSMACOptimizations(unittest.TestCase):

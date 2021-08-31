@@ -5,7 +5,8 @@ import pytest
 from gadma import *
 from gadma import ContinuousVariable
 from gadma.models import *
-from gadma.models.variables_combinations import BinaryOperation, operation_creation, Exp, Log
+from gadma.models import BinaryOperation
+from gadma.models import operation_creation, Exp, Log, Pow
 from gadma.models import TreeDemographicModel
 from gadma.engines import DadiEngine
 from gadma.cli import get_par_labels_from_file, get_variables
@@ -333,8 +334,13 @@ class TestModels(unittest.TestCase):
         comb = VariablesCombination()
         comb.__str__()
 
-        binary_classes = [Addition, Subtraction, Multiplication, Division]
-        strings = ['+', '-', '*', '/'] 
+        comb = Operation()
+        self.assertRaises(NotImplementedError, comb.name)
+        self.assertRaises(NotImplementedError, comb.get_value, [])
+        self.assertRaises(NotImplementedError, comb.string_repr, [])
+
+        binary_classes = [Addition, Subtraction, Multiplication, Division, Pow]
+        strings = ['+', '-', '*', '/', '**']
         for op_f, cls, op_str in zip([op.add, op.sub, op.mul, op.truediv],
                                      binary_classes,
                                      strings):
@@ -365,10 +371,27 @@ class TestModels(unittest.TestCase):
                                          f'nu1 {op_str} (f {op_str2} 5)')
 
                 self.assertRaises(AssertionError, cls, const, const)
+        # some unary operations
+        for op_f, cls, op_str in zip([np.log, np.exp],
+                                     [Log, Exp],
+                                     ["log", "exp"]):
+            obj = cls(var1)
+            values = [1.0]
+            self.assertEqual(obj.get_value(values), op_f(*values))
+            self.assertEqual(obj.operation_str(), op_str)
+            obj.string_repr(values)
+            self.assertEqual(obj.name, f'{op_str} nu1')
+
+
         # failures
         bin_op = BinaryOperation(var1, var2)
         self.assertRaises(NotImplementedError, bin_op.operation, 1, 2)
         self.assertRaises(NotImplementedError, bin_op.operation_str)
+        self.assertRaises(NotImplementedError, bin_op.is_commutative)
+        unar_op = UnaryOperation(var1)
+        self.assertRaises(NotImplementedError, unar_op.operation, 1)
+        self.assertRaises(NotImplementedError, unar_op.operation_str)
+        self.assertRaises(NotImplementedError, unar_op.get_value, [10])
 
     def _sfs_datasets(self):
         yield ("usual fs",

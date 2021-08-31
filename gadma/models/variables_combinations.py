@@ -61,12 +61,10 @@ class UnaryOperation(Operation):
         Generates name from variables names like:
         `operation self.arg.name`
         """
-        if isinstance(self.arg, (Variable, Operation)):
-            arg_name = self.arg.name
-            if isinstance(self.arg, Operation):
-                arg_name = f"({arg_name})"
-        else:
-            arg_name = self.arg
+        assert isinstance(self.arg, (Variable, Operation))
+        arg_name = self.arg.name
+        if isinstance(self.arg, Operation):
+            arg_name = f"({arg_name})"
         return f"{self.operation_str()} {arg_name}"
 
     def get_value(self, values):
@@ -295,7 +293,7 @@ class Exp(UnaryOperation):
 
     @staticmethod
     def operation(val):
-        return round(np.exp(val), 3)
+        return np.exp(val)
 
     @staticmethod
     def operation_str():
@@ -306,7 +304,7 @@ class Log(UnaryOperation):
 
     @staticmethod
     def operation(val):
-        return round(math.log(val), 3)
+        return math.log(val)
 
     @staticmethod
     def operation_str():

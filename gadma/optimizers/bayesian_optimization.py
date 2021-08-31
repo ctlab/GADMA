@@ -353,9 +353,9 @@ class SMACSquirrelOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                   iter_callback):
         from .smac_optim import SMAC4EPMOpimizer
 
-        min_maxiter = get_maxeval_for_bo(maxeval, maxiter)
+        maxiter = get_maxeval_for_bo(maxeval, maxiter)
         if maxeval is None:
-            maxeval = (min_maxiter * self.n_suggestions +
+            maxeval = (maxiter * self.n_suggestions +
                        self.run_info.result.n_eval)
         x_best = X_init[0]
         y_best = Y_init[0]
