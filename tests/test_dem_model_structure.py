@@ -201,13 +201,18 @@ class TestModelStructure(unittest.TestCase):
                         x_cor = x
 
                     # simulate data
-                    data = engine.simulate(
-                        values=x_cor,
-                        ns=sizes,
-                        sequence_length=1e6,
-                        population_labels=[f"Pop{i}" for i in range(len(sizes))],
-                        **kwargs
-                    )
+                    try:  # momi fails sometimes
+                        data = engine.simulate(
+                            values=x_cor,
+                            ns=sizes,
+                            sequence_length=1e6,
+                            population_labels=[f"Pop{i}" for i in range(len(sizes))],
+                            **kwargs
+                        )
+                    except ValueError as e:
+                        if str(e).startswith("zero-size array to reduction"):
+                            continue
+                        raise e
                     engine.set_data(data)
 #                    print(data)
 #                    print(type(data))

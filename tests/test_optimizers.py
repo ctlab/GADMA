@@ -701,7 +701,6 @@ class TestGlobalOptimizer(unittest.TestCase):
         ]
 
         for opt in all_global_optimizers():
-            print(opt.id)
             report_file = "report_file"
             if os.path.isfile(report_file):
                 os.remove(report_file)
