@@ -371,8 +371,15 @@ class TestEngines(unittest.TestCase):
         data_holder = self.get_data_holder()
         dm = self.get_model()
 
-        values = [var.resample() for var in dm.variables]
-        values = [el if el != "Lin" else "Exp" for el in values]
+        values = []
+        for var in dm.variables:
+            if isinstance(var, ContinuousVariable):
+                if var.units == "physical":
+                    values.append(10000)
+                else:
+                    values.append(np.random.uniform(0.5, 1.5))
+            else:
+                values.append(np.random.choice(["Sud", "Exp"]))
 
         for engine in all_available_engines():
             if not engine.can_draw_comp:

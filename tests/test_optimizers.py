@@ -548,6 +548,25 @@ class TestCoreRun(unittest.TestCase):
             multiprocessing=False)
         gadma.core.core.job(0, shared_dict, settings)
 
+        for engine in all_engines():
+            print(engine.id)
+            try:
+                settings = SettingsStorage()
+                settings.engine = engine.id
+                settings.output_directory = "Some_out_dir"
+                settings.num_init_const = 2
+                settings.global_maxiter = 4
+                settings.local_maxiter = 1
+                vcf_file = os.path.join(DATA_PATH, "DATA", "vcf", 'out_of_africa_chr22_sim.vcf')
+                popmap = os.path.join(DATA_PATH, "DATA", "vcf", 'out_of_africa_chr22_sim.popmap')
+                settings.input_data = f"{vcf_file}, {popmap}"
+                settings.is_valid()
+                gadma.core.core.job(0, shared_dict, settings)
+            finally:
+                if check_dir_existence("Some_out_dir"):
+                    shutil.rmtree("Some_out_dir")
+
+
     def test_core_run_restore(self):
         old_run_out = os.path.join(DATA_PATH, "my_example_run")
         sys.argv = ['gadma', "--resume", old_run_out]

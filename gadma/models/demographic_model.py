@@ -295,7 +295,7 @@ class EpochDemographicModel(DemographicModel):
         new_epoch = Epoch(time_arg, sizes, size_args, mig_args,
                           dyn_args, sel_args, dom_args)
         self.events.append(new_epoch)
-        self.add_variables(new_epoch.variables)
+        self.add_variables(new_epoch)
 
     def add_split(self, pop_to_div, size_args):
         """
@@ -313,7 +313,7 @@ class EpochDemographicModel(DemographicModel):
         sizes.append(size_args[1])
         new_split = Split(pop_to_div, sizes)
         self.events.append(new_split)
-        self.add_variables(new_split.variables)
+        self.add_variables(new_split)
 
     def fix_variable(self, variable, value):
         """
@@ -487,27 +487,12 @@ class EpochDemographicModel(DemographicModel):
         :type values: list or dict
         """
         from .tree_demographic_model import TreeDemographicModel
-        if isinstance(model, TreeDemographicModel):
-            if values is None:
-                raise ValueError(
-                    "Cannot translate to TreeDemographicModel"
-                    " without values"
-                )
-            model.translate_to(cls, values)
-        raise ValueError(
-            f"Cannot translate to {model.__class__}"
-        )
-
-    def get_summary_duration(self):
-        """
-        Returns summary time duration of model
-        """
-        time = 0
-        # sum of all epochs' durations
-        for event in self.events:
-            if isinstance(event, Epoch):
-                time = operation_creation(Addition, event.time_arg, time)
-        return time
+        if isinstance(model, TreeDemographicModel) and values is None:
+            raise ValueError(
+                "Cannot translate to TreeDemographicModel"
+                " without values"
+            )
+        return model.translate_to(cls, values)
 
     def translate_to(self, ModelClass, values):
         """

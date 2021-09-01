@@ -48,15 +48,14 @@ class TestTreeDemModel(unittest.TestCase):
         m.add_leaf(1, size_pop=nu2F)
         m.change_pop_size(1, t=t1, size_pop=nu2)
         m.move_lineages(1, 0, t=t2, size_pop=N_a)
-        for event in m.events:
-            print(event)
-        translated_model = m.translate_to(EpochDemographicModel, var2values)
+
+        self.assertEqual(m.number_of_populations(), 2)
+
+        translated_model = EpochDemographicModel.create_from(m, var2values)
         em = EpochDemographicModel(gen_time=29, mutation_rate=1.25e-8)
         em.add_split(0, [nu1, nu2])
         em.add_epoch(operation_creation(Subtraction, t2, t1), [nu1, nu2])
         em.add_epoch(operation_creation(Subtraction, t1, 0), [nu1, nu2F])
-        print(em.as_custom_string(var2values))
-        print(translated_model.as_custom_string(var2values))
         self.assertEqual(translated_model, em)
 
     @staticmethod
@@ -111,9 +110,7 @@ class TestTreeDemModel(unittest.TestCase):
         em.add_split(0, [nu1, nu20])
         em.add_epoch(operation_creation(Subtraction, t2, t1), [nu1, nu2], dyn_args=['Sud', "Exp"])
         em.add_epoch(operation_creation(Subtraction, t1, 0), [nu1, nu2F])
-        print(em.as_custom_string(values=var2values))
         translated_model = m.translate_to(EpochDemographicModel, var2values)
-        print(translated_model.as_custom_string(values=var2values))
 
     def test_model3_translation(self):
         N_a, nu1B, nu1, nu1F, nu2B, nu2F, t1, t2, t3 = self.get_genetic_variables_model3()

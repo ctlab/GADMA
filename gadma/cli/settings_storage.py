@@ -1233,3 +1233,15 @@ class SettingsStorage(object):
                 warnings.warn(f"Engine {self.engine} will ignore "
                               "not-zero recombination rate.")
 
+        if self.engine == "momi":
+            if "Lin" in self.dynamics:
+                warnings.warn("Momi engine does not support Linear size "
+                              "function. It is removed from possible dynamics")
+                self.dynamics = [dyn for dyn in self.dynamics if dyn != "Lin"]
+            if not self.ancestral_size_as_parameter:
+                warnings.warn(
+                    "Momi engine need ancestral size as parameter. The option "
+                    "`Ancestral size as parameter` is set to `True`"
+                )
+                self.ancestral_size_as_parameter = True
+

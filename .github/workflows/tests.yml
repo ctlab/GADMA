@@ -49,6 +49,12 @@ jobs:
           pip3 install --upgrade numpy
         if: matrix.python-version == 3.8
 
+      - name: Install hdf5 and msprime for momi2 (MacOS).
+        run: |
+          brew install gsl homebrew/science/hdf5
+          pip3 install msprime
+        if: matrix.os == 'macos-10.15'
+
       - name: Install GADMA and its dependencies (Linux and MacOS).
         run: |
           ./install

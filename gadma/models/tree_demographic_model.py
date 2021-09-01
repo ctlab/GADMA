@@ -93,7 +93,7 @@ class TreeDemographicModel(DemographicModel):
     @classmethod
     def create_from(cls, model, values):
         if isinstance(model, EpochDemographicModel):
-            model.translate_to(cls, values)
+            return model.translate_to(cls, values)[0]
         raise ValueError(
             f"Cannot translate to {model.__class__}"
         )
@@ -142,7 +142,7 @@ class TreeDemographicModel(DemographicModel):
         )
         return Nanc_var
 
-    def get_number_of_populations(self):
+    def number_of_populations(self):
         return sum([isinstance(event, Leaf) for event in self.events])
 
     def _get_size_pop(self, pop, time, var2value, inclusive=True):

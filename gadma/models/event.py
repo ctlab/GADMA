@@ -185,7 +185,6 @@ class Epoch(Event):
                 sels_repr = f"[{', '.join(sels_repr)}]"
             all_repr.append(sels_repr)
         if self.dyn_args is not None:
-            print(self.dyn_args)
             dyns_repr = [help_f(arg) for arg in self.dyn_args]
             dyns_repr = f"[{', '.join(dyns_repr)}]"
         else:
@@ -303,9 +302,6 @@ class PopulationSizeChange(Event):
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    def as_custom_string(self, values):
-        pass
-
     def __str__(self):
         def rep(arg):
             if hasattr(arg, "name"):
@@ -366,9 +362,6 @@ class LineageMovement(Event):
 
     def __ne__(self, other):
         return not self.__eq__(other)
-
-    def as_custom_string(self, values):
-        pass
 
     def __str__(self):
         def rep(arg):

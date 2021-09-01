@@ -262,29 +262,42 @@ class TestModels(unittest.TestCase):
         self.assertRaises(ValueError, dm.fix_variable, var, 3)
         self.assertRaises(ValueError, dm.unfix_variable, var)
 
-#        dm.events[2].set_value(nu2F, 1.0)
-#        n_par_after = dm.get_number_of_parameters(dic)
-#        self.assertEqual(n_par_sud_model, n_par_after + 1)
-
         model = Model()
         model.add_variables([nu1F, m, Tp, Dyn,
                              SelectionVariable('sel'), FractionVariable('f')])
         self.assertRaises(ValueError, model.fix_variable, var, 1)
         model.string_repr([1 for _ in model.variables])
 
+        # when variables and models are added to Model their fixed variables
+        # should stay fixed
+        model1 = Model()
+        model1.add_variables([nu1F, m, Tp])
+        model1.fix_variable(nu1F, 1)
+        self.assertTrue(nu1F in model1.fixed_values)
+        model2 = Model()
+        model2.add_variables(model1)
+        self.assertTrue(nu1F in model2.fixed_values)
+        # discrete var with one value in domain will be also fixed
+        disc = DiscreteVariable("some", domain=["one_value"])
+        model2.add_variable(disc)
+        self.assertTrue(disc in model2.fixed_values)
+
     def test_printing_and_translation(self):
         nu1F, nu2B, nu2F, m, Tp, T, Dyn = self.get_variables_for_gut_2009()
         f = FractionVariable('f')
         Dyn2 = DynamicVariable('SudDyn')
+        Sud_dyn = DynamicVariable("Always_Sud", domain=["Sud"])
         sel = SelectionVariable('s')
         dom = FractionVariable('dom')
+        dom.log_transform = True
+        dom = Exp(dom)
         Nanc = PopulationSizeVariable("Nanc", units="physical")
 
-        dm = EpochDemographicModel()
+        dm = EpochDemographicModel(Nanc_size=Nanc)
         dm.add_epoch(Tp, [nu1F], dyn_args=[Dyn2],
                      sel_args=[sel], dom_args=[dom])
         dm.add_split(0, [nu1F, Multiplication(f, nu2B)])
-        dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', Dyn])
+        dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], [Sud_dyn, Dyn])
         dm.mutation_rate = 1e-8
 
         dic = {'nu1F': 1.880, nu2B: 0.0724, 'f': 0.9, 'nu2F': 1.764,
@@ -323,6 +336,11 @@ class TestModels(unittest.TestCase):
 
         self.assertRaises(ValueError, Epoch, T, [], [],
                           sel_args=None, dom_args=[])
+
+        # printing of Tree model events
+        PopulationSizeChange(pop=0, t=10).__repr__()
+        LineageMovement(pop_from=0, pop=1, t=10).__repr__()
+        Leaf(pop=10).__repr__()
 
     def test_var_combinations(self):
         var1 = PopulationSizeVariable('nu1')
@@ -369,6 +387,8 @@ class TestModels(unittest.TestCase):
                         obj.string_repr(values)
                         self.assertEqual(obj.name,
                                          f'nu1 {op_str} (f {op_str2} 5)')
+
+                obj.is_commutative()
 
                 self.assertRaises(AssertionError, cls, const, const)
         # some unary operations
@@ -612,6 +632,64 @@ class TestModels(unittest.TestCase):
                     if engine.id == "momi":
                         values['d2'] = "Lin"
 
+    def test_models_eq(self):
+        # it does not check everything
+        var1 = PopulationSizeVariable("nu")
+        epoch1 = Epoch(init_size_args=[1, 2], size_args=[var1, 5], time_arg=10)
+        epoch2 = copy.copy(epoch1)
+        self.assertEqual(epoch1, epoch1)
+        self.assertEqual(epoch1, epoch2)
+
+        epoch1.size_args = [4, 5]
+        self.assertNotEqual(epoch1, epoch2)
+        epoch1.size_args = [var1, 5]
+
+        epoch1.dyn_args = ["Sud", "Sud"]
+        self.assertEqual(epoch1, epoch2)
+
+        epoch1.dyn_args = ["Sud", "Exp"]
+        self.assertNotEqual(epoch1, epoch2)
+
+        split = Split(pop_to_div=0, size_args=[1, 2])
+        self.assertNotEqual(epoch1, split)
+        self.assertNotEqual(split, epoch1)
+        self.assertEqual(split, split)
+
+        pop_change1 = PopulationSizeChange(pop=0, t=10)
+        pop_change2 = PopulationSizeChange(pop=1, t=10)
+        self.assertEqual(pop_change1, pop_change1)
+        self.assertTrue(pop_change1.equals(pop_change1, []))
+        self.assertNotEqual(pop_change1, pop_change2)
+
+        lin_move1 = LineageMovement(pop_from=0, pop=1, t=10)
+        lin_move2 = LineageMovement(pop_from=1, pop=0, t=10)
+        self.assertEqual(lin_move1, lin_move1)
+        self.assertTrue(lin_move1.equals(lin_move1, []))
+        self.assertNotEqual(lin_move1, lin_move2)
+
+        model1 = EpochDemographicModel()
+        self.assertEqual(model1, model1)
+        self.assertNotEqual(model1, split)
+        model2 = EpochDemographicModel()
+        model2.add_epoch(time_arg=10, size_args=[1])
+        self.assertNotEqual(model1, model2)
+        model1.add_epoch(time_arg=10, size_args=[2])
+        self.assertNotEqual(model1, model2)
+
+        model1 = TreeDemographicModel()
+        self.assertEqual(model1, model1)
+        self.assertTrue(model1.equals(model1, []))
+        self.assertNotEqual(model1, split)
+        self.assertFalse(model1.equals(split, []))
+        model2 = TreeDemographicModel()
+        model2.add_leaf(pop=0, size_pop=10)
+        self.assertNotEqual(model1, model2)
+        self.assertFalse(model1.equals(model2, []))
+        model1.add_leaf(pop=1, size_pop=11)
+        self.assertNotEqual(model1, model2)
+        model2.add_leaf(pop=1, size_pop=11)
+        model1.add_leaf(pop=0, size_pop=10)
+        self.assertEqual(model1, model2)
 
     def test_operation_eq(self):
         a = PopulationSizeVariable("a")
@@ -619,6 +697,8 @@ class TestModels(unittest.TestCase):
         comb1 = operation_creation(Addition, a, b)
         comb2 = operation_creation(Addition, b, a)
 
+        self.assertEqual(comb1, comb1)
+        self.assertEqual(comb2, comb2)
         self.assertEqual(comb1, comb2)
 
         comb2 = operation_creation(Addition, a, b)
@@ -647,6 +727,11 @@ class TestModels(unittest.TestCase):
         self.test_creation_subtract()
         self.test_creation_multiplication()
         self.test_creation_division()
+
+        class UnknownOperation(Operation):
+            pass
+        self.assertRaises(ValueError, operation_creation,
+                          UnknownOperation, TimeVariable("t"))
 
     def test_creation_exp(self):
         a = PopulationSizeVariable("a")
@@ -771,10 +856,15 @@ class TestModels(unittest.TestCase):
         cm.move_lineages(1, 0, t=t2, size_pop=N_a)
 
         translated_model, _ = em.translate_to(TreeDemographicModel, var2values)
-        for event in translated_model.events:
-            print(event)
 
         self.assertTrue(translated_model.equals(cm, var2values))
+
+        # fails
+        self.assertRaises(ValueError, EpochDemographicModel.create_from, cm)
+        self.assertRaises(ValueError, TreeDemographicModel.create_from, cm.events[0], None)
+        tm = TreeDemographicModel()
+        self.assertRaises(ValueError, tm.translate_to, EpochDemographicModel, [])
+        self.assertRaises(ValueError, tm.translate_to, Epoch, [])
 
     @staticmethod
     def get_genetic_variables_model3():
@@ -862,7 +952,7 @@ class TestModels(unittest.TestCase):
             't4': 5
         }
         cm = TreeDemographicModel(gen_time=29, mutation_rate=1.25e-8)
-        cm.add_leaf(0, size_pop=nu1F)
+        cm.add_leaf(0, size_pop=nu1F, dyn="Lin", g=Division(Subtraction(nu1F, nu1), t1))
         cm.add_leaf(1, size_pop=nu2F)
         cm.change_pop_size(0, t=t1, size_pop=nu1)
         cm.change_pop_size(0, t=t3, size_pop=nu1B)
@@ -873,6 +963,6 @@ class TestModels(unittest.TestCase):
         em.add_epoch(operation_creation(Subtraction, t4, t3), [nu1B, nu2B])
         em.add_epoch(operation_creation(Subtraction, t3, t2), [nu1, nu2B])
         em.add_epoch(operation_creation(Subtraction, t2, t1), [nu1, nu2F])
-        em.add_epoch(operation_creation(Subtraction, t1, 0), [nu1F, nu2F])
+        em.add_epoch(operation_creation(Subtraction, t1, 0), [nu1F, nu2F], dyn_args=["Lin", "Sud"])
         translated_model, _ = em.translate_to(TreeDemographicModel, var2values)
         self.assertTrue(translated_model.equals(cm, var2values))

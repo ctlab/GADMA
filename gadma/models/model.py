@@ -27,15 +27,6 @@ class Model(object):
         self._variables = new_variables
         self.is_fixed = [False for var in new_variables]
 
-    @staticmethod
-    def get_value_from_var2value(var2value, entity):
-        if isinstance(entity, Variable):
-            return var2value[entity]
-        from .variables_combinations import BinaryOperation
-        if isinstance(entity, BinaryOperation):
-            return entity.get_value(var2value)
-        return entity
-
     def add_variable(self, variable):
         """
         Adds one variable to the model.
@@ -52,7 +43,7 @@ class Model(object):
                 for var in variable._variables:
                     self.add_variable(var)
                 for var in variable.fixed_values:
-                    self.fixed_values[var] = self.fixed_values[var]
+                    self.fixed_values[var] = variable.fixed_values[var]
                     self.is_fixed[self._variables.index(var)] = True
                 return
             if variable not in self._variables:
@@ -145,10 +136,10 @@ class Model(object):
         Returns value from var2value if entity is variable or returns entity
         otherwise (as it means that entity is a constant)
         """
-        from .variables_combinations import BinaryOperation
+        from .variables_combinations import Operation
         if isinstance(entity, Variable):
             return var2value[entity]
-        if isinstance(entity, BinaryOperation):
+        if isinstance(entity, Operation):
             return entity.get_value(var2value)
         return entity
 
