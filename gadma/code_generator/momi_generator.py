@@ -65,7 +65,10 @@ def get_anc_model(original_model, values, nanc):
             model.Nanc_size = nanc
 
     if isinstance(model, EpochDemographicModel):
-        model, model_values = model.translate_to(TreeDemographicModel, model_values)
+        model, model_values = model.translate_to(
+            TreeDemographicModel,
+            model_values
+        )
 
     return model, model_values
 
@@ -138,7 +141,7 @@ def print_momi_model(engine, values, nanc, gen_time):
             ret_str += f"\t\tg={get_momi_name(event.g)},\n"
             ret_str += "\t)\n"
 
-    ret_str +=  "\n\tmodel.set_params({\n"
+    ret_str += "\n\tmodel.set_params({\n"
     for var in model.variables:
         ret_str += f"\t\t'{var.name}': {var.name},\n"
     ret_str += "\t})\n"
@@ -159,7 +162,8 @@ def print_data_reading(engine):
             ret_str = f"import gadma\n"
             ret_str += "data_holder = gadma.SFSDataHolder("
             ret_str += f"'{engine.data_holder.filename}')\n"
-            ret_str += "data = gadma.get_engine('momi').read_data(data_holder)\n"
+            ret_str += "data = gadma.get_engine('momi')"\
+                       ".read_data(data_holder)\n"
 
     if isinstance(engine.data_holder, VCFDataHolder):
         ind2pop = engine._get_ind2pop(engine.data_holder)
@@ -168,8 +172,8 @@ def print_data_reading(engine):
             str_list.append(f"'{key}': '{value}'")
         ret_str += "ind2pop = {" + ", ".join(str_list) + "}\n"
         ret_str += f"data = momi.SnpAlleleCounts.read_vcf("\
-                  f"'{engine.data_holder.filename}', "\
-                  "ind2pop=ind2pop).extract_sfs(n_blocks=100)\n"
+                   f"'{engine.data_holder.filename}', "\
+                   "ind2pop=ind2pop).extract_sfs(n_blocks=100)\n"
         _, pops = read_popinfo(engine.data_holder.popmap_file)
         if populations is None or not set(populations) != set(pops):
             populations = pops
@@ -214,7 +218,7 @@ def print_main_part(engine, values, nanc):
 
 def print_plotting_part(engine):
     ret_str = "\nfrom matplotlib import pyplot as plt\n"
-    ret_str +=  "momi.DemographyPlot(\n"
+    ret_str += "momi.DemographyPlot(\n"
     ret_str += "\tmodel,\n"
     ret_str += "\tpop_x_positions=data.sampled_pops,\n"
     ret_str += "\tfigsize=(6,8),\n"
@@ -224,7 +228,7 @@ def print_plotting_part(engine):
     ret_str += "plt.savefig('model_from_GADMA.png')\n"
     return ret_str
 
-    
+
 def print_momi_code(engine, values, filename,
                     nanc=None, gen_time=1, gen_time_units=None):
     assert gen_time_units.lower() in ["generations", "years"]

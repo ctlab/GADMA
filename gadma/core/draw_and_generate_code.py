@@ -180,7 +180,7 @@ def generate_code_to_file(x, engine, settings, filename):
     fails = {}  # engine.id: reason
     for other_engine in engines:
         save_file = prefix + f"_{other_engine.id}_code.py"
-        #other_engine.set_data(engine.data)
+        # other_engine.set_data(engine.data)
         other_engine.data_holder = copy.deepcopy(engine.data_holder)
         other_engine.set_model(engine.model)
         args = settings.get_engine_args(other_engine.id)

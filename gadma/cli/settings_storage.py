@@ -1244,4 +1244,3 @@ class SettingsStorage(object):
                     "`Ancestral size as parameter` is set to `True`"
                 )
                 self.ancestral_size_as_parameter = True
-

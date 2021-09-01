@@ -261,9 +261,9 @@ class MomiEngine(Engine):
         self.base_module.DemographyPlot(
             model,
             pop_x_positions=pop_labels,
-            figsize=(6,8),
+            figsize=(6, 8),
             linthreshy=0,
-            pulse_color_bounds=(0,.25)
+            pulse_color_bounds=(0, .25),
         )
 
     def generate_code(self, values, filename=None, nanc=None,

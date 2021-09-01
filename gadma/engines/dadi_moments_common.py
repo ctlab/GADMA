@@ -159,7 +159,8 @@ class DadiOrMomentsEngine(Engine):
         theta = self.get_theta(values, grid_sizes)
         return self.get_N_ancestral_from_theta(theta)
 
-    def draw_data_comp_plot(self, values, grid_sizes, save_file=None, vmin=None):
+    def draw_data_comp_plot(self, values, grid_sizes, save_file=None,
+                            vmin=None):
         """
         Draws plots of SFS data for observed data and simulated by model data.
 

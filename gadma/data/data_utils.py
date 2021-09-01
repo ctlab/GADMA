@@ -175,7 +175,9 @@ def check_and_return_projections_and_labels(data_holder):
         if len(projections) != len(holder_proj):
             all_less = False
         else:
-            all_less = all([pr1 <= pr2 for pr1, pr2 in zip(holder_proj, projections)])
+            all_less = all(
+                [pr1 <= pr2 for pr1, pr2 in zip(holder_proj, projections)]
+            )
         assert all_less, ("Data cannot be downsized. Sample size of VCF data "
                           f"for {populations} populations are {projections} "
                           f"and got projections {holder_proj}.")
