@@ -150,7 +150,11 @@ class DemographicModel(Model):
                 if (self.Nref is not None and
                         isinstance(var, DemographicVariable) and
                         var.units == "physical"):
-                    tr_value = var.rescale_value(tr_value, reverse=True)
+                    tr_value = var.rescale_value(
+                        tr_value,
+                        Nref=self.Nref,
+                        reverse=True
+                    )
             translated_values.append(tr_value)
         return translated_values
 

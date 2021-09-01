@@ -211,6 +211,7 @@ class TestModelStructure(unittest.TestCase):
                         )
                     except ValueError as e:
                         if str(e).startswith("zero-size array to reduction"):
+                            failed += 1
                             continue
                         raise e
                     engine.set_data(data)

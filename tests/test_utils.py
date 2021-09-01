@@ -12,7 +12,7 @@ import os
 
 
 def f_sleep(x):
-    time.sleep(0.1)
+    time.sleep(5)
     return x
 
 
@@ -81,9 +81,9 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(q.get(), 10)
 
     def test_timeout(self):
-        g = timeout(f_sleep, time=0.01)
-        self.assertEqual(g(0), None)
         g = timeout(f_sleep, time=2)
+        self.assertEqual(g(0), None)
+        g = timeout(f_sleep, time=10)
         self.assertEqual(g(0), 0)
 
     def test_weighted_meta_array(self):

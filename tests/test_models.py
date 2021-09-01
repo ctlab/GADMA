@@ -325,6 +325,7 @@ class TestModels(unittest.TestCase):
 
         # test failures
         # hack
+        dm = EpochDemographicModel()
         assert not dm.has_anc_size
         phys_var = PopulationSizeVariable("nu", units="physical")
         super(DemographicModel, dm).add_variable(phys_var)
