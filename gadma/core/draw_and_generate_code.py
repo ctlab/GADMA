@@ -169,12 +169,11 @@ def generate_code_to_file(x, engine, settings, filename):
     )
     # Generate code
     if isinstance(engine.model, EpochDemographicModel):
-        engines = list(all_available_engines())
-        mu_and_L = engine.model.mutation_rate is not None and \
-            settings.sequence_length is not None
-        if not (engine.model.has_anc_size or
-                engine.model.theta0 is not None or mu_and_L):
-            engines.remove("demes")
+        engines_ids = [eng.id for eng in all_available_engines()]
+        if not settings.Nanc_will_be_available():
+            if "demes" in engines_ids:
+                engines_ids.remove("demes")
+        engines = [get_engine(engine_id) for engine_id in engines_ids]
     else:
         engines = [copy.deepcopy(engine)]
     fails = {}  # engine.id: reason
@@ -189,7 +188,7 @@ def generate_code_to_file(x, engine, settings, filename):
                                        gen_time_units)
         except Exception as e:
             fails[other_engine.id] = str(e)
-    if len(fails) == len(list(all_engines())):
+    if len(fails) == len(engines):
         raise ValueError("; ".join([f"{id}: {fails[id]}" for id in fails]))
 
 
