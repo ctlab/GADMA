@@ -51,7 +51,7 @@ jobs:
 
       - name: Install hdf5 and msprime for momi2 (MacOS).
         run: |
-          brew install gsl homebrew/science/hdf5
+          brew install gsl homebrew/core/hdf5
           pip3 install msprime
         if: matrix.os == 'macos-10.15'
 
