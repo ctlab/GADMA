@@ -557,6 +557,7 @@ class TestCoreRun(unittest.TestCase):
                 settings.num_init_const = 2
                 settings.global_maxiter = 4
                 settings.local_maxiter = 1
+                settings.model_plot_engine = "demes"
                 vcf_file = os.path.join(DATA_PATH, "DATA", "vcf", 'out_of_africa_chr22_sim.vcf')
                 popmap = os.path.join(DATA_PATH, "DATA", "vcf", 'out_of_africa_chr22_sim.popmap')
                 settings.input_data = f"{vcf_file}, {popmap}"
