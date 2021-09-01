@@ -2,6 +2,7 @@ from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable,\
                     DynamicVariable, FractionVariable, GrowthRateVariable,\
                     SelectionVariable
 from .. import moments_available, dadi_available
+from .. import demes_available, demesdraw_available
 
 # Main options. Output and input.
 output_directory = None
@@ -26,7 +27,11 @@ if moments_available:
     engine = 'moments'
 elif dadi_available:
     engine = 'dadi'
+
 model_plot_engine = "moments"
+if demes_available and demesdraw_available:
+    model_plot_engine = "demes"
+
 relative_parameters = False
 ancestral_size_as_parameter = False
 no_migrations = False

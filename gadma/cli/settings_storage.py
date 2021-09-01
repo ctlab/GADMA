@@ -1244,3 +1244,19 @@ class SettingsStorage(object):
                     "`Ancestral size as parameter` is set to `True`"
                 )
                 self.ancestral_size_as_parameter = True
+
+            if not self.no_migrations:
+                warnings.warn(
+                    "Momi engine does not support continous migrations. The "
+                    "option `No migrations` is set to `True`"
+                )
+                self.no_migrations = True
+
+        if self.model_plot_engine == "momi":
+            if self.units_of_time_in_drawing.lower() not in ["generations", "years"]:
+                warnings.warn(
+                    "Model plot engine momi does not draw time in "
+                    f"{self.units_of_time_in_drawing}, units are switched "
+                    "to `years`"
+                )
+                self.units_of_time_in_drawing = "years"

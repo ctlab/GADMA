@@ -542,7 +542,7 @@ class TestCoreRun(unittest.TestCase):
         settings.linked_snp_s = True
         settings.relative_parameters = True
         settings.pts = [4, 6, 8]
-        settings.global_maxiter = 4
+        settings.global_maxiter = 2
         settings.local_maxiter = 1
         shared_dict = gadma.shared_dict.SharedDictForCoreRun(
             multiprocessing=False)
@@ -566,6 +566,18 @@ class TestCoreRun(unittest.TestCase):
             finally:
                 if check_dir_existence("Some_out_dir"):
                     shutil.rmtree("Some_out_dir")
+
+            # best place to check
+            if engine.id == "momi":
+                try:
+                    # prints warning that units will be years
+                    settings.model_plot_engine = "momi"
+                    settings.units_of_time_in_drawing = "kya"
+                    settings.is_valid()
+                    self.assertEqual(settings.units_of_time_in_drawing, "years")
+                finally:
+                    if check_dir_existence("Some_out_dir"):
+                        shutil.rmtree("Some_out_dir")
 
 
     def test_core_run_restore(self):
