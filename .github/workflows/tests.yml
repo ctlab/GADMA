@@ -53,6 +53,8 @@ jobs:
         run: |
           brew install gsl homebrew/core/hdf5
           pip3 install msprime
+          brew install llvm libomp
+          CC=$(brew --prefix llvm)/bin/clang
         if: matrix.os == 'macos-10.15'
 
       - name: Install GADMA and its dependencies (Linux and MacOS).
