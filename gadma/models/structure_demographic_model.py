@@ -202,7 +202,7 @@ class StructureDemographicModel(EpochDemographicModel):
                 if self.has_sels:
                     sel_vars = list()
                     for i in range(n_pop):
-                        var = SelectionVariable('g%d%d' % (i_int, i+1))
+                        var = SelectionVariable('gamma%d%d' % (i_int, i+1))
                         sel_vars.append(var)
                 dyn_vars = None
                 if self.has_dyns:

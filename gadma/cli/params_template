@@ -76,7 +76,7 @@ Directory with bootstrap:
 #!!!
 #	Now all main parameters:
 #
-#	Use moments or dadi as engine of demographic inference.
+#	Engine for the demographic inference.
 #	Default: moments
 Engine : 
 
@@ -106,6 +106,10 @@ Theta0 :
 #   Should be used together with Sequence length option.
 #   Default: None
 Mutation rate : 
+
+#    Recombination rate
+#    Default: None
+Recombination rate : 
 
 #	Time (years) for one generation. Can be float. 
 #	Is important for drawing models. If one don't want to draw, 

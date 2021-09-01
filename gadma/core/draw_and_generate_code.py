@@ -189,7 +189,7 @@ def generate_code_to_file(x, engine, settings, filename):
                                        gen_time_units)
         except Exception as e:
             fails[other_engine.id] = str(e)
-    if len(fails) > 0:
+    if len(fails) == len(list(all_engines())):
         raise ValueError("; ".join([f"{id}: {fails[id]}" for id in fails]))
 
 
@@ -306,8 +306,10 @@ def print_runs_summary(start_time, shared_dict, settings):
             generate_code_to_file(x, engine, settings, save_code_file)
         except Exception as e:
             gener = False
-            print(f"{bcolors.WARNING}Run {index} warning: failed to generate "
-                  f"code due to the following exception: {e}{bcolors.ENDC}")
+            print(
+                f"{bcolors.WARNING}Run {index} warning: failed to generate "
+                f" some code due to the following exception: {e}{bcolors.ENDC}"
+            )
         if drawn and gener:
             print("\nYou can find the picture and the Python code of the best "
                   "model in the output directory.\n")

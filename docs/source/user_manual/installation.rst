@@ -1,10 +1,10 @@
-Installation
+LInstallation
 ==============
 
 Dependencies
 -------------
 
-**The current version of GADMA (greater than 2.0.0) supports Python3 only**. [Older versions](https://github.com/ctlab/GADMA/releases/tag/1.0.2) supported Python 2 as well but not any more.
+**The current version of GADMA (greater than 2.0.0) supports Python3 only**. `Older versions <https://github.com/ctlab/GADMA/releases/tag/1.0.2>`_ supported Python 2 as well but not any more.
 
 GADMA requires the following dependencies:
 
@@ -12,7 +12,9 @@ GADMA requires the following dependencies:
 * NumPy (>= 1.2.0)
 * Scipy (>= 0.6.0)
 * ruamel.yaml
-* ``dadi`` (>= 1.7.0) or/and ``moments`` (>= 1.0.0)
+* ``dadi`` (>= 1.7.0)
+* ``moments`` (>= 1.0.0)
+* ``momi``
 * nlopt (for ``dadi``)
 * Cython (for ``moments``)
 * mpmath (for ``moments``)
@@ -26,6 +28,9 @@ To draw demographic models one should also install the following packages:
 To calculate confidence intervals one should install:
 
 * pandas
+
+.. note::
+    ``momi`` package sometimes is not installed correctly for Windows and MacOS. If ``momi`` is not available please install it manually following the installation instructions in `momi's manual <https://momi2.readthedocs.io/en/latest/installation.html#>`_.
 
 Installing the latest release
 ------------------------------
@@ -110,10 +115,12 @@ Install dependencies manually:
 
             $ pip install --upgrade Cython
             $ pip install mpmath
-            $ git clone https://bitbucket.org/simongravel/moments/
-            $ cd moments
-            $ python3 setup.py install
-            $ cd ..
+            $ pip install git+https://bitbucket.org/simongravel/moments.git@moments
+
+    * ``momi``
+        .. code-block:: console
+
+            $ pip install momi
 
     * matplotlib
         .. code-block:: console

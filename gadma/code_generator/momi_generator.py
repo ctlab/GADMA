@@ -42,7 +42,9 @@ def get_momi_lambda(entity):
 def get_anc_model(original_model, values, nanc):
     if isinstance(original_model, CustomDemographicModel):
         return original_model, values
-    assert original_model.has_anc_size or nanc is not None
+    assert original_model.has_anc_size or nanc is not None, (
+        "Model should have anc. size or nanc should be set"
+    )
     model = copy.deepcopy(original_model)
     var2value = original_model.var2value(values)
 
@@ -60,7 +62,8 @@ def get_anc_model(original_model, values, nanc):
                 entity=original_model.Nanc_size,
                 var2value=var2value,
             )
-            assert np.isclose(nanc, model_Nanc)
+            assert np.isclose(nanc, model_Nanc), ("Nanc of model and given "
+                                                  "Nanc are different")
         else:
             model.Nanc_size = nanc
 
@@ -209,7 +212,8 @@ def print_main_part(engine, values, nanc):
         ret_str += "model.gen_time = 1\n"
         ret_str += f"model.muts_per_gen = {engine.model.mutation_rate}\n"
     length = engine.data_holder.sequence_length
-    assert length is not None
+    assert length is not None, "Sequence length is required"
+
     ret_str += f"model.set_data(data, length={length})\n"
     ret_str += "ll_model = model.log_likelihood()\n"
     ret_str += "print(f'Value of log-likelihood: {ll_model}')"
@@ -222,7 +226,7 @@ def print_plotting_part(engine):
     ret_str += "\tmodel,\n"
     ret_str += "\tpop_x_positions=data.sampled_pops,\n"
     ret_str += "\tfigsize=(6,8),\n"
-    ret_str += "\tlinthreshy=1e5,\n"
+    ret_str += "\tlinthreshy=None,\n"
     ret_str += "\tpulse_color_bounds=(0,.25)\n"
     ret_str += ")\n"
     ret_str += "plt.savefig('model_from_GADMA.png')\n"
@@ -231,7 +235,9 @@ def print_plotting_part(engine):
 
 def print_momi_code(engine, values, filename,
                     nanc=None, gen_time=1, gen_time_units=None):
-    assert gen_time_units.lower() in ["generations", "years"]
+    valid_units = ["generations", "years"]
+    assert gen_time_units.lower() in valid_units, ("Units of generation time "
+                                                   f"should be {valid_units}")
     # check for dynamics
     var2value = engine.model.var2value(values)
     assert "Lin" not in var2value.values(), ("Linear size function is "

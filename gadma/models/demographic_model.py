@@ -212,6 +212,7 @@ class EpochDemographicModel(DemographicModel):
 
     @Nanc_size.setter
     def Nanc_size(self, value):
+        # TODO it is not finished
         Nanc_is_variable = (hasattr(self, "_Nanc_size") and
                             isinstance(self._Nanc_size, Variable))
         if self.has_anc_size and Nanc_is_variable:
@@ -338,6 +339,9 @@ class EpochDemographicModel(DemographicModel):
         """
         Unfixes the variable of the model.
         """
+        if variable == self.Nanc_size:
+            super(DemographicModel, self).unfix_variable(variable)
+            return
         for event in self.events:
             if variable in event._variables:
                 event.unfix_variable(variable)

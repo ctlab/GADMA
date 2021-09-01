@@ -5,12 +5,15 @@ from ..models import Leaf, PopulationSizeChange, LineageMovement
 from ..data import check_and_return_projections_and_labels, read_popinfo
 from ..data import get_list_of_names_from_vcf
 from .. import SFSDataHolder, VCFDataHolder
-from .. import momi_available, dadi_available
+from .. import momi_available, dadi_available, matplotlib_available
 from ..code_generator import id2printfunc
 import tempfile
 import os
-
+import copy
 import warnings
+
+if matplotlib_available:
+    from matplotlib import pyplot as plt
 
 
 class MomiEngine(Engine):
@@ -250,21 +253,45 @@ class MomiEngine(Engine):
                                   fig_title="Demographic Model from GADMA",
                                   nref=None, gen_time=1,
                                   gen_time_units="Generations"):
+        original_model = self.model
+        # if our model does not have ancestral size
+        if not self.model.has_anc_size:
+            assert nref is not None, ("nref should be set as model does not "
+                                      "have ancestral size")
+            # we copy our model and set ancestral size to nref
+            self.model = copy.deepcopy(self.model)
+            self.model.unfix_variable(self.model.Nanc_size)
+            self.model.has_anc_size = True
+            # and fix values to have new value for Nanc variable
+            values = list(values)
+            ind = self.model.variables.index(self.model.Nanc_size)
+            values.insert(ind, nref)
+
         # get population labels
         if self.inner_data is not None:
             pop_labels = self.inner_data.sampled_pops
         else:
             assert self.data_holder is not None
             pop_labels = self.data_holder.population_labels
+
+        # get momi model
         model = self.get_momi_model(values)
         model.gen_time = gen_time
+
+        # draw plot
         self.base_module.DemographyPlot(
             model,
             pop_x_positions=pop_labels,
             figsize=(6, 8),
-            linthreshy=0,
+            linthreshy=None,
             pulse_color_bounds=(0, .25),
         )
+        # save it or show
+        if save_file is None:
+            plt.show()
+        else:
+            plt.savefig(save_file)
+        self.model = original_model
 
     def generate_code(self, values, filename=None, nanc=None,
                       gen_time=None, gen_time_units="years"):

@@ -2,6 +2,7 @@ import os
 import ruamel.yaml
 import numpy as np
 from . import settings
+from .. import demes_available, momi_available
 from ..data import SFSDataHolder, VCFDataHolder
 from ..engines import get_engine, MomentsEngine
 from ..engines import all_engines, all_drawing_engines
@@ -41,7 +42,7 @@ DEPRECATED_IDENTIFIERS = ["flush_delay",
                           "distribution", "std",
                           "mean_mutation_rate_for_hc",
                           "const_for_mutation_rate_for_hc",
-                          "stop_iteration_for_hc"]
+                          "stop_iteration_for_hc", "sfs_plot_engine"]
 
 
 def get_variable_class(par_label):
@@ -198,7 +199,7 @@ class SettingsStorage(object):
                       'relative_parameters', 'only_models',
                       'symmetric_migrations', 'split_fractions',
                       'generate_x_transform', 'global_log_transform',
-                      'local_log_transform', 'inbreeding',
+                      'local_log_transform', 'inbreeding', 'selection',
                       'ancestral_size_as_parameter']
         int_list_attrs = ['pts', 'initial_structure', 'final_structure',
                           'projections']
@@ -222,7 +223,8 @@ class SettingsStorage(object):
                         'model_func', 'get_engine_args', 'data_holder',
                         'units_of_time_in_drawing', 'resume_from_settings',
                         'dadi_available', 'moments_available',
-                        'model_plot_engine',
+                        'model_plot_engine', 'demes_available',
+                        'demesdraw_available',
                         'kernel', 'acquisition_function']
 
         super_hasattr = True
@@ -1133,7 +1135,7 @@ class SettingsStorage(object):
         if (self.initial_structure is not None and
                 self.final_structure is not None):
             create_migs = not self.no_migrations
-            create_sels = False
+            create_sels = self.selection
             create_dyns = not self.only_sudden
             sym_migs = self.symmetric_migrations
             split_f = self.split_fractions
@@ -1195,6 +1197,17 @@ class SettingsStorage(object):
             raise ValueError("Some settings are missed so no model is "
                              "generated")
 
+    def Nanc_will_be_available(self):
+        if self.ancestral_size_as_parameter:
+            return True
+        mu_is_set = self.mutation_rate is not None
+        L_is_set = self.sequence_length is not None
+        if mu_is_set and L_is_set:
+            return True
+        if self.theta0 is not None:
+            return True
+        return False
+
     def is_valid(self):
         """
         Checks that settings are fine. Rises arrors if something is not right.
@@ -1244,7 +1257,6 @@ class SettingsStorage(object):
                     "`Ancestral size as parameter` is set to `True`"
                 )
                 self.ancestral_size_as_parameter = True
-
             if not self.no_migrations:
                 warnings.warn(
                     "Momi engine does not support continous migrations. The "
@@ -1252,7 +1264,20 @@ class SettingsStorage(object):
                 )
                 self.no_migrations = True
 
+            if self.selection:
+                warnings.warn(
+                    "Momi engine does not support inference of selection "
+                    "coefficients. The option `Selection` is set to `False`"
+                )
+                self.selection = False
+
         if self.model_plot_engine == "momi":
+            if not self.no_migrations or "Lin" in self.dynamics:
+                warnings.warn(
+                    "Momi was chosen to draw models. Mind the fact that it "
+                    "does not support linear size change and does not draw "
+                    "migrations"
+                )
             if self.units_of_time_in_drawing.lower() not in ["generations",
                                                              "years"]:
                 warnings.warn(
@@ -1261,3 +1286,20 @@ class SettingsStorage(object):
                     "to `years`"
                 )
                 self.units_of_time_in_drawing = "years"
+
+        if self.sequence_length is None and momi_available:
+            warnings.warn("Code for momi will not be generated as `Sequence "
+                          "length` is missed.")
+        for engine, is_available in zip(["demes", "momi"],
+                                        [demes_available, momi_available]):
+            if is_available:
+                if not self.Nanc_will_be_available():
+                    warnings.warn(
+                        f"Code for {engine} engine will not be generated as "
+                        "ancestral size will be missed in the dem. model. "
+                        "The following options should be set to enable it:\n"
+                        f"`Ancestral size as parameter`: True "
+                        f"(got `self.ancestral_size_as_parameter`)\nor\n"
+                        f"`Mutation rate` (got {self.mutation_rate})\n"
+                        f"`Sequence length` (got {self.sequence_length})\nor\n"
+                        f"`Theta0` (got {self.theta0})")

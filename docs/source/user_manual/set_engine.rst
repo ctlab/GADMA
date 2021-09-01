@@ -35,6 +35,10 @@ Engine comparison
      - ✓
      - ✓
      - ✓
+   * - Recombination rate
+     - ✕
+     - ✕
+     - ✓
    * - Model plotting
      - ✕
      - ✓

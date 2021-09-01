@@ -39,6 +39,7 @@ symmetric_migrations = False
 split_fractions = True
 migration_masks = None
 inbreeding = False
+selection = False
 
 # Custom model
 custom_filename = None

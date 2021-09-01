@@ -6,7 +6,6 @@ Plotting model
     * **Base options**:
 
       * ``Model plot engine`` indicates what engine will be used to draw model plots.
-      * ``SFS plot engine`` indicates what engine will be used to draw SFS plots.
 
     * **Additional options**:
 
@@ -46,6 +45,11 @@ The picture above is example of ``moments`` plotting. The ``demes`` library plot
 .. image:: example_model_plot_demes.png
     :width: 100%
 
+or with ``momi`` engine (note that ``momi`` does not draw linear size change and migrations):
+
+.. image:: example_model_plot_momi.png
+    :width: 100%
+
 One could choose the engine for model plotting by setting:
 
 .. code-block:: none
@@ -53,15 +57,6 @@ One could choose the engine for model plotting by setting:
     # param_file
     ...
     model_plot_engine: demes
-    ...
-
-It is also possible to set engine for plotting sfs. However, as ``dadi`` and ``moments`` are very similar, this change has no affect on result plots:
-
-.. code-block:: none
-
-    # param_file
-    ...
-    sfs_plot_engine: dadi
     ...
 
 
@@ -101,7 +96,7 @@ To do it one should run the corresponding generated Python script for the model.
     $ python best_logll_model_moments_code.py
 
 .. note::
-    Again it is possible only if one has ``moments`` installed.
+    It is possible only if one has ``moments`` installed.
 
 .. note::
     One can change code inside the file and draw again if the picture is not satisfying.

@@ -574,8 +574,13 @@ class TestCoreRun(unittest.TestCase):
                     settings.model_plot_engine = "momi"
                     settings.time_for_generation = 1
                     settings.units_of_time_in_drawing = "kya"
+                    settings.selection = True
                     settings.is_valid()
                     self.assertEqual(settings.units_of_time_in_drawing, "years")
+                    self.assertFalse(settings.selection)
+                    settings.engine = "moments"
+                    settings.no_migrations = False
+                    settings.is_valid()
                 finally:
                     if check_dir_existence("Some_out_dir"):
                         shutil.rmtree("Some_out_dir")
