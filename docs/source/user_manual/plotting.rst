@@ -37,9 +37,9 @@ Choose engine for plotting
 
 GADMA allows to draw model plots with one of the following packages:
 
-- ``demes`` + ``demesdraw``
-
-- ``moments`` (default)
+- ``demes`` + ``demesdraw`` (default)
+- ``moments``
+- ``momi``
 
 The picture above is example of ``moments`` plotting. The ``demes`` library plots are vertically oriented and looks a little different. The example of ``demes`` drawing is below:
 

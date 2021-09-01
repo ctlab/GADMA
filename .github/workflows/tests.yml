@@ -53,7 +53,7 @@ jobs:
         run: |
           brew install gsl homebrew/core/hdf5
           pip3 install msprime
-          brew install llvm libom
+          brew install llvm libomp
           CC="/usr/local/opt/llvm/bin/clang"
           echo $CC
         if: matrix.os == 'macos-10.15'

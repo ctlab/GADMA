@@ -572,6 +572,7 @@ class TestCoreRun(unittest.TestCase):
                 try:
                     # prints warning that units will be years
                     settings.model_plot_engine = "momi"
+                    settings.time_for_generation = 1
                     settings.units_of_time_in_drawing = "kya"
                     settings.is_valid()
                     self.assertEqual(settings.units_of_time_in_drawing, "years")

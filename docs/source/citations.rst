@@ -20,6 +20,10 @@ If you use ``moments`` as engine in GADMA please cite:
 
 .. [Jouganous2017] Jouganous, J., Long, W., Ragsdale, A. P., & Gravel, S. (2017). Inferring the joint demographic history of multiple populations: beyond the diffusion approximation. Genetics, 206(3), 1549-1567.
 
+If you use ``momi`` as engine in GADMA please cite:
+
+.. [Kamm2020] Kamm, J., Terhorst, J., Durbin, R., and Song, Y.S. Efficiently inferring the demographic history of many populations with allele count data. Journal of the American Statistical Association, Vol. 115, No. 531, (2020) 1472-1487.
+
 CLAIC citation
 ---------------
 
