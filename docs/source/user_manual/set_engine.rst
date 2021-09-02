@@ -38,7 +38,7 @@ Engine comparison
    * - Recombination rate
      - ✕
      - ✕
-     - ✓
+     - ✕
    * - Model plotting
      - ✕
      - ✓
@@ -55,7 +55,7 @@ Engine comparison
      - ✓
      - ✓
      - ✕
-   * - Continous migration
+   * - Continuous migration
      - ✓
      - ✓
      - ✕
