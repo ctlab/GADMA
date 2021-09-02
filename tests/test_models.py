@@ -465,6 +465,7 @@ class TestModels(unittest.TestCase):
         with pytest.raises(ValueError):
             dm.add_epoch(T, [nu1, nu2], [[None, m], [m, None]], ['Sud', 'Exp'])
 
+    @pytest.mark.timeout(800)
     def test_code_generation(self):
         # old format
         warnings.filterwarnings(action='ignore', category=UserWarning,
