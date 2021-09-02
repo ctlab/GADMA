@@ -16,6 +16,10 @@ If you use ``dadi`` as engine in GADMA please cite:
 
 .. [Gutenkunst2009]  RN Gutenkunst, RD Hernandez, SH Williamson, CD Bustamante "Inferring the joint demographic history of multiple populations from multidimensional SNP data" PLoS Genetics 5:`e1000695 <https://bitbucket.org/gutenkunstlab/dadi/commits/e1000695>`_ (2009).
 
+If you use inbreeding inference with ``dadi`` engine in GADMA please cite:
+
+.. [Blischak2020] Paul D Blischak, Michael S Barker, Ryan N Gutenkunst, Inferring the Demographic History of Inbred Species from Genome-Wide SNP Frequency Data, Molecular Biology and Evolution, Volume 37, Issue 7, July 2020, Pages 2124–2136, https://doi.org/10.1093/molbev/msaa042
+
 If you use ``moments`` as engine in GADMA please cite:
 
 .. [Jouganous2017] Jouganous, J., Long, W., Ragsdale, A. P., & Gravel, S. (2017). Inferring the joint demographic history of multiple populations: beyond the diffusion approximation. Genetics, 206(3), 1549-1567.

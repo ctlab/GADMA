@@ -232,13 +232,15 @@ def print_runs_summary(start_time, shared_dict, settings):
                 super(Engine, engine).__setattr__("_model", default_model)
             # Get theta and N ancestral
             addit_str = ""
-            if engine.id in ["dadi", "moments"]:
+            Nanc = None
+            is_custom = isinstance(engine.model, CustomDemographicModel)
+            if engine.id in ["dadi", "moments"] and not is_custom:
                 # dadi and moments has the same function get_N_ancestral
                 # but we want to print theta
                 theta = engine.get_theta(x, *settings.get_engine_args())
                 Nanc = engine.get_N_ancestral_from_theta(theta)
                 addit_str += f"(theta = {theta: .2f})"
-            else:
+            elif not is_custom:
                 Nanc = engine.get_N_ancestral(x, *settings.get_engine_args())
             # Nanc can be None if we have custom demographic model and
             # we cannot get Nanc size from theta

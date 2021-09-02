@@ -252,6 +252,12 @@ class DemographicVariable(Variable):
                 Nanc_domain=self.default_domain_in_phys,
                 Nanc_mean=self.default_mean_size_in_phys,
             )
+        elif units == "physical":
+            self.rand_gen = DemographicGenerator(
+                var_cls=self.__class__,
+                Nanc_domain=list(self.default_domain_in_phys),
+                Nanc_mean=self.default_mean_size_in_phys,
+            )
 
     @staticmethod
     def _transform_value_from_gen_to_phys(value, Nanc):
@@ -305,7 +311,7 @@ class DemographicVariable(Variable):
         self.units = units
         if units == "physical":
             self.rand_gen = DemographicGenerator(
-                genetic_generator=self.rand_gen,
+                var_cls=self.__class__,
                 Nanc_domain=Nanc_domain,
                 Nanc_mean=Nanc_mean,
             )

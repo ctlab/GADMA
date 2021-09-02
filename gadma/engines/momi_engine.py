@@ -207,6 +207,8 @@ class MomiEngine(Engine):
         return model
 
     def get_N_ancestral(self, values):
+        if isinstance(self.model, CustomDemographicModel):
+            return None
         Nanc_var = self.model.get_Nanc_size(values)
         return self.get_value_from_var2value(
             entity=Nanc_var,
@@ -225,7 +227,13 @@ class MomiEngine(Engine):
                                                   " sequence_length")
             kwargs['length'] = self.data_holder.sequence_length
         momi_model.set_data(self.inner_data, **kwargs)
-        return momi_model.log_likelihood()
+        ll = None
+        try:
+            ll = momi_model.log_likelihood()
+        except AssertionError as e:
+            if not isinstance(self.model, CustomDemographicModel):
+                raise e
+        return ll
 
     def simulate(self, values, ns, sequence_length, population_labels,
                  num_replicates=1):

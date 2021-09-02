@@ -106,11 +106,16 @@ class CoreRun(object):
                 if isinstance(self.model, EpochDemographicModel):
                     Nanc_will_be = self.settings.Nanc_will_be_available()
                     L_is_None = self.settings.sequence_length is None
+                    is_custom = isinstance(self.engine.model,
+                                           CustomDemographicModel)
                     for engine in all_available_engines():
                         if engine.id == "demes" and not Nanc_will_be:
                             continue
                         if (engine.id == "momi" and
-                                (not Nanc_will_be or L_is_None)):
+                                (not Nanc_will_be or L_is_None) and
+                                not is_custom):
+                            continue
+                        if is_custom and self.engine.id != engine.id:
                             continue
                         engine_dir = os.path.join(self.code_dir, engine.id)
                         ensure_dir_existence(engine_dir)

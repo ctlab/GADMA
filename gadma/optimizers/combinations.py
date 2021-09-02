@@ -193,7 +193,6 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         # Transform best x to local optimizer as x0 and functions for local
         x_best = np.array(global_result.x,
                           dtype=get_correct_dtype(global_result.x))
-        print(x_best, variables)
         y_best = global_result.y
         is_not_discrete = self._get_filter(variables)
         x0 = x_best[is_not_discrete]

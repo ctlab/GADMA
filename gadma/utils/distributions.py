@@ -112,28 +112,20 @@ def generator_for_Nanc(N_mean, domain):
 
 
 class DemographicGenerator:
-
-    def __init__(self, genetic_generator, Nanc_domain, Nanc_mean,
-                 gen_time=None, combined_generator=True):
-        self.genetic_generator = genetic_generator
-        self.gen_time = gen_time
+    def __init__(self, var_cls, Nanc_domain, Nanc_mean, combined_generator=True):
+        self.var_cls = var_cls
         self.Nanc_domain = Nanc_domain
         self.Nanc_mean = Nanc_mean
         self.combined_generator = combined_generator
 
     def __call__(self, domain, *args, **kwargs):
-        def _correct_val(val):
-            return min(domain[1], max(domain[0], val))
-
         Nanc = generator_for_Nanc(self.Nanc_mean, self.Nanc_domain)
         if not self.combined_generator:
             return Nanc
-        value = self.genetic_generator.__call__(domain, *args, **kwargs)
+        value = self.var_cls.default_rand_gen.__call__(self.var_cls.default_domain)
 
-        if self.gen_time is not None:
-            return _correct_val(type(Nanc)(2 * self.gen_time * Nanc * value))
-        return _correct_val(type(Nanc)(Nanc * value))
-
+        tr_value = self.var_cls._transform_value_from_gen_to_phys(value, Nanc)
+        return min(domain[1], max(domain[0], tr_value))
 
 def rescale_generator(generator, rescale_function):
     def wrap_generator(domain, *args, **kwargs):

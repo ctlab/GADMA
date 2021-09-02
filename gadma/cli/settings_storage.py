@@ -1164,6 +1164,15 @@ class SettingsStorage(object):
                 self.model_func is not None) and
                 self.lower_bound is not None and
                 self.upper_bound is not None):
+            # get_variables take bounds equal to None into account
+            lower_bound = self.lower_bound
+            upper_bound = self.upper_bound
+            if not hasattr(super(SettingsStorage, self), "lower_bound"):
+                lower_bound = None
+
+            if not hasattr(super(SettingsStorage, self), "upper_bound"):
+                upper_bound = None
+
             variables = get_variables(self.parameter_identifiers,
                                       self.lower_bound, self.upper_bound,
                                       engine=self.engine)

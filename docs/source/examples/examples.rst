@@ -6,5 +6,6 @@ Examples
 
    structure_model_example
    custom_model_example
+   custom_model_example_momi
    optimize_ga
    changing_theta_example
