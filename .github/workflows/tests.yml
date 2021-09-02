@@ -53,9 +53,10 @@ jobs:
         run: |
           brew install gsl homebrew/core/hdf5
           pip3 install msprime
-          brew install llvm libomp
+          brew install libomp
+          export LDFLAGS="-L/usr/local/opt/llvm/lib"
+          export CPPFLAGS="-I/usr/local/opt/llvm/include"
           CC=$(brew --prefix llvm)/bin/clang pip install momi
-          echo $CC
         if: matrix.os == 'macos-10.15'
 
       - name: Install GADMA and its dependencies (Linux and MacOS).
