@@ -71,10 +71,10 @@ p_crossover = 0.18828153004
 p_random = 0.12600048532
 
 mean_mutation_strength = 0.625049
-const_for_mutation_strength = 1.016571
+const_for_mutation_strength = 1.01
 
 mean_mutation_rate = 0.453272
-const_for_mutation_rate = 1.068062
+const_for_mutation_rate = 1.02
 
 stuck_generation_number = 100
 eps = 1e-2

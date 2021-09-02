@@ -1,6 +1,24 @@
 Changelogs
 ==============
 
+[2.0.0rc18] - 2021-09-02
+------------------------
+
+**Major release**
+
+1. We present a new engine - ``momi``! It is now possible to perform demographic inference with ``momi`` engine as well as draw pictures of models with it. For more information please see `documentation <set_engine.rst>`__. If one will face problems with usage of ``momi`` engine please post an issue on GitHub, we really appreciate the feedback!
+
+2. Option ``Recombination rate`` was added as a new engine ``momi`` integrated into GADMA uses it.
+
+3. New input data - fastsimcoal2 input files. All three engines (``dadi``, ``moments`` and ``momi``) are able to read this format now. For more information about format please see `corresponding section in documentation <obs_data_format.rst>`__.
+
+4. GADMA is now available via ``conda`` (Bioconda).
+
+5. We fix an error in a genetic algorithm that had ignored change of mutation rate and strength of GA. Unfortunately, the hyperparameter optimization that was performed before is no longer valid. We are going to rerun and obtain new hyperparameter values as soon as possible. Right now we change values of mutation rate and strength constants to default values.
+
+6. The distributions of variable sampling were also updated: the time variable will be sampled from log normal distribution (was just normal) and option ``Random NA`` is False by default now. According to the experiments on several datasets GADMA with new distributions performs better.
+
+
 [2.0.0rc16] - 2021-06-27
 ------------------------
 
