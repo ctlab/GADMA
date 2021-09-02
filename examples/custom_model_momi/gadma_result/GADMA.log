@@ -1,0 +1,74 @@
+Data reading
+Number of populations: 2
+Projections: [20, 20]
+Population labels: ('YRI', 'CEU')
+Outgroup: True
+[92m--Successful data reading--[0m
+
+[93mUserWarning: Setting no_migrations (True) will be ignored as custom model from file is chosen.[0m (/home/katenos/.local/lib/python3.6/site-packages/gadma/cli/arg_parser.py:293)
+[93mUserWarning: Setting split_fractions (True) will be ignored as custom model from file is chosen.[0m (/home/katenos/.local/lib/python3.6/site-packages/gadma/cli/arg_parser.py:293)
+[92m--Successful arguments parsing--[0m
+
+Parameters of launch are saved in output directory: /home/katenos/Workspace/popgen/temp/GADMA/examples/custom_model_momi/gadma_result/params_file
+All output is saved in output directory: /home/katenos/Workspace/popgen/temp/GADMA/examples/custom_model_momi/gadma_result/GADMA.log
+
+[94m--Start pipeline--[0m
+Run launch number 1
+Run launch number 2
+
+[000:01:00]
+All best by log-likelihood models
+Number	log-likelihood	Model
+Run 2	-71390.07	(N_Anc=71174.729,	N_1F=59543.75892,	r_2=0.001,	nu_2F_gen=3.98626,	Tp=33144.24987,	T=5267.44531)	c	
+Run 1	-74429.28	(N_Anc=543.23112,	N_1F=37311.12065,	r_2=-1.87e-06,	nu_2F_gen=1.91245,	Tp=120987.83849,	T=506.62639)	mmmm	
+[93mRun 2 warning: failed to draw model due to the following exception: Model <class 'gadma.models.custom_demographic_model.CustomDemographicModel'> is not supported by demes engine.
+The supported models are: [<class 'gadma.models.demographic_model.EpochDemographicModel'>, <class 'gadma.models.structure_demographic_model.StructureDemographicModel'>].[0m.
+
+You can find the Python code of the best model in the output directory.
+
+
+[000:02:00]
+All best by log-likelihood models
+Number	log-likelihood	Model
+Run 1	-69828.53	(N_Anc=109.366,	N_1F=256070.18043,	r_2=0.00091,	nu_2F_gen=4.72887,	Tp=1402947.01398,	T=159.10512)	
+Run 2	-70794.61	(N_Anc=102726.06352,	N_1F=59543.75892,	r_2=0.001,	nu_2F_gen=3.98626,	Tp=7929.57872,	T=5272.71539)	
+[93mRun 1 warning: failed to draw model due to the following exception: Model <class 'gadma.models.custom_demographic_model.CustomDemographicModel'> is not supported by demes engine.
+The supported models are: [<class 'gadma.models.demographic_model.EpochDemographicModel'>, <class 'gadma.models.structure_demographic_model.StructureDemographicModel'>].[0m.
+
+You can find the Python code of the best model in the output directory.
+
+Finish genetic algorithm number 1
+
+[000:03:00]
+All best by log-likelihood models
+Number	log-likelihood	Model
+Run 1	-69828.05	(N_Anc=109.36454,	N_1F=256330.26581,	r_2=0.00089,	nu_2F_gen=4.72881,	Tp=1402947.49956,	T=159.10723)	f	
+Run 2	-70794.61	(N_Anc=102726.06352,	N_1F=59543.75892,	r_2=0.001,	nu_2F_gen=3.98626,	Tp=7929.57872,	T=5272.71539)	
+[93mRun 1 warning: failed to draw model due to the following exception: Model <class 'gadma.models.custom_demographic_model.CustomDemographicModel'> is not supported by demes engine.
+The supported models are: [<class 'gadma.models.demographic_model.EpochDemographicModel'>, <class 'gadma.models.structure_demographic_model.StructureDemographicModel'>].[0m.
+
+You can find the Python code of the best model in the output directory.
+
+Finish genetic algorithm number 2
+
+[000:03:05]
+All best by log-likelihood models
+Number	log-likelihood	Model
+Run 1	-69828.05	(N_Anc=109.36454,	N_1F=256330.26581,	r_2=0.00089,	nu_2F_gen=4.72881,	Tp=1402947.49956,	T=159.10723)	f	
+Run 2	-70794.61	(N_Anc=102726.06352,	N_1F=59543.75892,	r_2=0.001,	nu_2F_gen=3.98626,	Tp=7929.57872,	T=5272.71539)	f	
+[93mRun 1 warning: failed to draw model due to the following exception: Model <class 'gadma.models.custom_demographic_model.CustomDemographicModel'> is not supported by demes engine.
+The supported models are: [<class 'gadma.models.demographic_model.EpochDemographicModel'>, <class 'gadma.models.structure_demographic_model.StructureDemographicModel'>].[0m.
+
+You can find the Python code of the best model in the output directory.
+
+
+--Finish pipeline--
+
+
+You didn't specify theta at the beginning. If you want to change it and rescale parameters, please see the tutorial:
+https://gadma.readthedocs.io/en/latest/user_manual/theta.html
+
+Thank you for using GADMA!
+
+In case of any questions or problems, please contact: ekaterina.e.noskova@gmail.com
+
