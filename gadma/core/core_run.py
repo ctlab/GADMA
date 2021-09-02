@@ -6,6 +6,7 @@ from ..utils import WeightedMetaArray
 from ..optimizers import GlobalOptimizerAndLocalOptimizer
 from ..utils import get_aic_score, get_claic_score, ident_transform, bcolors
 from ..models import EpochDemographicModel, StructureDemographicModel
+from ..models import CustomDemographicModel
 from .draw_and_generate_code import draw_plots_to_file, generate_code_to_file
 from .draw_and_generate_code import get_Nanc_gen_time_and_units
 from ..cli import SettingsStorage
