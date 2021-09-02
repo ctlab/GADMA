@@ -6,11 +6,11 @@ Changelogs
 
 **Major release**
 
-1. We present a new engine - ``momi``! It is now possible to perform demographic inference with ``momi`` engine as well as draw pictures of models with it. For more information please see `documentation <set_engine.rst>`__. If one will face problems with usage of ``momi`` engine please post an issue on GitHub, we really appreciate the feedback!
+1. We present a new engine - ``momi``! It is now possible to perform demographic inference with ``momi`` engine as well as draw pictures of models with it. For more information please see `documentation <user_manual/set_engine.rst>`__. If one will face problems with usage of ``momi`` engine please post an issue on GitHub, we really appreciate the feedback!
 
 2. Option ``Recombination rate`` was added as a new engine ``momi`` integrated into GADMA uses it.
 
-3. New input data - fastsimcoal2 input files. All three engines (``dadi``, ``moments`` and ``momi``) are able to read this format now. For more information about format please see `corresponding section in documentation <obs_data_format.rst>`__.
+3. New input data - fastsimcoal2 input files. All three engines (``dadi``, ``moments`` and ``momi``) are able to read this format now. For more information about format please see `corresponding section in documentation <user_manual/input_data/obs_data_format.rst>`__.
 
 4. GADMA is now available via ``conda`` (Bioconda).
 
