@@ -1,6 +1,8 @@
 from ..utils import Variable, TimeVariable, DemographicVariable
 from ..utils import PopulationSizeVariable, VariablePool, variables_values_repr
 from . import Model, Epoch, Split
+from .variables_combinations import operation_creation, \
+    Addition, Subtraction, Division, Log
 import copy
 import numpy as np
 
@@ -50,6 +52,8 @@ class DemographicModel(Model):
         :param variable: variable to add.
         :type variable: :class:`Variable`
         """
+        if variable in self._variables:
+            return
         if (not self.has_anc_size and
                 isinstance(variable, DemographicVariable) and
                 variable.units == "physical"):
@@ -62,6 +66,8 @@ class DemographicModel(Model):
     def _get_Nanc_size(self, values):
         """
         Method to override. Is used in :meth:`.DemographicModel.get_Nanc_size`.
+        If values are None variable is returned, otherwise the value of
+        ancestral population size (i.e. value of the variable).
         """
         raise NotImplementedError
 
@@ -144,7 +150,11 @@ class DemographicModel(Model):
                 if (self.Nref is not None and
                         isinstance(var, DemographicVariable) and
                         var.units == "physical"):
-                    tr_value = var.rescale_value(tr_value, reverse=True)
+                    tr_value = var.rescale_value(
+                        tr_value,
+                        Nref=self.Nref,
+                        reverse=True
+                    )
             translated_values.append(tr_value)
         return translated_values
 
@@ -174,8 +184,6 @@ class EpochDemographicModel(DemographicModel):
                  inbreeding_args=None):
         if has_anc_size is None:
             has_anc_size = Nanc_size is not None
-        if Nanc_size is None:
-            Nanc_size = 1.0
         self.inbreeding_args = inbreeding_args
         self.events = list()
         super(EpochDemographicModel, self).__init__(
@@ -187,7 +195,32 @@ class EpochDemographicModel(DemographicModel):
             has_anc_size=has_anc_size,
             linear_constrain=linear_constrain
         )
-        self.Nanc_size = Nanc_size
+        if not has_anc_size:
+            assert Nanc_size is None, str(Nanc_size)
+            # We create variable and fix its value to relative 1.0
+            Nanc_size = PopulationSizeVariable("_Nanc_size", units="physical")
+            self._Nanc_size = Nanc_size
+            self.variables = [self._Nanc_size]  # to avoid checks for units
+            super(DemographicModel, self).fix_variable(self.Nanc_size, 1.0)
+        else:
+            # to run checks
+            self.Nanc_size = Nanc_size
+
+    @property
+    def Nanc_size(self):
+        return self._Nanc_size
+
+    @Nanc_size.setter
+    def Nanc_size(self, value):
+        # TODO it is not finished
+        Nanc_is_variable = (hasattr(self, "_Nanc_size") and
+                            isinstance(self._Nanc_size, Variable))
+        if self.has_anc_size and Nanc_is_variable:
+            # We have not implemented the removal of variable
+            ValueError("Model has ancestral size already. It is not safe to "
+                       "change it.")
+        self._Nanc_size = value
+        self.has_anc_size = self._Nanc_size is not None
         if isinstance(self.Nanc_size, Variable):
             if not isinstance(self.Nanc_size, PopulationSizeVariable):
                 raise ValueError("Nanc_size must be instance of "
@@ -197,15 +230,27 @@ class EpochDemographicModel(DemographicModel):
                 raise ValueError("Nanc_size must be in physical units, "
                                  f"got: {self.Nanc_size.units}.")
             self.add_variable(self.Nanc_size)
-            assert len(self.variables) == 1
+
+    def __eq__(self, other):
+        if self is other:
+            return True
+        if not isinstance(other, EpochDemographicModel):
+            return False
+        if len(self.events) != len(other.events):
+            return False
+        for i, event in enumerate(self.events):
+            if event != other.events[i]:
+                return False
+        return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def _get_Nanc_size(self, values=None):
-        """
-        Method of parent class. Is used in
-        :meth:`.DemographicModel.get_Nanc_size`.
-        `values` are not used in this method.
-        """
-        return self.Nanc_size
+        Nanc_size = self.Nanc_size
+        if values is None:
+            return Nanc_size
+        return self.get_value_from_var2value(self.var2value(values), Nanc_size)
 
     def _get_current_pop_sizes(self):
         """
@@ -255,7 +300,7 @@ class EpochDemographicModel(DemographicModel):
         new_epoch = Epoch(time_arg, sizes, size_args, mig_args,
                           dyn_args, sel_args, dom_args)
         self.events.append(new_epoch)
-        self.add_variable(new_epoch)
+        self.add_variables(new_epoch)
 
     def add_split(self, pop_to_div, size_args):
         """
@@ -273,7 +318,7 @@ class EpochDemographicModel(DemographicModel):
         sizes.append(size_args[1])
         new_split = Split(pop_to_div, sizes)
         self.events.append(new_split)
-        self.add_variables(new_split.variables)
+        self.add_variables(new_split)
 
     def fix_variable(self, variable, value):
         """
@@ -294,6 +339,9 @@ class EpochDemographicModel(DemographicModel):
         """
         Unfixes the variable of the model.
         """
+        if variable == self.Nanc_size:
+            super(DemographicModel, self).unfix_variable(variable)
+            return
         for event in self.events:
             if variable in event._variables:
                 event.unfix_variable(variable)
@@ -315,6 +363,8 @@ class EpochDemographicModel(DemographicModel):
             if isinstance(event, Epoch) and event.dyn_args is not None:
                 for dyn_arg in event.dyn_args:
                     if isinstance(dyn_arg, Variable):
+                        if dyn_arg in self.fixed_values:
+                            continue
                         value = var2value[dyn_arg]
                         super(DemographicModel, self).fix_variable(dyn_arg,
                                                                    value)
@@ -379,16 +429,24 @@ class EpochDemographicModel(DemographicModel):
         :param values: Values of the demographic model.
         """
         strings = []
-        values = {var.name: val
-                  for var, val in self.var2value(values).items()}
+        var2value = self.var2value(values)
+        values_dict = {var.name: val for var, val in var2value.items()}
+        if self.has_anc_size:
+            if isinstance(self.Nanc_size, Variable):
+                Nanc_str = f"[{self.Nanc_size.name}"
+            else:
+                Nanc_str = f"[Nanc"
+            size = self.get_value_from_var2value(var2value, self.Nanc_size)
+            Nanc_str += f" = {int(size)}]"
+            strings.append(Nanc_str)
 
         for event in self.events:
-            strings.append(event.as_custom_string(values))
+            strings.append(event.as_custom_string(values_dict))
 
         if self.has_inbreeding:
             inbr_coefficients = []
             for inbreeding in self.inbreeding_args:
-                inbr_value = round(values[inbreeding.name], 3)
+                inbr_value = round(values_dict[inbreeding.name], 3)
                 inbr_coefficients.append(f"{inbr_value} ({inbreeding.name})")
 
             inbr_string = ", ".join(inbr_coefficients)
@@ -425,3 +483,283 @@ class EpochDemographicModel(DemographicModel):
                 else:
                     b += time_arg
         return [], 0
+
+    @classmethod
+    def create_from(cls, model, values=None):
+        """
+        Create epoch model from other type of model
+
+        :param model: model
+        :type model: TreeDemographicModel
+        :param values: Values of the parameters.
+        :type values: list or dict
+        """
+        from .tree_demographic_model import TreeDemographicModel
+        if isinstance(model, TreeDemographicModel) and values is None:
+            raise ValueError(
+                "Cannot translate to TreeDemographicModel"
+                " without values"
+            )
+        return model.translate_to(cls, values)
+
+    def translate_to(self, ModelClass, values):
+        """
+        Translate model to the another type of model
+
+        :param ModelClass: Class of model in which we transform our model
+        :type ModelClass: type
+        :param values: Values of the parameters.
+        :type values: list or dict
+        """
+        from .tree_demographic_model import TreeDemographicModel
+        if issubclass(ModelClass, TreeDemographicModel):
+            return self._translate_to_tree_model(values)
+        raise ValueError(
+            f"Cannot translate to {ModelClass}"
+        )
+
+    def _translate_to_tree_model(self, values):
+        assert self.has_anc_size, ("Model should have anc. population size "
+                                   "to be translated to TreeDemographicModel")
+        from .tree_demographic_model import TreeDemographicModel
+
+        values_phys = self.translate_values(
+            units="physical",
+            values=values,
+        )
+
+        var2value = self.var2value(values_phys)
+
+        def get_value(entity):
+            return self.get_value_from_var2value(var2value, entity)
+
+        model = TreeDemographicModel(
+            mutation_rate=self.mutation_rate,
+            recombination_rate=self.recombination_rate,
+            gen_time=self.gen_time,
+            theta0=self.theta0,
+            linear_constrain=self.linear_constrain
+        )
+        if len(self.events) == 0:
+            model.add_leaf(
+                pop=0,
+                t=0,
+                dyn="Sud",
+                size_pop=self.Nanc_size,
+                g=0,
+            )
+            name2value = {var.name: var2value[var] for var in self.variables}
+            model_values = [name2value[var.name] for var in model.variables]
+            return model, model_values
+        last_time = 0
+        last_size = []
+        # Assume that ancestral always has constant size
+        last_dyn = []
+        last_g = []
+        add_split_before_epoch = False
+        pop_to_div = None
+
+        def create_g(dyn_value, init_size, end_size, time_diff):
+            if dyn_value == "Sud":
+                g = 0
+            elif dyn_value == "Lin":
+                # size = init_size + g * t
+                g = operation_creation(
+                    operation=Division,
+                    arg1=operation_creation(
+                        operation=Subtraction,
+                        arg1=init_size,
+                        arg2=end_size,
+                    ),
+                    arg2=time_diff
+                )
+            else:
+                assert dyn_value == "Exp"
+                # size = init_size * exp(gt)
+                # TODO check that g is correct for momi
+                g = operation_creation(
+                    operation=Division,
+                    arg1=operation_creation(
+                        operation=Log,
+                        arg1=operation_creation(
+                            operation=Division,
+                            arg1=init_size,
+                            arg2=end_size,
+                        )
+                    ),
+                    arg2=time_diff
+                )
+            return g
+
+        def get_dyn_and_g(event, i):
+            if event.dyn_args is not None:
+                # dynamics are set
+                dyn_value = get_value(event.dyn_args[i])
+                dyn = event.dyn_args[i]
+            else:
+                # dynamics are constant
+                dyn_value = "Sud"
+                dyn = "Sud"
+            # get exponential rates, we know size at the beginning
+            # and at the end
+            g = create_g(
+                dyn_value=dyn_value,
+                init_size=event.size_args[i],
+                end_size=event.init_size_args[i],
+                time_diff=event.time_arg
+            )
+            return dyn, g
+
+        size_change_kwargs = []
+
+        def add_tree_event_from_kwargs(index):
+            if size_change_kwargs[index]["is_split"]:
+                model.move_lineages(
+                    pop_from=size_change_kwargs[index]["pop_from"],
+                    pop=index,
+                    t=size_change_kwargs[index]["t"],
+                    dyn=size_change_kwargs[index]["dyn"],
+                    size_pop=size_change_kwargs[index]["size"],
+                    g=size_change_kwargs[index]["g"],
+                )
+                size_change_kwargs[index]["is_split"] = False
+                return
+            if size_change_kwargs[index]["is_leaf"]:
+                func = model.add_leaf
+                size_change_kwargs[index]["is_leaf"] = False
+            else:
+                func = model.change_pop_size
+            func(
+                pop=index,
+                t=size_change_kwargs[index]["t"],
+                dyn=size_change_kwargs[index]["dyn"],
+                size_pop=size_change_kwargs[index]["size"],
+                g=size_change_kwargs[index]["g"],
+            )
+
+        iterate_over = self.events[::-1]
+        iterate_over.append(Epoch(
+            time_arg=0,
+            init_size_args=[self.Nanc_size],
+            size_args=[self.Nanc_size]
+        ))
+
+        n_pop = len(iterate_over[0].size_args)
+        first_epoch_after_split = False
+        for event_index, event in enumerate(iterate_over):
+            if isinstance(event, Epoch):
+                curr_time = operation_creation(
+                    operation=Addition,
+                    arg1=last_time,
+                    arg2=event.time_arg
+                )
+                if event_index == 0:
+                    for i in range(n_pop):
+                        dyn, g = get_dyn_and_g(event, i)
+                        size_change_kwargs.append({
+                            "init_event": event,
+                            "size": event.size_args[i],
+                            "dyn": dyn,
+                            "t": last_time,
+                            "g": g,
+                            "is_leaf": True,
+                            "is_split": False,
+                            "pop_from": None,
+                        })
+                        last_dyn.append(copy.copy(dyn))
+                        last_g.append(copy.copy(g))
+                        last_size.append(event.size_args[i])
+                else:
+                    for i in range(len(last_size)):
+                        dyn, g = get_dyn_and_g(event, i)
+
+                        curr_dyn_value = get_value(dyn)
+                        last_dyn_value = get_value(last_dyn[i])
+                        curr_g_value = get_value(g)
+                        last_g_value = get_value(last_g[i])
+                        curr_size_value = get_value(event.size_args[i])
+                        last_size_value = get_value(last_size[i])
+
+                        equal_dyn = curr_dyn_value == last_dyn_value
+                        equal_g = np.isclose(curr_g_value, last_g_value)
+                        # if we have constant sizes we will have to check
+                        # sizes.
+                        if equal_dyn and curr_dyn_value == "Sud":
+                            if not np.isclose(curr_size_value,
+                                              last_size_value):
+                                equal_g = False
+
+                        if equal_dyn and equal_g:
+                            time_diff = operation_creation(
+                                operation=Subtraction,
+                                arg1=curr_time,
+                                arg2=size_change_kwargs[i]["t"]
+                            )
+                            init_event = size_change_kwargs[i]["init_event"]
+                            g = create_g(
+                                dyn_value=curr_dyn_value,
+                                init_size=init_event.size_args[i],
+                                end_size=event.init_size_args[i],
+                                time_diff=time_diff,
+                            )
+                            size_change_kwargs[i]["g"] = g
+                        else:
+                            if (not (first_epoch_after_split and
+                                     size_change_kwargs[i]["is_split"])):
+                                add_tree_event_from_kwargs(i)
+                            else:
+                                first_epoch_after_split = False
+                            size_change_kwargs[i] = {
+                                "init_event": event,
+                                "size": event.size_args[i],
+                                "dyn": dyn,
+                                "t": last_time,
+                                "g": g,
+                                "is_leaf": False,
+                                "is_split": size_change_kwargs[i]["is_split"],
+                                "pop_from": size_change_kwargs[i]["pop_from"],
+                            }
+                        last_dyn[i] = dyn
+                        last_g[i] = g
+                last_size = event.size_args
+                last_time = curr_time
+            else:
+                assert isinstance(event, Split)
+                pop_from = len(event.size_args) - 1
+                # We have to print the last valid size change of the population
+                # that will be merged to pop_to_div
+                add_tree_event_from_kwargs(index=event.pop_to_div)
+                add_tree_event_from_kwargs(index=pop_from)
+                # And we have to update our dictionary for pop_to_div
+                size_change_kwargs[event.pop_to_div] = {
+                    "init_event": event,
+                    "size": event.size_args[i],
+                    "dyn": size_change_kwargs[event.pop_to_div]["dyn"],
+                    "t": last_time,
+                    "g": size_change_kwargs[event.pop_to_div]['g'],
+                    "is_leaf": False,
+                    "is_split": True,
+                    "pop_from": pop_from,
+                }
+
+                first_epoch_after_split = True
+                pop_to_div = event.pop_to_div
+                add_split_before_epoch = True
+                last_size = last_size[:-1]
+                last_dyn = last_dyn[:-1]
+                last_g = last_g[:-1]
+        # add for first epoch with ancestral size
+        assert len(last_size) == len(last_dyn) == len(last_g) == 1
+        size_change_kwargs[0]["size"] = self.Nanc_size
+        add_tree_event_from_kwargs(index=0)
+
+        # Fix variables if there are some
+        for var in self.fixed_values:
+            if var in model.variables:
+                model.fix_variable(var, self.fixed_values[var])
+        # we should update values as our variables changes (e.g. inbreeding
+        # will be missed)
+        var2value = self.var2value(values)
+        varname2value = {var.name: var2value[var] for var in self.variables}
+        model_values = [varname2value[var.name] for var in model.variables]
+        return model, model_values

@@ -84,6 +84,9 @@ def get_defaults_from_vcf_format(vcf_file, popmap_file, verbose=False):
     """
     Returns population labels and projections from files.
     if verbose is True then warnings are printed.
+
+    If full then all samples will be used, missed ones will be put under
+    `Unknown` population.
     """
     # Read popmap and check samples from vcf
     # check samples in vcf
@@ -169,31 +172,14 @@ def check_and_return_projections_and_labels(data_holder):
     pop2proj = dict(zip(full_populations, full_projections))
     projections = [pop2proj[pop] for pop in populations]
     if holder_proj is not None:
-        assert projections == holder_proj, "Data cannot be downsized for "\
-                                           "diCal2 engine. Sample size of"\
-                                           f" VCF data for {populations} "\
-                                           "populations are "\
-                                           f"{projections} and got "\
-                                           f"projections {holder_proj}."
+        if len(projections) != len(holder_proj):
+            all_less = False
+        else:
+            all_less = all(
+                [pr1 <= pr2 for pr1, pr2 in zip(holder_proj, projections)]
+            )
+        assert all_less, ("Data cannot be downsized. Sample size of VCF data "
+                          f"for {populations} populations are {projections} "
+                          f"and got projections {holder_proj}.")
+        projections = holder_proj
     return projections, populations
-
-
-def update_data_holder_with_inner_data(data_holder, inner_data):
-    """
-    Updates given data_holder with given data that was read from it.
-    """
-    if hasattr(inner_data, "sample_sizes"):
-        data_holder.projections = inner_data.sample_sizes
-    if hasattr(inner_data, "pop_ids"):
-        data_holder.population_labels = inner_data.pop_ids
-    if hasattr(inner_data, "folded"):
-        data_holder.outgroup = not inner_data.folded
-    if isinstance(data_holder, VCFDataHolder):
-        projections, pop_labels = check_and_return_projections_and_labels(
-            data_holder
-        )
-        data_holder.projections = projections
-        data_holder.population_labels = pop_labels
-        # TODO: valid only for dical2
-        # data_holder.outgroup = data_holder.reference_file is not None
-    return data_holder

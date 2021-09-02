@@ -1,4 +1,5 @@
 import numpy as np
+
 from ..utils import Variable, VariablePool, float_repr, DiscreteVariable
 
 
@@ -42,7 +43,7 @@ class Model(object):
                 for var in variable._variables:
                     self.add_variable(var)
                 for var in variable.fixed_values:
-                    self.fixed_values[var] = self.fixed_values[var]
+                    self.fixed_values[var] = variable.fixed_values[var]
                     self.is_fixed[self._variables.index(var)] = True
                 return
             if variable not in self._variables:
@@ -104,7 +105,7 @@ class Model(object):
         :param values: List or dict {var_name: value} of values.
         """
         if len(self.variables) == 0:
-            return {}
+            return self.fixed_values
         if isinstance(values, list) or isinstance(values, np.ndarray):
             ret_dict = {var: value for var, value in zip(self.variables,
                                                          values)}
@@ -135,10 +136,10 @@ class Model(object):
         Returns value from var2value if entity is variable or returns entity
         otherwise (as it means that entity is a constant)
         """
-        from .variables_combinations import BinaryOperation
+        from .variables_combinations import Operation
         if isinstance(entity, Variable):
             return var2value[entity]
-        if isinstance(entity, BinaryOperation):
+        if isinstance(entity, Operation):
             return entity.get_value(var2value)
         return entity
 
@@ -158,13 +159,17 @@ class Model(object):
         """
         Returns list of arg and its value string representations
         """
-        from .variables_combinations import BinaryOperation
+        from .variables_combinations import BinaryOperation, UnaryOperation
         if isinstance(arg, Variable):
             val = self.var2value(values)[arg]
             arg_repr = f"{arg.name}"
             if arg in self.fixed_values:
                 arg_repr = ""
         elif isinstance(arg, BinaryOperation):
+            var2value = self.var2value(values)
+            val = arg.get_value([var2value[var] for var in arg.variables])
+            arg_repr = f"{arg.name}"
+        elif isinstance(arg, UnaryOperation):
             var2value = self.var2value(values)
             val = arg.get_value([var2value[var] for var in arg.variables])
             arg_repr = f"{arg.name}"

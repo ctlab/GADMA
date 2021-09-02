@@ -11,8 +11,8 @@ import time
 import os
 
 
-def f_sleep_10(x):
-    time.sleep(10)
+def f_sleep(x):
+    time.sleep(5)
     return x
 
 
@@ -45,7 +45,8 @@ class TestUtils(unittest.TestCase):
             return np.random.uniform(domain[0], domain[1])
         gen = DemographicGenerator(
             genetic_generator=gen_gen,
-            N_A_domain=[1, 100],
+            Nanc_domain=[1, 100],
+            Nanc_mean=1e4,
             gen_time=20
         )
         v = gen(domain=[1e-2, 100])
@@ -80,9 +81,9 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(q.get(), 10)
 
     def test_timeout(self):
-        g = timeout(f_sleep_10, time=5)
+        g = timeout(f_sleep, time=2)
         self.assertEqual(g(0), None)
-        g = timeout(f_sleep_10, time=15)
+        g = timeout(f_sleep, time=10)
         self.assertEqual(g(0), 0)
 
     def test_weighted_meta_array(self):
@@ -119,7 +120,7 @@ class TestUtils(unittest.TestCase):
             return
         DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
         data_path = os.path.join(DATA_PATH, "DATA", "sfs", "YRI_CEU.fs")
-        data_holder = SFSDataHolder(data_path, projections=[10, 10])
+        data_holder = SFSDataHolder(data_path, projections=[4, 4])
 
         model = StructureDemographicModel(
             initial_structure=[2, 1],
@@ -131,6 +132,11 @@ class TestUtils(unittest.TestCase):
             frac_split=True,
         )
         # we make time variables greater as it is unstable with small values
+        for i in range(len(model.variables)):
+            if isinstance(model.variables[i], TimeVariable):
+                model.variables[i].domain = [1e-2, 5]
+
+        # for stability
         for i in range(len(model.variables)):
             if isinstance(model.variables[i], TimeVariable):
                 model.variables[i].domain = [1e-2, 5]
@@ -163,7 +169,7 @@ class TestUtils(unittest.TestCase):
                                    mode="rassmusen", verbose=True, do_optimize=True)
                 s2 = get_LOO_score(X_train=X, Y_train=Y, gp_model=gp,
                                    mode="gp_train", verbose=True, do_optimize=False)
-                self.assertTrue(np.isclose(s1, s2), msg=f"{s1} != {s2}")
+                self.assertTrue(np.isclose(s1, s2, rtol=1e-3), msg=f"{s1} != {s2}")
 
             name1 = get_best_kernel(
                 optimizer=optimizer, variables=model.variables, X=_X, Y=_Y,

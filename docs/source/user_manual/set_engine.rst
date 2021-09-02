@@ -15,6 +15,58 @@ GADMA provides the following choice of engines for demographic inference:
 
     - ``dadi``
     - ``moments`` (by default)
+    - ``momi``
+
+Engine comparison
+------------------
+
+.. list-table::
+   :header-rows: 1
+
+   * - Feature
+     - ``dadi``
+     - ``moments``
+     - ``momi``
+   * - VCF input data
+     - ✓
+     - ✓
+     - ✓
+   * - SFS input data
+     - ✓
+     - ✓
+     - ✓
+   * - Recombination rate
+     - ✕
+     - ✕
+     - ✓
+   * - Model plotting
+     - ✕
+     - ✓
+     - ✓ (excludes migration)
+   * - Fast multinom inference
+     - ✓
+     - ✓
+     - ✕
+   * - Exponential size function
+     - ✓
+     - ✓
+     - ✓
+   * - Linear size function
+     - ✓
+     - ✓
+     - ✕
+   * - Continous migration
+     - ✓
+     - ✓
+     - ✕
+   * - Selection coefficients
+     - ✓
+     - ✓
+     - ✕
+   * - Inbreeding coefficients
+     - ✓
+     - ✕
+     - ✕
 
 When using ``dadi``, it is recommended to check the value of the ``Pts`` option in the ``params_file``. ``Pts`` is a sequence of three numbers, each of which is equal to the number of points in grid size. The greater the numbers are, the more accurate numerical solution of a partial differential equation ``dadi`` will give. However, finding such a more accurate solution takes more time. By default, GADMA takes ``Pts : n, n + 10, n + 20``, where ``n`` is the largest sample size among the populations of interest.
 

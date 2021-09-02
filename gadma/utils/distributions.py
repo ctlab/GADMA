@@ -103,23 +103,36 @@ def custom_generator(variables):
     return np.array(values, dtype=get_correct_dtype(values))
 
 
+def generator_for_Nanc(N_mean, domain):
+    if N_mean is None:
+        return np.random.uniform(*domain)
+    return N_mean * trunc_lognormal_sigma_generator(
+        [domain[0]/N_mean, domain[1]/N_mean]
+    )
+
+
 class DemographicGenerator:
 
-    def __init__(self, genetic_generator, N_A_domain, gen_time=None):
+    def __init__(self, genetic_generator, Nanc_domain, Nanc_mean,
+                 gen_time=None, combined_generator=True):
         self.genetic_generator = genetic_generator
         self.gen_time = gen_time
-        self.N_A_domain = N_A_domain
+        self.Nanc_domain = Nanc_domain
+        self.Nanc_mean = Nanc_mean
+        self.combined_generator = combined_generator
 
     def __call__(self, domain, *args, **kwargs):
         def _correct_val(val):
             return min(domain[1], max(domain[0], val))
 
-        N_A = uniform_generator(domain=self.N_A_domain)
+        Nanc = generator_for_Nanc(self.Nanc_mean, self.Nanc_domain)
+        if not self.combined_generator:
+            return Nanc
         value = self.genetic_generator.__call__(domain, *args, **kwargs)
 
         if self.gen_time is not None:
-            return _correct_val(type(N_A)(2 * self.gen_time * N_A * value))
-        return _correct_val(type(N_A)(N_A * value))
+            return _correct_val(type(Nanc)(2 * self.gen_time * Nanc * value))
+        return _correct_val(type(Nanc)(Nanc * value))
 
 
 def rescale_generator(generator, rescale_function):

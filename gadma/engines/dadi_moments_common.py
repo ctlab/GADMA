@@ -28,8 +28,10 @@ class DadiOrMomentsEngine(Engine):
                         CustomDemographicModel]  #:
     supported_data = [VCFDataHolder, SFSDataHolder]  #:
     inner_data_type = None  # base_module.Spectrum  #:
+
     can_evaluate = True
-    can_draw = False  # dadi cannot
+    can_draw_model = False  # dadi cannot
+    can_draw_comp = True  # draw comparison between simulated AFS and real one
     can_simulate = True
 
     @classmethod
@@ -55,6 +57,11 @@ class DadiOrMomentsEngine(Engine):
             assert isinstance(data_holder, VCFDataHolder)
             data = read_vcf_data(cls.base_module, data_holder)
         return data
+
+    def update_data_holder_with_inner_data(self):
+        self.data_holder.projections = self.inner_data.sample_sizes
+        self.data_holder.population_labels = self.inner_data.pop_ids
+        self.data_holder.outgroup = not self.inner_data.folded
 
     @property
     def multinom(self):
@@ -152,7 +159,8 @@ class DadiOrMomentsEngine(Engine):
         theta = self.get_theta(values, grid_sizes)
         return self.get_N_ancestral_from_theta(theta)
 
-    def draw_sfs_plots(self, values, grid_sizes, save_file=None, vmin=None):
+    def draw_data_comp_plot(self, values, grid_sizes, save_file=None,
+                            vmin=None):
         """
         Draws plots of SFS data for observed data and simulated by model data.
 
@@ -177,14 +185,26 @@ class DadiOrMomentsEngine(Engine):
         show = save_file is None
         n_pop = len(self.data.sample_sizes)
         # Get simulated data
-        model = self.simulate(values, self.data.sample_sizes, grid_sizes)
+        model = self.simulate(
+            values,
+            self.data.sample_sizes,
+            None,
+            None,
+            grid_sizes
+        )
+        # check for the multinom
+        if self.multinom:
+            model = self.base_module.Inference.optimally_scaled_sfs(
+                model=model,
+                data=self.data
+            )
         # Draw
         if n_pop == 1:
-            self.base_module.Plotting.plot_1d_comp_multinom(model, self.data)
+            self.base_module.Plotting.plot_1d_comp_Poisson(model, self.data)
             if show:
                 plt.show()
         else:
-            func_name = f"plot_{n_pop}d_comp_multinom"
+            func_name = f"plot_{n_pop}d_comp_Poisson"
             plotting_func = getattr(self.base_module.Plotting, func_name)
             plotting_func(model, self.data, vmin=vmin, show=show)
         if not show:
@@ -204,6 +224,8 @@ class DadiOrMomentsEngine(Engine):
                                                  time_in_generations=False)
         model_sfs = self.simulate(values_gen,
                                   self.data.sample_sizes,
+                                  None,
+                                  None,
                                   grid_sizes)
         # TODO: process it
         if not self.multinom and self.model.linear_constrain is not None:
@@ -256,7 +278,13 @@ class DadiOrMomentsEngine(Engine):
                 p[is_not_discrete] = x
             else:
                 p = x
-            return self.simulate(p, self.data.sample_sizes, grid_sizes)
+            return self.simulate(
+                p,
+                self.data.sample_sizes,
+                None,
+                None,
+                grid_sizes
+            )
 
         cached_simul = cache_func(simul_func)
 
@@ -456,17 +484,16 @@ def _read_data_snp_type(module, data_holder):
         raise SyntaxError("Construction of data_dict failed: " + str(e))
     population_labels, has_outgroup, size = _get_default_from_snp_format(
         data_holder.filename)
-    if data_holder.projections is not None:
-        size = data_holder.projections
     if data_holder.population_labels is not None:
         if len(data_holder.population_labels) < len(population_labels):
             for label in data_holder.population_labels:
                 assert label in population_labels
-            if len(size) > len(data_holder.population_labels):
-                pop2size = {pop: siz
-                            for pop, siz in zip(population_labels, size)}
-                size = [pop2size[x] for x in data_holder.population_labels]
+        pop2size = {pop: siz
+                    for pop, siz in zip(population_labels, size)}
+        size = [pop2size[x] for x in data_holder.population_labels]
         population_labels = data_holder.population_labels
+    if data_holder.projections is not None:
+        size = data_holder.projections
     sfs = module.Spectrum.from_data_dict(dd, population_labels,
                                          projections=size,
                                          polarized=has_outgroup)

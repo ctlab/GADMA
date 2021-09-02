@@ -14,7 +14,7 @@ GADMA provides choice of several engines of demographic inference (this list wil
 * [∂a∂i](https://bitbucket.org/gutenkunstlab/dadi/)  developed by Ryan Gutenkunst
 * [*moments*](https://bitbucket.org/simongravel/moments/)  developed by Simon Gravel
 
-GADMA is developed in Computer Technologies laboratory at ITMO University uder the supervision of [Vladimir Ulyantsev](https://ulyantsev.com/) and Pavel Dobrynin. The principal maintainer is [Ekaterina Noskova](enoskova.me) (ekaterina.e.noskova@gmail.com)
+GADMA is developed in Computer Technologies laboratory at ITMO University uder the supervision of [Vladimir Ulyantsev](https://ulyantsev.com/) and Pavel Dobrynin. The principal maintainer is [Ekaterina Noskova](http://enoskova.me/) (ekaterina.e.noskova@gmail.com)
 
 **GADMA is now of version 2!** See [Changelog](https://gadma.readthedocs.io/en/latest/changelogs.html).
 
