@@ -142,7 +142,7 @@ def check_projections_vcf(projections, full_projections, pop_labels):
                            f"{pop_labels}, {full_projections}."
 
 
-def check_and_return_projections_and_labels(data_holder):
+def check_and_return_projections_and_labels(data_holder, verbose=False):
     """
     Takes VCF data holder and checks that its info is okay for vcf and popmap.
     Returns valid projections and population labels (could be used for the
@@ -153,7 +153,7 @@ def check_and_return_projections_and_labels(data_holder):
     full_populations, full_projections = get_defaults_from_vcf_format(
         vcf_file=data_holder.filename,
         popmap_file=data_holder.popmap_file,
-        verbose=True
+        verbose=verbose
     )
     # get holder info
     holder_pop_labels = data_holder.population_labels

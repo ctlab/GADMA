@@ -41,13 +41,10 @@ class TestUtils(unittest.TestCase):
         for el, var in zip(v, variables):
             self.assertTrue(var.correct_value(el))
 
-        def gen_gen(domain):
-            return np.random.uniform(domain[0], domain[1])
         gen = DemographicGenerator(
-            genetic_generator=gen_gen,
+            FractionVariable,
             Nanc_domain=[1, 100],
             Nanc_mean=1e4,
-            gen_time=20
         )
         v = gen(domain=[1e-2, 100])
 

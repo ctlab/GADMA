@@ -316,7 +316,7 @@ class DemographicVariable(Variable):
                 Nanc_mean=Nanc_mean,
             )
         elif units == "genetic":
-            self.rand_gen = self.rand_gen.genetic_generator
+            self.rand_gen = self.__class__.default_rand_gen
 
     def rescale(self, Nref, reverse=False):
         """

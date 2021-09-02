@@ -31,10 +31,11 @@ class MomiEngine(Engine):
     can_simulate = True
 
     @staticmethod
-    def _get_ind2pop(vcf_data_holder):
+    def _get_ind2pop(vcf_data_holder, verbose=False):
         ind2pop = {}
         projections, populations = check_and_return_projections_and_labels(
-            data_holder=vcf_data_holder
+            data_holder=vcf_data_holder,
+            verbose=verbose,
         )
         popmap, _ = read_popinfo(vcf_data_holder.popmap_file)
         vcf_samples = get_list_of_names_from_vcf(vcf_data_holder.filename)
@@ -72,7 +73,8 @@ class MomiEngine(Engine):
                     ) from e
         elif isinstance(data_holder, VCFDataHolder):
             projections, populations = check_and_return_projections_and_labels(
-                data_holder=data_holder
+                data_holder=data_holder,
+                verbose=True,
             )
             ind2pop = cls._get_ind2pop(data_holder)
             data = momi.SnpAlleleCounts.read_vcf(
