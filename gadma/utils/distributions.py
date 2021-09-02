@@ -112,7 +112,8 @@ def generator_for_Nanc(N_mean, domain):
 
 
 class DemographicGenerator:
-    def __init__(self, var_cls, Nanc_domain, Nanc_mean, combined_generator=True):
+    def __init__(self, var_cls, Nanc_domain, Nanc_mean,
+                 combined_generator=True):
         self.var_cls = var_cls
         self.Nanc_domain = Nanc_domain
         self.Nanc_mean = Nanc_mean
@@ -121,11 +122,14 @@ class DemographicGenerator:
     def __call__(self, domain, *args, **kwargs):
         Nanc = generator_for_Nanc(self.Nanc_mean, self.Nanc_domain)
         if not self.combined_generator:
-            return Nanc
-        value = self.var_cls.default_rand_gen.__call__(self.var_cls.default_domain)
+            return min(domain[1], max(domain[0], Nanc))
+        value = self.var_cls.default_rand_gen.__call__(
+            self.var_cls.default_domain
+        )
 
         tr_value = self.var_cls._transform_value_from_gen_to_phys(value, Nanc)
         return min(domain[1], max(domain[0], tr_value))
+
 
 def rescale_generator(generator, rescale_function):
     def wrap_generator(domain, *args, **kwargs):
