@@ -1254,6 +1254,22 @@ class SettingsStorage(object):
             if self.engine in ['moments', 'dadi']:
                 warnings.warn(f"Engine {self.engine} will ignore "
                               "not-zero recombination rate.")
+        # check for custom model and engine to draw
+        if self.custom_filename is not None:
+            if self.model_plot_engine != self.engine:
+                if get_engine(self.engine).can_draw_model:
+                    warnings.warn(
+                        "Custom model was set, engine to draw models will be "
+                        f"the same as for evaluations: {self.engine}"
+                    )
+                    self.model_plot_engine = self.engine
+                else:
+                    warnings.warn(
+                        "Custom model could be drawn with the same engine that"
+                        " will be used for evaluation only. However that "
+                        f"engine {self.engine} cannot draw models. No picture"
+                        "of model will be generated."
+                    )
 
         if self.engine == "momi":
             if "Lin" in self.dynamics:
