@@ -12,14 +12,14 @@
 #	If it is resumed from other directory and output directory 
 #	isn't set, GADMA will add '_resumed' for previous output 
 #	directory.
-Output directory: /home/katenos/Workspace/popgen/temp/GADMA/examples/custom_model_momi/gadma_result
+Output directory: gadma_result
 
 
 #!!!
 #	Input data can be sfs file (should end with .fs) or 
 #	file of SNP's in dadi format (should end with .txt) or
 #   VCF file + popmap file (sample population map).
-Input data: /home/katenos/Workspace/popgen/temp/GADMA/examples/custom_model_momi/YRI_CEU.fs
+Input data: out_of_africa_chr22_sim.vcf, out_of_africa_chr22_sim.popmap
 
 #	'Population labels' is sequence of population names (the same
 #	names as in input file)
@@ -34,7 +34,7 @@ Input data: /home/katenos/Workspace/popgen/temp/GADMA/examples/custom_model_momi
 #	then we can write YRI, CEU, CHB or YRI, CHB, CEU 
 #	(YRI must be at the first place)
 #	Default: from input file
-Population labels: [YRI, CEU]
+Population labels: [YRI, CEU, CHB]
 
 #	Also one can project spectrum to less size.
 #	For example, we have 80 individuals in each of three 
@@ -42,7 +42,7 @@ Population labels: [YRI, CEU]
 #	project it to 21x21x21 by set 'Projections' parameter 
 #	to 20, 20, 20.
 #	Default: from input file
-Projections: [20, 20]
+Projections: [4, 4, 4]
 
 #   To indicate if outgroup information is included in SFS data
 #   one can set Outgroup option.
@@ -54,7 +54,7 @@ Outgroup: True
 #   Should be used together with Mutation rate and can be replaced
 #   be Thera0 setting.
 #   Default: None
-Sequence length: 4040000
+Sequence length: 51304566
 
 #!!!
 #	Are SNP's linked or unlinked?
@@ -84,7 +84,7 @@ Engine: momi
 #	of points in the grid. Otherwise this pts would be used in dadi's code.
 #	Default: Let n = max number of individuals in one population, 
 #	then pts = n, n+10, n+20
-Pts: [20, 30, 40]
+Pts: [10, 20, 30]
 
 #!!!
 #	Print parameters of model in units of N_ref = N_A.
@@ -105,7 +105,7 @@ Theta0: Null
 #   Instead of Theta0 mutation rate can be set independently.
 #   Should be used together with Sequence length option.
 #   Default: None
-Mutation rate: 2.35e-08
+Mutation rate: 1.29e-08
 
 #    Recombination rate
 #    Default: None
@@ -129,7 +129,7 @@ Time for generation: Null
 #	or
 #	def model_func(params, ns) in case of moments
 #	Default: None
-Custom filename: /home/katenos/Workspace/popgen/temp/GADMA/examples/custom_model_momi/demographic_model.py
+Custom filename: demographic_model.py
 
 #	Now one should specify either bounds or identifications 
 #	of custom model's parameters. All values are in Nref units.
@@ -141,8 +141,9 @@ Custom filename: /home/katenos/Workspace/popgen/temp/GADMA/examples/custom_model
 #	s: 0 - 1
 #	These bounds will be taken automatically if identifications are set.
 #	Default: None
-Lower bound: [1.0, 1.0, -0.001, 0.01, 0.2, 0.2]
-Upper bound: [100000000.0, 100000000.0, 0.001, 100.0, 10000000.0, 10000000.0]
+Lower bound: [1.0, 1.0, 1.0, 0.01, -0.001, 1.0, -0.001, 0.2, 0.2, 0.2]
+Upper bound: [100000000.0, 100000000.0, 100000000.0, 100.0, 0.001, 100000000.0, 0.001,
+  10000000.0, 10000000.0, 10000000.0]
 #	An identifier list:
 #	T - time
 #	N - size of population
@@ -150,7 +151,7 @@ Upper bound: [100000000.0, 100000000.0, 0.001, 100.0, 10000000.0, 10000000.0]
 #	s - split event,  proportion in which population size
 #	is divided to form two new populations.
 #	Default: None
-Parameter identifiers: [N_Anc, N_1F, r_2, nu_2F_gen, Tp, T]
+Parameter identifiers: [N_Anc, N_1F, N_2B, nu_2F_gen, r2, N_3F, r3, T1, T2, T3]
 
 # 2. Structure is for not custom models!
 #	Structure of model for one population - number of time periods 

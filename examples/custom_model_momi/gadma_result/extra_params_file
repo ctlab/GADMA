@@ -111,12 +111,12 @@ dynamics:
 - Exp
 global_log_transform: false
 global_maxeval: null
-global_maxiter: 20
+global_maxiter: 30
 global_optimizer: Genetic_algorithm
 kernel: Matern52
 local_log_transform: true
 local_maxeval: null
-local_maxiter: null
+local_maxiter: 2
 moments_available: true
 n_elitism: 2
 num_init_const: null
