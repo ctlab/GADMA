@@ -1,5 +1,3 @@
-import time
-
 import numpy as np
 import collections
 from . import register_engine
@@ -8,12 +6,11 @@ from ..models import DemographicModel, StructureDemographicModel
 from ..models import CustomDemographicModel, Epoch, Split
 from .. import VCFDataHolder, moments_LD_available
 from ..utils import DynamicVariable, get_correct_dtype
-from ..utils import create_bed_files, read_pops
+from ..utils import create_bed_files
 from ..code_generator import id2printfunc
+from ..data import check_and_return_projections_and_labels
 from os import listdir
 import moments.LD
-from moments.LD import LDstats
-import random
 
 
 class MomentsLdEngine(Engine):
@@ -35,7 +32,7 @@ class MomentsLdEngine(Engine):
     id = "momentsLD"
 
     if moments_LD_available:
-        import moments.LD as base_module
+        import moments.LD
         inner_data_type = dict
 
     can_draw = False
@@ -47,28 +44,13 @@ class MomentsLdEngine(Engine):
     supported_data = [VCFDataHolder, dict]
 
     r_bins = np.logspace(-6, -3, 7)
-
     kwargs = {
         "r_bins": r_bins,
         "report": False,
-        "bp_bins": [ii for ii in range(0, 200001, 20000)],
+        "bp_bins": np.array([ii for ii in range(0, 8275250, 1655050)]),
         "use_genotypes": True,
         "cM": True
     }
-
-    @classmethod
-    def read_data(cls, data_holder):
-        if data_holder.__class__ not in cls.supported_data:
-            raise ValueError(f"Data class {data_holder.__class__.__name__}"
-                             f" is not supported by {cls.id} engine.\nThe "
-                             f"supported classes are: {cls.supported_data}"
-                             f" and {cls.inner_data_type}")
-        return cls._read_data(data_holder)
-
-    def _get_key(self, x):
-        var2value = self.model.var2value(x)
-        key = tuple(var2value[var] for var in self.model.variables)
-        return key
 
     @classmethod
     def _read_data(cls, data_holder):
@@ -80,7 +62,7 @@ class MomentsLdEngine(Engine):
         """
 
         kwargs = cls.kwargs
-        pops = read_pops(data_holder.popmap_file)
+        projections, pops = check_and_return_projections_and_labels(data_holder)
 
         if data_holder.ld_kwargs:
             for key in data_holder.ld_kwargs:
@@ -89,22 +71,21 @@ class MomentsLdEngine(Engine):
                 except:  # NOQA
                     kwargs[key] = data_holder.ld_kwargs[key]
 
-        chromosomes = create_bed_files(data_holder.filename, data_holder.output_directory)
+        chromosomes = create_bed_files(
+            data_holder.filename, data_holder.output_directory)
         bed_files = data_holder.output_directory + "/bed_files/"
         rec_map = listdir(data_holder.recombination_maps)[0]
         extension = rec_map.split(".")[1]
         rec_map = rec_map.split(".")[0]
         rec_map = "_".join(rec_map.split('_')[:-1])
-
-        # Тут нужно добавить ветвление цикла на случай при наличии рекомбинационной карты
-        # и случай при отсутствии
         reg_num = 0
         region_stats = {}
-        for chrom in chromosomes:
-            for num in range(1, chromosomes[chrom]):
-                region_stats.update(
-                    {
-                        f"{reg_num}": moments.LD.Parsing.compute_ld_statistics(
+        if data_holder.recombination_maps is not None:
+            for chrom in chromosomes:
+                for num in range(1, chromosomes[chrom]):
+                    region_stats.update({
+                        f"{reg_num}":
+                        moments.LD.Parsing.compute_ld_statistics(
                             data_holder.filename,
                             rec_map_file=f"{data_holder.recombination_maps}"
                                          f"/{rec_map}_{chrom}.{extension}",
@@ -113,9 +94,23 @@ class MomentsLdEngine(Engine):
                             pops=pops,
                             **kwargs
                         )
-                    }
-                )
-                reg_num += 1
+                    })
+                    reg_num += 1
+        else:
+            print("No recombination map provided, using physical distance")
+            for chrom in chromosomes:
+                for num in range(1, chromosomes[chrom]):
+                    region_stats.update({
+                        f"{reg_num}":
+                        moments.LD.Parsing.compute_ld_statistics(
+                            data_holder.filename,
+                            pop_file=data_holder.popmap_file,
+                            bed_file=f"{bed_files}/bed_file_{chrom}_{num}.bed",
+                            pops=pops,
+                            **kwargs
+                        )
+                    })
+                    reg_num += 1
         data = moments.LD.Parsing.bootstrap_data(region_stats)
 
         return data
@@ -164,14 +159,20 @@ class MomentsLdEngine(Engine):
         values or dictionary {variable name: value}.
         :type values: list or dict
         """
-
         var2value = self.model.var2value(values)
 
         if isinstance(self.model, CustomDemographicModel):
-            return 'Here is CustomDemographicModel'
+            values_list = [var2value[var] for var in self.model.variables]
+            return self.model.function(values_list)
 
-        moments.LD = self.base_module
-        # Закрыть тестами
+        if self.data_holder.ld_kwargs:
+            for key in self.data_holder.ld_kwargs:
+                try:
+                    self.kwargs[key] = eval(self.data_holder.ld_kwargs[key])
+                except:  # NOQA
+                    self.kwargs[key] = self.data_holder.ld_kwargs[key]
+            self.r_bins = self.kwargs["r_bins"]
+
         if self.model.Nanc_size and self.r_bins is not None:
             Nref = self.model.get_value_from_var2value(
                 var2value, self.model.Nanc_size)
@@ -186,7 +187,6 @@ class MomentsLdEngine(Engine):
         else:
             raise ValueError("Theta can't be calculated without"
                              "ancestral N size.")
-
         ld = moments.LD.Numerics.steady_state(rho=rhos, theta=theta)
         ld_stats = moments.LD.LDstats(ld, num_pops=1)
 
@@ -241,20 +241,18 @@ class MomentsLdEngine(Engine):
                     else:
                         kwargs[x] = self.get_value_from_var2value(var2value, y)
                         kwargs[x] = addit_values.get(kwargs[x], kwargs[x])
-
                 ld_stats.integrate(**kwargs, rho=rhos, theta=theta)
 
             elif isinstance(event, Split):
                 ld_stats = ld_stats.split(event.pop_to_div)
-        # little data processing
         model = moments.LD.LDstats(
-            [(y_l + y_r) / 2 for y_l, y_r in zip(ld_stats[:-2], ld_stats[1:-1])]
+            [(y_l + y_r) / 2 for y_l, y_r in zip(
+                ld_stats[:-2], ld_stats[1:-1])]
             + [ld_stats[-1]],
             num_pops=ld_stats.num_pops,
             pop_ids=ld_stats.pop_ids,
         )
         model = moments.LD.Inference.sigmaD2(model)
-
         return model
 
     def evaluate(self, values, **options):
@@ -266,22 +264,19 @@ class MomentsLdEngine(Engine):
         values or dictionary {variable name: value}.
         :type values: list or dict
         """
-        # var2value = self.model.var2value(values)
-        #
-        # if self.data is None or self.model is None:
-        #     raise ValueError("Please set data and model for the engine or"
-        #                      " use set_and_evaluate function instead.")
-        # model = self.simulate(values)
-        # model = moments.LD.Inference.remove_normalized_lds(model)
-        # data = self.inner_data
-        # means, varcovs = moments.LD.Inference.remove_normalized_data(
-        #     data['means'],
-        #     data['varcovs'],
-        #     num_pops=model.num_pops,
-        #     normalization=0)
-        # ll_model = self.base_module.Inference.ll_over_bins(means, model, varcovs)
-        time.sleep(1)
-        ll_model = random.randint(5000, 10000000)
+
+        if self.data is None or self.model is None:
+            raise ValueError("Please set data and model for the engine or"
+                             " use set_and_evaluate function instead.")
+        model = self.simulate(values)
+        model = moments.LD.Inference.remove_normalized_lds(model)
+        data = self.inner_data
+        means, varcovs = moments.LD.Inference.remove_normalized_data(
+            data['means'],
+            data['varcovs'],
+            num_pops=model.num_pops,
+            normalization=0)
+        ll_model = moments.LD.Inference.ll_over_bins(means, model, varcovs)
         return ll_model
 
     def draw_ld_curves(self, values, save_file):
@@ -295,9 +290,8 @@ class MomentsLdEngine(Engine):
                   displayed to the screen.
         :type save_file: str
         """
-        # Вот тут не совсем хороший момент с путём
         data = self.inner_data
-        model = self.simulate(values=values)
+        model = self.simulate(values)
         stats_to_plot = [
             [name] for name in model.names()[:-1][0] if name != 'pi2_0_0_0_0'
         ]
@@ -326,15 +320,15 @@ class MomentsLdEngine(Engine):
                 numbers = "{" + f"{pi_add}" + f"{numbers}" + "}"
                 label = [rf"$\{core}_{numbers}$"]
                 labels_to_plot.append(label)
-        r_bins = self.r_bins
-        self.base_module.Plotting.plot_ld_curves_comp(
+
+        moments.LD.Plotting.plot_ld_curves_comp(
             model,
             data["means"][:-1],
             data["varcovs"][:-1],
-            rs=r_bins,
+            rs=self.r_bins,
             stats_to_plot=stats_to_plot,
             labels=labels_to_plot,
-            fig_size=(len(stats_to_plot), 9),
+            fig_size=(len(stats_to_plot), 7),
             show=save_file is None,
             cols=round(len(stats_to_plot) / 3),
             output=save_file,
@@ -344,7 +338,6 @@ class MomentsLdEngine(Engine):
 
     def generate_code(self, values, filename, nanc=None,
                       gen_time=None, gen_time_units="years"):
-        print("GENERATE CODE")
         """
         Prints nice formated code in the format of engine to file or returns
         it as string if no file is set.
@@ -388,6 +381,7 @@ class MomentsLdEngine(Engine):
     def get_N_ancestral_from_theta(self, theta):
         nanc = theta / (4 * self.model.mutation_rate)
         return nanc
+
 
 if moments_LD_available:
     register_engine(MomentsLdEngine)

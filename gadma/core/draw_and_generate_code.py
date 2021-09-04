@@ -17,7 +17,6 @@ def get_Nanc_gen_time_and_units(x, engine, settings):
     in plot drawing.
     """
     Nanc = engine.get_N_ancestral(x, *settings.get_engine_args())
-    gen_time = None
     if settings.time_for_generation is not None:
         gen_time = settings.time_for_generation *\
                    settings.const_of_time_in_drawing
@@ -82,7 +81,10 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
         else:  # future concatenation
             save_file_sfs = io.BytesIO()
     else:
-        save_file_sfs = filename[:pos] + '_sfs' + filename[pos:]
+        if sfs_plot_engine.id != 'momentsLD':
+            save_file_sfs = filename[:pos] + '_sfs' + filename[pos:]
+        else:
+            save_file_sfs = filename[:pos] + '_ld_stats' + filename[pos:]
     # 1.2 Draw plot to save_file
     if sfs_plot_engine.id == 'momentsLD':
         sfs_plot_engine.draw_ld_curves(
@@ -113,7 +115,6 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
     # 2.2 Draw model plot with moments engine
     # We use try except to be careful
     try:
-        print('draw_schematic_model_plot, why not?')
         model_plot_engine.draw_schematic_model_plot(
             values=x,
             save_file=save_file_model,
@@ -189,12 +190,8 @@ def generate_code_to_file(x, engine, settings, filename):
     failes = {}  # engine.id: reason
     if engine.id == 'momentsLD':
         save_file = prefix + f"_{engine.id}_code.py"
-        engine.set_data(engine.data)
-        engine.data_holder = copy.deepcopy(engine.data_holder)
-        engine.set_model(engine.model)
-        args = settings.get_engine_args(engine.id)
         try:
-            engine.generate_code(x, save_file, *args, Nanc, gen_time,
+            engine.generate_code(x, save_file, Nanc, gen_time,
                                  gen_time_units)
         except Exception as e:
             failes[engine.id] = str(e)
@@ -306,20 +303,12 @@ def print_runs_summary(start_time, shared_dict, settings):
         drawn = True
         gener = True
         try:
-            print("trying to draw_plots_to_file")
-            print("\nENGINE\n")
-            print(engine)
-            print("\nENGINE\n")
             draw_plots_to_file(x, engine, settings, save_plot_file, fig_title)
         except Exception as e:
             drawn = False
             print(f"{bcolors.WARNING}Run {index} warning: failed to draw model"
                   f" due to the following exception: {e}{bcolors.ENDC}.")
         try:
-            print("trying to generate_code_to_file")
-            print("\nENGINE\n")
-            print(engine)
-            print("\nENGINE\n")
             generate_code_to_file(x, engine, settings, save_code_file)
         except Exception as e:
             gener = False

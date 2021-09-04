@@ -39,3 +39,25 @@ or to use ``dadi``:
 
 .. note::
     ``Pts`` option is also used for ``moments`` engine as well: for generation of python code for ``dadi``. So if one want to use ``dadi``'s code of final models after run then maybe ``Pts`` argument must be set too.
+
+
+moments.LD engine
+========================
+
+
+
+Input data
+-------------------
+
+Details of moments.LD work
+-------------------
+
+Plotting LD curves
+-------------------
+
+Example
+-------------------
+
+Custom demographic model example
+-------------------
+

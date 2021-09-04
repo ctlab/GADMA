@@ -20,6 +20,12 @@ If you use ``moments`` as engine in GADMA please cite:
 
 .. [Jouganous2017] Jouganous, J., Long, W., Ragsdale, A. P., & Gravel, S. (2017). Inferring the joint demographic history of multiple populations: beyond the diffusion approximation. Genetics, 206(3), 1549-1567.
 
+If you use ``moments.LD`` as engine in GADMA please cite:
+
+.. [Ragsdale2019] Ragsdale, A. P., & Gravel, S. (2019) Models of archaic admixture and recent history from two-locus statistics. PLoS Genetics, 15(6), `e1008204 <https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1008204>`_ (2019).
+
+.. [Ragsdale2020] Ragsdale, A. P., & Gravel, S. (2020) Unbiased estimation of linkage disequilibrium from unphased data. Molecular Biology and Evolution 37.3 (2020): `923-932 <https://academic.oup.com/mbe/article/37/3/923/5614437>`_ (2020)
+
 CLAIC citation
 ---------------
 

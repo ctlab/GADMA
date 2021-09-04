@@ -81,7 +81,7 @@ class GlobalOptimizer(Optimizer):
     def initial_design(self, f, variables, num_init,
                        X_init=None, Y_init=None,
                        random_type='resample', custom_rand_gen=None):
-        print("initial_design")
+
         """
         Performs initial design for optimization. All x's will be transformed
         according to `log_transform` and all y's will be multiplied by sign.
@@ -119,7 +119,7 @@ class GlobalOptimizer(Optimizer):
         return X, Y
 
     def _update_X_init_Y_init(self, X_init, Y_init, X_out, Y_out):
-        print("_update_X_init_Y_init")
+
         """
         Updates X_init and Y_init according to restored X_out and Y_out.
         It is just union of two arrays with initial points that takes into
@@ -157,7 +157,7 @@ class GlobalOptimizer(Optimizer):
             new_X_init.extend(X_init[len(Y_init):])
             new_Y_init = copy.copy(Y_init)
             new_Y_init.extend(Y_out)
-        print("RETURN__update_X_init_Y_init")
+
         return new_X_init, new_Y_init
 
     def process_optimize_kwargs(self, f, variables,
@@ -179,7 +179,7 @@ class GlobalOptimizer(Optimizer):
                                `num_init_const` \* len(`variables`).
         """
         # Our X_out and Y_out are restored at that point, we want update
-        print("process_optimize_kwargs")
+
         X_init, Y_init = self._update_X_init_Y_init(
             X_init,
             Y_init,
@@ -187,25 +187,25 @@ class GlobalOptimizer(Optimizer):
             self.run_info.result.Y_out
         )
         # Check for number of initial points
-        print("OPT_KWARGS_1")
+
         if num_init_const is not None:
             num_init = num_init_const * len(variables)
         # If we restored our run then we do not need to evaluate so many points
-        print("OPT_KWARGS_2")
+
         if self.run_info.result.n_eval > 0:
             num_init = len(self.run_info.result.X_out)
         # Just to be sure
         assert isinstance(num_init, int)
 
         # Perform initial design. X_init and Y_init have transformed values now
-        print("OPT_KWARGS_3")
+
         X_init, Y_init = self.initial_design(f, variables,
                                              num_init,
                                              X_init, Y_init, self.random_type,
                                              self.custom_rand_gen)
-        print("OPT_KWARGS_4")
+
         X_init, Y_init = sort_by_other_list(X_init, Y_init, reverse=False)
-        print("OPT_KWARGS_RETURN")
+
         # Return our kwargs for _optimize
         return {"X_init": X_init,
                 "Y_init": Y_init}
@@ -270,7 +270,6 @@ class GlobalOptimizer(Optimizer):
                                     given transform before usage in this run.
         :type restore_x_transform: func
         """
-        print("global_optimizer")
         optimize_kwargs = {"X_init": X_init,
                            "Y_init": Y_init,
                            "num_init": num_init,

@@ -211,7 +211,6 @@ class CoreRun(object):
         """
         n_iter = self.draw_iter_callback_counter
         verbose = self.settings.draw_models_every_n_iteration
-        print(verbose)
         if verbose != 0 and n_iter % verbose == 0:
             fig_title = f"Iteration {n_iter}, "\
                         f"Log-likelihood: {y:.2f}"
@@ -246,9 +245,6 @@ class CoreRun(object):
                     save_file = os.path.join(self.code_dir, engine.id,
                                              filename)
                     args = self.settings.get_engine_args(engine.id)
-                    print("SET DATA IN CORE RUN")
-                    print(type(self.engine.data))
-                    print("DATA TYPE")
                     engine.set_data(self.engine.data)
                     engine.data_holder = self.engine.data_holder
                     engine.set_model(self.engine.model)
@@ -337,12 +333,12 @@ class CoreRun(object):
                                                       best_by.lower()))
         save_plot_file = os.path.join(self.output_dir, prefix + "_model.png")
         save_code_file = os.path.join(self.output_dir, prefix + "_model")
-        try:
-            draw_plots_to_file(x, self.engine, self.settings,
-                               save_plot_file, fig_title)
-        except Exception as e:
-            print(f"{bcolors.WARNING}Run {self.index}: failed to draw model "
-                  f"due to the following exception: {e}{bcolors.ENDC}")
+        # try:
+        draw_plots_to_file(x, self.engine, self.settings,
+                           save_plot_file, fig_title)
+        # except Exception as e:
+        #     print(f"{bcolors.WARNING}Run {self.index}: failed to draw model "
+        #           f"due to the following exception: {e}{bcolors.ENDC}")
         try:
             generate_code_to_file(x, self.engine,
                                   self.settings, save_code_file)
@@ -401,16 +397,11 @@ class CoreRun(object):
 
         :param initial_kwargs: Initial kwargs for optimization.
         """
-        print('1')
         np.random.seed()
-        print("optimize_kwargs['callback'] ")
         self.optimize_kwargs['callback'] = self.callback
-        print("optimize_kwargs['save_file']")
         self.optimize_kwargs['save_file'] = self.get_save_file()
         # We set some kwargs if they were not set in run_with_increase
-        print('2')
         if self.settings.initial_structure is None:
-            print('cycle')
             options = list(self.get_run_options())
             assert len(options) > 0
             restore_file, _, only_models, x_transform = options[0]
@@ -420,16 +411,11 @@ class CoreRun(object):
             self.optimize_kwargs['local_x_transform'] = x_transform[1]
         f = self.engine.evaluate
         variables = self.model.variables
-        print('3')
         optimizer = GlobalOptimizerAndLocalOptimizer(self.global_optimizer,
                                                      self.local_optimizer)
-        print('4')
         opt_kwargs = {**self.optimize_kwargs, **initial_kwargs}
-        print('5')
         result = optimizer.optimize(f, variables, **opt_kwargs)
-        print('6')
         self.intermediate_callback(result.x, result.y)
-        print('7')
         return result
 
     def run_with_increase(self, initial_kwargs={}):
@@ -448,7 +434,6 @@ class CoreRun(object):
         assert self.settings.final_structure is not None
 
         options = self.get_run_options()
-        print("KOKOKOKOKOKOKOKOKO")
         restore_file, struct, only_models, x_transform = next(options)
         if struct is not None and struct != self.model.get_structure():
             warnings.warn(f"Initial structure ({struct}) with saved file "
@@ -462,10 +447,8 @@ class CoreRun(object):
         self.optimize_kwargs['global_x_transform'] = x_transform[0]
         self.optimize_kwargs['local_x_transform'] = x_transform[1]
 
-        print("self.run_without_increase(initial_kwargs)")
         result = self.run_without_increase(initial_kwargs)
         for restore_file, structure, only_models, x_transform in options:
-            print("for restore_file, structure, only_models, x_transform in options:")
             X_init = result.X_out
             if self.model.get_structure() != structure:
                 self.model, X_init = self.model.increase_structure(structure,
@@ -609,13 +592,9 @@ class CoreRun(object):
         if self.index in self.shared_dict.dict:
             del self.shared_dict.dict[self.index]
         if self.settings.initial_structure is None:
-            print("self.run_without_increase(initial_kwargs)")
             result = self.run_without_increase(initial_kwargs)
         else:
-            print("result = self.run_with_increase(initial_kwargs)")
             result = self.run_with_increase(initial_kwargs)
-        print("RESULT")
-        print(result)
         result.x = WeightedMetaArray(result.x)
         result.x.metadata = 'f'
         self.base_callback(result.x, result.y)

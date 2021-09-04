@@ -133,7 +133,7 @@ class SettingsStorage(object):
         data_holder_attrs = ['projections', 'outgroup',
                              'population_labels', 'sequence_length',
                              'recombination_maps', 'ld_kwargs',
-                             'output_directory', "bed_file"]
+                             'output_directory']
         bounds_attrs = ['min_n', 'max_n', 'min_t', 'max_t', 'min_m', 'max_m',
                         'dynamics']
         bounds_lists = ['lower_bound', 'upper_bound', 'parameter_identifiers']
@@ -987,7 +987,6 @@ class SettingsStorage(object):
         settings.
         """
         opt = get_global_optimizer(self.global_optimizer)
-        print("")
         if self.global_optimizer.lower() == "genetic_algorithm":
             opt.gen_size = self.size_of_generation
             opt.n_elitism = self.n_elitism
@@ -1101,7 +1100,6 @@ class SettingsStorage(object):
         """
         Returns demographic model to use according to current settings.
         """
-        print("CoreRun.get_model  ")
         gen_time = self.time_for_generation
         theta0 = self.theta0
         mut_rate = self.mutation_rate
@@ -1133,7 +1131,6 @@ class SettingsStorage(object):
             )
             constrain = self.get_linear_constrain_for_model(model)
             model.linear_constrain = constrain
-            print('Created StructureDemographicModel  ')
             return model
         elif ((self.custom_filename is not None or
                 self.model_func is not None) and

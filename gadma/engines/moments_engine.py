@@ -3,6 +3,8 @@ from .dadi_moments_common import DadiOrMomentsEngine
 from ..models import CustomDemographicModel, Epoch, Split
 from ..utils import DynamicVariable, get_correct_dtype
 from .. import SFSDataHolder, moments_available
+from ..data import check_and_return_projections_and_labels
+from ..utils import read_pops
 import numpy as np
 
 
@@ -187,13 +189,16 @@ class MomentsEngine(DadiOrMomentsEngine):
                                so on.
         """
         moments = self.base_module
-        # From moments docs about ns:
-        # List of sample sizes to be passed as the ns argument to model_func.
-        # Actual values do not matter, as long as the dimensionality is
-        # correct. So we take small size for fast drawing.
+
         if self.data_holder is not None:
-            n_pop = len(self.data_holder.projections)
-            pop_labels = self.data_holder.population_labels
+            if (self.data_holder.projections is not None
+                    and self.data_holder.population_labels is not None):
+                n_pop = len(self.data_holder.projections)
+                pop_labels = self.data_holder.population_labels
+            else:
+                (self.data_holder.projections,
+                 self.data_holder.population_labels) = check_and_return_projections_and_labels(
+                    self.data_holder)
         else:
             n_pop = len(self.data.sample_sizes)
             pop_labels = self.data.pop_ids
@@ -215,16 +220,6 @@ class MomentsEngine(DadiOrMomentsEngine):
                                      gen_time_units=gen_time_units,
                                      reverse_timeline=True)
 
-    # def simulate(self, values, ns, dt_fac=default_dt_fac):
-    #     """
-    #     Returns simulated expected SFS for :attr:`demographic_model` with
-    #     values as parameters.
-    #
-    #     :param values: Values of demographic model parameters.
-    #     :param ns: sample sizes of the simulated SFS.
-    #     """
-    #     model = self._inner_func(values, ns, dt_fac)
-    #     return model
 
     def get_theta(self, values, dt_fac=default_dt_fac):
         return super(MomentsEngine, self).get_theta(values, dt_fac)
