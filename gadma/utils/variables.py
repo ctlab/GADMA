@@ -1,7 +1,7 @@
 import numpy as np
 from .distributions import uniform_generator, trunc_normal_sigma_generator, \
     trunc_lognormal_sigma_generator, \
-    DemographicGenerator, rescale_generator
+    DemographicGenerator, rescale_generator, generator_for_Nanc
 from functools import partial
 from keyword import iskeyword
 import copy
@@ -230,11 +230,13 @@ class DemographicVariable(Variable):
     # domain of Nanc in physical units. It is needed to translate
     # default_domain to physical units
     default_domain_in_phys = np.array([100, 1e6])
+    # rand_gen will try to generate evrything around 10,000 individuals
+    default_mean_size_in_phys = 10000
 
     def __init__(self, name, units="genetic", domain=None, rand_gen=None):
         if units != "physical" and units != "genetic" and units != "universal":
             raise ValueError(f"Units {units} is incorrect")
-        if units == "universal":
+        if units == "universal" or domain is not None:
             self.units = units
         else:
             self.units = "genetic"
@@ -244,8 +246,18 @@ class DemographicVariable(Variable):
             var_type = "unknown"
             super(DemographicVariable, self).__init__(name, var_type,
                                                       domain, rand_gen)
-
-        self.translate_units_to(units, self.default_domain_in_phys)
+        if domain is None:
+            self.translate_units_to(
+                units=units,
+                Nanc_domain=self.default_domain_in_phys,
+                Nanc_mean=self.default_mean_size_in_phys,
+            )
+        elif units == "physical":
+            self.rand_gen = DemographicGenerator(
+                var_cls=self.__class__,
+                Nanc_domain=list(self.default_domain_in_phys),
+                Nanc_mean=self.default_mean_size_in_phys,
+            )
 
     @staticmethod
     def _transform_value_from_gen_to_phys(value, Nanc):
@@ -257,7 +269,8 @@ class DemographicVariable(Variable):
 
     def translate_value_into(self, units, value, Nanc=None):
         if not self.correct_value(value):
-            raise ValueError("Given value is not correct: "
+            raise ValueError("Given value is not correct for variable "
+                             f"{self.name}: "
                              f"value {value} not in domain {self.domain}.")
         if self.units == "universal":
             return value
@@ -272,7 +285,7 @@ class DemographicVariable(Variable):
         else:
             raise ValueError(f"Units {units} is incorrect")
 
-    def translate_units_to(self, units, Nanc_domain=None):
+    def translate_units_to(self, units, Nanc_domain=None, Nanc_mean=None):
         if units == self.units:
             return
         if self.units == "universal":
@@ -298,11 +311,12 @@ class DemographicVariable(Variable):
         self.units = units
         if units == "physical":
             self.rand_gen = DemographicGenerator(
-                self.rand_gen,
-                Nanc_domain,
+                var_cls=self.__class__,
+                Nanc_domain=Nanc_domain,
+                Nanc_mean=Nanc_mean,
             )
         elif units == "genetic":
-            self.rand_gen = self.rand_gen.genetic_generator
+            self.rand_gen = self.__class__.default_rand_gen
 
     def rescale(self, Nref, reverse=False):
         """
@@ -353,6 +367,13 @@ class PopulationSizeVariable(DemographicVariable, ContinuousVariable):
     """
     default_domain = np.array([1e-2, 100])  # in genetic units
     default_rand_gen = trunc_lognormal_sigma_generator
+
+    def translate_units_to(self, units, Nanc_domain=None, Nanc_mean=None):
+        super(PopulationSizeVariable, self).translate_units_to(
+            units, Nanc_domain=Nanc_domain, Nanc_mean=Nanc_mean
+        )
+        if units == "physical":
+            self.rand_gen.combined_generator = False
 
     @staticmethod
     def _transform_value_from_gen_to_phys(value, Nanc):
@@ -408,8 +429,8 @@ class TimeVariable(DemographicVariable, ContinuousVariable):
 
     :note: Values are assumed to be in genetic units.
     """
-    default_domain = np.array([1e-15, 5])
-    default_rand_gen = trunc_normal_sigma_generator
+    default_domain = np.array([1e-3, 5])
+    default_rand_gen = trunc_lognormal_sigma_generator
 
     @staticmethod
     def _transform_value_from_gen_to_phys(value, Nanc):
@@ -447,7 +468,7 @@ class FractionVariable(DemographicVariable, ContinuousVariable):
     """
     Variable for keepeing fraction parameter of the demographic model.
 
-    * :attr:`default_domain` = array([0, 1])
+    * :attr:`default_domain` = array([0.001, 0.999])
 
     * :attr:`default_rand_gen` = random uniform distribution over domain.
     """
@@ -468,6 +489,38 @@ class FractionVariable(DemographicVariable, ContinuousVariable):
     @staticmethod
     def _transform_value_from_phys_to_gen(value, Nanc):
         return value
+
+
+class GrowthRateVariable(DemographicVariable, ContinuousVariable):
+    """
+    Variable for growth rate parameter of the demographic model.
+
+    * :attr:`default_domain` = array([-1e-3, 1e-3])
+
+    * :attr:`default_rand_gen` = random uniform distribution over domain.
+    """
+    # This domain is in physical units
+    default_domain = np.array([-1e-3, 1e-3])
+    default_rand_gen = uniform_generator
+    units = "genetic"
+
+    def __init__(self, name, domain=None, rand_gen=None):
+        super(GrowthRateVariable, self).__init__(name,
+                                                 units="universal",
+                                                 domain=domain,
+                                                 rand_gen=rand_gen)
+
+    @staticmethod
+    def _transform_value_from_gen_to_phys(value, Nanc):
+        return value
+
+    @staticmethod
+    def _transform_value_from_phys_to_gen(value, Nanc):
+        return value
+
+    def apply_logarithm(self, back=False):
+        raise ValueError("It is not possible to use logarithm transform for "
+                         "GrowthRateVariable")
 
 
 class Dynamic(object):

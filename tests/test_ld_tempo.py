@@ -481,4 +481,4 @@ class TestModelEvaluation(unittest.TestCase):
         engine.model.Nanc_size = 10000
         engine.model.mutation_rate = 6.0e-5
 
-        engine.draw_ld_curves(values=vals, save_file=SAVE_IMAGE,)
+        engine.draw_data_comp_plot(values=vals, save_file=SAVE_IMAGE,)

@@ -24,10 +24,14 @@ class DemesEngine(Engine):
 
     can_evaluate = False
     can_simulate = False
-    can_draw = True
+    can_draw_model = True
+    can_draw_comp = False
 
     @staticmethod
     def read_data(data_holder):
+        pass
+
+    def update_data_holder_with_inner_data(self):
         pass
 
     def build_demes_graph(self, values, nanc=None,
@@ -54,7 +58,12 @@ class DemesEngine(Engine):
         else:
             Nanc_size = nanc
         # We will use labels of final populations to name their ancestors
-        pop_labels = list(self.data_holder.population_labels)
+        if (self.data_holder is not None and
+                self.data_holder.population_labels is not None):
+            pop_labels = list(self.data_holder.population_labels)
+        else:
+            n_pop = self.model.number_of_populations()
+            pop_labels = [f"pop{i}" for i in range(n_pop)]
         pop_labels = [label.replace(" ", "_") for label in pop_labels]
         whole_labels_list = list()
         # demes got time counted from nowdays so we will keep how deep we are

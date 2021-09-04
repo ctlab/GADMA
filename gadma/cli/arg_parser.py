@@ -178,19 +178,9 @@ def get_settings():
         settings_storage.input_data = args.input
 
     # 3. Checks that we have got all required (initial checks)
-    if (settings_storage.input_data is None and
-            settings_storage.resume_from is None):
-        raise AttributeError("Input file is required. It could be set by "
-                             "-i/--input option or via parameters file.")
-    if (settings_storage.output_directory is None and
-            settings_storage.resume_from is None):
-        raise AttributeError("Output directory is required. It could be set "
-                             "by -o/--output option or via parameters file.")
-    assert settings_storage.output_directory is not None
+    settings_storage.is_valid()
 
-    ensure_dir_existence(settings_storage.output_directory,
-                         check_emptiness=True)
-
+    # Check resume option
     if settings_storage.resume_from is not None:
         old_settings = SettingsStorage.from_file(old_params_file,
                                                  old_extra_file)
@@ -286,41 +276,26 @@ def get_settings():
             warnings.warn("Option `only models`/--only_models  must be used "
                           " --resume option only. It would be ignored.")
 
-    if settings_storage.inbreeding:
-        if settings_storage.projections is not None:
-            warnings.warn("For correct inference of the inbreeding SFS data "
-                          "should not be projected. Projections were taken as"
-                          f" {settings_storage.projections}, please check that"
-                          " data is not downsized.")
-        if settings_storage.engine != "dadi":
-            raise ValueError("Please check your engine. If you want to infer "
-                             "inbreeding please change engine to `dadi`")
-    if (settings_storage.recombination_rate is not None and
-            settings_storage.recombination_rate != 0):
-        if settings_storage.engine in ['moments', 'dadi']:
-            warnings.warn(f"Engine {settings_storage.engine} will ignore "
-                          "not-zero recombination rate.")
-
-    if settings_storage.ld_kwargs:
-        value = settings_storage.ld_kwargs
-        if settings_storage.engine == 'momentsLD':
-            import moments.LD
-            Full_arg_spec = inspect.getfullargspec(
-                moments.LD.Parsing.compute_ld_statistics)
-            args_parsing_ld = Full_arg_spec[0]
-            for key in value:
-                if key not in args_parsing_ld:
-                    raise KeyError(
-                        "Computing_ld_stats function hasn't "
-                        f"argument {key}! Check your param_file "
-                        f"and remove unexpected args.")
-        else:
-            raise ValueError(
-                "You can't pass dictionary with arguments for "
-                "computing LDStats if you don't use "
-                "moments.LD engine. Your current engine is "
-                f"{settings_storage.engine}. Change engine or delete dict "
-                f"argument.")
+    # if settings_storage.ld_kwargs:
+    #     value = settings_storage.ld_kwargs
+    #     if settings_storage.engine == 'momentsLD':
+    #         import moments.LD
+    #         Full_arg_spec = inspect.getfullargspec(
+    #             moments.LD.Parsing.compute_ld_statistics)
+    #         args_parsing_ld = Full_arg_spec[0]
+    #         for key in value:
+    #             if key not in args_parsing_ld:
+    #                 raise KeyError(
+    #                     "Computing_ld_stats function hasn't "
+    #                     f"argument {key}! Check your param_file "
+    #                     f"and remove unexpected args.")
+    #     else:
+    #         raise ValueError(
+    #             "You can't pass dictionary with arguments for "
+    #             "computing LDStats if you don't use "
+    #             "moments.LD engine. Your current engine is "
+    #             f"{settings_storage.engine}. Change engine or delete dict "
+    #             f"argument.")
 
     return settings_storage, args
 

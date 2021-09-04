@@ -11,7 +11,8 @@ test_classes = [PopulationSizeVariable,
                 MigrationVariable,
                 SelectionVariable,
                 DynamicVariable,
-                FractionVariable]
+                FractionVariable,
+                GrowthRateVariable]
 
 
 class TestVariables(unittest.TestCase):
@@ -95,6 +96,9 @@ class TestVariables(unittest.TestCase):
             if var_cls == DynamicVariable:
                 self.assertRaises(NotImplementedError, var.apply_logarithm)
                 continue
+            if var_cls == GrowthRateVariable:
+                self.assertRaises(ValueError, var.apply_logarithm)
+                continue
             var.log_transformed = False
             self.assertFalse(var.log_transformed)
             old_domain = list(var.domain)
@@ -129,7 +133,8 @@ class TestVariables(unittest.TestCase):
 
         for var_cls in test_classes:
             if (issubclass(var_cls, ContinuousVariable) and 
-                    var_cls is not FractionVariable):
+                    var_cls is not FractionVariable and
+                    var_cls is not GrowthRateVariable):
                 var = var_cls("name", units="genetic")
                 var._transform_value_from_gen_to_phys(value=0, Nanc=10)
                 var._transform_value_from_phys_to_gen(value=0, Nanc=10)
@@ -189,4 +194,3 @@ class TestVariables(unittest.TestCase):
                     self.assertEqual(list(var_orig.domain), list(var.domain))
             self.assertRaises(ValueError, var.translate_value_into,
                               units="physical", value=-1)
-

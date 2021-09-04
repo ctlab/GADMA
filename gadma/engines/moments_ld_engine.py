@@ -38,6 +38,7 @@ class MomentsLdEngine(Engine):
     can_draw = False
     can_evaluate = True
     can_simulate = True
+    can_draw_comp = True
 
     supported_models = [DemographicModel, StructureDemographicModel,
                         CustomDemographicModel]
@@ -279,7 +280,7 @@ class MomentsLdEngine(Engine):
         ll_model = moments.LD.Inference.ll_over_bins(means, model, varcovs)
         return ll_model
 
-    def draw_ld_curves(self, values, save_file):
+    def draw_data_comp_plot(self, values, save_file):
         """
         Draw plots of LD curves for observed and simulated by model data.
 

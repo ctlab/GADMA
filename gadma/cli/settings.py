@@ -1,6 +1,8 @@
 from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable,\
-                    DynamicVariable, FractionVariable
+                    DynamicVariable, FractionVariable, GrowthRateVariable,\
+                    SelectionVariable
 from .. import moments_available, dadi_available
+from .. import demes_available, demesdraw_available
 
 # Main options. Output and input.
 output_directory = None
@@ -28,8 +30,11 @@ if moments_available:
     engine = 'moments'
 elif dadi_available:
     engine = 'dadi'
+
 model_plot_engine = "moments"
-sfs_plot_engine = None  # None means the same as engine
+if demes_available and demesdraw_available:
+    model_plot_engine = "demes"
+
 relative_parameters = False
 ancestral_size_as_parameter = False
 no_migrations = False
@@ -37,6 +42,7 @@ symmetric_migrations = False
 split_fractions = True
 migration_masks = None
 inbreeding = False
+selection = False
 
 # Custom model
 custom_filename = None
@@ -68,10 +74,10 @@ p_crossover = 0.18828153004
 p_random = 0.12600048532
 
 mean_mutation_strength = 0.625049
-const_for_mutation_strength = 1.016571
+const_for_mutation_strength = 1.01
 
 mean_mutation_rate = 0.453272
-const_for_mutation_rate = 1.068062
+const_for_mutation_rate = 1.02
 
 stuck_generation_number = 100
 eps = 1e-2
@@ -126,7 +132,7 @@ dynamics = list(DynamicVariable.default_domain)
 # hc_stop_iter = None
 
 # Options of mutation, crossing and random generating
-random_n_a = True
+random_n_a = False
 # multinom_cross = False
 # multinom_mutate = False
 
@@ -159,7 +165,8 @@ local_log_transform = True
 # Additional constants
 P_IDS = {'n': PopulationSizeVariable, 't': TimeVariable,
          'm': MigrationVariable, 'd': DynamicVariable, 's': FractionVariable,
-         'f': FractionVariable, 'p': FractionVariable}
+         'f': FractionVariable, 'p': FractionVariable,
+         'r': GrowthRateVariable, 'g': [GrowthRateVariable, SelectionVariable]}
 LONG_NAME_2_SHORT = {"log-likelihood": "logLL",
                      "aic score": "aic",
                      "claic score": "claic"}

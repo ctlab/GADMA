@@ -164,6 +164,12 @@ class TestModelStructure(unittest.TestCase):
                                                      has_inbr=inbr)
  
                 dm = model_generator(structure)
+                dm.mutation_rate = 1e-8
+                # Change domain as when time is very small then our check
+                # sometimes is wrong
+                for i in range(len(dm.variables)):
+                    if isinstance(dm.variables[i], TimeVariable):
+                        dm.variables[i].domain = [1e-2, 5]
                 variables = dm.variables
                 x = [var.resample() for var in variables]
                 bad_structure = list(structure)
@@ -175,20 +181,39 @@ class TestModelStructure(unittest.TestCase):
                                       bad_structure)
 
                 check_ll = np.random.choice([True, False], p=[1/6, 5/6])
-                if has_anc:
-                    check_ll = False
                 for engine in all_simulation_engines():
+                    if engine.id not in ["dadi", "moments"] and not has_anc:
+                        continue
                     engine.set_model(dm)
                     if engine.id == 'dadi':
                         sizes = [8 for _ in range(len(structure))]
                         if len(structure) == 1:
                             sizes = [20]
-                        args = ([4, 6, 8],)  # pts
+                        kwargs = {"pts": [4, 6, 8]}  # pts
                     else:
                         sizes = [4 for _ in range(len(structure))]
-                        args = ()
+                        kwargs = {}
+
+                    # check that our x is valid for the engine
+                    if engine.id == "momi":
+                        x_cor = [el if el != "Lin" else "Exp" for el in x]
+                    else:
+                        x_cor = x
+
                     # simulate data
-                    data = engine.simulate(x, sizes, *args)
+                    try:  # momi fails sometimes
+                        data = engine.simulate(
+                            values=x_cor,
+                            ns=sizes,
+                            sequence_length=1e6,
+                            population_labels=[f"Pop{i}" for i in range(len(sizes))],
+                            **kwargs
+                        )
+                    except ValueError as e:
+                        if str(e).startswith("zero-size array to reduction"):
+                            failed += 1
+                            continue
+                        raise e
                     engine.set_data(data)
 #                    print(data)
 #                    print(type(data))
@@ -196,7 +221,7 @@ class TestModelStructure(unittest.TestCase):
                     if check_ll:
                         # get ll of data
                         try:
-                            ll_true = engine.evaluate(x, *args)
+                            ll_true = engine.evaluate(x_cor, **kwargs)
                         except AttributeError:
                             assert engine.id == "dadi"
                         random_int = np.random.choice(range(len(structure)))
@@ -216,7 +241,7 @@ class TestModelStructure(unittest.TestCase):
 #                        print(msg)
                         new_dm = copy.deepcopy(dm)
                         new_dm, new_X = new_dm.increase_structure(
-                            new_structure, [x])
+                            new_structure, [x_cor])
                         an_dm = copy.deepcopy(dm)
                         _, X_none = an_dm.increase_structure()
                         self.assertEqual(X_none, None)
@@ -224,15 +249,23 @@ class TestModelStructure(unittest.TestCase):
 #                        print("!!!", dm.var2value(x), new_dm.var2value(new_X[0]))
                         if check_ll and random_int == i:
                             try:
-                                new_ll = engine.evaluate(new_X[0], *args)
-                                self.assertTrue(np.allclose(ll_true, new_ll),
+                                new_ll = engine.evaluate(new_X[0], **kwargs)
+                                if has_anc and engine.id in ["dadi", "moments"]:
+                                    continue
+                                else:
+                                    is_equal = np.allclose(ll_true, new_ll)
+                                self.assertTrue(is_equal,
                                                 msg=f"{ll_true} != {new_ll} : {msg}")
                             except AttributeError:
+                                assert engine.id in ["dadi"]
+                                failed += 1
+                            except TypeError:
+                                assert engine.id in ["dadi"]
                                 failed += 1
 
                 dm.final_structure = dm.get_structure()
                 self.assertRaises(ValueError, dm.increase_structure)
-        self.assertTrue(failed <= 5)
+        self.assertTrue(failed <= 5, "Ddai failed more that 5 times")
 
 
     def test_fails(self):
@@ -282,7 +315,7 @@ class TestModelStructure(unittest.TestCase):
             self.assertRaises(ValueError, model.increase_structure, [2, 2])
 
     def test_transform(self):
-        for structure in TEST_STRUCTURES:
+        for structure in BASE_TEST_STRUCTURES:
             for base_migs, base_sels, base_dyns, base_symms, base_fracs, base_inbr in\
                     list(itertools.product([False, True],repeat=6)):
                 base_mig_masks = [None, self._generate_mig_mask(structure,

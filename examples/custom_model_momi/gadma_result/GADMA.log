@@ -1,0 +1,151 @@
+Data reading
+Number of populations: 3
+Projections: [4, 4, 4]
+Population labels: ('YRI', 'CEU', 'CHB')
+Outgroup: True
+[92m--Successful data reading--[0m
+
+[93mUserWarning: Setting no_migrations (True) will be ignored as custom model from file is chosen.[0m (/home/katenos/.local/lib/python3.6/site-packages/gadma/cli/arg_parser.py:293)
+[93mUserWarning: Setting split_fractions (True) will be ignored as custom model from file is chosen.[0m (/home/katenos/.local/lib/python3.6/site-packages/gadma/cli/arg_parser.py:293)
+[92m--Successful arguments parsing--[0m
+
+Parameters of launch are saved in output directory: /home/katenos/Workspace/popgen/temp/GADMA/examples/custom_model_momi/gadma_result/params_file
+All output is saved in output directory: /home/katenos/Workspace/popgen/temp/GADMA/examples/custom_model_momi/gadma_result/GADMA.log
+
+[94m--Start pipeline--[0m
+Run launch number 1
+Run launch number 2
+
+[000:01:00]
+All best by log-likelihood models
+Number	log-likelihood	Model
+Run 2	-244949.17	(N_Anc=192820.74841,	N_1F=7223.22565,	N_2B=346.23931,	nu_2F_gen=0.23018,	r2=6e-05,	N_3F=2552.33854,	r3=-3.98e-04,	T1=495272.96232,	T2=2424.316,	T3=114.44749)	mmmmmmm	
+Run 1	-247290.30	(N_Anc=8599.06242,	N_1F=14879.82964,	N_2B=17816.44499,	nu_2F_gen=2.78733,	r2=0.001,	N_3F=2011.56609,	r3=-1.56e-04,	T1=805.41691,	T2=5827.67398,	T3=64.43284)	mmmmmm	
+[93mRun 2 warning: failed to draw model due to the following exception: Model <class 'gadma.models.custom_demographic_model.CustomDemographicModel'> is not supported by demes engine.
+The supported models are: [<class 'gadma.models.demographic_model.EpochDemographicModel'>, <class 'gadma.models.structure_demographic_model.StructureDemographicModel'>].[0m.
+
+You can find the Python code of the best model in the output directory.
+
+
+[000:02:00]
+All best by log-likelihood models
+Number	log-likelihood	Model
+Run 2	-244910.58	(N_Anc=192820.74841,	N_1F=7223.22565,	N_2B=664.04023,	nu_2F_gen=0.24092,	r2=0.00011,	N_3F=1587.17085,	r3=-3.98e-04,	T1=753712.78309,	T2=2424.316,	T3=84.81883)	mmmmmm	
+Run 1	-244974.98	(N_Anc=8096.63797,	N_1F=5371.01532,	N_2B=3719.21832,	nu_2F_gen=0.48689,	r2=0.00084,	N_3F=440.22857,	r3=-3.39e-05,	T1=167.17264,	T2=1748.29924,	T3=10.3562)	mmmmmmm	
+[93mRun 2 warning: failed to draw model due to the following exception: Model <class 'gadma.models.custom_demographic_model.CustomDemographicModel'> is not supported by demes engine.
+The supported models are: [<class 'gadma.models.demographic_model.EpochDemographicModel'>, <class 'gadma.models.structure_demographic_model.StructureDemographicModel'>].[0m.
+
+You can find the Python code of the best model in the output directory.
+
+
+[000:03:00]
+All best by log-likelihood models
+Number	log-likelihood	Model
+Run 2	-244897.75	(N_Anc=308684.05537,	N_1F=7223.22565,	N_2B=270.24291,	nu_2F_gen=0.42549,	r2=0.00011,	N_3F=2351.44351,	r3=-6.54e-04,	T1=1117566.07943,	T2=2004.24654,	T3=56.36652)	mmmmmmmm	
+Run 1	-244974.98	(N_Anc=8096.63797,	N_1F=5371.01532,	N_2B=3719.21832,	nu_2F_gen=0.48689,	r2=0.00084,	N_3F=440.22857,	r3=-3.39e-05,	T1=167.17264,	T2=1748.29924,	T3=10.3562)	mmmmmmm	
+[93mRun 2 warning: failed to draw model due to the following exception: Model <class 'gadma.models.custom_demographic_model.CustomDemographicModel'> is not supported by demes engine.
+The supported models are: [<class 'gadma.models.demographic_model.EpochDemographicModel'>, <class 'gadma.models.structure_demographic_model.StructureDemographicModel'>].[0m.
+
+You can find the Python code of the best model in the output directory.
+
+
+[000:04:00]
+All best by log-likelihood models
+Number	log-likelihood	Model
+Run 2	-244763.99	(N_Anc=49608.92298,	N_1F=7223.22565,	N_2B=270.24291,	nu_2F_gen=0.07268,	r2=0.00011,	N_3F=2787.10375,	r3=-7.05e-04,	T1=360037.9623,	T2=2424.316,	T3=58.65638)	c	
+Run 1	-244974.98	(N_Anc=8096.63797,	N_1F=5371.01532,	N_2B=3719.21832,	nu_2F_gen=0.48689,	r2=0.00084,	N_3F=440.22857,	r3=-3.39e-05,	T1=167.17264,	T2=1748.29924,	T3=10.3562)	mmmmmmm	
+[93mRun 2 warning: failed to draw model due to the following exception: Model <class 'gadma.models.custom_demographic_model.CustomDemographicModel'> is not supported by demes engine.
+The supported models are: [<class 'gadma.models.demographic_model.EpochDemographicModel'>, <class 'gadma.models.structure_demographic_model.StructureDemographicModel'>].[0m.
+
+You can find the Python code of the best model in the output directory.
+
+
+[000:05:00]
+All best by log-likelihood models
+Number	log-likelihood	Model
+Run 2	-244627.21	(N_Anc=15004.59662,	N_1F=7223.22565,	N_2B=270.24291,	nu_2F_gen=0.06908,	r2=0.0009,	N_3F=1820.32828,	r3=-8.74e-04,	T1=360037.9623,	T2=2424.316,	T3=36.21938)	
+Run 1	-244902.38	(N_Anc=7320.66763,	N_1F=8819.88308,	N_2B=7340.6777,	nu_2F_gen=0.1009,	r2=0.001,	N_3F=3287.38175,	r3=-6.63e-05,	T1=4398.86362,	T2=2490.0807,	T3=8.88059)	
+[93mRun 2 warning: failed to draw model due to the following exception: Model <class 'gadma.models.custom_demographic_model.CustomDemographicModel'> is not supported by demes engine.
+The supported models are: [<class 'gadma.models.demographic_model.EpochDemographicModel'>, <class 'gadma.models.structure_demographic_model.StructureDemographicModel'>].[0m.
+
+You can find the Python code of the best model in the output directory.
+
+
+[000:06:00]
+All best by log-likelihood models
+Number	log-likelihood	Model
+Run 2	-244627.21	(N_Anc=15004.59662,	N_1F=7223.22565,	N_2B=270.24291,	nu_2F_gen=0.06908,	r2=0.0009,	N_3F=1820.32828,	r3=-8.74e-04,	T1=360037.9623,	T2=2424.316,	T3=36.21938)	
+Run 1	-244902.38	(N_Anc=7320.66763,	N_1F=8819.88308,	N_2B=7340.6777,	nu_2F_gen=0.1009,	r2=0.001,	N_3F=3287.38175,	r3=-6.63e-05,	T1=4398.86362,	T2=2490.0807,	T3=8.88059)	
+[93mRun 2 warning: failed to draw model due to the following exception: Model <class 'gadma.models.custom_demographic_model.CustomDemographicModel'> is not supported by demes engine.
+The supported models are: [<class 'gadma.models.demographic_model.EpochDemographicModel'>, <class 'gadma.models.structure_demographic_model.StructureDemographicModel'>].[0m.
+
+You can find the Python code of the best model in the output directory.
+
+
+[000:07:00]
+All best by log-likelihood models
+Number	log-likelihood	Model
+Run 2	-244627.21	(N_Anc=15004.59662,	N_1F=7223.22565,	N_2B=270.24291,	nu_2F_gen=0.06908,	r2=0.0009,	N_3F=1820.32828,	r3=-8.74e-04,	T1=360037.9623,	T2=2424.316,	T3=36.21938)	
+Run 1	-244902.38	(N_Anc=7320.66763,	N_1F=8819.88308,	N_2B=7340.6777,	nu_2F_gen=0.1009,	r2=0.001,	N_3F=3287.38175,	r3=-6.63e-05,	T1=4398.86362,	T2=2490.0807,	T3=8.88059)	
+[93mRun 2 warning: failed to draw model due to the following exception: Model <class 'gadma.models.custom_demographic_model.CustomDemographicModel'> is not supported by demes engine.
+The supported models are: [<class 'gadma.models.demographic_model.EpochDemographicModel'>, <class 'gadma.models.structure_demographic_model.StructureDemographicModel'>].[0m.
+
+You can find the Python code of the best model in the output directory.
+
+
+[000:08:00]
+All best by log-likelihood models
+Number	log-likelihood	Model
+Run 2	-244627.21	(N_Anc=15004.59662,	N_1F=7223.22565,	N_2B=270.24291,	nu_2F_gen=0.06908,	r2=0.0009,	N_3F=1820.32828,	r3=-8.74e-04,	T1=360037.9623,	T2=2424.316,	T3=36.21938)	
+Run 1	-244902.38	(N_Anc=7320.66763,	N_1F=8819.88308,	N_2B=7340.6777,	nu_2F_gen=0.1009,	r2=0.001,	N_3F=3287.38175,	r3=-6.63e-05,	T1=4398.86362,	T2=2490.0807,	T3=8.88059)	
+[93mRun 2 warning: failed to draw model due to the following exception: Model <class 'gadma.models.custom_demographic_model.CustomDemographicModel'> is not supported by demes engine.
+The supported models are: [<class 'gadma.models.demographic_model.EpochDemographicModel'>, <class 'gadma.models.structure_demographic_model.StructureDemographicModel'>].[0m.
+
+You can find the Python code of the best model in the output directory.
+
+
+[000:09:00]
+All best by log-likelihood models
+Number	log-likelihood	Model
+Run 2	-244627.21	(N_Anc=15004.59662,	N_1F=7223.22565,	N_2B=270.24291,	nu_2F_gen=0.06908,	r2=0.0009,	N_3F=1820.32828,	r3=-8.74e-04,	T1=360037.9623,	T2=2424.316,	T3=36.21938)	
+Run 1	-244902.38	(N_Anc=7320.66763,	N_1F=8819.88308,	N_2B=7340.6777,	nu_2F_gen=0.1009,	r2=0.001,	N_3F=3287.38175,	r3=-6.63e-05,	T1=4398.86362,	T2=2490.0807,	T3=8.88059)	
+[93mRun 2 warning: failed to draw model due to the following exception: Model <class 'gadma.models.custom_demographic_model.CustomDemographicModel'> is not supported by demes engine.
+The supported models are: [<class 'gadma.models.demographic_model.EpochDemographicModel'>, <class 'gadma.models.structure_demographic_model.StructureDemographicModel'>].[0m.
+
+You can find the Python code of the best model in the output directory.
+
+Finish genetic algorithm number 1
+
+[000:10:00]
+All best by log-likelihood models
+Number	log-likelihood	Model
+Run 2	-244627.21	(N_Anc=15004.59662,	N_1F=7223.22565,	N_2B=270.24291,	nu_2F_gen=0.06908,	r2=0.0009,	N_3F=1820.32828,	r3=-8.74e-04,	T1=360037.9623,	T2=2424.316,	T3=36.21938)	
+Run 1	-244902.38	(N_Anc=7320.66763,	N_1F=8819.88308,	N_2B=7340.6777,	nu_2F_gen=0.1009,	r2=0.001,	N_3F=3287.38175,	r3=-6.63e-05,	T1=4398.86362,	T2=2490.0807,	T3=8.88059)	f	
+[93mRun 2 warning: failed to draw model due to the following exception: Model <class 'gadma.models.custom_demographic_model.CustomDemographicModel'> is not supported by demes engine.
+The supported models are: [<class 'gadma.models.demographic_model.EpochDemographicModel'>, <class 'gadma.models.structure_demographic_model.StructureDemographicModel'>].[0m.
+
+You can find the Python code of the best model in the output directory.
+
+Finish genetic algorithm number 2
+
+[000:10:10]
+All best by log-likelihood models
+Number	log-likelihood	Model
+Run 2	-244627.21	(N_Anc=15004.59662,	N_1F=7223.22565,	N_2B=270.24291,	nu_2F_gen=0.06908,	r2=0.0009,	N_3F=1820.32828,	r3=-8.74e-04,	T1=360037.9623,	T2=2424.316,	T3=36.21938)	f	
+Run 1	-244902.38	(N_Anc=7320.66763,	N_1F=8819.88308,	N_2B=7340.6777,	nu_2F_gen=0.1009,	r2=0.001,	N_3F=3287.38175,	r3=-6.63e-05,	T1=4398.86362,	T2=2490.0807,	T3=8.88059)	f	
+[93mRun 2 warning: failed to draw model due to the following exception: Model <class 'gadma.models.custom_demographic_model.CustomDemographicModel'> is not supported by demes engine.
+The supported models are: [<class 'gadma.models.demographic_model.EpochDemographicModel'>, <class 'gadma.models.structure_demographic_model.StructureDemographicModel'>].[0m.
+
+You can find the Python code of the best model in the output directory.
+
+
+--Finish pipeline--
+
+
+You didn't specify theta at the beginning. If you want to change it and rescale parameters, please see the tutorial:
+https://gadma.readthedocs.io/en/latest/user_manual/theta.html
+
+Thank you for using GADMA!
+
+In case of any questions or problems, please contact: ekaterina.e.noskova@gmail.com
+

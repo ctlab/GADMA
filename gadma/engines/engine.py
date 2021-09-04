@@ -1,6 +1,5 @@
 from ..data import DataHolder
 from ..models import Model
-from ..data import update_data_holder_with_inner_data
 import copy
 
 _registered_engines = {}
@@ -66,7 +65,7 @@ def all_drawing_engines():
     plots for the demographic inference.
     """
     for engine in _registered_engines.values():
-        if engine.can_draw:
+        if engine.can_draw_model:
             yield engine()
 
 
@@ -89,9 +88,11 @@ class Engine(object):
     supported_models = []
     supported_data = []
     inner_data_type = None
-    can_evaluate = False
-    can_draw = False
-    can_simulate = False
+
+    can_evaluate = False  # evaluate value of similarity between model and data
+    can_draw_model = False  # draw picture of the demographic history
+    can_draw_comp = False  # draw comparison of simulated and real data
+    can_simulate = False  # simulate data from proposed demographic history
 
     def __init__(self, data=None, model=None):
         self.data = data
@@ -189,15 +190,15 @@ class Engine(object):
         if isinstance(data, DataHolder):
             self.inner_data = self.read_data(data)
             self.data_holder = copy.deepcopy(data)
-            self.data_holder = update_data_holder_with_inner_data(
-                data_holder=self.data_holder,
-                inner_data=self.inner_data
-            )
+            self.update_data_holder_with_inner_data()
         elif (self.inner_data_type is not None and
                 isinstance(data, self.inner_data_type)):
             self.inner_data = data
             self.data_holder = None
         self.saved_add_info = {}
+
+    def update_data_holder_with_inner_data(self):
+        raise NotImplementedError
 
     @property
     def data(self):

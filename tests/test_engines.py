@@ -33,6 +33,8 @@ class TestEngines(unittest.TestCase):
         self.assertRaises(NotImplementedError, engine._read_data, "some")
         self.assertRaises(NotImplementedError, engine.evaluate, [])
         self.assertRaises(NotImplementedError, engine.generate_code, [])
+        self.assertRaises(NotImplementedError,
+                          engine.update_data_holder_with_inner_data)
 
         dadi_engine = get_engine('dadi')
         model = Model()
@@ -166,7 +168,9 @@ class TestEngines(unittest.TestCase):
 
         engine.set_data(data)
         engine.set_model(dm)
-        model = engine.simulate(vals, ns, pts)
+        seq_len = 1e6
+        pops = None
+        model = engine.simulate(vals, ns, seq_len, pops, pts)
         self.assertTrue(np.allclose(model, data), msg="Simulations differs in"
                                                       " engine and in dadi.")
         self.assertEqual(engine.set_and_evaluate(
@@ -188,7 +192,9 @@ class TestEngines(unittest.TestCase):
 
         engine.set_data(data)
         engine.set_model(dm)
-        model = engine.simulate(vals, ns, dt_fac)
+        seq_len = 1e6
+        pops = None
+        model = engine.simulate(vals, ns, seq_len, pops, dt_fac)
         self.assertTrue(np.allclose(model, data), msg="Simulations differs in"
                                                       " engine and in dadi.")
         eng_ll = engine.set_and_evaluate(
@@ -203,7 +209,12 @@ class TestEngines(unittest.TestCase):
         dm = EpochDemographicModel(Nanc_size=10000)
         dm.add_epoch(TimeVariable("t"), [PopulationSizeVariable("nu")])
         engine.model = dm
-        engine.data = engine.simulate(values=[1, 1], ns=(10,))
+        engine.data = engine.simulate(
+            values=[1, 1],
+            ns=(10,),
+            sequence_length=1e6,
+            population_labels=["Pop1"]
+        )
         engine.model.linear_constrain = optimizers.LinearConstrain([[0, 1], [1, -1]], [0, 0], [1, 1])
         self.assertRaises(ValueError, engine.evaluate, values=[1, 1])
 
@@ -314,10 +325,106 @@ class TestEngines(unittest.TestCase):
         engine.model = dm
 
         engine.draw_schematic_model_plot(values, save_file="plot.png")
-        engine.draw_sfs_plots(values=values, grid_sizes=0.01, save_file=None)
+        engine.draw_data_comp_plot(values=values, save_file=None)
 
         dm = EpochDemographicModel()
         dm.add_epoch(T, [nu])
         engine.model = dm
-        engine.data = engine.simulate(values=values, ns=[20])
-        engine.draw_sfs_plots(values=values, grid_sizes=0.01, save_file=None)
+        engine.data = engine.simulate(
+            values=values,
+            ns=[20],
+            sequence_length=1e6,
+            population_labels=["Pop1"]
+        )
+        engine.draw_data_comp_plot(values=values, save_file=None)
+
+    def get_data_holder(self):
+        # we take the most common data
+        vcf_path = os.path.join(DATA_PATH, "DATA", "vcf")
+        data_holder = VCFDataHolder(
+            os.path.join(vcf_path, "out_of_africa_chr22_sim.vcf"),
+            popmap_file=os.path.join(vcf_path, "out_of_africa_chr22_sim_3pop.popmap"),
+            projections=[4, 4, 4],
+            population_labels=["YRI", "CEU", "CHB"],
+            sequence_length=50818468  # chr22
+        )
+        return data_holder
+
+    def get_model(self):
+        dm = StructureDemographicModel(
+            initial_structure=[2, 1, 1],
+            final_structure=[2, 1, 1],
+            has_anc_size=True,
+            has_migs=False,
+            has_sels=False,
+            has_dyns=True,
+            sym_migs=False,
+            frac_split=False,
+        )
+        dm.mutation_rate = 1e-8
+        dm.recombination_rate = 1e-8
+        return dm
+
+    def test_drawing_engines(self):
+        data_holder = self.get_data_holder()
+        dm = self.get_model()
+
+        values = []
+        for var in dm.variables:
+            if isinstance(var, ContinuousVariable):
+                if var.units == "physical":
+                    values.append(10000)
+                else:
+                    values.append(np.random.uniform(0.5, 1.5))
+            else:
+                values.append(np.random.choice(["Sud", "Exp"]))
+
+        for engine in all_available_engines():
+            if not engine.can_draw_comp:
+                continue
+            engine.model = dm
+            engine.data = data_holder
+            kwargs = {}
+            if engine.id == "dadi":
+                kwargs["pts"] = [5, 10, 15]  # pts
+
+            engine.draw_data_comp_plot(values, **kwargs, save_file=None)
+
+            if engine.can_simulate:
+                engine.data = engine.simulate(
+                    values=values,
+                    ns=engine.data_holder.projections,
+                    sequence_length=engine.data_holder.sequence_length,
+                    population_labels=engine.data_holder.population_labels,
+                    **kwargs,
+                )
+                engine.draw_data_comp_plot(values, **kwargs, save_file=None)
+
+        for engine in all_available_engines():
+            if not engine.can_draw_model:
+                continue
+            engine.model = dm
+            engine.data_holder = data_holder
+            engine.draw_schematic_model_plot(
+                values=values,
+                gen_time = 10,
+                gen_time_units = 'Years',
+                save_file="plot.png"
+            )
+
+    def test_evaluating_engines(self):
+        data_holder = self.get_data_holder()
+        dm = self.get_model()
+
+        values = [var.resample() for var in dm.variables]
+        values = [el if el != "Lin" else "Exp" for el in values]
+
+        for engine in all_available_engines():
+            kwargs = {}
+            if engine.id == "dadi":
+                kwargs["pts"] = [5, 10, 15]  # pts
+
+            if engine.can_evaluate:
+                engine.data = data_holder
+                engine.model = dm
+                engine.evaluate(values, **kwargs)

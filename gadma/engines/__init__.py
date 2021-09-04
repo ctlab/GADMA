@@ -6,3 +6,4 @@ from .moments_engine import MomentsEngine  # NOQA
 from .moments_ld_engine import MomentsLdEngine  # NOQA
 from .dadi_moments_common import DadiOrMomentsEngine  # NOQA
 from .demes_engine import DemesEngine  # NOQA
+from .momi_engine import MomiEngine  # NOQA

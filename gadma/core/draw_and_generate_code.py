@@ -48,12 +48,7 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
     model_plot_engine = get_engine(settings.model_plot_engine)
     model_plot_engine.data_holder = engine.data_holder
     model_plot_engine.model = engine.model
-    if settings.sfs_plot_engine is None:
-        sfs_plot_engine = engine
-    else:
-        sfs_plot_engine = get_engine(settings.sfs_plot_engine)
-        sfs_plot_engine.data_holder = engine.data_holder
-        sfs_plot_engine.model = engine.model
+    comp_plot_engine = engine
 
     Nanc, gen_time, gen_time_units = get_Nanc_gen_time_and_units(
         x=x,
@@ -73,69 +68,62 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
     if engine.id != model_plot_engine.id:
         bad_model = isinstance(engine.model, CustomDemographicModel)
 
-    # 1. Draw sfs
-    # 1.1 Set file or buffer to save plot
-    if PIL_available and not bad_model:  # then we will concatenate plots later
-        if not moments_available:  # then we won't draw model plot
-            save_file_sfs = filename
-        else:  # future concatenation
-            save_file_sfs = io.BytesIO()
-    else:
-        if sfs_plot_engine.id != 'momentsLD':
-            save_file_sfs = filename[:pos] + '_sfs' + filename[pos:]
+    # Check that plots will be drawn
+    draw_comp_plot = comp_plot_engine.can_draw_comp
+    draw_model_plot = not bad_model and model_plot_engine.can_draw_model
+
+    if not draw_comp_plot and not draw_model_plot:
+        raise ValueError(f"Plot is missed: engine {engine.id} cannot "
+                         "draw data comparison and engine "
+                         f"{model_plot_engine.id} cannot draw models.")
+
+    # 1. Draw data comparison
+    if draw_comp_plot:
+        # 1.1 Set file or buffer to save plot
+        if PIL_available and draw_model_plot:
+            save_file_comp = io.BytesIO()
         else:
-            save_file_sfs = filename[:pos] + '_ld_stats' + filename[pos:]
-    # 1.2 Draw plot to save_file
-    if sfs_plot_engine.id == 'momentsLD':
-        sfs_plot_engine.draw_ld_curves(
+            save_file_comp = filename[:pos] + '_data_comp' + filename[pos:]
+        # 1.2 Draw plot to save_file
+        comp_plot_engine.draw_data_comp_plot(
             x,
-            *settings.get_engine_args(sfs_plot_engine.id),
-            save_file=save_file_sfs
-        )
-    else:
-        sfs_plot_engine.draw_sfs_plots(
-            x,
-            *settings.get_engine_args(sfs_plot_engine.id),
-            save_file=save_file_sfs,
+            *settings.get_engine_args(comp_plot_engine.id),
+            save_file=save_file_comp,
             vmin=settings.vmin
         )
-    if bad_model:
-        return
 
     # 2 Draw schematic model plot
-    # 2.0 Check that moments is available, it not we return
-    if not moments_available:
-        raise ValueError("Moments is required to draw schematic model plots.")
-
-    # 2.1 Set file or buffer to save plot
-    if PIL_available:
-        save_file_model = io.BytesIO()
-    else:
-        save_file_model = filename[:pos] + '_model' + filename[pos:]
-    # 2.2 Draw model plot with moments engine
-    # We use try except to be careful
-    try:
-        model_plot_engine.draw_schematic_model_plot(
-            values=x,
-            save_file=save_file_model,
-            fig_title=fig_title,
-            nref=Nanc,
-            gen_time=gen_time,
-            gen_time_units=gen_time_units
-        )
-    except Exception as e:
-        save_file_sfs.seek(0)
-        with open(filename, 'wb') as fl:
-            fl.write(save_file_sfs.read())
-        raise e
+    if draw_model_plot:
+        # 2.1 Set file or buffer to save plot
+        if PIL_available and draw_comp_plot:
+            save_file_model = io.BytesIO()
+        else:
+            save_file_model = filename[:pos] + '_model' + filename[pos:]
+        # 2.2 Draw model plot with moments engine
+        # We use try except to be careful
+        try:
+            model_plot_engine.draw_schematic_model_plot(
+                values=x,
+                save_file=save_file_model,
+                fig_title=fig_title,
+                nref=Nanc,
+                gen_time=gen_time,
+                gen_time_units=gen_time_units
+            )
+        except Exception as e:
+            if draw_comp_plot:
+                save_file_comp.seek(0)
+                with open(filename, 'wb') as fl:
+                    fl.write(save_file_comp.read())
+            raise e
 
     # 3. Concatenate plots if PIL is available
-    if PIL_available:
-        save_file_sfs.seek(0)
+    if PIL_available and draw_comp_plot and draw_model_plot:
+        save_file_comp.seek(0)
         save_file_model.seek(0)
 
         img1 = Image.open(save_file_model)
-        img2 = Image.open(save_file_sfs)
+        img2 = Image.open(save_file_comp)
 
         if img2.size[1] < img1.size[1]:
             img2 = img2.resize(
@@ -179,12 +167,11 @@ def generate_code_to_file(x, engine, settings, filename):
     )
     # Generate code
     if isinstance(engine.model, EpochDemographicModel):
-        engines = all_available_engines()
-        mu_and_L = engine.model.mutation_rate is not None and \
-            settings.sequence_length is not None
-        if not (engine.model.has_anc_size or
-                engine.model.theta0 is not None or mu_and_L):
-            engines.remove("demes")
+        engines_ids = [eng.id for eng in all_available_engines()]
+        if not settings.Nanc_will_be_available():
+            if "demes" in engines_ids:
+                engines_ids.remove("demes")
+        engines = [get_engine(engine_id) for engine_id in engines_ids]
     else:
         engines = [copy.deepcopy(engine)]
     failes = {}  # engine.id: reason
@@ -250,20 +237,34 @@ def print_runs_summary(start_time, shared_dict, settings):
                 ), f"default model is instance of {default_model.__class__}"
                 super(Engine, engine).__setattr__("_model", default_model)
             # Get theta and N ancestral
-            theta = engine.get_theta(x, *settings.get_engine_args())
-            Nanc = engine.get_N_ancestral_from_theta(theta)
-            addit_str = f"(theta = {theta: .2f})"
-            if Nanc is not None or Nanc == 0:
-                if settings.relative_parameters:
+            addit_str = ""
+            Nanc = None
+            is_custom = isinstance(engine.model, CustomDemographicModel)
+            if engine.id in ["dadi", "moments"] and not is_custom:
+                # dadi and moments has the same function get_N_ancestral
+                # but we want to print theta
+                theta = engine.get_theta(x, *settings.get_engine_args())
+                Nanc = engine.get_N_ancestral_from_theta(theta)
+                addit_str += f"(theta = {theta: .2f})"
+            elif not is_custom:
+                Nanc = engine.get_N_ancestral(x, *settings.get_engine_args())
+            # Nanc can be None if we have custom demographic model and
+            # we cannot get Nanc size from theta
+            model_str = ""
+            if settings.relative_parameters:
+                x_translated = engine.model.translate_values(
+                    units="genetic", values=x, Nanc=Nanc
+                )
+                if Nanc is not None:
                     addit_str += f" (Nanc = {int(Nanc)})"
-                    model_str = engine.model.as_custom_string(x)
-                else:
-                    model_str = f" [Nanc = {int(Nanc)}] "
-                    x_translated = engine.model.translate_values(
-                        units="physical", values=x, Nanc=Nanc)
-                    model_str += engine.model.as_custom_string(x_translated)
             else:
-                model_str = engine.model.as_custom_string(x)
+                if not engine.model.has_anc_size and Nanc is not None:
+                    model_str += f" [Nanc = {int(Nanc)}] "
+                x_translated = engine.model.translate_values(
+                    units="physical", values=x, Nanc=Nanc
+                )
+            model_str += engine.model.as_custom_string(x_translated)
+
             if hasattr(x, "metadata"):
                 model_str += f"\t{x.metadata}"
             # Begin to print
@@ -312,8 +313,10 @@ def print_runs_summary(start_time, shared_dict, settings):
             generate_code_to_file(x, engine, settings, save_code_file)
         except Exception as e:
             gener = False
-            print(f"{bcolors.WARNING}Run {index} warning: failed to generate "
-                  f"code due to the following exception: {e}{bcolors.ENDC}")
+            print(
+                f"{bcolors.WARNING}Run {index} warning: failed to generate "
+                f" some code due to the following exception: {e}{bcolors.ENDC}"
+            )
         if drawn and gener:
             print("\nYou can find the picture and the Python code of the best "
                   "model in the output directory.\n")

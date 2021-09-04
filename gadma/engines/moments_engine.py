@@ -24,7 +24,7 @@ class MomentsEngine(DadiOrMomentsEngine):
         import moments as base_module
         inner_data_type = base_module.Spectrum  #:
     default_dt_fac = 0.01  #:
-    can_draw = True
+    can_draw_model = True
 
     @staticmethod
     def _get_kwargs(event, var2value):
@@ -220,6 +220,8 @@ class MomentsEngine(DadiOrMomentsEngine):
                                      gen_time_units=gen_time_units,
                                      reverse_timeline=True)
 
+    def get_N_ancestral(self, values, dt_fac=default_dt_fac):
+        return super(MomentsEngine, self).get_N_ancestral(values, dt_fac)
 
     def get_theta(self, values, dt_fac=default_dt_fac):
         return super(MomentsEngine, self).get_theta(values, dt_fac)
@@ -242,6 +244,15 @@ class MomentsEngine(DadiOrMomentsEngine):
         return super(MomentsEngine, self).generate_code(values, filename,
                                                         dt_fac, nanc, gen_time,
                                                         gen_time_units)
+
+    def draw_data_comp_plot(self, values, dt_fac=default_dt_fac,
+                            save_file=None, vmin=None):
+        return super(MomentsEngine, self).draw_data_comp_plot(
+            values=values,
+            grid_sizes=dt_fac,
+            save_file=save_file,
+            vmin=vmin
+        )
 
 
 if moments_available:
