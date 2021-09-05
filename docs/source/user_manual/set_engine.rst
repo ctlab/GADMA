@@ -17,10 +17,11 @@ GADMA provides the following choice of engines for demographic inference:
     - ``dadi``
     - ``moments`` (by default)
     - ``momi``
+    - ``moments.LD``
 
 In order to choose engine:
 
-.. code-block:: none
+.. code-block::
 
    # param file
    ...
@@ -37,7 +38,10 @@ Engine comparison
      - ``dadi``
      - ``moments``
      - ``momi``
+     - ``moments.LD``
+
    * - VCF input data
+     - ✓
      - ✓
      - ✓
      - ✓
@@ -45,7 +49,9 @@ Engine comparison
      - ✓
      - ✓
      - ✓
+     - ✕
    * - Recombination rate
+     - ✕
      - ✕
      - ✕
      - ✕
@@ -53,11 +59,14 @@ Engine comparison
      - ✕
      - ✓
      - ✓ (excludes migration)
+     - ✕
    * - Fast multinom inference
      - ✓
      - ✓
      - ✕
+     - ✕
    * - Exponential size function
+     - ✓
      - ✓
      - ✓
      - ✓
@@ -65,16 +74,20 @@ Engine comparison
      - ✓
      - ✓
      - ✕
+     - ✓
    * - Continuous migration
      - ✓
      - ✓
      - ✕
+     - ✓
    * - Selection coefficients
      - ✓
      - ✓
      - ✕
+     - ✕
    * - Inbreeding coefficients
      - ✓
+     - ✕
      - ✕
      - ✕
 
@@ -85,7 +98,7 @@ dadi
 
 When using the ``dadi`` engine, it is recommended to check the value of the ``Pts`` option in the ``params_file``. ``Pts`` is a sequence of three numbers, each of which is equal to the number of points in grid size. The greater the numbers are, the more accurate numerical solution of a partial differential equation ``dadi`` will give. However, finding such a more accurate solution takes more time. By default, GADMA takes ``Pts : n, n + 10, n + 20``, where ``n`` is the largest sample size among the populations of interest.
 
-.. code-block:: none
+.. code-block::
 
     # param file
     ...
@@ -100,7 +113,7 @@ moments
 
 ``moments`` engine [Jouganous2017] is very similar to ``dadi``. Usually it is much faster than ``dadi`` but maybe less accurate. It is the default engine for demographic inference with GADMA.
 
-.. code-block:: none
+.. code-block::
 
     # param file
     ...
@@ -120,7 +133,7 @@ Engines ``dadi`` and ``moments`` have a special type of demographic inference th
 
 Unfortunately, ``momi`` engine has some limitations on demographic parameters: it does not infer continuous migrations and linear size change. If an engine is chosen then GADMA informs about these limitations and disables migration and linear dynamic automatically.
 
-.. code-block:: none
+.. code-block::
 
     # param file
     ...
@@ -137,19 +150,16 @@ Unfortunately, ``momi`` engine has some limitations on demographic parameters: i
 moments.LD engine
 ========================
 
+moments.LD engine is the extension of moments. moments.LD compute a large family of linkage disequilibrium statistics
+in model with flexible demographic history with any number of populations.
+Unlike other engines, moments.LD does not work with the allele frequency spectrum,
+but with LD statistics and stores them in a different way than AFS.
 
+.. code-block::
 
-Input data
--------------------
+    # param file
+    ...
+    Engine : moments.LD
+    ...
 
-Details of moments.LD work
--------------------
-
-Plotting LD curves
--------------------
-
-Example
--------------------
-
-Custom demographic model example
--------------------
+More about ``moments.LD engine`` :ref:`here <moments_ld_engine>`.

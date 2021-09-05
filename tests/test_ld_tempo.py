@@ -5,8 +5,10 @@ import os
 import pickle
 import moments.LD
 import numpy as np
+from os import listdir
 from gadma import *
 from pathlib import Path
+from gadma.utils.utils import create_bed_files
 
 try:
     import moments.LD
@@ -29,6 +31,8 @@ TEST_OUTPUT = os.path.join(
     DATA_PATH, 'DATA', 'vcf_ld', "test_output")
 TEST_BED_FILES = os.path.join(
     DATA_PATH, 'DATA', 'vcf_ld', "test_bed_files")
+SFS_DATA = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "wrong_data.fs")
 
 PREPROCESSED_DATA = os.path.join(
     DATA_PATH, 'DATA', 'vcf_ld', "preprocessed_data.bp")
@@ -37,7 +41,7 @@ SAVE_IMAGE = os.path.join(
     DATA_PATH, 'DATA', 'vcf_ld', "ld_curves.jpg")
 
 DATA_HOLDER_FOR_MODELS = VCFDataHolder(
-            vcf_file=VCF_DATA_FEW_CHR,
+            vcf_file=VCF_DATA,
             popmap_file=POP_MAP,
             recombination_maps=REC_MAPS_DIR,
             ld_kwargs={
@@ -64,14 +68,16 @@ class TestVCFDataHolderLD(unittest.TestCase):
         self.assertEqual(ld_data.filename, VCF_DATA)
         self.assertEqual(ld_data.popmap_file, POP_MAP)
         self.assertEqual(ld_data.recombination_maps, REC_MAPS_DIR)
-        # Зачем эта часть ниже?
-        settings = SettingsStorage()
-        settings.engine = 'momentsLD'
-        settings.data_holder = ld_data
-        settings.read_data()
 
-    def test_bed_files_creation(self):
-        pass
+    def test_sfs_data_holder(self):
+        ld_wrong_data = SFSDataHolder(
+            sfs_file=SFS_DATA)
+
+        settings = SettingsStorage()
+        settings.engine = "momentsLD"
+        settings.data_holder = ld_wrong_data
+        self.assertRaises(ValueError, settings.read_data)
+
 
 
 def get_settings_test():
@@ -106,6 +112,11 @@ class TestSettingStorageLDStats(unittest.TestCase):
         sys.argv = ['gadma', '-p', param_file]
         self.assertRaises(ValueError, get_settings_test)
 
+        param_file = os.path.join(DATA_PATH, "PARAMS", 'ld_params_without_anc_size_as_parameter')
+        sys.argv = ['gadma', '-p', param_file]
+        settings, args = get_settings_test()
+        self.assertTrue(settings.ancestral_size_as_parameter, True)
+
     def test_correct_LD_data_processing(self):
         try:
             with open(PREPROCESSED_DATA, "rb") as fin:
@@ -115,7 +126,7 @@ class TestSettingStorageLDStats(unittest.TestCase):
             r_bins = np.logspace(-6, -3, 7)
             moments_regions = {}
 
-            for ii in range(1, 8):
+            for ii in range(1, 16):
                 moments_regions.update(
                     {
                         f"{ii}": moments.LD.Parsing.compute_ld_statistics(
@@ -480,5 +491,33 @@ class TestModelEvaluation(unittest.TestCase):
         engine.set_model(dm)
         engine.model.Nanc_size = 10000
         engine.model.mutation_rate = 6.0e-5
+        engine.inner_data = engine._read_data(engine.data_holder)
 
         engine.draw_data_comp_plot(values=vals, save_file=SAVE_IMAGE,)
+
+
+class BedFilesCreation(unittest.TestCase):
+
+    def tearDown(self):
+        if Path(f"{TEST_OUTPUT}/").exists():
+            shutil.rmtree(f"{TEST_OUTPUT}/")
+        os.makedirs(TEST_OUTPUT)
+
+    def test_create_bed_files(self):
+        chromosomes = create_bed_files(DATA_HOLDER_FOR_MODELS.filename, TEST_OUTPUT)
+
+        test_bed_files_reference_info = []
+        test_bed_files_check_info = []
+
+        for file in listdir(f"{TEST_BED_FILES}/"):
+            with open(f"{TEST_BED_FILES}/{file}", "r") as bed_file:
+                test_bed_files_reference_info.append(bed_file.readline())
+
+        for file in listdir(f"{TEST_OUTPUT}/bed_files/"):
+            with open(f"{TEST_OUTPUT}/bed_files/{file}", "r") as bed_file:
+                test_bed_files_check_info.append(bed_file.readline())
+
+        self.assertTrue(len(listdir(f"{TEST_OUTPUT}/bed_files/")), 15)
+        for ii, nums in enumerate(test_bed_files_reference_info):
+            self.assertEqual(test_bed_files_reference_info[ii],
+                             test_bed_files_check_info[ii])

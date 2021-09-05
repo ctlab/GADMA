@@ -3,7 +3,7 @@ import ruamel.yaml
 import numpy as np
 from . import settings
 from .. import demes_available, momi_available
-from ..data import SFSDataHolder, VCFDataHolder
+from ..data import SFSDataHolder, VCFDataHolder, check_and_return_projections_and_labels
 from ..engines import get_engine, MomentsEngine
 from ..engines import all_engines, all_drawing_engines
 from ..models import StructureDemographicModel, CustomDemographicModel
@@ -805,8 +805,6 @@ class SettingsStorage(object):
         be set.
         """
         engine = get_engine(self.engine)
-
-        # if self.engine != 'momentsLD':
         engine.data = engine.read_data(self.data_holder)
         self.projections = self.data_holder.projections
         self.outgroup = self.data_holder.outgroup
@@ -819,12 +817,6 @@ class SettingsStorage(object):
                                                      [x, x + 10, x + 20])
         self.number_of_populations = len(self.projections)
         return engine.data
-        # else:
-        #     data = engine.read_data(self.data_holder)
-        #     self.population_labels = data["pops"]
-        #     self.number_of_populations = len(self.projections)
-        #     self._inner_data = data
-        #     return data
 
     def read_bootstrap_data(self, return_filenames=False):
         """
@@ -1343,3 +1335,38 @@ class SettingsStorage(object):
                         f"`Mutation rate` (got {self.mutation_rate})\n"
                         f"`Sequence length` (got {self.sequence_length})\nor\n"
                         f"`Theta0` (got {self.theta0})")
+
+        if self.ld_kwargs:
+            if self.engine != "momentsLD":
+                raise ValueError("You can't pass ld_kwargs argument for "
+                                 "if you don't use "
+                                 "moments.LD engine. Your current engine is "
+                                 f"{self.engine}. Change engine or delete dict "
+                                 f"argument.")
+            else:
+                import moments.LD
+                Full_arg_spec = inspect.getfullargspec(moments.LD.Parsing.compute_ld_statistics)
+                args_parsing_ld = Full_arg_spec[0]
+                for key in self.ld_kwargs:
+                    if key not in args_parsing_ld:
+                        raise KeyError("Computing_ld_stats function hasn't "
+                                       f"argument {key}! Check your param_file "
+                                       f"and remove unexpected args.")
+
+        if self.engine == "momentsLD":
+            if not self.ancestral_size_as_parameter:
+                warnings.warn(
+                    "Moments.LD engine need ancestral size as parameter. The option "
+                    "`Ancestral size as parameter` is set to `True`"
+                )
+                self.ancestral_size_as_parameter = True
+
+            if self.data_holder.projections is None:
+                if self.data_holder.population_labels is None:
+                    (self.data_holder.projections,
+                     self.data_holder.population_labels) = check_and_return_projections_and_labels(
+                        self.data_holder)
+                else:
+                    (self.data_holder.projections,
+                     labels) = check_and_return_projections_and_labels(
+                        self.data_holder)

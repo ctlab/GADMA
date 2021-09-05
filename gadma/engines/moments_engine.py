@@ -4,7 +4,6 @@ from ..models import CustomDemographicModel, Epoch, Split
 from ..utils import DynamicVariable, get_correct_dtype
 from .. import SFSDataHolder, moments_available
 from ..data import check_and_return_projections_and_labels
-from ..utils import read_pops
 import numpy as np
 
 

@@ -2,11 +2,8 @@ from ..models import CustomDemographicModel, EpochDemographicModel, \
     Epoch, Split, BinaryOperation
 from ..utils import DiscreteVariable, DynamicVariable, Variable
 # from ..engines import MomentsLdEngine
-from ..utils import create_bed_files, read_pops
-# TODO
-# _print_p0
-# _print_main
-# _print_load_data
+from ..utils import create_bed_files
+from ..data import check_and_return_projections_and_labels
 import numpy as np
 import copy
 import sys
@@ -164,7 +161,7 @@ def _print_momentsLD_load_data(engine, data_holder):
     ret_str += f"chromosomes = {chromosomes}\n"
     kwargs = engine.kwargs
 
-    pops = read_pops(data_holder.popmap_file)
+    pops = data_holder.population_labels
 
     rec_map = listdir(data_holder.recombination_maps)[0]
     extension = rec_map.split(".")[1]
@@ -172,7 +169,13 @@ def _print_momentsLD_load_data(engine, data_holder):
     rec_map = "_".join(rec_map.split('_')[:-1])
     ret_str += f"extension = {extension}\n"
     ret_str += f"rec_map = {rec_map}\n"
-    ret_str += f"kwargs = {kwargs}\n\n"
+    ret_str += "kwargs = {\n"
+    ret_str += f"\tr_bins: {kwargs['r_bins']},\n"
+    ret_str += f"\treport: {kwargs['report']},\n"
+    ret_str += f"\tbp_bins: {kwargs['bp_bins']},\n"
+    ret_str += f"\tuse_genotypes: {kwargs['use_genotypes']},\n"
+    ret_str += f"\tcM: {kwargs['cM']},\n"
+    ret_str += "}\n"
     ret_str += f"vcf_file = {data_holder.filename}\n"
     ret_str += f"pop_map = {data_holder.popmap_file}\n"
     ret_str += f"rec_maps = {data_holder.recombination_maps}\n"
@@ -220,7 +223,7 @@ def _print_momentsLD_simulation():
 
 
 def _print_LdCurves(engine):
-    r_bins = engine.kwargs["bins"]
+    r_bins = engine.kwargs["r_bins"]
     ret_str = "stats_to_plot = [\n"
     ret_str += "    [name] for name in model.names()[:-1][0] if name != 'pi2_0_0_0_0'\n"
     ret_str += "]\n"

@@ -777,8 +777,3 @@ def create_bed_files(vcf_file, output_dir):
             all_chromosomes[chrom] = (minimal_region_number + 1)
 
     return all_chromosomes
-
-
-def read_pops(pop_map):
-    data = pandas.read_csv(pop_map, sep="\t")
-    return list(set(data[(data.columns[1])]))

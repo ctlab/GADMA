@@ -42,7 +42,7 @@ class MomentsLdEngine(Engine):
 
     supported_models = [DemographicModel, StructureDemographicModel,
                         CustomDemographicModel]
-    supported_data = [VCFDataHolder, dict]
+    supported_data = [VCFDataHolder, dict, moments.LD.LDstats_mod.LDstats]
 
     r_bins = np.logspace(-6, -3, 7)
     kwargs = {
@@ -61,9 +61,13 @@ class MomentsLdEngine(Engine):
         :param data_holder: holder of the data.
         :type data_holder: :class:`VCFDataHolder`
         """
+        if isinstance(data_holder, VCFDataHolder):
+            projections, pops = check_and_return_projections_and_labels(data_holder)
+        else:
+            raise ValueError("Wrong type of data_holder: "
+                             f"{data_holder.__class__}")
 
         kwargs = cls.kwargs
-        projections, pops = check_and_return_projections_and_labels(data_holder)
 
         if data_holder.ld_kwargs:
             for key in data_holder.ld_kwargs:
@@ -74,6 +78,8 @@ class MomentsLdEngine(Engine):
 
         chromosomes = create_bed_files(
             data_holder.filename, data_holder.output_directory)
+        print("CHROMOSOMES")
+        print(chromosomes)
         bed_files = data_holder.output_directory + "/bed_files/"
         rec_map = listdir(data_holder.recombination_maps)[0]
         extension = rec_map.split(".")[1]
@@ -82,25 +88,51 @@ class MomentsLdEngine(Engine):
         reg_num = 0
         region_stats = {}
         if data_holder.recombination_maps is not None:
-            for chrom in chromosomes:
-                for num in range(1, chromosomes[chrom]):
-                    region_stats.update({
-                        f"{reg_num}":
-                        moments.LD.Parsing.compute_ld_statistics(
-                            data_holder.filename,
-                            rec_map_file=f"{data_holder.recombination_maps}"
-                                         f"/{rec_map}_{chrom}.{extension}",
-                            pop_file=data_holder.popmap_file,
-                            bed_file=f"{bed_files}/bed_file_{chrom}_{num}.bed",
-                            pops=pops,
-                            **kwargs
-                        )
-                    })
-                    reg_num += 1
+            if len(listdir(data_holder.recombination_maps)) == len(chromosomes):
+                for chrom in chromosomes:
+                    for num in range(1, chromosomes[chrom]):
+                        print("POPS")
+                        print(pops)
+                        region_stats.update({
+                            f"{reg_num}":
+                            moments.LD.Parsing.compute_ld_statistics(
+                                data_holder.filename,
+                                rec_map_file=f"{data_holder.recombination_maps}"
+                                             f"/{rec_map}_{chrom}.{extension}",
+                                pop_file=data_holder.popmap_file,
+                                bed_file=f"{bed_files}/bed_file_{chrom}_{num}.bed",
+                                pops=pops,
+                                **kwargs
+                            )
+                        })
+                        reg_num += 1
+
+            elif len(listdir(data_holder.recombination_maps)) != len(chromosomes):
+                rec_map = listdir(data_holder.recombination_maps)[0]
+                for chrom in chromosomes:
+                    for num in range(1, chromosomes[chrom]):
+                        print("POPS")
+                        print(pops)
+                        region_stats.update({
+                            f"{reg_num}":
+                            moments.LD.Parsing.compute_ld_statistics(
+                                data_holder.filename,
+                                rec_map_file=f"{data_holder.recombination_maps}"
+                                             f"/{rec_map}",
+                                map_name=f"{chrom}",
+                                pop_file=data_holder.popmap_file,
+                                bed_file=f"{bed_files}/bed_file_{chrom}_{num}.bed",
+                                pops=pops,
+                                **kwargs
+                            )
+                        })
+                        reg_num += 1
         else:
             print("No recombination map provided, using physical distance")
             for chrom in chromosomes:
                 for num in range(1, chromosomes[chrom]):
+                    print("POPS")
+                    print(pops)
                     region_stats.update({
                         f"{reg_num}":
                         moments.LD.Parsing.compute_ld_statistics(
@@ -174,20 +206,11 @@ class MomentsLdEngine(Engine):
                     self.kwargs[key] = self.data_holder.ld_kwargs[key]
             self.r_bins = self.kwargs["r_bins"]
 
-        if self.model.Nanc_size and self.r_bins is not None:
-            Nref = self.model.get_value_from_var2value(
-                var2value, self.model.Nanc_size)
-            rhos = 4 * Nref * self.r_bins
-        else:
-            raise ValueError("Rhos can't be calculated without"
-                             "ancestral N size.")
-        if self.model.Nanc_size and self.model.mutation_rate:
-            Nref = self.model.get_value_from_var2value(
-                var2value, self.model.Nanc_size)
-            theta = 4 * Nref * self.model.mutation_rate
-        else:
-            raise ValueError("Theta can't be calculated without"
-                             "ancestral N size.")
+        Nref = self.model.get_value_from_var2value(
+            var2value, self.model.Nanc_size)
+        rhos = 4 * Nref * np.array(self.r_bins)
+        theta = 4 * Nref * self.model.mutation_rate
+
         ld = moments.LD.Numerics.steady_state(rho=rhos, theta=theta)
         ld_stats = moments.LD.LDstats(ld, num_pops=1)
 
@@ -278,9 +301,13 @@ class MomentsLdEngine(Engine):
             num_pops=model.num_pops,
             normalization=0)
         ll_model = moments.LD.Inference.ll_over_bins(means, model, varcovs)
+        # import time
+        # import random
+        # time.sleep(0.5)
+        # ll_model = random.randint(0, 500000)
         return ll_model
 
-    def draw_data_comp_plot(self, values, save_file):
+    def draw_data_comp_plot(self, values, save_file, vmin=None):
         """
         Draw plots of LD curves for observed and simulated by model data.
 
@@ -321,12 +348,11 @@ class MomentsLdEngine(Engine):
                 numbers = "{" + f"{pi_add}" + f"{numbers}" + "}"
                 label = [rf"$\{core}_{numbers}$"]
                 labels_to_plot.append(label)
-
         moments.LD.Plotting.plot_ld_curves_comp(
             model,
             data["means"][:-1],
             data["varcovs"][:-1],
-            rs=self.r_bins,
+            rs=np.array(self.r_bins),
             stats_to_plot=stats_to_plot,
             labels=labels_to_plot,
             fig_size=(len(stats_to_plot), 7),
@@ -383,6 +409,11 @@ class MomentsLdEngine(Engine):
         nanc = theta / (4 * self.model.mutation_rate)
         return nanc
 
+    def update_data_holder_with_inner_data(self):
+        (self.data_holder.projections,
+         self.data_holder.population_labels) = check_and_return_projections_and_labels(
+            self.data_holder)
+        self.data_holder.outgroup = None
 
 if moments_LD_available:
     register_engine(MomentsLdEngine)
