@@ -136,7 +136,7 @@ class Optimizer(object):
             return np.inf
         return self.sign * y
 
-    def _prepare_f_for_opt(self, f, args, eval_file, cache=True):
+    def _prepare_f_for_opt(self, f, args, eval_file, maxeval=None, cache=True):
         r"""
         Prepares `f` for usage in optimizer. It should be transformed
         according to `log_transform` and `maximize`.
@@ -162,7 +162,7 @@ class Optimizer(object):
         f_wrapped = eval_wrapper(f_wrapped, eval_file)
         # Cache our function
         if cache:
-            f_wrapped = cache_func(f_wrapped)
+            f_wrapped = cache_func(f_wrapped, maxeval=maxeval)
         return f_wrapped
 
     def _prepare_variables(self, variables):
@@ -486,7 +486,9 @@ class Optimizer(object):
 
         # Prepare function to use it.
         # Fix args and cache
-        prepared_f = self._prepare_f_for_opt(f, args, eval_file)
+        prepared_f = self._prepare_f_for_opt(
+            f, args, eval_file, maxeval=maxeval
+        )
         # wrap for automatic transform of x's and multiplication by sign of y's
         f_in_opt = partial(self.evaluate, prepared_f, vars_in_opt)
         # Fix linear constrain as extra args

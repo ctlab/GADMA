@@ -159,7 +159,7 @@ def lru_cache(func):
     return lru_cache_wrapper
 
 
-def cache_func(f):
+def cache_func(f, maxeval=None):
     """
     Cashes function with one argument.
     :param f: function such that f(x).
@@ -174,7 +174,8 @@ def cache_func(f):
 
     @wraps(tuple_wrapper)
     def cache_wrapper(x):
-        # sometimes does not work so we want to know why it is not working
+        if maxeval is not None and tuple_wrapper.cache_info.misses >= maxeval:
+            return None
         try:
             return tuple_wrapper(tuple(x))
         except TypeError as e:
