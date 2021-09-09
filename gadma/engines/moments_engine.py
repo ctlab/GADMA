@@ -63,7 +63,7 @@ class MomentsEngine(DadiOrMomentsEngine):
             ret_dict['h'] = event.dom_args
         return ret_dict
 
-    def simulate(self, values, ns, dt_fac=0.01):
+    def _inner_func(self, values, ns, dt_fac=0.01):
         """
         Simulates expected SFS for proposed values of variables.
 
@@ -218,6 +218,19 @@ class MomentsEngine(DadiOrMomentsEngine):
                                      gen_time=gen_time,
                                      gen_time_units=gen_time_units,
                                      reverse_timeline=True)
+
+    def simulate(self, values, ns, sequence_length, population_labels,
+                 dt_fac=default_dt_fac):
+        """
+        Returns simulated expected SFS for :attr:`demographic_model` with
+        values as parameters.
+        :param values: Values of demographic model parameters.
+        :param ns: sample sizes of the simulated SFS.
+        """
+        model = self._inner_func(values, ns, dt_fac)
+        if population_labels is not None:
+            model.pop_ids = population_labels
+        return model
 
     def get_N_ancestral(self, values, dt_fac=default_dt_fac):
         return super(MomentsEngine, self).get_N_ancestral(values, dt_fac)

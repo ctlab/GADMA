@@ -284,8 +284,12 @@ def _print_moments_ld_main(engine, values, nanc):
     return ret_str
 
 
-def print_moments_ld_code(engine, values, filename,
+def print_moments_ld_code(engine, filename, values,
                           nanc=None, gen_time=None, gen_time_units=None):
+    print("MOMENTS_LD_CODE")
+    print(nanc)
+    print("GEN_TIME")
+    print(gen_time)
     """
     Generates code for `moments` to file. Code have function of demographic
     model that simulates AFS and main part where simulation takes place as well
