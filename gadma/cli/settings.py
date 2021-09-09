@@ -9,7 +9,6 @@ output_directory = None
 input_data = None
 bed_file = None
 recombination_maps = None
-ld_kwargs = None
 # input_data = None
 # number_of_populations = None
 population_labels = None
@@ -43,6 +42,8 @@ split_fractions = True
 migration_masks = None
 inbreeding = False
 selection = False
+ld_kwargs = None
+region_len = 6400000
 
 # Custom model
 custom_filename = None

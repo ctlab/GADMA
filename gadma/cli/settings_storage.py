@@ -183,7 +183,7 @@ class SettingsStorage(object):
                      'number_of_repeats', 'number_of_processes',
                      'number_of_populations', 'global_maxiter',
                      'global_maxeval', 'local_maxiter', 'local_maxeval',
-                     'num_init_const']
+                     'num_init_const', "region_len"]
         float_attrs = ['theta0', 'time_for_generation', 'eps',
                        'const_of_time_in_drawing', 'vmin', 'min_n', 'max_n',
                        'min_t', 'max_t', 'min_m', 'max_m',
@@ -218,7 +218,7 @@ class SettingsStorage(object):
         data_holder_attrs = ['projections', 'outgroup',
                              'population_labels', 'sequence_length',
                              'recombination_maps', 'ld_kwargs',
-                             'output_directory']
+                             'output_directory', "region_len"]
         bounds_attrs = ['min_n', 'max_n', 'min_t', 'max_t', 'min_m', 'max_m',
                         'dynamics']
         bounds_lists = ['lower_bound', 'upper_bound', 'parameter_identifiers']

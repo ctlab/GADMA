@@ -14,6 +14,23 @@ in the genome. As default GADMA takes recombination maps in cM(centiMorgans).
 When you use moments.LD as a GADMA engine you have some additional parameters in the parameter file.
 
 
+Bed files generation
+--------------------
+GADMA has a function for the auto-generation of bed files. This bed files subset a chromosomes
+to equal regions. You can specify region length in param file.
+
+.. code-block::
+
+    # param file
+    ...
+    region_len: 6400000
+    ...
+
+Take in mind that 15 is the minimum quantity of regions for computing LD statistics from data.
+If you pass in a length parameter that causes less than 15 regions to be received, it will be ignored.
+In the case of fewer regions we will get a singular matrix during computing LD statistics and subsequent
+computation will be impossible.
+
 Recombination maps
 -----
 Recombination maps - is a directory containing a recombination map for each

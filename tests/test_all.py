@@ -118,6 +118,7 @@ class TestRestore(unittest.TestCase):
                 self.assertEqual(res.y, f(res.x))
 
     def test_gs_and_ls_restore(self):
+        print(DATA_PATH)
         param_file = os.path.join(DATA_PATH, "PARAMS", 'another_test_params')
         base_out_dir = "test_gs_and_ls_restore_output"
         sys.argv = ['gadma', '-p', param_file, '-o', base_out_dir]

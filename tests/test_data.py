@@ -1,9 +1,15 @@
 import unittest
 import pytest
 import itertools
+import sys
+import shutil
+import pickle
+from gadma.utils.utils import create_bed_files_and_extract_chromosomes
+from os import listdir
 from collections import namedtuple
 import os
 import numpy as np
+from pathlib import Path
 from gadma import *
 import warnings # we ignore warning of unclosed files in dadi
 
@@ -50,6 +56,36 @@ POPMAP_SIM_YRI_CEU =  os.path.join(DATA_PATH, "vcf",
                                    "out_of_africa_chr22_sim.popmap")
 BAD_POPMAP = os.path.join(DATA_PATH, "vcf", "bad.popmap")
 
+POP_MAP = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "pop_map.txt")
+REC_MAPS_DIR = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "rec_maps")
+VCF_DATA_FEW_CHR = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "vcf_data_few_chr.vcf")
+VCF_DATA_LD = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "vcf_data.vcf")
+TEST_OUTPUT = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "test_output")
+TEST_BED_FILES = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "test_bed_files")
+SFS_DATA = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "wrong_data.fs")
+
+PREPROCESSED_DATA = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "preprocessed_data.bp")
+
+SAVE_IMAGE = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "ld_curves.jpg")
+
+DATA_HOLDER_FOR_MODELS = VCFDataHolder(
+            vcf_file=VCF_DATA_LD,
+            popmap_file=POP_MAP,
+            recombination_maps=REC_MAPS_DIR,
+            ld_kwargs={
+                'r_bins': 'np.logspace(-6, -3, 7)',
+                'report': False,
+            }
+)
 
 
 class TestDataHolder(unittest.TestCase):
@@ -404,3 +440,132 @@ def test_fsc_reading():
         multiple_SFS = engine.read_data(multiple)
         single_SFS = engine.read_data(single)
         assert np.all(multiple_SFS == single_SFS), "Several observations per file"
+
+
+class TestVCFDataHolderLD(unittest.TestCase):
+
+    def tearDown(self):
+        if Path(f"{TEST_OUTPUT}/bed_files/").exists():
+            shutil.rmtree(f"{TEST_OUTPUT}/bed_files/")
+
+    def test_vcf_data_holder_ld_init(self):
+        ld_data = VCFDataHolder(
+            vcf_file=VCF_DATA_LD,
+            popmap_file=POP_MAP,
+            recombination_maps=REC_MAPS_DIR,
+            output_directory=TEST_OUTPUT
+        )
+        self.assertEqual(ld_data.filename, VCF_DATA_LD)
+        self.assertEqual(ld_data.popmap_file, POP_MAP)
+        self.assertEqual(ld_data.recombination_maps, REC_MAPS_DIR)
+
+    def test_sfs_data_holder(self):
+        ld_wrong_data = SFSDataHolder(
+            sfs_file=SFS_DATA)
+
+        settings = SettingsStorage()
+        settings.engine = "momentsLD"
+        settings.data_holder = ld_wrong_data
+        self.assertRaises(ValueError, settings.read_data)
+
+
+def get_settings_test():
+    settings, args = get_settings()
+    check_required_settings(settings)
+    return settings, args
+
+
+class TestSettingStorageLDStats(unittest.TestCase):
+    def tearDown(self):
+        if Path(f"{TEST_OUTPUT}/bed_files/").exists():
+            shutil.rmtree(f"{TEST_OUTPUT}/bed_files/")
+
+    def test_param_file_with_ld(self):
+        param_file = os.path.join(DATA_PATH, "PARAMS", 'ld_params_test_correct')
+
+        sys.argv = ['gadma', '-p', param_file]
+        settings, _ = get_settings_test()
+        settings.read_data()
+
+        self.assertEqual(settings.output_directory, abspath(TEST_OUTPUT))
+        self.assertEqual(settings.data_holder.filename, VCF_DATA_LD)
+        self.assertEqual(settings.data_holder.popmap_file, POP_MAP)
+        self.assertEqual(settings.data_holder.recombination_maps, REC_MAPS_DIR)
+
+    def test_errors_in_param_file(self):
+        param_file = os.path.join(DATA_PATH, "PARAMS", 'ld_param_file_with_wrong_keys_in_dict')
+        sys.argv = ['gadma', '-p', param_file]
+        self.assertRaises(KeyError, get_settings_test)
+
+        param_file = os.path.join(DATA_PATH, "PARAMS", 'ld_param_file_with_dict_and_wrong_engine')
+        sys.argv = ['gadma', '-p', param_file]
+        self.assertRaises(ValueError, get_settings_test)
+
+        param_file = os.path.join(DATA_PATH, "PARAMS", 'ld_params_without_anc_size_as_parameter')
+        sys.argv = ['gadma', '-p', param_file]
+        settings, args = get_settings_test()
+        self.assertTrue(settings.ancestral_size_as_parameter, True)
+
+    def test_correct_LD_data_processing(self):
+        try:
+            with open(PREPROCESSED_DATA, "rb") as fin:
+                ld_stats_moments = pickle.load(fin)
+        except: # NOQA
+            pops = ["deme0", "deme1"]
+            r_bins = np.logspace(-6, -3, 7)
+            moments_regions = {}
+
+            for ii in range(1, 16):
+                moments_regions.update(
+                    {
+                        f"{ii}": moments.LD.Parsing.compute_ld_statistics(
+                            VCF_DATA_LD,
+                            rec_map_file=f"{REC_MAPS_DIR}/rec_map_1.txt",
+                            pop_file=POP_MAP,
+                            bed_file=f"{TEST_BED_FILES}/bed_file_1_{ii}.bed",
+                            pops=pops,
+                            r_bins=r_bins,
+                            report=False,
+                        )
+                    }
+                )
+
+            ld_stats_moments = moments.LD.Parsing.bootstrap_data(moments_regions)
+            with open(f"{PREPROCESSED_DATA}", "wb+") as fout:
+                pickle.dump(ld_stats_moments, fout)
+        param_file = os.path.join(DATA_PATH, "PARAMS", 'ld_params_test_correct')
+        sys.argv = ['gadma', '-p', param_file]
+        settings, _ = get_settings_test()
+        ld_stats_gadma = settings.read_data()
+        self.assertEqual(len(ld_stats_moments), len(ld_stats_gadma))
+        for arr in range(len(ld_stats_moments["means"])):
+            self.assertTrue(np.allclose(
+                ld_stats_moments["means"][arr],
+                ld_stats_gadma["means"][arr]))
+
+
+class BedFilesCreation(unittest.TestCase):
+
+    def tearDown(self):
+        if Path(f"{TEST_OUTPUT}/").exists():
+            shutil.rmtree(f"{TEST_OUTPUT}/")
+        os.makedirs(TEST_OUTPUT)
+
+    def test_create_bed_files(self):
+        chromosomes = create_bed_files_and_extract_chromosomes(DATA_HOLDER_FOR_MODELS.filename, TEST_OUTPUT)
+
+        test_bed_files_reference_info = []
+        test_bed_files_check_info = []
+
+        for file in listdir(f"{TEST_BED_FILES}/"):
+            with open(f"{TEST_BED_FILES}/{file}", "r") as bed_file:
+                test_bed_files_reference_info.append(bed_file.readline())
+
+        for file in listdir(f"{TEST_OUTPUT}/bed_files/"):
+            with open(f"{TEST_OUTPUT}/bed_files/{file}", "r") as bed_file:
+                test_bed_files_check_info.append(bed_file.readline())
+
+        self.assertTrue(len(listdir(f"{TEST_OUTPUT}/bed_files/")), 15)
+        for ii, nums in enumerate(test_bed_files_reference_info):
+            self.assertEqual(test_bed_files_reference_info[ii],
+                             test_bed_files_check_info[ii])

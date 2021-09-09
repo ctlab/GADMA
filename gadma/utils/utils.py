@@ -742,15 +742,14 @@ def warning_format(message, category, filename, lineno, file=None, line=None):
            f"{bcolors.ENDC} ({filename}:{lineno})\n"
 
 
-def create_bed_files(vcf_file, output_dir):
-    optimal_region_len = 6400000
+def create_bed_files_and_extract_chromosomes(data_holder):
+    output_dir = data_holder.output_directory
+    vcf_file = data_holder.filename
+    region_len = data_holder.region_len
     minimal_region_number = 15
-    # Написать в документации о том, что либо каждая хромосома будет разделена
-    # на участки по 6400000 bp, либо на 7 равномерных регионов меньшей длины
     read_vcf = allel.read_vcf(vcf_file)
     all_chromosomes = {ii: 0 for ii in set(read_vcf['variants/CHROM'])}
 
-    # Найдем длину хромосомы
     for chrom in all_chromosomes:
         all_chromosomes[chrom] = max(
             read_vcf['variants/POS'][read_vcf['variants/CHROM'] == chrom]
@@ -758,17 +757,20 @@ def create_bed_files(vcf_file, output_dir):
 
     Path(f"{output_dir}/bed_files/").mkdir(parents=True, exist_ok=True)
 
+    total_region = sum([int(round(all_chromosomes[ii] / region_len)) for ii in all_chromosomes])
+    total_len = sum([int(all_chromosomes[ii]) for ii in all_chromosomes])
+
     for chrom in all_chromosomes:
         stop_position = 0
-        if round(all_chromosomes[chrom] / optimal_region_len) > minimal_region_number:
-            for num in range(1, round(all_chromosomes[chrom] / optimal_region_len) + 1):
+        if total_region > minimal_region_number:
+            for num in range(1, round(all_chromosomes[chrom] / region_len) + 1):
                 with open(f"{output_dir}/bed_files/bed_file_{chrom}_{num}.bed", "w") as file:
                     start_position = stop_position
-                    stop_position = int(optimal_region_len * num)
+                    stop_position = int(region_len * num)
                     file.write(f"{chrom}\t{start_position}\t{stop_position}")
-            all_chromosomes[chrom] = round(all_chromosomes[chrom] / optimal_region_len)
+            all_chromosomes[chrom] = round(all_chromosomes[chrom] / region_len)
         else:
-            region_len = all_chromosomes[chrom] / minimal_region_number
+            region_len = total_len / minimal_region_number
             for num in range(1, minimal_region_number + 1):
                 with open(f"{output_dir}/bed_files/bed_file_{chrom}_{num}.bed", "w") as file:
                     start_position = stop_position

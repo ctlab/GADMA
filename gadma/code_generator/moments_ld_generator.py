@@ -2,7 +2,7 @@ from ..models import CustomDemographicModel, EpochDemographicModel, \
     Epoch, Split, BinaryOperation
 from ..utils import DiscreteVariable, DynamicVariable, Variable
 # from ..engines import MomentsLdEngine
-from ..utils import create_bed_files
+from ..utils import create_bed_files_and_extract_chromosomes
 from ..data import check_and_return_projections_and_labels
 import numpy as np
 import copy
@@ -157,7 +157,7 @@ def _print_momentsLD_load_data(engine, data_holder):
                + "/bed_files/\n"
     ret_str += "reg_num = 0\n" \
                "region_stats = {}\n"
-    chromosomes = create_bed_files(data_holder.filename, data_holder.output_directory)
+    chromosomes = create_bed_files_and_extract_chromosomes(data_holder.filename, data_holder.output_directory)
     ret_str += f"chromosomes = {chromosomes}\n"
     kwargs = engine.kwargs
 

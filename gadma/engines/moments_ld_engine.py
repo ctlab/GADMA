@@ -6,7 +6,7 @@ from ..models import DemographicModel, StructureDemographicModel
 from ..models import CustomDemographicModel, Epoch, Split
 from .. import VCFDataHolder, moments_LD_available
 from ..utils import DynamicVariable, get_correct_dtype
-from ..utils import create_bed_files
+from ..utils import create_bed_files_and_extract_chromosomes
 from ..code_generator import id2printfunc
 from ..data import check_and_return_projections_and_labels
 from os import listdir
@@ -44,7 +44,7 @@ class MomentsLdEngine(Engine):
                         CustomDemographicModel]
     supported_data = [VCFDataHolder, dict, moments.LD.LDstats_mod.LDstats]
 
-    r_bins = np.logspace(-6, -3, 7)
+    r_bins = np.array([0, 1e-6, 2e-6, 5e-6, 1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3])
     kwargs = {
         "r_bins": r_bins,
         "report": False,
@@ -76,10 +76,8 @@ class MomentsLdEngine(Engine):
                 except:  # NOQA
                     kwargs[key] = data_holder.ld_kwargs[key]
 
-        chromosomes = create_bed_files(
-            data_holder.filename, data_holder.output_directory)
-        print("CHROMOSOMES")
-        print(chromosomes)
+        chromosomes = create_bed_files_and_extract_chromosomes(data_holder)
+
         bed_files = data_holder.output_directory + "/bed_files/"
         rec_map = listdir(data_holder.recombination_maps)[0]
         extension = rec_map.split(".")[1]
@@ -91,8 +89,6 @@ class MomentsLdEngine(Engine):
             if len(listdir(data_holder.recombination_maps)) == len(chromosomes):
                 for chrom in chromosomes:
                     for num in range(1, chromosomes[chrom]):
-                        print("POPS")
-                        print(pops)
                         region_stats.update({
                             f"{reg_num}":
                             moments.LD.Parsing.compute_ld_statistics(
@@ -111,8 +107,6 @@ class MomentsLdEngine(Engine):
                 rec_map = listdir(data_holder.recombination_maps)[0]
                 for chrom in chromosomes:
                     for num in range(1, chromosomes[chrom]):
-                        print("POPS")
-                        print(pops)
                         region_stats.update({
                             f"{reg_num}":
                             moments.LD.Parsing.compute_ld_statistics(
@@ -131,8 +125,6 @@ class MomentsLdEngine(Engine):
             print("No recombination map provided, using physical distance")
             for chrom in chromosomes:
                 for num in range(1, chromosomes[chrom]):
-                    print("POPS")
-                    print(pops)
                     region_stats.update({
                         f"{reg_num}":
                         moments.LD.Parsing.compute_ld_statistics(
@@ -145,7 +137,6 @@ class MomentsLdEngine(Engine):
                     })
                     reg_num += 1
         data = moments.LD.Parsing.bootstrap_data(region_stats)
-
         return data
 
     @staticmethod
@@ -301,10 +292,6 @@ class MomentsLdEngine(Engine):
             num_pops=model.num_pops,
             normalization=0)
         ll_model = moments.LD.Inference.ll_over_bins(means, model, varcovs)
-        # import time
-        # import random
-        # time.sleep(0.5)
-        # ll_model = random.randint(0, 500000)
         return ll_model
 
     def draw_data_comp_plot(self, values, save_file, vmin=None):
