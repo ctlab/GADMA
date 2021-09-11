@@ -337,18 +337,18 @@ class CoreRun(object):
                                                       best_by.lower()))
         save_plot_file = os.path.join(self.output_dir, prefix + "_model.png")
         save_code_file = os.path.join(self.output_dir, prefix + "_model")
-        # try:
-        draw_plots_to_file(x, self.engine, self.settings,
-                           save_plot_file, fig_title)
-        # except Exception as e:
-        #     print(f"{bcolors.WARNING}Run {self.index}: failed to draw model "
-        #           f"due to the following exception: {e}{bcolors.ENDC}")
-        # try:
-        generate_code_to_file(x, self.engine,
-                              self.settings, save_code_file)
-        # except Exception as e:
-        #     print(f"{bcolors.WARNING}Run {self.index}: failed to generate code"
-        #           f" due to the following exception: {e}{bcolors.ENDC}")
+        try:
+            draw_plots_to_file(x, self.engine, self.settings,
+                               save_plot_file, fig_title)
+        except Exception as e:
+            print(f"{bcolors.WARNING}Run {self.index}: failed to draw model "
+                  f"due to the following exception: {e}{bcolors.ENDC}")
+        try:
+            generate_code_to_file(x, self.engine,
+                                  self.settings, save_code_file)
+        except Exception as e:
+            print(f"{bcolors.WARNING}Run {self.index}: failed to generate code"
+                  f" due to the following exception: {e}{bcolors.ENDC}")
 
     def draw_model_in_output_dir(self, x, y,
                                  best_by='log-likelihood', final=True):

@@ -304,12 +304,12 @@ def print_runs_summary(start_time, shared_dict, settings):
         save_code_file = os.path.join(out_dir, prefix + "_model.py")
         drawn = True
         gener = True
-        # try:
-        draw_plots_to_file(x, engine, settings, save_plot_file, fig_title)
-        # except Exception as e:
-        #     drawn = False
-        #     print(f"{bcolors.WARNING}Run {index} warning: failed to draw model"
-        #           f" due to the following exception: {e}{bcolors.ENDC}.")
+        try:
+            draw_plots_to_file(x, engine, settings, save_plot_file, fig_title)
+        except Exception as e:
+            drawn = False
+            print(f"{bcolors.WARNING}Run {index} warning: failed to draw model"
+                  f" due to the following exception: {e}{bcolors.ENDC}.")
         try:
             generate_code_to_file(x, engine, settings, save_code_file)
         except Exception as e:

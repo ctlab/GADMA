@@ -18,6 +18,8 @@ from gadma.core.shared_dict import SharedDict, SharedDictForCoreRun
 from gadma.cli import arg_parser
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
+print(DATA_PATH)
+print("DATA_PATH")
 
 
 def get_settings_test():
