@@ -57,30 +57,31 @@ POPMAP_SIM_YRI_CEU =  os.path.join(DATA_PATH, "vcf",
 BAD_POPMAP = os.path.join(DATA_PATH, "vcf", "bad.popmap")
 
 POP_MAP = os.path.join(
-    DATA_PATH, 'DATA', 'vcf_ld', "pop_map.txt")
+    DATA_PATH, 'vcf_ld', "pop_map.txt")
 REC_MAPS_DIR = os.path.join(
-    DATA_PATH, 'DATA', 'vcf_ld', "rec_maps")
+    DATA_PATH, 'vcf_ld', "rec_maps")
 VCF_DATA_FEW_CHR = os.path.join(
-    DATA_PATH, 'DATA', 'vcf_ld', "vcf_data_few_chr.vcf")
+    DATA_PATH, 'vcf_ld', "vcf_data_few_chr.vcf")
 VCF_DATA_LD = os.path.join(
-    DATA_PATH, 'DATA', 'vcf_ld', "vcf_data.vcf")
+    DATA_PATH, 'vcf_ld', "vcf_data.vcf")
 TEST_OUTPUT = os.path.join(
-    DATA_PATH, 'DATA', 'vcf_ld', "test_output")
+    DATA_PATH, 'vcf_ld', "test_output")
 TEST_BED_FILES = os.path.join(
-    DATA_PATH, 'DATA', 'vcf_ld', "test_bed_files")
+    DATA_PATH, 'vcf_ld', "test_bed_files")
 SFS_DATA = os.path.join(
-    DATA_PATH, 'DATA', 'vcf_ld', "wrong_data.fs")
+    DATA_PATH, 'vcf_ld', "wrong_data.fs")
 
 PREPROCESSED_DATA = os.path.join(
-    DATA_PATH, 'DATA', 'vcf_ld', "preprocessed_data.bp")
+    DATA_PATH, 'vcf_ld', "preprocessed_data.bp")
 
 SAVE_IMAGE = os.path.join(
-    DATA_PATH, 'DATA', 'vcf_ld', "ld_curves.jpg")
+    DATA_PATH, 'vcf_ld', "ld_curves.jpg")
 
 DATA_HOLDER_FOR_MODELS = VCFDataHolder(
             vcf_file=VCF_DATA_LD,
             popmap_file=POP_MAP,
             recombination_maps=REC_MAPS_DIR,
+            output_directory=TEST_OUTPUT,
             ld_kwargs={
                 'r_bins': 'np.logspace(-6, -3, 7)',
                 'report': False,
@@ -353,6 +354,8 @@ def test_fsc_reading():
 
     vcf = os.path.join(DATA_PATH, 'fsc', 'test_data.vcf')
     for engine in all_engines():
+        if engine.id == "momentsLD":
+            continue
 
         tests = [
             # joint SFSs for 2 demes; minor and derived allele
@@ -552,7 +555,7 @@ class BedFilesCreation(unittest.TestCase):
         os.makedirs(TEST_OUTPUT)
 
     def test_create_bed_files(self):
-        chromosomes = create_bed_files_and_extract_chromosomes(DATA_HOLDER_FOR_MODELS.filename, TEST_OUTPUT)
+        chromosomes = create_bed_files_and_extract_chromosomes(DATA_HOLDER_FOR_MODELS)
 
         test_bed_files_reference_info = []
         test_bed_files_check_info = []

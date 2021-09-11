@@ -286,10 +286,6 @@ def _print_moments_ld_main(engine, values, nanc):
 
 def print_moments_ld_code(engine, filename, values,
                           nanc=None, gen_time=None, gen_time_units=None):
-    print("MOMENTS_LD_CODE")
-    print(nanc)
-    print("GEN_TIME")
-    print(gen_time)
     """
     Generates code for `moments` to file. Code have function of demographic
     model that simulates AFS and main part where simulation takes place as well
@@ -300,6 +296,8 @@ def print_moments_ld_code(engine, filename, values,
     :param filename: File to save generated code.
     :param nanc: Size of ancestral population. Is used when other engine was
                  used for inference.
+    :param gen_time: Time of one generation in units of ``gen_time_units``.
+    :param gen_time_units: Units of time. String.
 
     """
     var2value = engine.model.var2value(values)

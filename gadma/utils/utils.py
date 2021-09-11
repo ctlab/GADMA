@@ -745,7 +745,10 @@ def warning_format(message, category, filename, lineno, file=None, line=None):
 def create_bed_files_and_extract_chromosomes(data_holder):
     output_dir = data_holder.output_directory
     vcf_file = data_holder.filename
-    region_len = data_holder.region_len
+    if data_holder.region_len is not None:
+        region_len = data_holder.region_len
+    else:
+        region_len = 64000000
     minimal_region_number = 15
     read_vcf = allel.read_vcf(vcf_file)
     all_chromosomes = {ii: 0 for ii in set(read_vcf['variants/CHROM'])}

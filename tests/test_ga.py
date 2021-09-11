@@ -450,6 +450,8 @@ class TestInference(unittest.TestCase):
         dirname = os.path.join(EXAMPLE_FOLDER, "DATA",
                                "sfs", 'YRI_CEU_test_boots')
         for engine in all_engines():
+            if engine.id == "momentsLD":
+                continue
             projections = (3, 3)
             data = engine.read_data(SFSDataHolder(os.path.join(EXAMPLE_FOLDER,
                                                                "DATA", "sfs",

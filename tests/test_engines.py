@@ -18,10 +18,13 @@ VCF_DATA_LD = os.path.join(
     DATA_PATH, 'DATA', 'vcf_ld', "vcf_data.vcf")
 TEST_OUTPUT = os.path.join(
     DATA_PATH, 'DATA', 'vcf_ld', "test_output")
+SAVE_IMAGE = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "ld_curves.jpg")
 
 DATA_HOLDER_FOR_MODELS = VCFDataHolder(
             vcf_file=VCF_DATA_LD,
             popmap_file=POP_MAP,
+            output_directory=TEST_OUTPUT,
             recombination_maps=REC_MAPS_DIR,
             ld_kwargs={
                 'r_bins': 'np.logspace(-6, -3, 7)',
@@ -441,6 +444,8 @@ class TestEngines(unittest.TestCase):
         values = [el if el != "Lin" else "Exp" for el in values]
 
         for engine in all_available_engines():
+            if engine.id == "momentsLD":
+                continue
             kwargs = {}
             if engine.id == "dadi":
                 kwargs["pts"] = [5, 10, 15]  # pts

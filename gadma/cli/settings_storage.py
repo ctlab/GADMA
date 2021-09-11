@@ -212,13 +212,13 @@ class SettingsStorage(object):
                          'const_for_mutation_rate', 'vmin',
                          'parameter_identifiers', 'migration_masks']
         exist_file_attrs = ['input_data', 'custom_filename',
-                            'bed_file']
+                            'bed_file', "preprocessed_data"]
         exist_dir_attrs = ['directory_with_bootstrap', 'resume_from', 'recombination_maps']
         empty_dir_attrs = ['output_directory']
         data_holder_attrs = ['projections', 'outgroup',
                              'population_labels', 'sequence_length',
                              'recombination_maps', 'ld_kwargs',
-                             'output_directory', "region_len"]
+                             'output_directory', "region_len", "preprocessed_data"]
         bounds_attrs = ['min_n', 'max_n', 'min_t', 'max_t', 'min_m', 'max_m',
                         'dynamics']
         bounds_lists = ['lower_bound', 'upper_bound', 'parameter_identifiers']
@@ -805,7 +805,9 @@ class SettingsStorage(object):
         be set.
         """
         engine = get_engine(self.engine)
-        engine.data = engine.read_data(self.data_holder)
+        print(engine.id)
+        engine.data = self.data_holder
+        self.data_holder = engine.data_holder
         self.projections = self.data_holder.projections
         self.outgroup = self.data_holder.outgroup
         self.population_labels = self.data_holder.population_labels

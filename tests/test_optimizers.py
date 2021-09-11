@@ -587,6 +587,23 @@ class TestCoreRun(unittest.TestCase):
                     if check_dir_existence("Some_out_dir"):
                         shutil.rmtree("Some_out_dir")
 
+            # if engine.id == "mometsLD":
+            #     try:
+            #         # prints warning that units will be years
+            #         settings.model_plot_engine = "moments"
+            #         settings.time_for_generation = 1
+            #         settings.units_of_time_in_drawing = "kya"
+            #         settings.selection = True
+            #         settings.is_valid()
+            #         self.assertEqual(settings.units_of_time_in_drawing, "years")
+            #         self.assertFalse(settings.selection)
+            #         settings.engine = "moments"
+            #         settings.no_migrations = False
+            #         settings.is_valid()
+            #     finally:
+            #         if check_dir_existence("Some_out_dir"):
+            #             shutil.rmtree("Some_out_dir")
+
 
     def test_core_run_restore(self):
         old_run_out = os.path.join(DATA_PATH, "my_example_run")

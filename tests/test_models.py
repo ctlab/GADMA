@@ -306,6 +306,8 @@ class TestModels(unittest.TestCase):
 
         data = SFSDataHolder(YRI_CEU_DATA, sequence_length=4e6)
         for engine in all_engines():
+            if engine.id == "momentsLD":
+                continue
             with self.subTest(engine=engine.id):
                 if engine.id == 'dadi':
                     args = ([5, 10, 15],)

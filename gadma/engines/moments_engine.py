@@ -202,7 +202,7 @@ class MomentsEngine(DadiOrMomentsEngine):
             n_pop = len(self.data.sample_sizes)
             pop_labels = self.data.pop_ids
         ns = [4 for _ in range(n_pop)]
-        plot_mod = moments.ModelPlot.generate_model(self.simulate,
+        plot_mod = moments.ModelPlot.generate_model(self._inner_func,
                                                     values, ns)
         draw_scale = nref is not None
         show = save_file is None

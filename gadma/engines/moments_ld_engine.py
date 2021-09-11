@@ -1,5 +1,6 @@
 import numpy as np
 import collections
+import pickle
 from . import register_engine
 from . import Engine
 from ..models import DemographicModel, StructureDemographicModel
@@ -61,40 +62,75 @@ class MomentsLdEngine(Engine):
         :param data_holder: holder of the data.
         :type data_holder: :class:`VCFDataHolder`
         """
-        if isinstance(data_holder, VCFDataHolder):
-            projections, pops = check_and_return_projections_and_labels(data_holder)
-        else:
-            raise ValueError("Wrong type of data_holder: "
-                             f"{data_holder.__class__}")
+        if data_holder.preprocessed_data is None:
+            if isinstance(data_holder, VCFDataHolder):
+                projections, pops = check_and_return_projections_and_labels(data_holder)
+            else:
+                raise ValueError("Wrong type of data_holder: "
+                                 f"{data_holder.__class__}")
 
-        kwargs = cls.kwargs
+            kwargs = cls.kwargs
 
-        if data_holder.ld_kwargs:
-            for key in data_holder.ld_kwargs:
-                try:
-                    kwargs[key] = eval(data_holder.ld_kwargs[key])
-                except:  # NOQA
-                    kwargs[key] = data_holder.ld_kwargs[key]
+            if data_holder.ld_kwargs:
+                for key in data_holder.ld_kwargs:
+                    try:
+                        kwargs[key] = eval(data_holder.ld_kwargs[key])
+                    except:  # NOQA
+                        kwargs[key] = data_holder.ld_kwargs[key]
 
-        chromosomes = create_bed_files_and_extract_chromosomes(data_holder)
+            chromosomes = create_bed_files_and_extract_chromosomes(data_holder)
 
-        bed_files = data_holder.output_directory + "/bed_files/"
-        rec_map = listdir(data_holder.recombination_maps)[0]
-        extension = rec_map.split(".")[1]
-        rec_map = rec_map.split(".")[0]
-        rec_map = "_".join(rec_map.split('_')[:-1])
-        reg_num = 0
-        region_stats = {}
-        if data_holder.recombination_maps is not None:
-            if len(listdir(data_holder.recombination_maps)) == len(chromosomes):
+            bed_files = data_holder.output_directory + "/bed_files/"
+            rec_map = listdir(data_holder.recombination_maps)[0]
+            extension = rec_map.split(".")[1]
+            rec_map = rec_map.split(".")[0]
+            rec_map = "_".join(rec_map.split('_')[:-1])
+            reg_num = 0
+            region_stats = {}
+            if data_holder.recombination_maps is not None:
+                if len(listdir(data_holder.recombination_maps)) == len(chromosomes):
+                    for chrom in chromosomes:
+                        for num in range(1, chromosomes[chrom]):
+                            region_stats.update({
+                                f"{reg_num}":
+                                moments.LD.Parsing.compute_ld_statistics(
+                                    data_holder.filename,
+                                    rec_map_file=f"{data_holder.recombination_maps}"
+                                                 f"/{rec_map}_{chrom}.{extension}",
+                                    pop_file=data_holder.popmap_file,
+                                    bed_file=f"{bed_files}/bed_file_{chrom}_{num}.bed",
+                                    pops=pops,
+                                    **kwargs
+                                )
+                            })
+                            reg_num += 1
+
+                elif len(listdir(data_holder.recombination_maps)) != len(chromosomes):
+                    rec_map = listdir(data_holder.recombination_maps)[0]
+                    for chrom in chromosomes:
+                        for num in range(1, chromosomes[chrom]):
+                            region_stats.update({
+                                f"{reg_num}":
+                                moments.LD.Parsing.compute_ld_statistics(
+                                    data_holder.filename,
+                                    rec_map_file=f"{data_holder.recombination_maps}"
+                                                 f"/{rec_map}",
+                                    map_name=f"{chrom}",
+                                    pop_file=data_holder.popmap_file,
+                                    bed_file=f"{bed_files}/bed_file_{chrom}_{num}.bed",
+                                    pops=pops,
+                                    **kwargs
+                                )
+                            })
+                            reg_num += 1
+            else:
+                print("No recombination map provided, using physical distance")
                 for chrom in chromosomes:
                     for num in range(1, chromosomes[chrom]):
                         region_stats.update({
                             f"{reg_num}":
                             moments.LD.Parsing.compute_ld_statistics(
                                 data_holder.filename,
-                                rec_map_file=f"{data_holder.recombination_maps}"
-                                             f"/{rec_map}_{chrom}.{extension}",
                                 pop_file=data_holder.popmap_file,
                                 bed_file=f"{bed_files}/bed_file_{chrom}_{num}.bed",
                                 pops=pops,
@@ -102,41 +138,12 @@ class MomentsLdEngine(Engine):
                             )
                         })
                         reg_num += 1
-
-            elif len(listdir(data_holder.recombination_maps)) != len(chromosomes):
-                rec_map = listdir(data_holder.recombination_maps)[0]
-                for chrom in chromosomes:
-                    for num in range(1, chromosomes[chrom]):
-                        region_stats.update({
-                            f"{reg_num}":
-                            moments.LD.Parsing.compute_ld_statistics(
-                                data_holder.filename,
-                                rec_map_file=f"{data_holder.recombination_maps}"
-                                             f"/{rec_map}",
-                                map_name=f"{chrom}",
-                                pop_file=data_holder.popmap_file,
-                                bed_file=f"{bed_files}/bed_file_{chrom}_{num}.bed",
-                                pops=pops,
-                                **kwargs
-                            )
-                        })
-                        reg_num += 1
+            data = moments.LD.Parsing.bootstrap_data(region_stats)
         else:
-            print("No recombination map provided, using physical distance")
-            for chrom in chromosomes:
-                for num in range(1, chromosomes[chrom]):
-                    region_stats.update({
-                        f"{reg_num}":
-                        moments.LD.Parsing.compute_ld_statistics(
-                            data_holder.filename,
-                            pop_file=data_holder.popmap_file,
-                            bed_file=f"{bed_files}/bed_file_{chrom}_{num}.bed",
-                            pops=pops,
-                            **kwargs
-                        )
-                    })
-                    reg_num += 1
-        data = moments.LD.Parsing.bootstrap_data(region_stats)
+            print("Read preprocessed data")
+            chromosomes = create_bed_files_and_extract_chromosomes(data_holder)
+            with open(data_holder.preprocessed_data, "rb") as fin:
+                data = pickle.load(fin)
         return data
 
     @staticmethod
@@ -397,10 +404,10 @@ class MomentsLdEngine(Engine):
         return nanc
 
     def update_data_holder_with_inner_data(self):
-        (self.data_holder.projections,
-         self.data_holder.population_labels) = check_and_return_projections_and_labels(
-            self.data_holder)
-        self.data_holder.outgroup = None
+        (self.data.projections,
+         self.data.population_labels) = check_and_return_projections_and_labels(
+            self.data)
+        self.data.outgroup = None
 
 if moments_LD_available:
     register_engine(MomentsLdEngine)

@@ -42,8 +42,11 @@ split_fractions = True
 migration_masks = None
 inbreeding = False
 selection = False
+
+# LD params
 ld_kwargs = None
 region_len = 6400000
+preprocessed_data = None
 
 # Custom model
 custom_filename = None
