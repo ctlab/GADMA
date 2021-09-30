@@ -1,1 +1,1 @@
-from .fast_data_read import main
+from .precompute_ld_data import main

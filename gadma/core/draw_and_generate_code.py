@@ -178,8 +178,7 @@ def generate_code_to_file(x, engine, settings, filename):
     if engine.id == 'momentsLD':
         save_file = prefix + f"_{engine.id}_code.py"
         try:
-            args = settings.get_engine_args(engine.id)
-            engine.generate_code(x, save_file, *args, Nanc, gen_time,
+            engine.generate_code(x, save_file, Nanc, gen_time,
                                  gen_time_units)
         except Exception as e:
             failes[engine.id] = str(e)
@@ -189,9 +188,9 @@ def generate_code_to_file(x, engine, settings, filename):
             # other_engine.set_data(engine.data)
             other_engine.data_holder = copy.deepcopy(engine.data_holder)
             other_engine.set_model(engine.model)
-            # args = settings.get_engine_args(other_engine.id)
+            args = settings.get_engine_args(other_engine.id)
             try:
-                other_engine.generate_code(x, save_file, Nanc, gen_time,
+                other_engine.generate_code(x, save_file, *args, Nanc, gen_time,
                                            gen_time_units)
             except Exception as e:
                 failes[other_engine.id] = str(e)

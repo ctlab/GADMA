@@ -34,6 +34,7 @@ class MomentsLdEngine(Engine):
 
     if moments_LD_available:
         import moments.LD
+        base_module = moments.LD
         inner_data_type = dict
 
     can_draw = False
@@ -80,14 +81,13 @@ class MomentsLdEngine(Engine):
 
             chromosomes = create_bed_files_and_extract_chromosomes(data_holder)
 
-            bed_files = data_holder.output_directory + "/bed_files/"
-            rec_map = listdir(data_holder.recombination_maps)[0]
-            extension = rec_map.split(".")[1]
-            rec_map = rec_map.split(".")[0]
-            rec_map = "_".join(rec_map.split('_')[:-1])
+            bed_files = data_holder.output_directory + "/bed_files"
             reg_num = 0
             region_stats = {}
             if data_holder.recombination_maps is not None:
+                rec_map = listdir(data_holder.recombination_maps)[0]
+                extension = rec_map.split(".")[1]
+                rec_map = "_".join(rec_map.split(".")[0].split('_')[:-1])
                 if len(listdir(data_holder.recombination_maps)) == len(chromosomes):
                     for chrom in chromosomes:
                         for num in range(1, chromosomes[chrom]):
@@ -196,13 +196,31 @@ class MomentsLdEngine(Engine):
             values_list = [var2value[var] for var in self.model.variables]
             return self.model.function(values_list)
 
-        if self.data_holder.ld_kwargs:
-            for key in self.data_holder.ld_kwargs:
-                try:
-                    self.kwargs[key] = eval(self.data_holder.ld_kwargs[key])
-                except:  # NOQA
-                    self.kwargs[key] = self.data_holder.ld_kwargs[key]
-            self.r_bins = self.kwargs["r_bins"]
+        if self.data_holder is not None:
+            if self.data_holder.ld_kwargs:
+                for key in self.data_holder.ld_kwargs:
+                    try:
+                        self.kwargs[key] = eval(self.data_holder.ld_kwargs[key])
+                    except:  # NOQA
+                        self.kwargs[key] = self.data_holder.ld_kwargs[key]
+                self.r_bins = self.kwargs["r_bins"]
+
+        if isinstance(self.model, CustomDemographicModel):
+            values_list = [var2value[var] for var in self.model.variables]
+            Nref = values_list[-1]
+            values_list = values_list[:-1]
+            rhos = 4 * Nref * np.array(self.r_bins)
+            theta = 4 * Nref * self.model.mutation_rate
+            ld_stats = self.model.function(values_list, rhos, theta)
+            model = moments.LD.LDstats(
+                [(y_l + y_r) / 2 for y_l, y_r in zip(
+                    ld_stats[:-2], ld_stats[1:-1])]
+                + [ld_stats[-1]],
+                num_pops=ld_stats.num_pops,
+                pop_ids=ld_stats.pop_ids,
+            )
+            model = moments.LD.Inference.sigmaD2(model)
+            return model
 
         Nref = self.model.get_value_from_var2value(
             var2value, self.model.Nanc_size)
@@ -404,10 +422,11 @@ class MomentsLdEngine(Engine):
         return nanc
 
     def update_data_holder_with_inner_data(self):
-        (self.data.projections,
-         self.data.population_labels) = check_and_return_projections_and_labels(
-            self.data)
-        self.data.outgroup = None
+        (self.data_holder.projections,
+         self.data_holder.population_labels) = check_and_return_projections_and_labels(
+            self.data_holder)
+        self.data_holder.outgroup = None
+
 
 if moments_LD_available:
     register_engine(MomentsLdEngine)

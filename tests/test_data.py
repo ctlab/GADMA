@@ -81,11 +81,7 @@ DATA_HOLDER_FOR_MODELS = VCFDataHolder(
             vcf_file=VCF_DATA_LD,
             popmap_file=POP_MAP,
             recombination_maps=REC_MAPS_DIR,
-            output_directory=TEST_OUTPUT,
-            ld_kwargs={
-                'r_bins': 'np.logspace(-6, -3, 7)',
-                'report': False,
-            }
+            output_directory=TEST_OUTPUT
 )
 
 
@@ -128,7 +124,8 @@ class TestDataHolder(unittest.TestCase):
         sample_sizes = (2,1)
         outgroup = True
         d = VCFDataHolder(vcf_file=VCF_DATA, popmap_file=POPMAP,
-                          projections=sample_sizes, outgroup=outgroup)
+                          projections=sample_sizes, outgroup=outgroup,
+                          output_directory=TEST_OUTPUT)
         self.assertEqual(d.projections, sample_sizes)
         self.assertEqual(d.outgroup, outgroup)
 
@@ -201,6 +198,7 @@ class TestDataHolder(unittest.TestCase):
                 projections=siz,
                 sequence_length=seq,
                 outgroup=out,
+                output_directory=TEST_OUTPUT
             )
             if lab is not None and siz is not None and len(lab) != len(siz):
                 self.assertRaises((ValueError, AssertionError),
@@ -298,7 +296,8 @@ class TestDataHolder(unittest.TestCase):
     @pytest.mark.timeout(0)
     def test_vcf_data_reading(self):
         for engine in all_engines():
-            self._test_vcf_reading(engine.id)
+            if engine.id != "momentsLD":
+                self._test_vcf_reading(engine.id)
 
     @unittest.skipIf(DADI_NOT_AVAILABLE, "Dadi module is not installed")
     def test_dadi_reading_fails(self):
@@ -484,6 +483,7 @@ class TestSettingStorageLDStats(unittest.TestCase):
             shutil.rmtree(f"{TEST_OUTPUT}/bed_files/")
 
     def test_param_file_with_ld(self):
+        DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
         param_file = os.path.join(DATA_PATH, "PARAMS", 'ld_params_test_correct')
 
         sys.argv = ['gadma', '-p', param_file]
@@ -496,6 +496,7 @@ class TestSettingStorageLDStats(unittest.TestCase):
         self.assertEqual(settings.data_holder.recombination_maps, REC_MAPS_DIR)
 
     def test_errors_in_param_file(self):
+        DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
         param_file = os.path.join(DATA_PATH, "PARAMS", 'ld_param_file_with_wrong_keys_in_dict')
         sys.argv = ['gadma', '-p', param_file]
         self.assertRaises(KeyError, get_settings_test)
@@ -515,7 +516,7 @@ class TestSettingStorageLDStats(unittest.TestCase):
                 ld_stats_moments = pickle.load(fin)
         except: # NOQA
             pops = ["deme0", "deme1"]
-            r_bins = np.logspace(-6, -3, 7)
+            r_bins = np.array([0, 1e-6, 2e-6, 5e-6, 1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3])
             moments_regions = {}
 
             for ii in range(1, 16):
@@ -536,6 +537,7 @@ class TestSettingStorageLDStats(unittest.TestCase):
             ld_stats_moments = moments.LD.Parsing.bootstrap_data(moments_regions)
             with open(f"{PREPROCESSED_DATA}", "wb+") as fout:
                 pickle.dump(ld_stats_moments, fout)
+        DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
         param_file = os.path.join(DATA_PATH, "PARAMS", 'ld_params_test_correct')
         sys.argv = ['gadma', '-p', param_file]
         settings, _ = get_settings_test()

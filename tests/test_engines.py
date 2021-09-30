@@ -21,15 +21,14 @@ TEST_OUTPUT = os.path.join(
 SAVE_IMAGE = os.path.join(
     DATA_PATH, 'DATA', 'vcf_ld', "ld_curves.jpg")
 
+R_BINS = np.array(
+    [0, 1e-6, 2e-6, 5e-6, 1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3])
+
 DATA_HOLDER_FOR_MODELS = VCFDataHolder(
             vcf_file=VCF_DATA_LD,
             popmap_file=POP_MAP,
             output_directory=TEST_OUTPUT,
-            recombination_maps=REC_MAPS_DIR,
-            ld_kwargs={
-                'r_bins': 'np.logspace(-6, -3, 7)',
-                'report': False,
-            }
+            recombination_maps=REC_MAPS_DIR
 )
 
 
@@ -370,7 +369,9 @@ class TestEngines(unittest.TestCase):
             popmap_file=os.path.join(vcf_path, "out_of_africa_chr22_sim_3pop.popmap"),
             projections=[4, 4, 4],
             population_labels=["YRI", "CEU", "CHB"],
-            sequence_length=50818468  # chr22
+            sequence_length=50818468,  # chr22
+            output_directory=TEST_OUTPUT,
+            recombination_maps=REC_MAPS_DIR
         )
         return data_holder
 
@@ -405,6 +406,8 @@ class TestEngines(unittest.TestCase):
 
         for engine in all_available_engines():
             if not engine.can_draw_comp:
+                continue
+            if engine.id == "momentsLD":
                 continue
             engine.model = dm
             engine.data = data_holder
@@ -475,7 +478,7 @@ class TestModelSimulation(unittest.TestCase):
 
         nu = PopulationSizeVariable('nu')
         tf = TimeVariable('tf')
-        rhos = 4 * 10000 * np.logspace(-6, -3, 7)
+        rhos = 4 * 10000 * R_BINS
         theta = 4 * 10000 * 6.0e-5
 
         values = {'nu': nu.resample(),
@@ -538,7 +541,7 @@ class TestModelSimulation(unittest.TestCase):
                   'dyn_exp': 'Exp'}
 
         list_for_moments_ld = ['nu1', 'nu2', 't']
-        rhos = 4 * 10000 * np.logspace(-6, -3, 7)
+        rhos = 4 * 10000 * R_BINS
         theta = 4 * 10000 * 6.0e-5
         data = moments_two_pops_func([values[x] for x in list_for_moments_ld], rhos, theta)
         data = moments.LD.LDstats(
@@ -612,7 +615,7 @@ class TestModelSimulation(unittest.TestCase):
                   'dyn_exp': 'Exp'}
         list_for_moments_ld = ['nu1', 'nu2', 'nu3', 'nu4', 't', 'm12']
 
-        rhos = 4 * 10000 * np.logspace(-6, -3, 7)
+        rhos = 4 * 10000 * R_BINS
         theta = 4 * 10000 * 6.0e-5
 
         simulated = moments_ld_func([values[x] for x in list_for_moments_ld], rhos, theta)
@@ -711,7 +714,7 @@ class TestModelEvaluation(unittest.TestCase):
                   'dyn2': 'Exp'}
         list_for_moments_ld = ['nu', 'nu1', 'nu2', 'tf', 'm12', 'm21']
 
-        rhos = 4 * 10000 * np.logspace(-6, -3, 7)
+        rhos = 4 * 10000 * R_BINS
         theta = 4 * 10000 * 6.0e-5
 
         simulated = model_moments_ld([values[x] for x in list_for_moments_ld], rhos, theta)

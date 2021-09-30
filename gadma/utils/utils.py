@@ -749,36 +749,34 @@ def create_bed_files_and_extract_chromosomes(data_holder):
         region_len = data_holder.region_len
     else:
         region_len = 64000000
-    minimal_region_number = 15
+    min_region_num = 15
     read_vcf = allel.read_vcf(vcf_file)
-    all_chromosomes = {ii: 0 for ii in set(read_vcf['variants/CHROM'])}
+    chromosomes = {ii: 0 for ii in set(read_vcf['variants/CHROM'])}
 
-    for chrom in all_chromosomes:
-        all_chromosomes[chrom] = max(
+    for chrom in chromosomes:
+        chromosomes[chrom] = max(
             read_vcf['variants/POS'][read_vcf['variants/CHROM'] == chrom]
         )
 
     Path(f"{output_dir}/bed_files/").mkdir(parents=True, exist_ok=True)
 
-    total_region = sum([int(round(all_chromosomes[ii] / region_len)) for ii in all_chromosomes])
-    total_len = sum([int(all_chromosomes[ii]) for ii in all_chromosomes])
+    region_num = sum(
+        [int(round(chromosomes[ii] / region_len)) for ii in chromosomes]
+    )
+    total_len = sum([int(chromosomes[ii]) for ii in chromosomes])
+    if region_num < min_region_num:
+        while region_num < min_region_num:
+            region_num += (len(chromosomes))
+            region_len = (total_len / (len(chromosomes)) / (region_num / (len(chromosomes))))
 
-    for chrom in all_chromosomes:
+    for chrom in chromosomes:
         stop_position = 0
-        if total_region > minimal_region_number:
-            for num in range(1, round(all_chromosomes[chrom] / region_len) + 1):
-                with open(f"{output_dir}/bed_files/bed_file_{chrom}_{num}.bed", "w") as file:
-                    start_position = stop_position
-                    stop_position = int(region_len * num)
-                    file.write(f"{chrom}\t{start_position}\t{stop_position}")
-            all_chromosomes[chrom] = round(all_chromosomes[chrom] / region_len)
-        else:
-            region_len = total_len / minimal_region_number
-            for num in range(1, minimal_region_number + 1):
-                with open(f"{output_dir}/bed_files/bed_file_{chrom}_{num}.bed", "w") as file:
-                    start_position = stop_position
-                    stop_position = int(region_len * num)
-                    file.write(f"{chrom}\t{start_position}\t{stop_position}")
-            all_chromosomes[chrom] = (minimal_region_number + 1)
+        number_of_chrom_parts = round(chromosomes[chrom] / region_len)
+        for num in range(1, number_of_chrom_parts + 1):
+            with open(f"{output_dir}/bed_files/bed_file_{chrom}_{num}.bed", "w") as file:
+                start_position = stop_position
+                stop_position = int(region_len * num)
+                file.write(f"{chrom}\t{start_position}\t{stop_position}")
+        chromosomes[chrom] = number_of_chrom_parts + 1
 
-    return all_chromosomes
+    return chromosomes

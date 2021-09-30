@@ -253,6 +253,8 @@ class CoreRun(object):
                     engine.data_holder = self.engine.data_holder
                     engine.set_model(self.engine.model)
                     try:
+                        if engine.id == "momentsLD":
+                            args = None
                         engine.generate_code(x, save_file, *args, Nanc,
                                              gen_time=gen_time,
                                              gen_time_units=gen_time_units)
@@ -261,6 +263,8 @@ class CoreRun(object):
             else:
                 save_file = os.path.join(self.code_dir, filename)
                 args = self.settings.get_engine_args()
+                if self.engine.id == "momentsLD":
+                    args = None
                 self.engine.generate_code(x, save_file, *args,  Nanc,
                                           gen_time=gen_time,
                                           gen_time_units=gen_time_units)

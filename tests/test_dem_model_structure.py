@@ -1,9 +1,30 @@
 import unittest
 from gadma import *
 import itertools
+import os
 import copy
 import numpy as np
 import pytest
+
+DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
+
+POP_MAP = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "pop_map.txt")
+REC_MAPS_DIR = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "rec_maps")
+VCF_DATA_LD = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "vcf_data.vcf")
+TEST_OUTPUT = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "test_output")
+SAVE_IMAGE = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "ld_curves.jpg")
+
+DATA_HOLDER_FOR_MODELS = VCFDataHolder(
+            vcf_file=VCF_DATA_LD,
+            popmap_file=POP_MAP,
+            output_directory=TEST_OUTPUT,
+            recombination_maps=REC_MAPS_DIR
+)
 
 TEST_STRUCTURES = [(1,), (2,),
                    (1,1), (2,1), (1,2),
@@ -183,6 +204,8 @@ class TestModelStructure(unittest.TestCase):
                 check_ll = np.random.choice([True, False], p=[1/6, 5/6])
                 for engine in all_simulation_engines():
                     if engine.id not in ["dadi", "moments"] and not has_anc:
+                        continue
+                    if engine.id == "momentsLD":
                         continue
                     engine.set_model(dm)
                     if engine.id == 'dadi':

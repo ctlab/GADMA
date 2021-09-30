@@ -18,6 +18,24 @@ import copy
 EXAMPLE_FOLDER = os.path.join(os.path.dirname(__file__), "test_data")
 EXAMPLE_DATA = os.path.join(EXAMPLE_FOLDER, "DATA", "sfs", "YRI_CEU.fs")
 
+POP_MAP = os.path.join(
+    EXAMPLE_FOLDER, 'DATA', 'vcf_ld', "pop_map.txt")
+REC_MAPS_DIR = os.path.join(
+    EXAMPLE_FOLDER, 'DATA', 'vcf_ld', "rec_maps")
+VCF_DATA_LD = os.path.join(
+    EXAMPLE_FOLDER, 'DATA', 'vcf_ld', "vcf_data.vcf")
+TEST_OUTPUT = os.path.join(
+    EXAMPLE_FOLDER, 'DATA', 'vcf_ld', "test_output")
+SAVE_IMAGE = os.path.join(
+    EXAMPLE_FOLDER, 'DATA', 'vcf_ld', "ld_curves.jpg")
+DATA_HOLDER_FOR_LD = VCFDataHolder(
+            vcf_file=VCF_DATA_LD,
+            popmap_file=POP_MAP,
+            output_directory=TEST_OUTPUT,
+            recombination_maps=REC_MAPS_DIR
+)
+
+
 class TestGlobalOptimizers(unittest.TestCase):
     def test_registered_global_optimizers_fails(self):
         self.assertRaises(ValueError, get_global_optimizer, 'some strange_id')
@@ -381,6 +399,8 @@ class TestGeneticAlg(unittest.TestCase):
 class TestInference(unittest.TestCase):
     def test_inference_ga(self):
         for engine in all_engines():
+            if engine.id != "momentsLD":
+                continue
             with self.subTest(engine=engine.id):
                 if engine.id == "dadi":
                     args = ([4, 6, 8],)
@@ -399,6 +419,8 @@ class TestInference(unittest.TestCase):
                     data = engine.base_module.Spectrum.from_file(EXAMPLE_DATA)
                 elif engine.id == 'momi':
                     data = engine.base_module.sfs_from_dadi(EXAMPLE_DATA)
+                elif engine.id == "momentsLD":
+                    data = engine.read_data(DATA_HOLDER_FOR_LD)
                 else:
                     raise ValueError(f"Add new engine {engine.id} here for "
                                      "correct data reading in tests.")
@@ -428,12 +450,25 @@ class TestInference(unittest.TestCase):
                             def get_ll_func(data, model):
                                 model.set_data(data, length=1e8)
                                 return model.log_likelihood()
+                        elif engine.id == "momentsLD":
+                            get_model_func = func
+                            func_args = [4 * 10000 * np.array(engine.r_bins), 0.001]
+                            get_ll_func = engine.base_module.Inference.ll_over_bins
                         else:
                             raise ValueError(f"Add new engine {engine.id} here"
                                              "for correct evaluation in tests.")
                         try:
                             model = get_model_func(x, *func_args)
-                            y = get_ll_func(data, model)
+                            model = moments.LD.Inference.remove_normalized_lds(model)
+                            if engine.id == "momentsLD":
+                                means, varcovs = moments.LD.Inference.remove_normalized_data(
+                                    data['means'],
+                                    data['varcovs'],
+                                    num_pops=model.num_pops,
+                                    normalization=0)
+                                y = get_ll_func(means, model, varcovs)
+                            else:
+                                y = get_ll_func(data, model)
                             Y_init.append(y)
                         except AttributeError as e:
                             Y_init.append(-np.inf)

@@ -57,8 +57,8 @@ def _print_momentsLD_func(model, values):
 
     ret_str = f"def {FUNCTION_NAME}(params):\n"
     ret_str += "\t%s = params\n" % ", ".join([x.name for x in f_vars])
-    ret_str += "\tY = Numerics.steady_state(rho=rho, theta=theta)\n" \
-               "\tY = LDstats(Y, num_pops=1, pop_ids=pop_ids))\n"
+    ret_str += "\tY = moments.LD.Numerics.steady_state(rho=rho, theta=theta)\n" \
+               "\tY = moments.LD.LDstats(Y, num_pops=1, pop_ids=pop_ids))\n"
     n_split = 0
 
     for ind, event in enumerate(model.events):
@@ -157,7 +157,7 @@ def _print_momentsLD_load_data(engine, data_holder):
                + "/bed_files/\n"
     ret_str += "reg_num = 0\n" \
                "region_stats = {}\n"
-    chromosomes = create_bed_files_and_extract_chromosomes(data_holder.filename, data_holder.output_directory)
+    chromosomes = create_bed_files_and_extract_chromosomes(data_holder)
     ret_str += f"chromosomes = {chromosomes}\n"
     kwargs = engine.kwargs
 
@@ -284,7 +284,7 @@ def _print_moments_ld_main(engine, values, nanc):
     return ret_str
 
 
-def print_moments_ld_code(engine, filename, values,
+def print_moments_ld_code(engine, values, filename,
                           nanc=None, gen_time=None, gen_time_units=None):
     """
     Generates code for `moments` to file. Code have function of demographic
