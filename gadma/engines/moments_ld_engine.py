@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 import collections
 import pickle
@@ -10,6 +12,7 @@ from ..utils import DynamicVariable, get_correct_dtype
 from ..utils import create_bed_files_and_extract_chromosomes
 from ..code_generator import id2printfunc
 from ..data import check_and_return_projections_and_labels
+from ..utils import PopulationSizeVariable
 from os import listdir
 import moments.LD
 
@@ -192,10 +195,6 @@ class MomentsLdEngine(Engine):
         """
         var2value = self.model.var2value(values)
 
-        if isinstance(self.model, CustomDemographicModel):
-            values_list = [var2value[var] for var in self.model.variables]
-            return self.model.function(values_list)
-
         if self.data_holder is not None:
             if self.data_holder.ld_kwargs:
                 for key in self.data_holder.ld_kwargs:
@@ -206,9 +205,13 @@ class MomentsLdEngine(Engine):
                 self.r_bins = self.kwargs["r_bins"]
 
         if isinstance(self.model, CustomDemographicModel):
-            values_list = [var2value[var] for var in self.model.variables]
-            Nref = values_list[-1]
-            values_list = values_list[:-1]
+            if self.model.fixed_anc_size:
+                Nref = self.model.fixed_anc_size
+                values_list = [var2value[var] for var in self.model.variables]
+            else:
+                values_list = [var2value[var] for var in self.model.variables]
+                Nref = values_list[-1]
+                values_list = values_list[:-1]
             rhos = 4 * Nref * np.array(self.r_bins)
             theta = 4 * Nref * self.model.mutation_rate
             ld_stats = self.model.function(values_list, rhos, theta)

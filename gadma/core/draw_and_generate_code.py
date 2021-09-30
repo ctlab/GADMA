@@ -248,6 +248,12 @@ def print_runs_summary(start_time, shared_dict, settings):
                 addit_str += f"(theta = {theta: .2f})"
             elif not is_custom:
                 Nanc = engine.get_N_ancestral(x, *settings.get_engine_args())
+            elif all([
+                is_custom,
+                engine.id == "momentsLD",
+                engine.model.fixed_anc_size
+            ]):
+                Nanc = engine.model.fixed_anc_size
             # Nanc can be None if we have custom demographic model and
             # we cannot get Nanc size from theta
             model_str = ""

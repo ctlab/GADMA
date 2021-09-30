@@ -54,6 +54,7 @@ model_func = None
 lower_bound = None
 upper_bound = None
 parameter_identifiers = None
+fixed_ancestral_size = None
 
 # Structure of models
 initial_structure_unit = 1

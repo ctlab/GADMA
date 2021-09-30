@@ -452,15 +452,21 @@ class TestInference(unittest.TestCase):
                                 return model.log_likelihood()
                         elif engine.id == "momentsLD":
                             get_model_func = func
+                            print("ENGINE R BINS")
+                            print(engine.r_bins)
                             func_args = [4 * 10000 * np.array(engine.r_bins), 0.001]
+                            print("func_args")
+                            print(func_args)
                             get_ll_func = engine.base_module.Inference.ll_over_bins
                         else:
                             raise ValueError(f"Add new engine {engine.id} here"
                                              "for correct evaluation in tests.")
                         try:
                             model = get_model_func(x, *func_args)
-                            model = moments.LD.Inference.remove_normalized_lds(model)
                             if engine.id == "momentsLD":
+                                print("DATA")
+                                print(data)
+                                model = moments.LD.Inference.remove_normalized_lds(model)
                                 means, varcovs = moments.LD.Inference.remove_normalized_data(
                                     data['means'],
                                     data['varcovs'],

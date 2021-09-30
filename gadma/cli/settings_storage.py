@@ -76,7 +76,7 @@ def _get_variable(cls, par_label, domain, engine="dadi"):
     if (cls == FractionVariable or cls is GrowthRateVariable or
             not issubclass(cls, DemographicVariable)):
         return cls(name=par_label, domain=domain)
-    units = "genetic" if engine in ['dadi', 'moments'] else "physical"
+    units = "genetic" if engine in ['dadi', 'moments',  "momentsLD"] else "physical"
     if par_label.lower().endswith("_phys"):
         units = "physical"
     if par_label.lower().endswith("_gen"):
@@ -100,7 +100,7 @@ def get_variables(parameter_identifiers, lower_bound, upper_bound,
         domains = list(zip(lower_bound, upper_bound))
     else:
         domains = [None for _ in parameter_identifiers]
-    units = "genetic" if engine in ["dadi", "moments"] else "physical"
+    units = "genetic" if engine in ["dadi", "moments", "momentsLD"] else "physical"
     if parameter_identifiers is not None:
         classes = [get_variable_class(p_id) for p_id in parameter_identifiers]
     else:
@@ -183,7 +183,7 @@ class SettingsStorage(object):
                      'number_of_repeats', 'number_of_processes',
                      'number_of_populations', 'global_maxiter',
                      'global_maxeval', 'local_maxiter', 'local_maxeval',
-                     'num_init_const', "region_len"]
+                     'num_init_const', "region_len", 'fixed_ancestral_size']
         float_attrs = ['theta0', 'time_for_generation', 'eps',
                        'const_of_time_in_drawing', 'vmin', 'min_n', 'max_n',
                        'min_t', 'max_t', 'min_m', 'max_m',
@@ -1185,13 +1185,17 @@ class SettingsStorage(object):
             variables = get_variables(self.parameter_identifiers,
                                       self.lower_bound, self.upper_bound,
                                       engine=self.engine)
+            if (self.ancestral_size_as_parameter
+                    and self.fixed_ancestral_size is None):
+                variables.append(PopulationSizeVariable("Nanc", units="physical"))
             if self.model_func is not None:
                 return CustomDemographicModel(function=self.model_func,
                                               variables=variables,
                                               gen_time=gen_time,
                                               theta0=theta0,
                                               mutation_rate=mut_rate,
-                                              recombination_rate=rec_rate)
+                                              recombination_rate=rec_rate,
+                                              fixed_anc_size=self.fixed_ancestral_size)
             module_name = module_name_from_path(self.custom_filename)
             spec = importlib.util.spec_from_file_location(module_name,
                                                           self.custom_filename)
@@ -1202,7 +1206,8 @@ class SettingsStorage(object):
                                           gen_time=gen_time,
                                           theta0=theta0,
                                           mutation_rate=mut_rate,
-                                          recombination_rate=rec_rate)
+                                          recombination_rate=rec_rate,
+                                          fixed_anc_size=self.fixed_ancestral_size)
 
         elif self.custom_filename is None and self.model_func is not None:
             return CustomDemographicModel(function=self.model_func,
@@ -1210,7 +1215,8 @@ class SettingsStorage(object):
                                           gen_time=gen_time,
                                           theta0=theta0,
                                           mutation_rate=mut_rate,
-                                          recombination_rate=rec_rate)
+                                          recombination_rate=rec_rate,
+                                          fixed_anc_size=self.fixed_ancestral_size)
         else:
             raise ValueError("Some settings are missed so no model is "
                              "generated")
