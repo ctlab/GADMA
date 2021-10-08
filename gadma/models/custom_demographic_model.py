@@ -21,7 +21,7 @@ class CustomDemographicModel(DemographicModel):
     def __init__(self, function, variables,
                  gen_time=None, theta0=None,
                  mutation_rate=None, recombination_rate=None,
-                 fixed_anc_size=None):
+                 fixed_anc_size=None, has_anc_size=False):
         self.function = function
         self.fixed_anc_size = fixed_anc_size
         super(CustomDemographicModel, self).__init__(
@@ -30,7 +30,7 @@ class CustomDemographicModel(DemographicModel):
             mutation_rate=mutation_rate,
             recombination_rate=recombination_rate,
             Nref=None,
-            has_anc_size=False,
+            has_anc_size=has_anc_size
         )
         if variables is None:
             variables = VariablePool()

@@ -10,7 +10,7 @@ from pathlib import Path
 from gadma.data.data import VCFDataHolder
 from gadma.engines.engine import get_engine
 from gadma.utils.utils import create_bed_files_and_extract_chromosomes
-from gadma.ld_data_precomputer.precompute_ld_data import (
+from gadma.precompute_ld_data import (
     main, read_data, extract_rec_map_name_and_extension, ReadInfo
 )
 

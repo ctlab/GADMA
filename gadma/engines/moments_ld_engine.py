@@ -68,7 +68,7 @@ class MomentsLdEngine(Engine):
         """
         if data_holder.preprocessed_data is None:
             if isinstance(data_holder, VCFDataHolder):
-                projections, pops = check_and_return_projections_and_labels(data_holder)
+                pops = data_holder.population_labels
             else:
                 raise ValueError("Wrong type of data_holder: "
                                  f"{data_holder.__class__}")
@@ -83,6 +83,7 @@ class MomentsLdEngine(Engine):
                         kwargs[key] = data_holder.ld_kwargs[key]
 
             chromosomes = create_bed_files_and_extract_chromosomes(data_holder)
+            sorted_choromosomes_list = sorted(chrom for chrom in chromosomes)
 
             bed_files = data_holder.output_directory + "/bed_files"
             reg_num = 0
@@ -92,8 +93,8 @@ class MomentsLdEngine(Engine):
                 extension = rec_map.split(".")[1]
                 rec_map = "_".join(rec_map.split(".")[0].split('_')[:-1])
                 if len(listdir(data_holder.recombination_maps)) == len(chromosomes):
-                    for chrom in chromosomes:
-                        for num in range(1, chromosomes[chrom]):
+                    for chrom in sorted_choromosomes_list:
+                        for num in range(1, chromosomes[chrom] + 1):
                             region_stats.update({
                                 f"{reg_num}":
                                 moments.LD.Parsing.compute_ld_statistics(
@@ -110,8 +111,8 @@ class MomentsLdEngine(Engine):
 
                 elif len(listdir(data_holder.recombination_maps)) != len(chromosomes):
                     rec_map = listdir(data_holder.recombination_maps)[0]
-                    for chrom in chromosomes:
-                        for num in range(1, chromosomes[chrom]):
+                    for chrom in sorted_choromosomes_list:
+                        for num in range(1, chromosomes[chrom] + 1):
                             region_stats.update({
                                 f"{reg_num}":
                                 moments.LD.Parsing.compute_ld_statistics(
@@ -128,8 +129,8 @@ class MomentsLdEngine(Engine):
                             reg_num += 1
             else:
                 print("No recombination map provided, using physical distance")
-                for chrom in chromosomes:
-                    for num in range(1, chromosomes[chrom]):
+                for chrom in sorted_choromosomes_list:
+                    for num in range(1, chromosomes[chrom] + 1):
                         region_stats.update({
                             f"{reg_num}":
                             moments.LD.Parsing.compute_ld_statistics(
@@ -146,7 +147,8 @@ class MomentsLdEngine(Engine):
             print("Read preprocessed data")
             chromosomes = create_bed_files_and_extract_chromosomes(data_holder)
             with open(data_holder.preprocessed_data, "rb") as fin:
-                data = pickle.load(fin)
+                region_stats = pickle.load(fin)
+            data = moments.LD.Parsing.bootstrap_data(region_stats)
         return data
 
     @staticmethod

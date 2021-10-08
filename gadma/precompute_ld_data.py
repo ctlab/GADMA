@@ -8,10 +8,9 @@ import allel
 from os import listdir
 import time
 import pickle
-from gadma.utils.utils import create_bed_files_and_extract_chromosomes
+from gadma.utils.utils import create_bed_files_and_extract_chromosomes, check_file_existence
 from gadma.cli import arg_parser
 from gadma.data.data import VCFDataHolder
-from gadma.data.data_utils import check_and_return_projections_and_labels
 from gadma.engines.engine import get_engine
 
 
@@ -21,7 +20,7 @@ def main():
     data_holder = settings_storage.data_holder
 
     if isinstance(data_holder, VCFDataHolder):
-        projections, pops = check_and_return_projections_and_labels(data_holder)
+        pops = data_holder.population_labels
     else:
         raise ValueError("Wrong type of data_holder: "
                          f"{data_holder.__class__}")
@@ -50,18 +49,19 @@ def main():
 
     read_information_list = []
 
-    region_number = 1
+    region_number = 0
 
     filename = data_holder.filename
     popmap_file = data_holder.popmap_file
-    for chrom in chromosomes:
+    sorted_choromosomes_list = sorted(chrom for chrom in chromosomes)
+    for chrom in sorted_choromosomes_list:
         if one_rec_map_few_chromosomes:
             rec_map = f"{data_holder.recombination_maps}/" \
                       f"{rec_map_name}.{extension}"
         else:
             rec_map = f"{data_holder.recombination_maps}/" \
                       f"{rec_map_name}_{chrom}.{extension}"
-        for ii in range(1, chromosomes[chrom]):
+        for ii in range(1, chromosomes[chrom] + 1):
             bed_file = f"{bed_files}bed_file_{chrom}_{ii}.bed"
             read_information_list.append(
                 ReadInfo(
@@ -78,14 +78,14 @@ def main():
             region_number += 1
 
     h5_file_path = data_holder.filename.split(".vcf")[0] + ".h5"
-    allel.vcf_to_hdf5(
-        data_holder.filename,
-        h5_file_path,
-        fields="*",
-        exclude_fields=["calldata/GQ"],
-        overwrite=True,
-    )
-
+    if not check_file_existence(h5_file_path):
+        allel.vcf_to_hdf5(
+            data_holder.filename,
+            h5_file_path,
+            fields="*",
+            exclude_fields=["calldata/GQ"],
+            overwrite=True,
+        )
 
     n_processes = settings_storage.number_of_processes
 
@@ -104,7 +104,6 @@ def main():
         pool.close()
         regions = dict(ChainMap(*result))
 
-        # ld_stats = moments.LD.Parsing.bootstrap_data(regions)
         with open("./preprocessed_data.bp", "wb+") as fout:
             pickle.dump(regions, fout)
 
@@ -189,6 +188,10 @@ class ReadInfo:
         self.pops = pops
         self.kwargs = kwargs
         self.chromosome = chromosome
+
+    def __str__(self):
+        return f"Reg_num: {self.reg_num}, Chromosome: {self.chromosome}," \
+               f" Bed: {self.bed_file}"
 
 
 if __name__ == "__main__":

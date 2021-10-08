@@ -1,5 +1,7 @@
+import os.path
+
 from ..models import CustomDemographicModel, EpochDemographicModel, \
-    Epoch, Split, BinaryOperation
+    Epoch, Split, BinaryOperation, StructureDemographicModel
 from ..utils import DiscreteVariable, DynamicVariable, Variable
 # from ..engines import MomentsLdEngine
 from ..utils import create_bed_files_and_extract_chromosomes
@@ -12,17 +14,20 @@ from os import listdir
 FUNCTION_NAME = "model_func"
 
 
-def _print_p0(values):
+def _print_p0(values, nanc):
     """
     Returns code for p0 with values.
 
     :param values: Values for p0.
     """
     p0 = copy.copy(values)
+    p0 = p0[1:]
+    p0.append(values[0])
+    p0[-1] = int(p0[-1] * nanc)
     return "p0 = [%s]\n" % ", ".join([str(x) for x in p0])
 
 
-def _print_momentsLD_func(model, values):
+def _print_momentsLD_func(engine, values):
     """
     Returns string with function of demographic model for :py:mod:`momentsLD`.
     Parameter `values` is needed to fix dynamics of populations.
@@ -33,6 +38,8 @@ def _print_momentsLD_func(model, values):
     """
     from ..engines import MomentsLdEngine  # to avoid cross import
 
+    model = engine.model
+    pops = engine.data_holder.population_labels
     if isinstance(model, CustomDemographicModel):
         path_repr = repr(sys.modules[model.function.__module__].__file__)
         ret_str = "import importlib.util\n\n"
@@ -55,10 +62,10 @@ def _print_momentsLD_func(model, values):
     else:
         raise ValueError("Nope")
 
-    ret_str = f"def {FUNCTION_NAME}(params):\n"
+    ret_str = f"def {FUNCTION_NAME}(params, rho=None, theta=0.001):\n"
     ret_str += "\t%s = params\n" % ", ".join([x.name for x in f_vars])
     ret_str += "\tY = moments.LD.Numerics.steady_state(rho=rho, theta=theta)\n" \
-               "\tY = moments.LD.LDstats(Y, num_pops=1, pop_ids=pop_ids))\n"
+               f"\tY = moments.LD.LDstats(Y, num_pops=1, pop_ids={pops})\n"
     n_split = 0
 
     for ind, event in enumerate(model.events):
@@ -136,11 +143,11 @@ def _print_momentsLD_func(model, values):
                         y, (Variable, BinaryOperation)) else y
 
             kwargs = [f"{key}={value}" for key, value in kwargs.items()]
-            ret_str += f"\tY.integrate({', '.join(kwargs)}\n"
+            ret_str += f"\tY.integrate({', '.join(kwargs)}, rho=rho, theta=theta)\n"
         elif event.__class__ is Split:
             ret_str += f"\tY = Y.split({n_split})\n"
             n_split += 1
-    ret_str += "\treturn Y\n"
+    ret_str += "\treturn Y\n\n\n"
     return ret_str
 
 
@@ -153,8 +160,8 @@ def _print_momentsLD_load_data(engine, data_holder):
     from ..engines import MomentsLdEngine
     ret_str = ""
 
-    ret_str += f"bed_files = {data_holder.output_directory}" \
-               + "/bed_files/\n"
+    ret_str += f"bed_files = \"{data_holder.output_directory}" \
+               + "/bed_files/\n\""
     ret_str += "reg_num = 0\n" \
                "region_stats = {}\n"
     chromosomes = create_bed_files_and_extract_chromosomes(data_holder)
@@ -167,18 +174,18 @@ def _print_momentsLD_load_data(engine, data_holder):
     extension = rec_map.split(".")[1]
     rec_map = rec_map.split(".")[0]
     rec_map = "_".join(rec_map.split('_')[:-1])
-    ret_str += f"extension = {extension}\n"
-    ret_str += f"rec_map = {rec_map}\n"
+    ret_str += f"extension = \"{extension}\"\n"
+    ret_str += f"rec_map_name = \"{rec_map}\n"
     ret_str += "kwargs = {\n"
-    ret_str += f"\tr_bins: {kwargs['r_bins']},\n"
+    ret_str += f"\tr_bins: {[ii for ii in kwargs['r_bins']]},\n"
     ret_str += f"\treport: {kwargs['report']},\n"
-    ret_str += f"\tbp_bins: {kwargs['bp_bins']},\n"
+    ret_str += f"\tbp_bins: {[ii for ii in kwargs['bp_bins']]},\n"
     ret_str += f"\tuse_genotypes: {kwargs['use_genotypes']},\n"
     ret_str += f"\tcM: {kwargs['cM']},\n"
     ret_str += "}\n"
-    ret_str += f"vcf_file = {data_holder.filename}\n"
-    ret_str += f"pop_map = {data_holder.popmap_file}\n"
-    ret_str += f"rec_maps = {data_holder.recombination_maps}\n"
+    ret_str += f"vcf_file = \"{data_holder.filename}\"\n"
+    ret_str += f"pop_map = \"{data_holder.popmap_file}\"\n"
+    ret_str += f"rec_maps = \"{data_holder.recombination_maps}\"\n"
 
     if data_holder.recombination_maps is not None:
         ret_str += "for chrom in chromosomes:\n"
@@ -187,12 +194,12 @@ def _print_momentsLD_load_data(engine, data_holder):
         ret_str += "            f\"{reg_num}\":\n" \
                    "            moments.LD.Parsing.compute_ld_statistics(\n"
         ret_str += "                vcf_file,\n"
-        ret_str += f"                rec_map_file=f\"rec_maps"
-        ret_str += "                         /{rec_map}_{chrom}.{extension}\"\n"
-        ret_str += "                pop_file=pop_map\n"
+        ret_str += f"                rec_map_file=f\"{data_holder.recombination_maps}/\n"
+        ret_str += "                 {rec_map_name}_{chrom}.{extension}\",\n"
+        ret_str += f"                pop_file=\"{data_holder.popmap_file}\",\n"
         ret_str += "                bed_file=f\"{bed_files}/"
-        ret_str += "bed_file_{chrom}_{num}.bed\"\n"
-        ret_str += f"                pops={pops}\n"
+        ret_str += "bed_file_{chrom}_{num}.bed,\"\n"
+        ret_str += f"                pops={pops},\n"
         ret_str += "                **kwargs\n"
         ret_str += "            )\n"
         ret_str += "        })\n"
@@ -204,10 +211,10 @@ def _print_momentsLD_load_data(engine, data_holder):
         ret_str += "            f\"{reg_num}\":\n" \
                    "            moments.LD.Parsing.compute_ld_statistics(\n"
         ret_str += "                vcf_file,\n"
-        ret_str += f"                pop_file=pop_map\n"
+        ret_str += f"                pop_file={data_holder.popmap_file},\n"
         ret_str += "                bed_file=f\"{bed_files}/"
-        ret_str += "bed_file_{chrom}_{num}.bed\"\n"
-        ret_str += f"                pops={pops}\n"
+        ret_str += "bed_file_{chrom}_{num}.bed,\"\n"
+        ret_str += f"                pops={pops},\n"
         ret_str += "                **kwargs\n"
         ret_str += "            )\n"
         ret_str += "        })\n"
@@ -227,11 +234,11 @@ def _print_LdCurves(engine):
     ret_str = "stats_to_plot = [\n"
     ret_str += "    [name] for name in model.names()[:-1][0] if name != 'pi2_0_0_0_0'\n"
     ret_str += "]\n"
-    ret_str += "moments.LD..Plotting.plot_ld_curves_comp(\n"
+    ret_str += "moments.LD.Plotting.plot_ld_curves_comp(\n"
     ret_str += "    model,\n"
     ret_str += "    data['means'][:-1],\n"
     ret_str += "    data['varcovs'][:-1],\n"
-    ret_str += f"    rs={r_bins},\n"
+    ret_str += f"    rs={[ii for ii in r_bins]},\n"
     ret_str += "    stats_to_plot=stats_to_plot,\n"
     ret_str += "    fig_size=(len(stats_to_plot), 9),\n"
     ret_str += "    cols=round(len(stats_to_plot) / 3),\n"
@@ -248,7 +255,7 @@ def _print_ll():
     ret_str += "    data['varcovs'],\n"
     ret_str += "    num_pops=model.num_pops,\n"
     ret_str += "    normalization=0)\n"
-    ret_str += f"ll_model = 'moments.LD.Inference.ll_over_bins(means, model, varcovs)\n\n"
+    ret_str += f"ll_model = moments.LD.Inference.ll_over_bins(means, model, varcovs)\n\n"
     ret_str += "print('Model log likelihood (LL(model, data)): " \
                "{0}'.format(ll_model))\n\n"
     return ret_str
@@ -270,14 +277,14 @@ def _print_main_ld(engine, nanc=None):
 
     ret_str += "theta = 4 * Nanc * mu\n\n"
 
-    ret_str += "print('Size of ancestral population: {Nanc}'.format(Nanc))\n"
+    ret_str += "print(f'Size of ancestral population: {Nanc}')\n"
     ret_str += _print_ll()
 
     return ret_str
 
 
 def _print_moments_ld_main(engine, values, nanc):
-    ret_str = _print_p0(values)
+    ret_str = _print_p0(values, nanc)
     ret_str += _print_momentsLD_simulation()
     ret_str += _print_main_ld(engine, nanc=nanc)
     ret_str += _print_LdCurves(engine)
@@ -287,7 +294,7 @@ def _print_moments_ld_main(engine, values, nanc):
 def print_moments_ld_code(engine, values, filename,
                           nanc=None, gen_time=None, gen_time_units=None):
     """
-    Generates code for `moments` to file. Code have function of demographic
+    Generates code for `momentsLD` to file. Code have function of demographic
     model that simulates AFS and main part where simulation takes place as well
     as calculation of log-likelihood.
 
@@ -301,14 +308,31 @@ def print_moments_ld_code(engine, values, filename,
 
     """
     var2value = engine.model.var2value(values)
-    Nanc_value = engine.get_value_from_var2value(var2value,
-                                                 engine.model.Nanc_size)
+    if isinstance(engine.model, CustomDemographicModel):
+        if engine.model.fixed_anc_size:
+            Nanc_value = engine.model.fixed_anc_size
+        else:
+            Nanc_value = engine.model.variables[0]
+            print("WE ARE TESTING CUSTOM MODELS!!")
+            print("WE ARE TESTING CUSTOM MODELS!!")
+            print("WE ARE TESTING CUSTOM MODELS!!")
+            print(Nanc_value)
+            print(Nanc_value)
+            print(Nanc_value)
+            print("WE ARE TESTING CUSTOM MODELS!!")
+            print("WE ARE TESTING CUSTOM MODELS!!")
+            print("WE ARE TESTING CUSTOM MODELS!!")
+    else:
+        Nanc_value = engine.get_value_from_var2value(
+            var2value,
+            engine.model.Nanc_size
+        )
     assert nanc is None or Nanc_value == nanc, f"{nanc}, {Nanc_value}"
     nanc = Nanc_value
     values = engine.model.translate_values(units="genetic", values=values)
     var2value = engine.model.var2value(values)
     ret_str = "import moments.LD\nimport numpy as np\n\n"
-    ret_str += _print_momentsLD_func(engine.model, values)
+    ret_str += _print_momentsLD_func(engine, values)
     ret_str += "\n"
     ret_str += _print_momentsLD_load_data(engine, engine.data_holder)
 
@@ -319,3 +343,33 @@ def print_moments_ld_code(engine, values, filename,
         return ret_str
     with open(filename, 'w') as f:
         f.write(ret_str)
+
+    generate_file_for_ci_evaluation(engine, values, nanc)
+
+
+def generate_file_for_ci_evaluation(engine, values, nanc):
+    ci_data_filename = os.path.join(
+        engine.data_holder.output_directory,
+        "data_for_CI.py"
+    )
+
+    ret_str = "import moments.LD\nimport numpy as np\n\n"
+    ret_str += _print_momentsLD_func(engine, values)
+    ret_str += f"rep_data_file = \"{engine.data_holder.preprocessed_data}\"\n"
+    ret_str += extract_opt_params(values, nanc)
+    if engine.data_holder.recombination_maps:
+        ret_str += f"rs = {[ii for ii in engine.kwargs['r_bins']]}"
+    else:
+        ret_str += "\nYou need recombination map if you wont to compute CI"
+
+    with open(ci_data_filename, "w") as file:
+        file.write(ret_str)
+
+
+def extract_opt_params(values, nanc):
+    p0 = copy.copy(values)
+    p0 = p0[1:]
+    p0.append(values[0])
+    p0[-1] = int(p0[-1] * nanc)
+    return "opt_params = [%s]\n" % ", ".join([str(x) for x in p0])
+

@@ -1187,7 +1187,7 @@ class SettingsStorage(object):
                                       engine=self.engine)
             if (self.ancestral_size_as_parameter
                     and self.fixed_ancestral_size is None):
-                variables.append(PopulationSizeVariable("Nanc", units="physical"))
+                variables.insert(0, PopulationSizeVariable("Nanc", units="physical"))
             if self.model_func is not None:
                 return CustomDemographicModel(function=self.model_func,
                                               variables=variables,
@@ -1195,7 +1195,8 @@ class SettingsStorage(object):
                                               theta0=theta0,
                                               mutation_rate=mut_rate,
                                               recombination_rate=rec_rate,
-                                              fixed_anc_size=self.fixed_ancestral_size)
+                                              fixed_anc_size=self.fixed_ancestral_size,
+                                              has_anc_size=self.ancestral_size_as_parameter)
             module_name = module_name_from_path(self.custom_filename)
             spec = importlib.util.spec_from_file_location(module_name,
                                                           self.custom_filename)
@@ -1207,7 +1208,8 @@ class SettingsStorage(object):
                                           theta0=theta0,
                                           mutation_rate=mut_rate,
                                           recombination_rate=rec_rate,
-                                          fixed_anc_size=self.fixed_ancestral_size)
+                                          fixed_anc_size=self.fixed_ancestral_size,
+                                          has_anc_size=self.ancestral_size_as_parameter)
 
         elif self.custom_filename is None and self.model_func is not None:
             return CustomDemographicModel(function=self.model_func,
@@ -1216,7 +1218,8 @@ class SettingsStorage(object):
                                           theta0=theta0,
                                           mutation_rate=mut_rate,
                                           recombination_rate=rec_rate,
-                                          fixed_anc_size=self.fixed_ancestral_size)
+                                          fixed_anc_size=self.fixed_ancestral_size,
+                                          has_anc_size=self.ancestral_size_as_parameter)
         else:
             raise ValueError("Some settings are missed so no model is "
                              "generated")

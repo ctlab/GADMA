@@ -777,6 +777,6 @@ def create_bed_files_and_extract_chromosomes(data_holder):
                 start_position = stop_position
                 stop_position = int(region_len * num)
                 file.write(f"{chrom}\t{start_position}\t{stop_position}")
-        chromosomes[chrom] = number_of_chrom_parts + 1
+        chromosomes[chrom] = number_of_chrom_parts
 
     return chromosomes
