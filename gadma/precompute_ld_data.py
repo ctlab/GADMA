@@ -4,6 +4,7 @@ from collections import ChainMap
 import moments.LD
 import numpy as np
 import shutil
+import allel
 from os import listdir
 import time
 import pickle
@@ -76,6 +77,16 @@ def main():
             )
             region_number += 1
 
+    h5_file_path = data_holder.filename.split(".vcf")[0] + ".h5"
+    allel.vcf_to_hdf5(
+        data_holder.filename,
+        h5_file_path,
+        fields="*",
+        exclude_fields=["calldata/GQ"],
+        overwrite=True,
+    )
+
+
     n_processes = settings_storage.number_of_processes
 
     pool = multiprocessing.Pool(processes=n_processes)
@@ -93,9 +104,9 @@ def main():
         pool.close()
         regions = dict(ChainMap(*result))
 
-        ld_stats = moments.LD.Parsing.bootstrap_data(regions)
+        # ld_stats = moments.LD.Parsing.bootstrap_data(regions)
         with open("./preprocessed_data.bp", "wb+") as fout:
-            pickle.dump(ld_stats, fout)
+            pickle.dump(regions, fout)
 
         params_file = vars(args)["params"]
         with open(f"./{params_file}", "a") as params:
