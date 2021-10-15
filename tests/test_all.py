@@ -125,7 +125,6 @@ class TestRestore(unittest.TestCase):
                 self.assertEqual(res.y, f(res.x))
 
     def test_gs_and_ls_restore(self):
-        print(DATA_PATH)
         param_file = os.path.join(DATA_PATH, "PARAMS", 'another_test_params')
         base_out_dir = os.path.join(DATA_PATH, "test_gs_and_ls_restore_output")
         sys.argv = ['gadma', '-p', param_file, '-o', base_out_dir]
@@ -221,7 +220,7 @@ class TestRestore(unittest.TestCase):
         finally:
             if check_dir_existence(finished_run_dir + '_resumed'):
                 shutil.rmtree(finished_run_dir + '_resumed')
-            # os.remove(params_file)
+            os.remove(params_file)
             gadma.PIL_available = True
 
     def test_restore_with_different_options_1(self):

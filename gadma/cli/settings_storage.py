@@ -1185,7 +1185,6 @@ class SettingsStorage(object):
             variables = get_variables(self.parameter_identifiers,
                                       self.lower_bound, self.upper_bound,
                                       engine=self.engine)
-            # Что если движок не momentsLD?
             if (self.ancestral_size_as_parameter
                     and self.fixed_ancestral_size is None):
                 variables.insert(0, PopulationSizeVariable("Nanc", units="physical"))
