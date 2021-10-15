@@ -422,11 +422,6 @@ class CoreRun(object):
         optimizer = GlobalOptimizerAndLocalOptimizer(self.global_optimizer,
                                                      self.local_optimizer)
         opt_kwargs = {**self.optimize_kwargs, **initial_kwargs}
-        with open("./variables.txt", "w") as file:
-            file.write("_variables\n")
-            file.write(f"{self.model._variables}\n")
-            file.write("variables\n")
-            file.write(f"{self.model._variables}\n")
         result = optimizer.optimize(f, variables, **opt_kwargs)
         self.intermediate_callback(result.x, result.y)
         return result

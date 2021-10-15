@@ -193,7 +193,7 @@ def generate_code_to_file(x, engine, settings, filename):
                 other_engine.generate_code(x, save_file, *args, Nanc, gen_time,
                                            gen_time_units)
             except Exception as e:
-                    failes[other_engine.id] = str(e)
+                failes[other_engine.id] = str(e)
     if len(failes) > 0:
         raise ValueError("; ".join([f"{id}: {failes[id]}" for id in failes]))
 
