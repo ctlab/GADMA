@@ -197,11 +197,11 @@ class CoreRun(object):
                       self.settings.LONG_NAME_2_SHORT.get(best_by, best_by))
             save_code_file = os.path.join(self.output_dir,
                                           prefix + "_model")
-            try:
-                generate_code_to_file(x, self.engine,
-                                      self.settings, save_code_file)
-            except Exception:
-                pass
+            # try:
+            generate_code_to_file(x, self.engine,
+                                  self.settings, save_code_file)
+            # except Exception:
+            #     pass
 
     def draw_iter_callback(self, x, y):
         """
@@ -252,14 +252,14 @@ class CoreRun(object):
                     # engine.set_data(self.engine.data)
                     engine.data_holder = self.engine.data_holder
                     engine.set_model(self.engine.model)
-                    try:
-                        if engine.id == "momentsLD":
-                            args = None
-                        engine.generate_code(x, save_file, *args, Nanc,
-                                             gen_time=gen_time,
-                                             gen_time_units=gen_time_units)
-                    except Exception as e:
-                        pass
+                    # try:
+                    if engine.id == "momentsLD":
+                        args = None
+                    engine.generate_code(x, save_file, *args, Nanc,
+                                         gen_time=gen_time,
+                                         gen_time_units=gen_time_units)
+                    # except Exception as e:
+                    #     pass
             else:
                 save_file = os.path.join(self.code_dir, filename)
                 args = self.settings.get_engine_args()
@@ -347,12 +347,12 @@ class CoreRun(object):
         except Exception as e:
             print(f"{bcolors.WARNING}Run {self.index}: failed to draw model "
                   f"due to the following exception: {e}{bcolors.ENDC}")
-        try:
-            generate_code_to_file(x, self.engine,
-                                  self.settings, save_code_file)
-        except Exception as e:
-            print(f"{bcolors.WARNING}Run {self.index}: failed to generate code"
-                  f" due to the following exception: {e}{bcolors.ENDC}")
+        # try:
+        generate_code_to_file(x, self.engine,
+                              self.settings, save_code_file)
+        # except Exception as e:
+        #     print(f"{bcolors.WARNING}Run {self.index}: failed to generate code"
+        #           f" due to the following exception: {e}{bcolors.ENDC}")
 
     def draw_model_in_output_dir(self, x, y,
                                  best_by='log-likelihood', final=True):
@@ -375,11 +375,11 @@ class CoreRun(object):
         prefix += self.settings.LONG_NAME_2_SHORT.get(best_by, best_by)
         save_plot_file = os.path.join(self.output_dir, prefix + "_model.png")
         save_code_file = os.path.join(self.output_dir, prefix + "_model")
-        try:
-            generate_code_to_file(x, self.engine,
-                                  self.settings, save_code_file)
-        except Exception:
-            pass
+        # try:
+        generate_code_to_file(x, self.engine,
+                              self.settings, save_code_file)
+        # except Exception:
+        #     pass
         try:
             draw_plots_to_file(x, self.engine, self.settings,
                                save_plot_file, fig_title)

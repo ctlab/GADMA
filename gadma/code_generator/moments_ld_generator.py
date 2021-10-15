@@ -57,10 +57,12 @@ def _print_momentsLD_func(engine, values):
     f_vars = [x for x in model.variables
               if not isinstance(x, DiscreteVariable)]
     if model.has_anc_size:
-        if isinstance(model.Nanc_size, Variable):
-            f_vars.pop(f_vars.index(model.Nanc_size))
-    else:
-        raise ValueError("Nope")
+        if isinstance(model, CustomDemographicModel):
+            pass
+        elif isinstance(model, StructureDemographicModel):
+            if isinstance(model.Nanc_size, Variable):
+                f_vars.pop(f_vars.index(model.Nanc_size))
+
 
     ret_str = f"def {FUNCTION_NAME}(params, rho=None, theta=0.001):\n"
     ret_str += "\t%s = params\n" % ", ".join([x.name for x in f_vars])
@@ -121,7 +123,7 @@ def _print_momentsLD_func(engine, values):
                                 if isinstance(var, (Variable,
                                                     BinaryOperation))
                                 else str(var) for var in y]
-                    if x == 'Npop':  # pop size
+                    if x == 'nu':  # pop size
                         if all_sudden:
                             kwargs[x] = f"[{', '.join(varnames)}]"
                         else:
@@ -307,21 +309,22 @@ def print_moments_ld_code(engine, values, filename,
     :param gen_time_units: Units of time. String.
 
     """
+
+    if isinstance(engine.model, StructureDemographicModel):
+        engine, values, fraction_vars_to_fix_list = remove_fraction_variable_for_two_sudden_children(
+            engine, values
+        )
+
     var2value = engine.model.var2value(values)
+
     if isinstance(engine.model, CustomDemographicModel):
         if engine.model.fixed_anc_size:
             Nanc_value = engine.model.fixed_anc_size
         else:
-            Nanc_value = engine.model.variables[0]
-            print("WE ARE TESTING CUSTOM MODELS!!")
-            print("WE ARE TESTING CUSTOM MODELS!!")
-            print("WE ARE TESTING CUSTOM MODELS!!")
-            print(Nanc_value)
-            print(Nanc_value)
-            print(Nanc_value)
-            print("WE ARE TESTING CUSTOM MODELS!!")
-            print("WE ARE TESTING CUSTOM MODELS!!")
-            print("WE ARE TESTING CUSTOM MODELS!!")
+            Nanc_value = engine.get_value_from_var2value(
+                var2value,
+                engine.model.variables[0]
+            )
     else:
         Nanc_value = engine.get_value_from_var2value(
             var2value,
@@ -336,6 +339,8 @@ def print_moments_ld_code(engine, values, filename,
     ret_str += "\n"
     ret_str += _print_momentsLD_load_data(engine, engine.data_holder)
 
+    generate_file_for_ci_evaluation(engine, values, nanc)
+
     values = [var2value[var] for var in engine.model.variables
               if not isinstance(var, DiscreteVariable)]
     ret_str += _print_moments_ld_main(engine, values, nanc)
@@ -344,7 +349,10 @@ def print_moments_ld_code(engine, values, filename,
     with open(filename, 'w') as f:
         f.write(ret_str)
 
-    generate_file_for_ci_evaluation(engine, values, nanc)
+    if isinstance(engine.model, StructureDemographicModel):
+        for ii, variable in enumerate(engine.model._variables):
+            if variable.name in fraction_vars_to_fix_list:
+                engine.model.unfix_variable(engine.model._variables[ii])
 
 
 def generate_file_for_ci_evaluation(engine, values, nanc):
@@ -356,20 +364,70 @@ def generate_file_for_ci_evaluation(engine, values, nanc):
     ret_str = "import moments.LD\nimport numpy as np\n\n"
     ret_str += _print_momentsLD_func(engine, values)
     ret_str += f"rep_data_file = \"{engine.data_holder.preprocessed_data}\"\n"
-    ret_str += extract_opt_params(values, nanc)
+    ret_str += extract_opt_params(engine, values, nanc)
     if engine.data_holder.recombination_maps:
-        ret_str += f"rs = {[ii for ii in engine.kwargs['r_bins']]}"
+        ret_str += f"rs = {[ii for ii in engine.kwargs['r_bins']]}\n"
     else:
-        ret_str += "\nYou need recombination map if you wont to compute CI"
+        ret_str += "\nYou need recombination map if you wont to compute CI\n"
+
+    f_vars = [x for x in engine.model.variables
+              if not isinstance(x, DiscreteVariable)]
+    ret_str += f"param_names = {[x.name for x in(f_vars[1:]+[f_vars[0]])]}"
 
     with open(ci_data_filename, "w") as file:
         file.write(ret_str)
 
 
-def extract_opt_params(values, nanc):
+def extract_opt_params(engine, values, nanc):
+
+    var2value = engine.model.var2value(values)
+    values = [var2value[var] for var in engine.model.variables
+              if not isinstance(var, DiscreteVariable)]
     p0 = copy.copy(values)
     p0 = p0[1:]
     p0.append(values[0])
     p0[-1] = int(p0[-1] * nanc)
     return "opt_params = [%s]\n" % ", ".join([str(x) for x in p0])
 
+
+def remove_fraction_variable_for_two_sudden_children(engine, values):
+
+    var2value = engine.model.var2value(values)
+
+    dyn_vars_list = []
+    split_num = 1
+    for event in engine.model.events:
+        if isinstance(event, Split):
+            dyn_vars_list.append([
+                f"dyn{split_num}{event.pop_to_div + 1}",
+                f"dyn{split_num}{event.n_pop + 1}"
+            ])
+            split_num += 1
+
+    fraction_vars_to_fix_list = []
+
+    for split_dyn_vars_sublist in dyn_vars_list:
+        split_num = 1
+        first_dyn_sudden = False
+        second_dyn_sudden = False
+        for variable in var2value:
+            if all([
+                variable.name == split_dyn_vars_sublist[0],
+                var2value[variable] == "Sud"
+            ]):
+                first_dyn_sudden = True
+            elif all([
+                variable.name == split_dyn_vars_sublist[1],
+                var2value[variable] == "Sud"
+            ]):
+                second_dyn_sudden = True
+        if first_dyn_sudden and second_dyn_sudden:
+            fraction_vars_to_fix_list.append(f"s{split_num}")
+
+    for ii, variable in enumerate(engine.model._variables):
+        if variable.name in fraction_vars_to_fix_list:
+            engine.model.fix_variable(engine.model._variables[ii], 0.5)
+
+    values = [var2value[var] for var in engine.model.variables]
+
+    return engine, values, fraction_vars_to_fix_list

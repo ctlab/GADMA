@@ -4,6 +4,8 @@ import moments.LD
 import pickle
 import importlib.util
 import sys
+import copy
+import pandas as pd
 
 # Need to import lib
 #
@@ -11,17 +13,12 @@ print("Hello")
 
 
 def main():
-    print("START ARGPARSE")
     parser = argparse.ArgumentParser("GADMA module for calculating confidence "
                                      "intervals from calculated LD params")
 
     parser.add_argument('input_filename', metavar='<filename>',
                         help="Filename (.py) with result from run "
                              "on data. Output of gadma.")
-    parser.add_argument('--method',required=True, type=str,
-                        help='Method for CI evaluation. '
-                             'You can choose Fisher Information Matrix (FIM) or '
-                             'the Godambe Information Matrix (GIM)')
 
     args = parser.parse_args()
     filename = abspath(args.input_filename)
@@ -37,12 +34,14 @@ def main():
         hasattr(module, "model_func"),
         hasattr(module, "rs"),
         hasattr(module, "opt_params"),
-        hasattr(module, "rep_data_file")
+        hasattr(module, "rep_data_file"),
+        hasattr(module, "param_names")
     ]):
         model_func = getattr(module, "model_func")
         rs = getattr(module, "rs")
         opt_params = getattr(module, "opt_params")
         rep_data_file = getattr(module, "rep_data_file")
+        param_names = getattr(module, "param_names")
     else:
         raise ValueError("Data for CI evaluation is not valid! Check it!")
 
@@ -50,41 +49,90 @@ def main():
         region_stats = pickle.load(file)
     data = moments.LD.Parsing.bootstrap_data(region_stats)
 
-    if args.method == "FIM":
-        uncerts_FIM = moments.LD.Godambe.FIM_uncert(
-            model_func,
-            opt_params,
-            data["means"],
-            data["varcovs"],
-            r_edges=rs,
-        )
-        lower = opt_params - 1.96 * uncerts_FIM
-        upper = opt_params + 1.96 * uncerts_FIM
+    uncerts_fim = moments.LD.Godambe.FIM_uncert(
+        model_func,
+        opt_params,
+        data["means"],
+        data["varcovs"],
+        r_edges=rs,
+    )
+    print("uncerts_fim")
+    print(uncerts_fim)
+    lower_fim = opt_params - 1.96 * uncerts_fim
+    upper_fim = opt_params + 1.96 * uncerts_fim
 
-        print(lower)
-        print(upper)
-    elif args.method == "GIM":
-        num_boots = 100
-        norm_idx = 0
-        bootstrap_sets = moments.LD.Parsing.get_bootstrap_sets(
-            region_stats, num_bootstraps=num_boots, normalization=norm_idx)
+    num_boots = 100
+    norm_idx = 0
+    bootstrap_sets = moments.LD.Parsing.get_bootstrap_sets(
+        region_stats, num_bootstraps=num_boots, normalization=norm_idx)
 
-        uncerts_GIM = moments.LD.Godambe.GIM_uncert(
-            model_func,
-            bootstrap_sets,
-            opt_params,
-            data["means"],
-            data["varcovs"],
-            r_edges=rs,
-        )
+    uncerts_gim = moments.LD.Godambe.GIM_uncert(
+        model_func,
+        bootstrap_sets,
+        opt_params,
+        data["means"],
+        data["varcovs"],
+        r_edges=rs,
+    )
 
-        lower = opt_params - 1.96 * uncerts_GIM
-        upper = opt_params + 1.96 * uncerts_GIM
-        print(lower)
-        print(upper)
+    lower_gim = opt_params - 1.96 * uncerts_gim
+    upper_gim = opt_params + 1.96 * uncerts_gim
 
-    else:
-        raise ValueError("Unknown method for CI.")
+    lower_fim_phys_units = copy.deepcopy(lower_fim)
+    upper_fim_phys_units = copy.deepcopy(upper_fim)
+    lower_gim_phys_units = copy.deepcopy(lower_gim)
+    upper_gim_phys_units = copy.deepcopy(upper_gim)
+
+    phys_units_boundaries_list = [
+        lower_fim_phys_units,
+        upper_fim_phys_units,
+        lower_gim_phys_units,
+        upper_gim_phys_units
+    ]
+
+    gen_units_boundaries_list = [
+        lower_fim,
+        upper_fim,
+        lower_gim,
+        upper_gim
+    ]
+
+    for bound in gen_units_boundaries_list:
+        for num, param in enumerate(param_names):
+            bound[num] = round(bound[num], 4)
+
+    # opt_params[-1] is Nref
+    for bound in phys_units_boundaries_list:
+        for num, param in enumerate(param_names):
+            if param.startswith("t") or param.startswith("m"):
+                bound[num] *= (2 * opt_params[-1])
+            elif param.startswith("nu"):
+                bound[num] *= opt_params[-1]
+            bound[num] = round(bound[num], 4)
+
+    # create pandas dataframe
+
+    fim_bounds_list = [f"{lower_fim[num]} - {upper_fim[num]}" for num in range(len(param_names))]
+    gim_bounds_list = [f"{lower_gim[num]} - {upper_gim[num]}" for num in range(len(param_names))]
+    fim_bounds_list_phys_units = [
+            f"{lower_fim_phys_units[num]} - {upper_fim_phys_units[num]}" for num in range(len(param_names))
+        ]
+    gim_bounds_list_phys_units = [
+            f"{lower_gim_phys_units[num]} - {upper_gim_phys_units[num]}" for num in range(len(param_names))
+        ]
+
+    all_ci_data = {
+        "Param names": param_names,
+        "Opt params": opt_params,
+        "FIM": fim_bounds_list,
+        "GIM": gim_bounds_list,
+        "FIM phys units": fim_bounds_list_phys_units,
+        "GIM phys units": gim_bounds_list_phys_units
+    }
+
+    all_ci_dataframe = pd.DataFrame(data=all_ci_data)
+    all_ci_dataframe.to_excel('ci_results.xlsx', index=False)
+    print(all_ci_dataframe)
 
 
 if __name__ == "__main__":

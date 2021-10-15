@@ -236,6 +236,13 @@ class StructureDemographicModel(EpochDemographicModel):
                 inbr_args.append(var)
             self.add_inbreeding(inbr_args)
 
+        for ii in range(len(self._variables)):
+            if all([
+                isinstance(self._variables[ii], FractionVariable),
+                not self.has_dyns
+            ]):
+                self.fix_variable(self._variables[ii], 0.5)
+
         return self
 
     def get_structure(self):

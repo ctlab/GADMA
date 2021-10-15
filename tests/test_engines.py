@@ -33,6 +33,10 @@ DATA_HOLDER_FOR_MODELS = VCFDataHolder(
 
 
 class TestEngines(unittest.TestCase):
+    def tearDown(self):
+        if Path("./plot.png").exists():
+            os.remove("./plot.png")
+
     def test_existence(self):
         self.assertTrue(len(list(all_engines())) > 0)
         self.assertTrue(len(list(all_available_engines())) > 0)
@@ -407,7 +411,8 @@ class TestEngines(unittest.TestCase):
         for engine in all_available_engines():
             if not engine.can_draw_comp:
                 continue
-            if engine.id == "momentsLD":
+            # momentsLD drawing test below
+            elif engine.id == "momentsLD":
                 continue
             engine.model = dm
             engine.data = data_holder
@@ -434,8 +439,8 @@ class TestEngines(unittest.TestCase):
             engine.data_holder = data_holder
             engine.draw_schematic_model_plot(
                 values=values,
-                gen_time = 10,
-                gen_time_units = 'Years',
+                gen_time=10,
+                gen_time_units='Years',
                 save_file="plot.png"
             )
 

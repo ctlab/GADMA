@@ -9,6 +9,7 @@ from gadma.utils import StdAndFileLogger
 import dadi
 import copy
 import pickle
+from pathlib import Path
 import shutil
 import os
 import sys
@@ -42,6 +43,12 @@ def rosenbrock(X):
 
 
 class TestRestore(unittest.TestCase):
+    def tearDown(self):
+        if Path("./save_file").exists():
+            os.remove("./save_file")
+        if Path("./report_file").exists():
+            os.remove("./report_file")
+
     def test_ga_restore(self):
         ga = get_global_optimizer("Genetic_algorithm")
         f = rosenbrock

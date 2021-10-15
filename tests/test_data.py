@@ -86,6 +86,11 @@ DATA_HOLDER_FOR_MODELS = VCFDataHolder(
 
 
 class TestDataHolder(unittest.TestCase):
+
+    def tearDown(self):
+        if Path("./output_dir").exists():
+            shutil.rmtree("./output_dir")
+
     def _check_data(self, data_holder, pop_labels, outgroup, sample_sizes):
         self.assertTrue(all(data_holder.projections == sample_sizes),
                         msg=f"{data_holder.projections} != {sample_sizes}")

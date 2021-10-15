@@ -212,8 +212,8 @@ class MomentsLdEngine(Engine):
                 values_list = [var2value[var] for var in self.model.variables]
             else:
                 values_list = [var2value[var] for var in self.model.variables]
-                Nref = values_list[-1]
-                values_list = values_list[:-1]
+                Nref = values_list[0]
+                values_list = values_list[1:]
             rhos = 4 * Nref * np.array(self.r_bins)
             theta = 4 * Nref * self.model.mutation_rate
             ld_stats = self.model.function(values_list, rhos, theta)
@@ -402,10 +402,18 @@ class MomentsLdEngine(Engine):
 
     def get_N_ancestral(self, values):
         var2value = self.model.var2value(values)
-        if self.model.Nanc_size:
-            Nref = self.model.get_value_from_var2value(
-                var2value, self.model.Nanc_size)
-            return Nref
+        if self.model.has_anc_size:
+            if isinstance(self.model, StructureDemographicModel):
+                Nref = self.model.get_value_from_var2value(
+                    var2value, self.model.Nanc_size)
+                return Nref
+            elif isinstance(self.model, CustomDemographicModel):
+                if self.model.fixed_anc_size:
+                    return self.model.fixed_anc_size
+                elif not self.model.fixed_anc_size:
+                    Nref = self.model.get_value_from_var2value(
+                        var2value, self.model.variables[0])
+                    return Nref
         else:
             raise ValueError(
                 'Need ancestral population size as parameter'
