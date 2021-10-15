@@ -221,7 +221,7 @@ class TestRestore(unittest.TestCase):
         finally:
             if check_dir_existence(finished_run_dir + '_resumed'):
                 shutil.rmtree(finished_run_dir + '_resumed')
-            os.remove(params_file)
+            # os.remove(params_file)
             gadma.PIL_available = True
 
     def test_restore_with_different_options_1(self):
