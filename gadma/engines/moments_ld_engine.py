@@ -380,7 +380,7 @@ class MomentsLdEngine(Engine):
             plot_vcs=True
         )
 
-    def generate_code(self, values, filename, nanc=None,
+    def generate_code(self, values, filename, args=None, nanc=None,
                       gen_time=None, gen_time_units="years"):
         """
         Prints nice formated code in the format of engine to file or returns
@@ -397,7 +397,7 @@ class MomentsLdEngine(Engine):
         if filename is not None and not filename.endswith("py"):
             filename = filename + ".py"
         return id2printfunc[self.id](self, values,
-                                     filename, nanc, gen_time,
+                                     filename, args, nanc, gen_time,
                                      gen_time_units)
 
     def get_N_ancestral(self, values):

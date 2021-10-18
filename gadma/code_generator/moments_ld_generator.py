@@ -293,7 +293,7 @@ def _print_moments_ld_main(engine, values, nanc):
     return ret_str
 
 
-def print_moments_ld_code(engine, values, filename,
+def print_moments_ld_code(engine, values, filename, args=None,
                           nanc=None, gen_time=None, gen_time_units=None):
     """
     Generates code for `momentsLD` to file. Code have function of demographic

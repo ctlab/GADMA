@@ -175,25 +175,40 @@ def generate_code_to_file(x, engine, settings, filename):
     else:
         engines = [copy.deepcopy(engine)]
     failes = {}  # engine.id: reason
-    if engine.id == 'momentsLD':
-        save_file = prefix + f"_{engine.id}_code.py"
+
+    for other_engine in engines:
+        save_file = prefix + f"_{other_engine.id}_code.py"
+        # other_engine.set_data(engine.data)
+        other_engine.data_holder = copy.deepcopy(engine.data_holder)
+        other_engine.set_model(engine.model)
+        args = settings.get_engine_args(other_engine.id)
         try:
-            engine.generate_code(x, save_file, Nanc, gen_time,
-                                 gen_time_units)
+            other_engine.generate_code(x, save_file, *args, Nanc, gen_time,
+                                       gen_time_units)
         except Exception as e:
-            failes[engine.id] = str(e)
-    else:
-        for other_engine in engines:
-            save_file = prefix + f"_{other_engine.id}_code.py"
-            # other_engine.set_data(engine.data)
-            other_engine.data_holder = copy.deepcopy(engine.data_holder)
-            other_engine.set_model(engine.model)
-            args = settings.get_engine_args(other_engine.id)
-            try:
-                other_engine.generate_code(x, save_file, *args, Nanc, gen_time,
-                                           gen_time_units)
-            except Exception as e:
-                failes[other_engine.id] = str(e)
+            failes[other_engine.id] = str(e)
+
+
+    #
+    # if engine.id == 'momentsLD':
+    #     save_file = prefix + f"_{engine.id}_code.py"
+    #     try:
+    #         engine.generate_code(x, save_file, Nanc, gen_time,
+    #                              gen_time_units)
+    #     except Exception as e:
+    #         failes[engine.id] = str(e)
+    # else:
+    #     for other_engine in engines:
+    #         save_file = prefix + f"_{other_engine.id}_code.py"
+    #         # other_engine.set_data(engine.data)
+    #         other_engine.data_holder = copy.deepcopy(engine.data_holder)
+    #         other_engine.set_model(engine.model)
+    #         args = settings.get_engine_args(other_engine.id)
+    #         try:
+    #             other_engine.generate_code(x, save_file, *args, Nanc, gen_time,
+    #                                        gen_time_units)
+    #         except Exception as e:
+    #             failes[other_engine.id] = str(e)
     if len(failes) > 0:
         raise ValueError("; ".join([f"{id}: {failes[id]}" for id in failes]))
 
