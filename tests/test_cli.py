@@ -4,6 +4,7 @@ import os
 import numpy as np
 import copy
 import shutil
+from pathlib import Path
 
 import gadma
 from gadma.cli.arg_parser import ArgParser, get_settings,\
@@ -29,6 +30,10 @@ def get_settings_test():
 
 
 class TestCLI(unittest.TestCase):
+    def tearDown(self):
+        if Path("./some_dir").exists():
+            shutil.rmtree("./some_dir")
+
     def test_argparser(self):
         parser = ArgParser()
         parser.format_help()

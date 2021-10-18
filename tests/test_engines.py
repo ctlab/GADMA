@@ -28,7 +28,8 @@ DATA_HOLDER_FOR_MODELS = VCFDataHolder(
             vcf_file=VCF_DATA_LD,
             popmap_file=POP_MAP,
             output_directory=TEST_OUTPUT,
-            recombination_maps=REC_MAPS_DIR
+            recombination_maps=REC_MAPS_DIR,
+            population_labels=["deme0", "deme1"]
 )
 
 
@@ -740,7 +741,8 @@ class TestModelEvaluation(unittest.TestCase):
         engine.data_holder = VCFDataHolder(
             vcf_file=VCF_DATA_LD, popmap_file=POP_MAP,
             recombination_maps=REC_MAPS_DIR,
-            output_directory=TEST_OUTPUT
+            output_directory=TEST_OUTPUT,
+            population_labels=["deme0", "deme1"]
         )
         engine.set_data(engine.data_holder)
         data_gadma = engine.data
@@ -789,7 +791,8 @@ class TestModelEvaluation(unittest.TestCase):
         engine.data_holder = VCFDataHolder(
             vcf_file=VCF_DATA_LD, popmap_file=POP_MAP,
             recombination_maps=REC_MAPS_DIR,
-            output_directory=TEST_OUTPUT
+            output_directory=TEST_OUTPUT,
+            population_labels=["deme0", "deme1"]
         )
 
         values, simulated_by_moments, dm = self.model_for_gadma_moments_evaluation()

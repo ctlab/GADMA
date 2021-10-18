@@ -562,6 +562,8 @@ class TestModels(unittest.TestCase):
                   'T_1': 500, 'T_2':100}
 
         for engine in all_available_engines():
+            if engine.id != "momentsLD":
+                continue
             models = [model1, model2, model3, model5, model6]
             if engine.can_evaluate:
                 customfile = os.path.join(
@@ -597,6 +599,9 @@ class TestModels(unittest.TestCase):
                         if description == "fs without pop labels":
                             continue
                         values['d2'] = "Exp"
+                    if engine.id == "momentsLD":
+                        if isinstance(data, SFSDataHolder):
+                            continue
                     data.sequence_length = 50818468
                     # we read data but save only updated data_holder
                     engine.data = data

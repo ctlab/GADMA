@@ -32,7 +32,8 @@ DATA_HOLDER_FOR_LD = VCFDataHolder(
             vcf_file=VCF_DATA_LD,
             popmap_file=POP_MAP,
             output_directory=TEST_OUTPUT,
-            recombination_maps=REC_MAPS_DIR
+            recombination_maps=REC_MAPS_DIR,
+            population_labels=["deme0", "deme1"]
 )
 
 
