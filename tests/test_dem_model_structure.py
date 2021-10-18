@@ -238,8 +238,6 @@ class TestModelStructure(unittest.TestCase):
                             continue
                         raise e
                     engine.set_data(data)
-#                    print(data)
-#                    print(type(data))
 
                     if check_ll:
                         # get ll of data
@@ -288,7 +286,7 @@ class TestModelStructure(unittest.TestCase):
 
                 dm.final_structure = dm.get_structure()
                 self.assertRaises(ValueError, dm.increase_structure)
-        self.assertTrue(failed <= 5, "Ddai failed more that 5 times")
+        self.assertTrue(failed <= 5, "Dadi failed more that 5 times")
 
 
     def test_fails(self):

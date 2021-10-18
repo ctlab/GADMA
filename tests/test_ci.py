@@ -24,6 +24,9 @@ class TestConfidenceIntervals(unittest.TestCase):
             os.remove(params_file)
 
         for engine in all_engines():
+            # momentsLD has different method for CI evaluation
+            if engine.id == "momentsLD":
+                continue
             model_name = f"small_1pop_dem_model_{engine.id}.py"
             model_name = os.path.join(DATA_DIR, "MODELS", model_name)
             no_ids_model_name = os.path.join(DATA_DIR, "MODELS",
