@@ -370,8 +370,6 @@ class TestEngines(unittest.TestCase):
             projections=[4, 4, 4],
             population_labels=["YRI", "CEU", "CHB"],
             sequence_length=50818468,  # chr22
-            output_directory=TEST_OUTPUT,
-            recombination_maps=REC_MAPS_DIR
         )
         return data_holder
 
@@ -408,6 +406,7 @@ class TestEngines(unittest.TestCase):
             if not engine.can_draw_comp:
                 continue
             if engine.id == "momentsLD":
+                # drawing test for momentsLD is separate
                 continue
             engine.model = dm
             engine.data = data_holder
@@ -448,6 +447,7 @@ class TestEngines(unittest.TestCase):
 
         for engine in all_available_engines():
             if engine.id == "momentsLD":
+                # Evaluation test for momentsLD is separate
                 continue
             kwargs = {}
             if engine.id == "dadi":
@@ -457,6 +457,7 @@ class TestEngines(unittest.TestCase):
                 engine.data = data_holder
                 engine.model = dm
                 engine.evaluate(values, **kwargs)
+
 
 class TestModelSimulation(unittest.TestCase):
 
