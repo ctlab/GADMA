@@ -439,6 +439,26 @@ class TestModels(unittest.TestCase):
                     popmap_file=os.path.join(EXAMPLE_FOLDER, "DATA", "vcf", "out_of_africa_chr22_sim_3pop.popmap")
                ))
 
+    def _vcf_datasets_ld_precomputed(self):
+        pops = ["pop0", "pop1", "pop2"]
+        # We don't need any other data
+        for iter in range(1, 6):
+            if iter != 4:
+                pops = ["pop0", "pop1", "pop2"]
+            else:
+                pops = ["pop0", "pop1"]
+            yield (
+                f"model{iter}",
+                VCFDataHolder(
+                    vcf_file=None,
+                    preprocessed_data=os.path.join(
+                        EXAMPLE_FOLDER, "DATA", "vcf", f"preprocessed_data_model{iter}.bp"
+                    ),
+                    popmap_file=None,
+                    population_labels=pops
+                    )
+                )
+
     def test_add_split_after_inbreeding(self):
         nu1 = PopulationSizeVariable('nu1')
         nu2 = PopulationSizeVariable('nu2')
@@ -558,12 +578,15 @@ class TestModels(unittest.TestCase):
                   f: 0.5, h: 0.3, f1: 0.1, f2: 0.3,
                   Nanc: 10000, Nu2: 5000, T3: 4000,
                   'nu1F': 1.0, 'nu2B': 0.7, 'nu2F': 1.0, 'T': 0.5, 'Tp': 0.3,
-                  'N_1F':20000, 'r_2': -1e-5, 'N_2F': 5000,
-                  'T_1': 500, 'T_2':100}
+                  'N_1F': 20000, 'r_2': -1e-5, 'N_2F': 5000,
+                  'T_1': 500, 'T_2': 100}
 
         for engine in all_available_engines():
-            if engine.id != "momentsLD":
-                continue
+            # generate datasets for engines because momentsLD work don't work with sfs
+            if engine.id == "momentsLD":
+                dataset = self._vcf_datasets_ld_precomputed()
+            else:
+                dataset = self._sfs_datasets()
             models = [model1, model2, model3, model5, model6]
             if engine.can_evaluate:
                 customfile = os.path.join(
@@ -583,7 +606,7 @@ class TestModels(unittest.TestCase):
                 models.append(model7)
 
             for ind, model in enumerate(models):
-                for description, data in self._sfs_datasets():
+                for description, data in dataset:
                     msg = f"for model {ind + 1} and {description} data and " \
                           f"{engine.id} engine"
                     print(msg)
@@ -594,14 +617,12 @@ class TestModels(unittest.TestCase):
                         options = {}
                         args = ()
 
-                    if engine.id == "momi":
+                    if engine.id in ["momi", "momentsLD"]:
                         # there is an error in momi for that case
+                        # data for moments was simulated with msprime, which can't work with Lin DynVar
                         if description == "fs without pop labels":
                             continue
                         values['d2'] = "Exp"
-                    if engine.id == "momentsLD":
-                        if isinstance(data, SFSDataHolder):
-                            continue
                     data.sequence_length = 50818468
                     # we read data but save only updated data_holder
                     engine.data = data
@@ -638,7 +659,7 @@ class TestModels(unittest.TestCase):
                         if description == "fs without pop labels":
                             engine.data_holder.population_labels = None
                             engine.generate_code(values, None, *args, nanc=Nanc)
-                    if engine.id == "momi":
+                    if engine.id in ["momi", "momentsLD"]:
                         values['d2'] = "Lin"
 
     def test_models_eq(self):
