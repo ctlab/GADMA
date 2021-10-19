@@ -145,7 +145,8 @@ class MomentsLdEngine(Engine):
             data = moments.LD.Parsing.bootstrap_data(region_stats)
         else:
             print("Read preprocessed data")
-            chromosomes = create_bed_files_and_extract_chromosomes(data_holder)
+            if data_holder.filename is not None:
+                chromosomes = create_bed_files_and_extract_chromosomes(data_holder)
             with open(data_holder.preprocessed_data, "rb") as fin:
                 region_stats = pickle.load(fin)
             data = moments.LD.Parsing.bootstrap_data(region_stats)
@@ -210,12 +211,18 @@ class MomentsLdEngine(Engine):
             if self.model.fixed_anc_size:
                 Nref = self.model.fixed_anc_size
                 values_list = [var2value[var] for var in self.model.variables]
-            else:
+            elif not self.model.fixed_anc_size and self.model.has_anc_size:
                 values_list = [var2value[var] for var in self.model.variables]
                 Nref = values_list[0]
                 values_list = values_list[1:]
+            else: # for test cases
+                values_list = [var2value[var] for var in self.model.variables]
+                Nref = 10000
             rhos = 4 * Nref * np.array(self.r_bins)
-            theta = 4 * Nref * self.model.mutation_rate
+            if self.model.mutation_rate is not None:
+                theta = 4 * Nref * self.model.mutation_rate
+            else:
+                theta = 4 * Nref * 1.5e-8
             ld_stats = self.model.function(values_list, rhos, theta)
             model = moments.LD.LDstats(
                 [(y_l + y_r) / 2 for y_l, y_r in zip(
@@ -435,9 +442,10 @@ class MomentsLdEngine(Engine):
         return nanc
 
     def update_data_holder_with_inner_data(self):
-        (self.data_holder.projections,
-         self.data_holder.population_labels) = check_and_return_projections_and_labels(
-            self.data_holder)
+        if self.data_holder.filename is not None:
+            (self.data_holder.projections,
+             self.data_holder.population_labels) = check_and_return_projections_and_labels(
+                self.data_holder)
         self.data_holder.outgroup = None
 
 

@@ -14,16 +14,24 @@ from os import listdir
 FUNCTION_NAME = "model_func"
 
 
-def _print_p0(values, nanc):
+def _print_p0(engine, values, nanc):
     """
     Returns code for p0 with values.
 
     :param values: Values for p0.
     """
+
+    f_vars = [x for x in engine.model.variables
+              if not isinstance(x, DiscreteVariable)]
+    for variable in f_vars:
+        if variable.name == "Nanc":
+            Nanc_index = f_vars.index(variable)
+            f_vars.pop(f_vars.index(variable))
+            Nanc = values[Nanc_index] * nanc
+            values.pop(Nanc_index)
+            values.append(Nanc)
+            f_vars.append(variable)
     p0 = copy.copy(values)
-    p0 = p0[1:]
-    p0.append(values[0])
-    p0[-1] = int(p0[-1] * nanc)
     return "p0 = [%s]\n" % ", ".join([str(x) for x in p0])
 
 
@@ -63,9 +71,15 @@ def _print_momentsLD_func(engine, values):
             if isinstance(model.Nanc_size, Variable):
                 f_vars.pop(f_vars.index(model.Nanc_size))
 
+    # Change place of Nanc_param in params
+    for variable in f_vars:
+        if variable.name == "Nanc":
+            f_vars.pop(f_vars.index(variable))
+            f_vars.append(variable)
 
     ret_str = f"def {FUNCTION_NAME}(params, rho=None, theta=0.001):\n"
     ret_str += "\t%s = params\n" % ", ".join([x.name for x in f_vars])
+    ret_str += "\tNanc = 1.0\n"
     ret_str += "\tY = moments.LD.Numerics.steady_state(rho=rho, theta=theta)\n" \
                f"\tY = moments.LD.LDstats(Y, num_pops=1, pop_ids={pops})\n"
     n_split = 0
@@ -163,71 +177,98 @@ def _print_momentsLD_load_data(engine, data_holder):
     ret_str = ""
 
     ret_str += f"bed_files = \"{data_holder.output_directory}" \
-               + "/bed_files/\n\""
+               + "/bed_files/\"\n"
     ret_str += "reg_num = 0\n" \
                "region_stats = {}\n"
-    chromosomes = create_bed_files_and_extract_chromosomes(data_holder)
-    ret_str += f"chromosomes = {chromosomes}\n"
+    if data_holder.filename is not None:
+        chromosomes = create_bed_files_and_extract_chromosomes(data_holder)
+        ret_str += f"chromosomes = {chromosomes}\n"
     kwargs = engine.kwargs
 
     pops = data_holder.population_labels
-
-    rec_map = listdir(data_holder.recombination_maps)[0]
-    extension = rec_map.split(".")[1]
-    rec_map = rec_map.split(".")[0]
-    rec_map = "_".join(rec_map.split('_')[:-1])
-    ret_str += f"extension = \"{extension}\"\n"
-    ret_str += f"rec_map_name = \"{rec_map}\n"
+    if data_holder.recombination_maps is not None:
+        rec_map = listdir(data_holder.recombination_maps)[0]
+        extension = rec_map.split(".")[1]
+        rec_map = rec_map.split(".")[0]
+        rec_map = "_".join(rec_map.split('_')[:-1])
+        ret_str += f"extension = \"{extension}\"\n"
+        ret_str += f"rec_map_name = \"{rec_map}\n"
     ret_str += "kwargs = {\n"
-    ret_str += f"\tr_bins: {[ii for ii in kwargs['r_bins']]},\n"
-    ret_str += f"\treport: {kwargs['report']},\n"
-    ret_str += f"\tbp_bins: {[ii for ii in kwargs['bp_bins']]},\n"
-    ret_str += f"\tuse_genotypes: {kwargs['use_genotypes']},\n"
-    ret_str += f"\tcM: {kwargs['cM']},\n"
+    ret_str += f"\t\"r_bins\": {[ii for ii in kwargs['r_bins']]},\n"
+    ret_str += f"\t\"report\": {kwargs['report']},\n"
+    ret_str += f"\t\"bp_bins\": {[ii for ii in kwargs['bp_bins']]},\n"
+    ret_str += f"\t\"use_genotypes\": {kwargs['use_genotypes']},\n"
+    ret_str += f"\t\"cM\": {kwargs['cM']},\n"
     ret_str += "}\n"
     ret_str += f"vcf_file = \"{data_holder.filename}\"\n"
     ret_str += f"pop_map = \"{data_holder.popmap_file}\"\n"
-    ret_str += f"rec_maps = \"{data_holder.recombination_maps}\"\n"
+    if data_holder.recombination_maps is not None:
+        ret_str += f"rec_maps = \"{data_holder.recombination_maps}\"\n"
+    ret_str += f"preprocessed_data = \"{data_holder.preprocessed_data}\"\n"
 
     if data_holder.recombination_maps is not None:
-        ret_str += "for chrom in chromosomes:\n"
-        ret_str += "    for num in range(1, chromosomes[chrom]):\n"
-        ret_str += "        region_stats.update({\n"
-        ret_str += "            f\"{reg_num}\":\n" \
-                   "            moments.LD.Parsing.compute_ld_statistics(\n"
-        ret_str += "                vcf_file,\n"
-        ret_str += f"                rec_map_file=f\"{data_holder.recombination_maps}/\n"
-        ret_str += "                 {rec_map_name}_{chrom}.{extension}\",\n"
-        ret_str += f"                pop_file=\"{data_holder.popmap_file}\",\n"
-        ret_str += "                bed_file=f\"{bed_files}/"
-        ret_str += "bed_file_{chrom}_{num}.bed,\"\n"
-        ret_str += f"                pops={pops},\n"
-        ret_str += "                **kwargs\n"
-        ret_str += "            )\n"
-        ret_str += "        })\n"
-        ret_str += "        reg_num += 1\n"
+        ret_str += "if preprocessed_data is not None:\n"
+        ret_str += "    with open(preprocessed_data, \"rb\") as fin:\n"
+        ret_str += "        region_stats = pickle.load(fin)\n"
+        ret_str += "else:\n"
+        ret_str += "    for chrom in chromosomes:\n"
+        ret_str += "        for num in range(1, chromosomes[chrom]):\n"
+        ret_str += "            region_stats.update({\n"
+        ret_str += "                f\"{reg_num}\":\n" \
+                   "                moments.LD.Parsing.compute_ld_statistics(\n"
+        ret_str += "                    vcf_file,\n"
+        ret_str += f"                    rec_map_file=f\"{data_holder.recombination_maps}/\n"
+        ret_str += "                     {rec_map_name}_{chrom}.{extension}\",\n"
+        ret_str += f"                    pop_file=\"{data_holder.popmap_file}\",\n"
+        ret_str += "                    bed_file=f\"{bed_files}/"
+        ret_str += "bed_file_{chrom}_{num}.bed\",\n"
+        ret_str += f"                    pops={pops},\n"
+        ret_str += "                    **kwargs\n"
+        ret_str += "                )\n"
+        ret_str += "            })\n"
+        ret_str += "            reg_num += 1\n"
     else:
-        ret_str += "for chrom in chromosomes:\n"
-        ret_str += "    for num in range(1, chromosomes[chrom]):\n"
-        ret_str += "        region_stats.update({\n"
-        ret_str += "            f\"{reg_num}\":\n" \
-                   "            moments.LD.Parsing.compute_ld_statistics(\n"
-        ret_str += "                vcf_file,\n"
-        ret_str += f"                pop_file={data_holder.popmap_file},\n"
-        ret_str += "                bed_file=f\"{bed_files}/"
-        ret_str += "bed_file_{chrom}_{num}.bed,\"\n"
-        ret_str += f"                pops={pops},\n"
-        ret_str += "                **kwargs\n"
-        ret_str += "            )\n"
-        ret_str += "        })\n"
-        ret_str += "        reg_num += 1\n"
+        ret_str += "if preprocessed_data is not None:\n"
+        ret_str += "    with open(preprocessed_data, \"rb\") as fin:\n"
+        ret_str += "        region_stats = pickle.load(fin)\n"
+        ret_str += "else:\n"
+        ret_str += "    for chrom in chromosomes:\n"
+        ret_str += "        for num in range(1, chromosomes[chrom]):\n"
+        ret_str += "            region_stats.update({\n"
+        ret_str += "                f\"{reg_num}\":\n" \
+                   "                moments.LD.Parsing.compute_ld_statistics(\n"
+        ret_str += "                    vcf_file,\n"
+        ret_str += f"                    pop_file={data_holder.popmap_file},\n"
+        ret_str += "                    bed_file=f\"{bed_files}/"
+        ret_str += "bed_file_{chrom}_{num}.bed\",\n"
+        ret_str += f"                    pops={pops},\n"
+        ret_str += "                    **kwargs\n"
+        ret_str += "                )\n"
+        ret_str += "            })\n"
+        ret_str += "            reg_num += 1\n"
 
     ret_str += "data = moments.LD.Parsing.bootstrap_data(region_stats)\n\n"
     return ret_str
 
 
-def _print_momentsLD_simulation():
-    ret_str = f"model = {FUNCTION_NAME}(p0)\n"
+def _print_momentsLD_simulation(engine, nanc):
+    ret_str = ""
+    r_bins = engine.kwargs['r_bins']
+    if nanc is not None:
+        ret_str += f"Nanc = {nanc}\n"
+    ret_str += f"r_bins = {[ii for ii in r_bins]}\n"
+    ret_str += f"mu = {engine.model.mutation_rate}\n"
+    ret_str += "rhos = 4 * Nanc * np.array(r_bins)\n"
+    ret_str += "theta = 4 * Nanc * mu\n\n"
+    ret_str += f"model = {FUNCTION_NAME}(p0, rho=rhos, theta=theta)\n"
+    ret_str += "model = moments.LD.LDstats(\n"
+    ret_str += "    [(y_l + y_r) / 2 for y_l, y_r in zip(\n"
+    ret_str += "        model[:-2], model[1:-1])]\n"
+    ret_str += "    + [model[-1]],\n"
+    ret_str += "    num_pops=model.num_pops,\n"
+    ret_str += "    pop_ids=model.pop_ids,\n)\n"
+    ret_str += "model = moments.LD.Inference.sigmaD2(model)\n"
+    ret_str += "model_for_plot = copy.deepcopy(model)\n"
     return ret_str
 
 
@@ -237,12 +278,12 @@ def _print_LdCurves(engine):
     ret_str += "    [name] for name in model.names()[:-1][0] if name != 'pi2_0_0_0_0'\n"
     ret_str += "]\n"
     ret_str += "moments.LD.Plotting.plot_ld_curves_comp(\n"
-    ret_str += "    model,\n"
+    ret_str += "    model_for_plot,\n"
     ret_str += "    data['means'][:-1],\n"
     ret_str += "    data['varcovs'][:-1],\n"
-    ret_str += f"    rs={[ii for ii in r_bins]},\n"
+    ret_str += f"    rs=np.array({[ii for ii in r_bins]}),\n"
     ret_str += "    stats_to_plot=stats_to_plot,\n"
-    ret_str += "    fig_size=(len(stats_to_plot), 9),\n"
+    ret_str += "    fig_size=(len(stats_to_plot), 7),\n"
     ret_str += "    cols=round(len(stats_to_plot) / 3),\n"
     ret_str += "    plot_means=True,\n"
     ret_str += "    plot_vcs=True,\n"
@@ -274,11 +315,6 @@ def _print_main_ld(engine, nanc=None):
     """
     ret_str = ""
 
-    if nanc is not None:
-        ret_str += f"Nanc = {nanc}\n"
-
-    ret_str += "theta = 4 * Nanc * mu\n\n"
-
     ret_str += "print(f'Size of ancestral population: {Nanc}')\n"
     ret_str += _print_ll()
 
@@ -286,8 +322,8 @@ def _print_main_ld(engine, nanc=None):
 
 
 def _print_moments_ld_main(engine, values, nanc):
-    ret_str = _print_p0(values, nanc)
-    ret_str += _print_momentsLD_simulation()
+    ret_str = _print_p0(engine, values, nanc)
+    ret_str += _print_momentsLD_simulation(engine, nanc)
     ret_str += _print_main_ld(engine, nanc=nanc)
     ret_str += _print_LdCurves(engine)
     return ret_str
@@ -334,7 +370,7 @@ def print_moments_ld_code(engine, values, filename, args=None,
     nanc = Nanc_value
     values = engine.model.translate_values(units="genetic", values=values)
     var2value = engine.model.var2value(values)
-    ret_str = "import moments.LD\nimport numpy as np\n\n"
+    ret_str = "import moments.LD\nimport numpy as np\nimport pickle\nimport copy\n\n"
     ret_str += _print_momentsLD_func(engine, values)
     ret_str += "\n"
     ret_str += _print_momentsLD_load_data(engine, engine.data_holder)
@@ -368,11 +404,15 @@ def generate_file_for_ci_evaluation(engine, values, nanc):
     if engine.data_holder.recombination_maps:
         ret_str += f"rs = {[ii for ii in engine.kwargs['r_bins']]}\n"
     else:
-        ret_str += "\nYou need recombination map if you wont to compute CI\n"
+        ret_str += "\n# You need recombination map if you wont to compute CI\n"
 
     f_vars = [x for x in engine.model.variables
               if not isinstance(x, DiscreteVariable)]
-    ret_str += f"param_names = {[x.name for x in(f_vars[1:]+[f_vars[0]])]}"
+    for variable in f_vars:
+        if variable.name == "Nanc":
+            f_vars.pop(f_vars.index(variable))
+            f_vars.append(variable)
+    ret_str += f"param_names = {[x.name for x in f_vars]}"
 
     with open(ci_data_filename, "w") as file:
         file.write(ret_str)

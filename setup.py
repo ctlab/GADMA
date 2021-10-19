@@ -63,7 +63,7 @@ setup(
         'console_scripts': ['gadma = gadma.core:main',
                             'gadma-run_ls_on_boot_data = gadma.run_ls_on_boot_data:main',
                             'gadma-get_confidence_intervals = gadma.get_confidence_intervals:main',
-                            'gadma-get_confidence_intervals_for_LD = gadma.get_confidence_intervals_for_LD:main',
+                            'gadma-get_confidence_intervals_for_ld = gadma.get_confidence_intervals_for_LD:main',
                             'gadma-precompute_ld_data = gadma.precompute_ld_data:main']
     },
     setup_requires=["setuptools_scm"],

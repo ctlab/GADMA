@@ -1,4 +1,6 @@
 import argparse
+import os.path
+
 from gadma.utils.utils import abspath, check_file_existence, module_name_from_path
 import moments.LD
 import pickle
@@ -129,9 +131,9 @@ def main():
         "FIM phys units": fim_bounds_list_phys_units,
         "GIM phys units": gim_bounds_list_phys_units
     }
-
+    results = os.path.join(os.path.dirname(filename), "ci_results.xlsx")
     all_ci_dataframe = pd.DataFrame(data=all_ci_data)
-    all_ci_dataframe.to_excel('ci_results.xlsx', index=False)
+    all_ci_dataframe.to_excel(results, index=False)
     print(all_ci_dataframe)
 
 

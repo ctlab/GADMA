@@ -112,6 +112,7 @@ from .core import CoreRun, shared_dict  # NOQA
 from .Inference import load_data_from_dir, get_claic_score, optimize_ga  # NOQA
 from .run_ls_on_boot_data import load_parameters_from_python_file  # NOQA
 from . import get_confidence_intervals  # NOQA
+from . import get_confidence_intervals_for_ld
 
 warnings.simplefilter('always', UserWarning)
 warnings.formatwarning = warning_format

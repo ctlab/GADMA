@@ -7,6 +7,7 @@ from .test_data import YRI_CEU_DATA
 import gadma
 from gadma.utils import custom_generator, WeightedMetaArray
 from gadma.optimizers import GeneticAlgorithm, register_global_optimizer
+from gadma.data.data import VCFDataHolder
 import importlib
 import pickle
 import os
@@ -17,23 +18,13 @@ import copy
 
 EXAMPLE_FOLDER = os.path.join(os.path.dirname(__file__), "test_data")
 EXAMPLE_DATA = os.path.join(EXAMPLE_FOLDER, "DATA", "sfs", "YRI_CEU.fs")
+PREPROCESSED_DATA = os.path.join(EXAMPLE_FOLDER, "DATA", "vcf_ld", "preprocessed_data_YRI_CEU.bp")
 
-POP_MAP = os.path.join(
-    EXAMPLE_FOLDER, 'DATA', 'vcf_ld', "pop_map.txt")
-REC_MAPS_DIR = os.path.join(
-    EXAMPLE_FOLDER, 'DATA', 'vcf_ld', "rec_maps")
-VCF_DATA_LD = os.path.join(
-    EXAMPLE_FOLDER, 'DATA', 'vcf_ld', "vcf_data.vcf")
-TEST_OUTPUT = os.path.join(
-    EXAMPLE_FOLDER, 'DATA', 'vcf_ld', "test_output")
-SAVE_IMAGE = os.path.join(
-    EXAMPLE_FOLDER, 'DATA', 'vcf_ld', "ld_curves.jpg")
-DATA_HOLDER_FOR_LD = VCFDataHolder(
-            vcf_file=VCF_DATA_LD,
-            popmap_file=POP_MAP,
-            output_directory=TEST_OUTPUT,
-            recombination_maps=REC_MAPS_DIR,
-            population_labels=["deme0", "deme1"]
+EXAMPLE_DATA_LD = VCFDataHolder(
+    vcf_file=None,
+    popmap_file=None,
+    population_labels=["YRI", "CEU"],
+    preprocessed_data=PREPROCESSED_DATA
 )
 
 
@@ -400,8 +391,6 @@ class TestGeneticAlg(unittest.TestCase):
 class TestInference(unittest.TestCase):
     def test_inference_ga(self):
         for engine in all_engines():
-            if engine.id != "momentsLD":
-                continue
             with self.subTest(engine=engine.id):
                 if engine.id == "dadi":
                     args = ([4, 6, 8],)
@@ -421,7 +410,7 @@ class TestInference(unittest.TestCase):
                 elif engine.id == 'momi':
                     data = engine.base_module.sfs_from_dadi(EXAMPLE_DATA)
                 elif engine.id == "momentsLD":
-                    data = engine.read_data(DATA_HOLDER_FOR_LD)
+                    data = engine.read_data(EXAMPLE_DATA_LD)
                 else:
                     raise ValueError(f"Add new engine {engine.id} here for "
                                      "correct data reading in tests.")
@@ -453,20 +442,15 @@ class TestInference(unittest.TestCase):
                                 return model.log_likelihood()
                         elif engine.id == "momentsLD":
                             get_model_func = func
-                            print("ENGINE R BINS")
-                            print(engine.r_bins)
-                            func_args = [4 * 10000 * np.array(engine.r_bins), 0.001]
-                            print("func_args")
-                            print(func_args)
+                            rhos = np.array(4 * 10000 * np.array(engine.r_bins))
+                            theta = 0.001
                             get_ll_func = engine.base_module.Inference.ll_over_bins
                         else:
                             raise ValueError(f"Add new engine {engine.id} here"
                                              "for correct evaluation in tests.")
                         try:
-                            model = get_model_func(x, *func_args)
                             if engine.id == "momentsLD":
-                                print("DATA")
-                                print(data)
+                                model = get_model_func(x, rhos, theta)
                                 model = moments.LD.Inference.remove_normalized_lds(model)
                                 means, varcovs = moments.LD.Inference.remove_normalized_data(
                                     data['means'],
@@ -475,6 +459,7 @@ class TestInference(unittest.TestCase):
                                     normalization=0)
                                 y = get_ll_func(means, model, varcovs)
                             else:
+                                model = get_model_func(x, *func_args)
                                 y = get_ll_func(data, model)
                             Y_init.append(y)
                         except AttributeError as e:
