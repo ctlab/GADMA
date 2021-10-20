@@ -74,6 +74,7 @@ def _print_momentsLD_func(engine, values):
 
     ret_str = f"def {FUNCTION_NAME}(params, rho=None, theta=0.001):\n"
     ret_str += "    %s = params\n" % ", ".join([x.name for x in f_vars])
+    ret_str += "    Nanc = 1.0 #This value can be used in splits with fraction variable\n"
     ret_str += "    Y = moments.LD.Numerics.steady_state(rho=rho, theta=theta)\n" \
                f"    Y = moments.LD.LDstats(Y, num_pops=1, pop_ids={pops})\n"
     n_split = 0
@@ -177,6 +178,8 @@ def _print_momentsLD_load_data(engine, data_holder):
     if data_holder.filename is not None:
         chromosomes = create_bed_files_and_extract_chromosomes(data_holder)
         ret_str += f"chromosomes = {chromosomes}\n"
+    else:
+        ret_str += "chromosomes = None\n"
     kwargs = engine.kwargs
 
     pops = data_holder.population_labels
@@ -213,7 +216,7 @@ def _print_momentsLD_load_data(engine, data_holder):
         ret_str += "                        vcf_file=vcf_file,\n"
         ret_str += f"                        rec_map_file=f\"{data_holder.recombination_maps}/\n"
         ret_str += "                         {rec_map_name}_{chrom}.{extension}\",\n"
-        ret_str += f"                        pop_file=\"{data_holder.popmap_file}\",\n"
+        ret_str += f"                        pop_file=pop_map,\n"
         ret_str += "                        bed_file=f\"{bed_files}/"
         ret_str += "bed_file_{chrom}_{num}.bed\",\n"
         ret_str += f"                        pops={pops},\n"
@@ -232,7 +235,7 @@ def _print_momentsLD_load_data(engine, data_holder):
         ret_str += "                f\"{reg_num}\":\n" \
                    "                    moments.LD.Parsing.compute_ld_statistics(\n"
         ret_str += "                        vcf_file=vcf_file,\n"
-        ret_str += f"                        pop_file={data_holder.popmap_file},\n"
+        ret_str += f"                        pop_file=pop_map,\n"
         ret_str += "                        bed_file=f\"{bed_files}/"
         ret_str += "bed_file_{chrom}_{num}.bed\",\n"
         ret_str += f"                        pops={pops},\n"
@@ -419,7 +422,7 @@ def extract_opt_params(engine, values, nanc):
     p0 = copy.copy(values)
     p0 = p0[1:]
     p0.append(values[0])
-    # p0[-1] = int(p0[-1] * nanc)
+    p0[-1] = int(p0[-1] * nanc)
     return "opt_params = [%s]\n" % ", ".join([str(x) for x in p0])
 
 

@@ -673,7 +673,7 @@ class TestModelEvaluation(unittest.TestCase):
     def tearDown(self):
         if Path(f"{TEST_OUTPUT}/").exists():
             shutil.rmtree(f"{TEST_OUTPUT}/")
-        os.makedirs(TEST_OUTPUT)
+        os.mkdir(TEST_OUTPUT)
 
     def model_for_gadma_moments_evaluation(self):
         def model_moments_ld(params, rho, theta):

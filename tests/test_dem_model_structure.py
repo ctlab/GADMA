@@ -205,8 +205,6 @@ class TestModelStructure(unittest.TestCase):
                 for engine in all_simulation_engines():
                     if engine.id not in ["dadi", "moments"] and not has_anc:
                         continue
-                    if engine.id == "momentsLD":
-                        continue
                     engine.set_model(dm)
                     if engine.id == 'dadi':
                         sizes = [8 for _ in range(len(structure))]

@@ -552,22 +552,23 @@ class TestCoreRun(unittest.TestCase):
 
         for engine in all_engines():
             print(engine.id)
-            try:
-                settings = SettingsStorage()
-                settings.engine = engine.id
-                settings.output_directory = "Some_out_dir"
-                settings.num_init_const = 2
-                settings.global_maxiter = 4
-                settings.local_maxiter = 1
-                settings.model_plot_engine = "demes"
-                vcf_file = os.path.join(DATA_PATH, "DATA", "vcf", 'out_of_africa_chr22_sim.vcf')
-                popmap = os.path.join(DATA_PATH, "DATA", "vcf", 'out_of_africa_chr22_sim.popmap')
-                settings.input_data = f"{vcf_file}, {popmap}"
-                settings.is_valid()
-                gadma.core.core.job(0, shared_dict, settings)
-            finally:
-                if check_dir_existence("Some_out_dir"):
-                    shutil.rmtree("Some_out_dir")
+            if engine.id != "momentsLD":
+                try:
+                    settings = SettingsStorage()
+                    settings.engine = engine.id
+                    settings.output_directory = "Some_out_dir"
+                    settings.num_init_const = 2
+                    settings.global_maxiter = 4
+                    settings.local_maxiter = 1
+                    settings.model_plot_engine = "demes"
+                    vcf_file = os.path.join(DATA_PATH, "DATA", "vcf", 'out_of_africa_chr22_sim.vcf')
+                    popmap = os.path.join(DATA_PATH, "DATA", "vcf", 'out_of_africa_chr22_sim.popmap')
+                    settings.input_data = f"{vcf_file}, {popmap}"
+                    settings.is_valid()
+                    gadma.core.core.job(0, shared_dict, settings)
+                finally:
+                    if check_dir_existence("Some_out_dir"):
+                        shutil.rmtree("Some_out_dir")
 
             # best place to check
             if engine.id == "momi":
@@ -587,22 +588,30 @@ class TestCoreRun(unittest.TestCase):
                     if check_dir_existence("Some_out_dir"):
                         shutil.rmtree("Some_out_dir")
 
-            # if engine.id == "mometsLD":
-            #     try:
-            #         # prints warning that units will be years
-            #         settings.model_plot_engine = "moments"
-            #         settings.time_for_generation = 1
-            #         settings.units_of_time_in_drawing = "kya"
-            #         settings.selection = True
-            #         settings.is_valid()
-            #         self.assertEqual(settings.units_of_time_in_drawing, "years")
-            #         self.assertFalse(settings.selection)
-            #         settings.engine = "moments"
-            #         settings.no_migrations = False
-            #         settings.is_valid()
-            #     finally:
-            #         if check_dir_existence("Some_out_dir"):
-            #             shutil.rmtree("Some_out_dir")
+            elif engine.id == "momentsLD":
+                try:
+                    settings = SettingsStorage()
+                    settings.engine = engine.id
+                    settings.output_directory = "Some_out_dir"
+                    settings.num_init_const = 2
+                    settings.global_maxiter = 4
+                    settings.local_maxiter = 1
+                    settings.model_plot_engine = "demes"
+                    settings.time_for_generation = 1
+                    settings.initial_structure = [1, 1]
+                    settings.mutation_rate = 1.5e8
+                    settings.units_of_time_in_drawing = "kya"
+                    vcf_file = os.path.join(DATA_PATH, "DATA", "vcf_ld", "YRI_CEU_sim_data.vcf")
+                    popmap = os.path.join(DATA_PATH, "DATA", "vcf_ld", "samples.txt")
+                    settings.input_data = f"{vcf_file}, {popmap}"
+                    settings.preprocessed_data = os.path.join(
+                        DATA_PATH, "DATA", "vcf_ld", "preprocessed_data_YRI_CEU.bp"
+                    )
+                    settings.is_valid()
+                    gadma.core.core.job(0, shared_dict, settings)
+                finally:
+                    if check_dir_existence("Some_out_dir"):
+                        shutil.rmtree("Some_out_dir")
 
 
     def test_core_run_restore(self):

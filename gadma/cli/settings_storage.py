@@ -465,7 +465,8 @@ class SettingsStorage(object):
                     sequence_length=self.sequence_length,
                     recombination_maps=self.recombination_maps,
                     ld_kwargs=self.ld_kwargs,
-                    output_directory=self.output_directory
+                    output_directory=self.output_directory,
+                    preprocessed_data=self.preprocessed_data
                 )
             else:
                 data_holder = SFSDataHolder(
@@ -805,7 +806,6 @@ class SettingsStorage(object):
         be set.
         """
         engine = get_engine(self.engine)
-        print(engine.id)
         engine.data = self.data_holder
         self.data_holder = engine.data_holder
         self.projections = self.data_holder.projections
@@ -1185,8 +1185,11 @@ class SettingsStorage(object):
             variables = get_variables(self.parameter_identifiers,
                                       self.lower_bound, self.upper_bound,
                                       engine=self.engine)
-            if (self.ancestral_size_as_parameter
-                    and self.fixed_ancestral_size is None):
+            if all([
+                self.ancestral_size_as_parameter,
+                self.fixed_ancestral_size is None,
+                self.engine == "momentsLD"
+            ]):
                 variables.insert(0, PopulationSizeVariable("Nanc", units="physical"))
             if self.model_func is not None:
                 return CustomDemographicModel(function=self.model_func,
@@ -1365,7 +1368,7 @@ class SettingsStorage(object):
                                        f"and remove unexpected args.")
 
         if self.engine == "momentsLD":
-            if not self.ancestral_size_as_parameter:
+            if not self.ancestral_size_as_parameter and not self.fixed_ancestral_size:
                 warnings.warn(
                     "Moments.LD engine need ancestral size as parameter. The option "
                     "`Ancestral size as parameter` is set to `True`"
