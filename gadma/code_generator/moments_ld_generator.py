@@ -26,11 +26,7 @@ def _print_p0(engine, values, nanc):
     for variable in f_vars:
         if variable.name == "Nanc":
             Nanc_index = f_vars.index(variable)
-            f_vars.pop(f_vars.index(variable))
-            Nanc = values[Nanc_index] * nanc
             values.pop(Nanc_index)
-            values.append(Nanc)
-            f_vars.append(variable)
     p0 = copy.copy(values)
     return "p0 = [%s]\n" % ", ".join([str(x) for x in p0])
 
@@ -75,13 +71,11 @@ def _print_momentsLD_func(engine, values):
     for variable in f_vars:
         if variable.name == "Nanc":
             f_vars.pop(f_vars.index(variable))
-            f_vars.append(variable)
 
     ret_str = f"def {FUNCTION_NAME}(params, rho=None, theta=0.001):\n"
-    ret_str += "\t%s = params\n" % ", ".join([x.name for x in f_vars])
-    ret_str += "\tNanc = 1.0\n"
-    ret_str += "\tY = moments.LD.Numerics.steady_state(rho=rho, theta=theta)\n" \
-               f"\tY = moments.LD.LDstats(Y, num_pops=1, pop_ids={pops})\n"
+    ret_str += "    %s = params\n" % ", ".join([x.name for x in f_vars])
+    ret_str += "    Y = moments.LD.Numerics.steady_state(rho=rho, theta=theta)\n" \
+               f"    Y = moments.LD.LDstats(Y, num_pops=1, pop_ids={pops})\n"
     n_split = 0
 
     for ind, event in enumerate(model.events):
@@ -111,7 +105,7 @@ def _print_momentsLD_func(engine, values):
                         elif isinstance(x_diff, BinaryOperation):
                             x_diff = f"({x_diff.name})"
                         funcstr = func.func_str(y1, y2, x_diff)
-                        ret_str += "\tnu%d_func = %s\n" % (i + 1, funcstr)
+                        ret_str += "    nu%d_func = %s\n" % (i + 1, funcstr)
                         func_names.append("nu%d_func" % (i + 1))
             kwargs_with_vars = MomentsLdEngine._get_kwargs(event, var2value)
             kwargs = {}
@@ -130,7 +124,7 @@ def _print_momentsLD_func(engine, values):
                             else:
                                 elems.append(str(yel))
                         rows.append(f"[{', '.join(elems)}]")
-                    ret_str += f"\tmigs = np.array([{', '.join(rows)}])\n"
+                    ret_str += f"    migs = np.array([{', '.join(rows)}])\n"
                     kwargs[x] = 'migs'
                 elif isinstance(y, list):  # pop. sizes, selection, dynamics
                     varnames = [var.name
@@ -159,11 +153,11 @@ def _print_momentsLD_func(engine, values):
                         y, (Variable, BinaryOperation)) else y
 
             kwargs = [f"{key}={value}" for key, value in kwargs.items()]
-            ret_str += f"\tY.integrate({', '.join(kwargs)}, rho=rho, theta=theta)\n"
+            ret_str += f"    Y.integrate({', '.join(kwargs)}, rho=rho, theta=theta)\n"
         elif event.__class__ is Split:
-            ret_str += f"\tY = Y.split({n_split})\n"
+            ret_str += f"    Y = Y.split({n_split})\n"
             n_split += 1
-    ret_str += "\treturn Y\n\n\n"
+    ret_str += "    return Y\n\n"
     return ret_str
 
 
@@ -194,11 +188,11 @@ def _print_momentsLD_load_data(engine, data_holder):
         ret_str += f"extension = \"{extension}\"\n"
         ret_str += f"rec_map_name = \"{rec_map}\n"
     ret_str += "kwargs = {\n"
-    ret_str += f"\t\"r_bins\": {[ii for ii in kwargs['r_bins']]},\n"
-    ret_str += f"\t\"report\": {kwargs['report']},\n"
-    ret_str += f"\t\"bp_bins\": {[ii for ii in kwargs['bp_bins']]},\n"
-    ret_str += f"\t\"use_genotypes\": {kwargs['use_genotypes']},\n"
-    ret_str += f"\t\"cM\": {kwargs['cM']},\n"
+    ret_str += f"    \"r_bins\": {[ii for ii in kwargs['r_bins']]},\n"
+    ret_str += f"    \"report\": {kwargs['report']},\n"
+    ret_str += f"    \"bp_bins\": {[ii for ii in kwargs['bp_bins']]},\n"
+    ret_str += f"    \"use_genotypes\": {kwargs['use_genotypes']},\n"
+    ret_str += f"    \"cM\": {kwargs['cM']},\n"
     ret_str += "}\n"
     ret_str += f"vcf_file = \"{data_holder.filename}\"\n"
     ret_str += f"pop_map = \"{data_holder.popmap_file}\"\n"
@@ -215,16 +209,16 @@ def _print_momentsLD_load_data(engine, data_holder):
         ret_str += "        for num in range(1, chromosomes[chrom]):\n"
         ret_str += "            region_stats.update({\n"
         ret_str += "                f\"{reg_num}\":\n" \
-                   "                moments.LD.Parsing.compute_ld_statistics(\n"
-        ret_str += "                    vcf_file,\n"
-        ret_str += f"                    rec_map_file=f\"{data_holder.recombination_maps}/\n"
-        ret_str += "                     {rec_map_name}_{chrom}.{extension}\",\n"
-        ret_str += f"                    pop_file=\"{data_holder.popmap_file}\",\n"
-        ret_str += "                    bed_file=f\"{bed_files}/"
+                   "                    moments.LD.Parsing.compute_ld_statistics(\n"
+        ret_str += "                        vcf_file=vcf_file,\n"
+        ret_str += f"                        rec_map_file=f\"{data_holder.recombination_maps}/\n"
+        ret_str += "                         {rec_map_name}_{chrom}.{extension}\",\n"
+        ret_str += f"                        pop_file=\"{data_holder.popmap_file}\",\n"
+        ret_str += "                        bed_file=f\"{bed_files}/"
         ret_str += "bed_file_{chrom}_{num}.bed\",\n"
-        ret_str += f"                    pops={pops},\n"
-        ret_str += "                    **kwargs\n"
-        ret_str += "                )\n"
+        ret_str += f"                        pops={pops},\n"
+        ret_str += "                        **kwargs\n"
+        ret_str += "                    )\n"
         ret_str += "            })\n"
         ret_str += "            reg_num += 1\n"
     else:
@@ -236,14 +230,14 @@ def _print_momentsLD_load_data(engine, data_holder):
         ret_str += "        for num in range(1, chromosomes[chrom]):\n"
         ret_str += "            region_stats.update({\n"
         ret_str += "                f\"{reg_num}\":\n" \
-                   "                moments.LD.Parsing.compute_ld_statistics(\n"
-        ret_str += "                    vcf_file,\n"
-        ret_str += f"                    pop_file={data_holder.popmap_file},\n"
-        ret_str += "                    bed_file=f\"{bed_files}/"
+                   "                    moments.LD.Parsing.compute_ld_statistics(\n"
+        ret_str += "                        vcf_file=vcf_file,\n"
+        ret_str += f"                        pop_file={data_holder.popmap_file},\n"
+        ret_str += "                        bed_file=f\"{bed_files}/"
         ret_str += "bed_file_{chrom}_{num}.bed\",\n"
-        ret_str += f"                    pops={pops},\n"
-        ret_str += "                    **kwargs\n"
-        ret_str += "                )\n"
+        ret_str += f"                        pops={pops},\n"
+        ret_str += "                        **kwargs\n"
+        ret_str += "                    )\n"
         ret_str += "            })\n"
         ret_str += "            reg_num += 1\n"
 
@@ -345,12 +339,10 @@ def print_moments_ld_code(engine, values, filename, args=None,
     :param gen_time_units: Units of time. String.
 
     """
-
     if isinstance(engine.model, StructureDemographicModel):
         engine, values, fraction_vars_to_fix_list = remove_fraction_variable_for_two_sudden_children(
             engine, values
         )
-
     var2value = engine.model.var2value(values)
 
     if isinstance(engine.model, CustomDemographicModel):
@@ -370,7 +362,7 @@ def print_moments_ld_code(engine, values, filename, args=None,
     nanc = Nanc_value
     values = engine.model.translate_values(units="genetic", values=values)
     var2value = engine.model.var2value(values)
-    ret_str = "import moments.LD\nimport numpy as np\nimport pickle\nimport copy\n\n"
+    ret_str = "import moments.LD\nimport numpy as np\nimport pickle\nimport copy\n\n\n"
     ret_str += _print_momentsLD_func(engine, values)
     ret_str += "\n"
     ret_str += _print_momentsLD_load_data(engine, engine.data_holder)
@@ -420,13 +412,14 @@ def generate_file_for_ci_evaluation(engine, values, nanc):
 
 def extract_opt_params(engine, values, nanc):
 
+    # need to check this part of code
     var2value = engine.model.var2value(values)
     values = [var2value[var] for var in engine.model.variables
               if not isinstance(var, DiscreteVariable)]
     p0 = copy.copy(values)
     p0 = p0[1:]
     p0.append(values[0])
-    p0[-1] = int(p0[-1] * nanc)
+    # p0[-1] = int(p0[-1] * nanc)
     return "opt_params = [%s]\n" % ", ".join([str(x) for x in p0])
 
 

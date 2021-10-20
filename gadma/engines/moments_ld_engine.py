@@ -206,7 +206,8 @@ class MomentsLdEngine(Engine):
                     except:  # NOQA
                         self.kwargs[key] = self.data_holder.ld_kwargs[key]
                 self.r_bins = self.kwargs["r_bins"]
-
+        # возможно, что стоит вытаскивать размер предковой популяции по ключу в словаре, а не по
+        # позиции, чтобы избежать возможных оплошностей
         if isinstance(self.model, CustomDemographicModel):
             if self.model.fixed_anc_size:
                 Nref = self.model.fixed_anc_size

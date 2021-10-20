@@ -1,6 +1,7 @@
 import unittest
 import pytest
-
+from pathlib import Path
+import shutil
 
 from gadma import *
 from gadma import ContinuousVariable
@@ -28,9 +29,20 @@ import operator as op
 import sys
 
 EXAMPLE_FOLDER = os.path.join(os.path.dirname(__file__), "test_data")
+TEST_OUTPUT = os.path.join(
+                        EXAMPLE_FOLDER, "DATA", "vcf_ld", "test_output"
+                    )
 
 
 class TestModels(unittest.TestCase):
+    def setUp(self):
+        if not Path(TEST_OUTPUT).exists():
+            os.mkdir(TEST_OUTPUT)
+
+    def tearDown(self):
+        if Path(TEST_OUTPUT).exists():
+            shutil.rmtree(TEST_OUTPUT)
+
     def test_init(self):
         var = TimeVariable('t')
         m = Model(raise_excep=False)
@@ -440,22 +452,19 @@ class TestModels(unittest.TestCase):
                ))
 
     def _vcf_datasets_ld_precomputed(self):
+
         pops = ["pop0", "pop1", "pop2"]
-        # We don't need any other data
-        for iter in range(1, 6):
-            if iter != 4:
-                pops = ["pop0", "pop1", "pop2"]
-            else:
-                pops = ["pop0", "pop1"]
+        for iter in range(1, 4):
             yield (
                 f"model{iter}",
                 VCFDataHolder(
                     vcf_file=None,
                     preprocessed_data=os.path.join(
-                        EXAMPLE_FOLDER, "DATA", "vcf", f"preprocessed_data_model{iter}.bp"
+                        EXAMPLE_FOLDER, "DATA", "vcf_ld", f"preprocessed_data_model{iter}.bp"
                     ),
                     popmap_file=None,
-                    population_labels=pops
+                    population_labels=pops,
+                    output_directory=TEST_OUTPUT
                     )
                 )
 
@@ -582,12 +591,10 @@ class TestModels(unittest.TestCase):
                   'T_1': 500, 'T_2': 100}
 
         for engine in all_available_engines():
-            # generate datasets for engines because momentsLD work don't work with sfs
-            if engine.id == "momentsLD":
-                dataset = self._vcf_datasets_ld_precomputed()
-            else:
-                dataset = self._sfs_datasets()
             models = [model1, model2, model3, model5, model6]
+            if engine.id == "momentsLD":
+                # momentsLD has problems with model 5 and 6 because of physical values
+                models = models[:3]
             if engine.can_evaluate:
                 customfile = os.path.join(
                     EXAMPLE_FOLDER, "MODELS",
@@ -603,9 +610,17 @@ class TestModels(unittest.TestCase):
                 variables = get_variables(par_labels, None, None, engine=engine.id)
 
                 model7 = CustomDemographicModel(func, variables)
+                if engine.id == "momentsLD":
+                    model7.fixed_anc_size = 10000
                 models.append(model7)
 
             for ind, model in enumerate(models):
+                model.mutation_rate = 1.25e-8
+                if engine.id == "momentsLD":
+                    dataset = self._vcf_datasets_ld_precomputed()
+                    model.Nanc_size = Nanc
+                else:
+                    dataset = self._sfs_datasets()
                 for description, data in dataset:
                     msg = f"for model {ind + 1} and {description} data and " \
                           f"{engine.id} engine"
