@@ -19,8 +19,6 @@ from gadma.core.shared_dict import SharedDict, SharedDictForCoreRun
 from gadma.cli import arg_parser
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
-print(DATA_PATH)
-print("DATA_PATH")
 
 
 def get_settings_test():
@@ -44,7 +42,7 @@ class TestCLI(unittest.TestCase):
         try:
             sys.argv = ['gadma', '--test']
             settings, _ = get_settings_test()
-            settings.inner_data # Тут return в никуда
+            settings.inner_data
 
             sys.argv = ['gadma']
             self.assertRaises(SystemExit, get_settings_test)

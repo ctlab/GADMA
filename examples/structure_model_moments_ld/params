@@ -1,0 +1,15 @@
+Input data : ./YRI_CEU_sim_data.vcf, ./samples.txt
+Engine : momentsLD
+initial_structure: 2,1
+Output directory : output_YRI_CEU_resume
+ancestral_size_as_parameter: True
+recombination_maps: ./rec_maps
+Mutation rate: 2.35e-8
+Number of repeats : 6
+Number of processes : 6
+draw_models_every_n_iteration: 100
+region_len: 1000000
+Symmetric migrations: True
+ld_kwargs: {"report": True}
+Sequence_length: 1000000
+preprocessed_data: ./preprocessed_data.bp

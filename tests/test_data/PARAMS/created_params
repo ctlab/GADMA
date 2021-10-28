@@ -1,0 +1,20 @@
+Input file : tests/test_data/DATA/sfs/small_1pop.fs
+Output directory: tests/output_dir
+Projections : 4
+Directory with bootstrap: tests/test_data/DATA/sfs/small_1_pop_bootstrap
+Linked SNP's : True
+Engine : dadi
+Pts : 5, 10, 15
+Custom filename : tests/test_data/MODELS/small_1pop_dem_model_dadi.py
+Draw models every N iteration : 10
+Print models' code every N iteration : 10
+Relative parameters: True
+Local optimizer: None
+Eps: 1
+Stuck generation number: 5
+Number of repeats : 1
+Number of processes: 1
+global_maxiter: 2
+local_maxiter: 1
+num_init_const: 5
+Resume from: /home/stas/git/gadma_moments/devel_fork/GADMA/tests/test_data/DATA/sfs/YRI_CEU_test_boots

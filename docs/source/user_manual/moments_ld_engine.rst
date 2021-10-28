@@ -2,22 +2,25 @@
 
 Input data
 -------------------
-moments LD work with data stored in VCF format and require population map and recombination map
+momentsLD work with data stored in VCF format and require population map and recombination map
 (if available).
 
-moments.LD estimate LD statistics binning observed SNP pairs of SNP by recombination distances.
+VCF file must contain all chromosomes you want to use in the analysis. If you have few separated
+VCF files you can concat them using bcftools or similar programs. GADMA takes only one single VCF file as input.
+
+momentsLD estimate LD statistics binning observed SNP pairs of SNP by recombination distances.
 It can bin pairs by physical distances, but genetic maps are non-uniform and do not perfectly correlate
-with recombination distances. When working with moments.LD It is recommended to use recombination maps.
-Recombination map - is a genetic map that measures the probability of crossing over at each position
+with recombination distances. When working with momentsLD It is recommended to use recombination maps.
+A recombination map - is a genetic map that measures the probability of crossing over at each position
 in the genome. As default GADMA takes recombination maps in cM(centiMorgans).
 
-When you use moments.LD as a GADMA engine you have some additional parameters in the parameter file.
+Details about additional parameters for momentsLD engine and how it works are given below.
 
 
-Bed files generation
+Regions and bed files generation
 --------------------
-GADMA has a function for the auto-generation of bed files. This bed files subset a chromosomes
-to equal regions. You can specify region length in param file.
+GADMA has a function for the auto-generation of bed files. This bed files subset chromosomes
+to equal regions. You can specify region length in the param file.
 
 .. code-block::
 
@@ -28,8 +31,10 @@ to equal regions. You can specify region length in param file.
 
 Take in mind that 15 is the minimum quantity of regions for computing LD statistics from data.
 If you pass in a length parameter that causes less than 15 regions to be received, it will be ignored.
-In the case of fewer regions we will get a singular matrix during computing LD statistics and subsequent
-computation will be impossible.
+In the case of fewer regions, we will get a singular matrix during computing LD statistics and subsequent
+computation will be impossible. The larger the number of regions, the lower the noise
+level in the data. But at the same time, do not forget about the balance between the number of regions and the
+length of each individual region. Regions that are too small are also not suitable for work.
 
 Recombination maps
 -----
@@ -57,24 +62,32 @@ each map should have a head name according to the chromosome.
 
 Ancestral size and Theta
 -------------------
-In moments.LD engine ``Theta`` and ``Ancestral population size`` (effective population size) differ
-a little from what we see in moments or dadi with ASF.
-Ancestral size is used as one of the model parameters.
-If you use moments.LD engine:
+
+In Structure Demographic Model and Custom Demographic Model GADMA by default evaluate the ancestral size
+as a parameter of the demographic model.
+The value of this parameter will be calculated as another parameter and used in theta and rhos transformation.
+
+In Custom Demographic Model you can use fixed ancestral size. It will not be used as
+a model parameter and will always only use the specified value. To fix ancestral size update your params file
+like that:
 
 .. code-block::
 
     # param file
     ...
-    ancestral_size_as_parameter: True
+    fixed_ancestral_size: 10000
     ...
 
-Theta also differ from moments or dadi and calculate ``4 * Ne * mu``.
-You can skip theta0 and sequence length in param files, but please specify mutation rate.
+
+In momentsLD engine ``Theta`` and ``Ancestral population size`` (effective population size) differ
+a little from what we see in moments or dadi with ASF.
+
+Theta also differs from moments or dadi and calculate ``4 * Ne * mu``.
+You can skip theta0 and sequence length in param files, but please do not forget to specify the mutation rate.
 
 LD keyword arguments
 --------------------
-moments.LD engine takes several arguments using in computing LD stats.
+momentsLD engine takes several arguments used in computing LD stats.
 All of these parameters have default values
 
 Default LD kwargs:
@@ -98,7 +111,7 @@ If you want to change some of these arguments you can add to the parameter file 
 
 Expressions must be enclosed in ““.
 
-You can find more information about these arguments in the original documentation of moments.LD
+You can find more information about these arguments in the original documentation of momentsLD
 
 As default GADMA works with recombination maps with cM units and VCF files containing unphased data.
 
@@ -111,3 +124,32 @@ GADMA saves all graphs of LD statistics. You can find them in the output directo
 
 In the generated code you can find code for LD curves plotting and information about label preparation.
 It will help you to plot only the curves you need.
+
+Precomputing data
+-------------------
+Parsing LD statistics from an input VCF file is a time-consuming process which is not a main part of the
+GADMA genetic algorithm evaluation. If you start GADMA several times, it will spend a lot of time parsing
+LD statistics from data. In this case, GADMA has the option of precomputing data before the main process starts.
+
+``gadma-precompute_ld_data`` script reads, precomputes, and saves precomputed data.
+Use this script with the same parameters file as always and GADMA will automatically start data parsing using
+a number of processes specified in the parameters file. GADMA will save precomputed data in binary format for further work
+and update parameters file.
+
+
+How to use your own precomputed data
+-------------------
+You can precompute data on your own using moments.LD library opportunities. For correct GADMA work, you should save
+dictionary received after ``moments.LD.Parsing.compute_ld_statistics`` in binary using ``pickle`` library.
+GADMA will read statistics and bootstrap regions from this file.
+
+.. code-block::
+
+    # param file
+    Input data : ./some.vcf, ./some_popmap
+    ...
+    preprocessed_data: ./preprocessed_data.bp
+    ...
+
+For correct GADMA work please specify any VCF file and population map if you use precomputed data. They will not
+be used, but GADMA needs them for correct work.

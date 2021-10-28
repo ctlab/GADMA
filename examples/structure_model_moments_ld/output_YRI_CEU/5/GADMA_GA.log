@@ -1,0 +1,26 @@
+--Start global optimization Genetic_algorithm--
+--Finish global optimization Genetic_algorithm--
+Result:
+   status: 0
+ success: True
+ message: CONVERGENCE: NO IMPROVEMENT DURING 100 ITERATIONS(RESTORED)
+       x: [10807.114295128624 0.18866210935267574 0.2733759007996564 'Exp'
+ 0.5901158443416602 0.07676808036522305 2.2140001169498977
+ 0.5186893173560804 'Sud' 'Lin' 0.0]	c
+       y: -920.324017526086
+  n_eval: 1297
+  n_iter: 105
+
+--Start local optimization optimize_log--
+--Finish local optimization optimize_log--
+Result:
+   status: 0
+ success: True
+ message: GLOBAL OPTIMIZATION: CONVERGENCE: NO IMPROVEMENT DURING 100 ITERATIONS(RESTORED); LOCAL OPTIMIZATION: (RESTORED)
+       x: [7729.565462773236 0.18154684643488384 0.3552140446773699 'Exp'
+ 0.7544814289189229 0.14035487862181226 1.9894358260758085
+ 0.715539980127665 'Sud' 'Lin' 1.0355376622898436]
+       y: -95.9468609967576
+  n_eval: 1858
+  n_iter: 143
+

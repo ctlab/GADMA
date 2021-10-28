@@ -3,7 +3,6 @@ import os.path
 from ..models import CustomDemographicModel, EpochDemographicModel, \
     Epoch, Split, BinaryOperation, StructureDemographicModel
 from ..utils import DiscreteVariable, DynamicVariable, Variable
-# from ..engines import MomentsLdEngine
 from ..utils import create_bed_files_and_extract_chromosomes
 from ..data import check_and_return_projections_and_labels
 import numpy as np
@@ -168,7 +167,7 @@ def _print_momentsLD_load_data(engine, data_holder):
 
     :param data_holder: Data holder with data.
     """
-    from ..engines import MomentsLdEngine
+    from ..engines import MomentsLdEngine, extract_rec_map_name_and_extension
     ret_str = ""
 
     ret_str += f"bed_files = \"{data_holder.output_directory}" \
@@ -184,10 +183,9 @@ def _print_momentsLD_load_data(engine, data_holder):
 
     pops = data_holder.population_labels
     if data_holder.recombination_maps is not None:
-        rec_map = listdir(data_holder.recombination_maps)[0]
-        extension = rec_map.split(".")[1]
-        rec_map = rec_map.split(".")[0]
-        rec_map = "_".join(rec_map.split('_')[:-1])
+        rec_map, extension = extract_rec_map_name_and_extension(
+            listdir(data_holder.recombination_maps)[0]
+        )
         ret_str += f"extension = \"{extension}\"\n"
         ret_str += f"rec_map_name = \"{rec_map}\n"
     ret_str += "kwargs = {\n"

@@ -42,7 +42,7 @@ class MomentsLdEngine(Engine):
 
     can_draw = False
     can_evaluate = True
-    can_simulate = True
+    can_simulate = False
     can_draw_comp = True
 
     supported_models = [DemographicModel, StructureDemographicModel,
@@ -89,9 +89,9 @@ class MomentsLdEngine(Engine):
             reg_num = 0
             region_stats = {}
             if data_holder.recombination_maps is not None:
-                rec_map = listdir(data_holder.recombination_maps)[0]
-                extension = rec_map.split(".")[1]
-                rec_map = "_".join(rec_map.split(".")[0].split('_')[:-1])
+                rec_map, extension = extract_rec_map_name_and_extension(
+                    listdir(data_holder.recombination_maps)[0]
+                )
                 if len(listdir(data_holder.recombination_maps)) == len(chromosomes):
                     for chrom in sorted_choromosomes_list:
                         for num in range(1, chromosomes[chrom] + 1):
@@ -206,16 +206,16 @@ class MomentsLdEngine(Engine):
                     except:  # NOQA
                         self.kwargs[key] = self.data_holder.ld_kwargs[key]
                 self.r_bins = self.kwargs["r_bins"]
-        # возможно, что стоит вытаскивать размер предковой популяции по ключу в словаре, а не по
-        # позиции, чтобы избежать возможных оплошностей
         if isinstance(self.model, CustomDemographicModel):
             if self.model.fixed_anc_size:
                 Nref = self.model.fixed_anc_size
                 values_list = [var2value[var] for var in self.model.variables]
             elif not self.model.fixed_anc_size and self.model.has_anc_size:
                 values_list = [var2value[var] for var in self.model.variables]
-                Nref = values_list[0]
-                values_list = values_list[1:]
+                for num, value in enumerate(self.model.variables):
+                    if value.name == "Nanc":
+                        Nref = values_list[num]
+                        values_list.pop(num)
             else: # for test cases
                 values_list = [var2value[var] for var in self.model.variables]
                 Nref = 10000
@@ -448,6 +448,12 @@ class MomentsLdEngine(Engine):
              self.data_holder.population_labels) = check_and_return_projections_and_labels(
                 self.data_holder)
         self.data_holder.outgroup = None
+
+
+def extract_rec_map_name_and_extension(rec_map):
+    extension = rec_map.split(".")[1]
+    rec_map = "_".join(rec_map.split(".")[0].split('_')[:-1])
+    return rec_map, extension
 
 
 if moments_LD_available:

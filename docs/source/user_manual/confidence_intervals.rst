@@ -5,6 +5,9 @@ GADMA contains special scripts for confidence intervals (CI) evaluation. To get 
 
 When bootstrapped data is ready, one should run two scripts ``gadma-run_ls_on_boot_data`` and ``gadma-get_confidence_intervals`` in order to get CI. One can find an example `here <https://bitbucket.org/noscode/gadma_results/src/master/YRI_CEU/model_1/>`_.
 
+The confidence interval for the momentsLD engine is calculated in a different way. GADMA has special script for this called ``gadma-get_confidence_intervals_for_ld``.
+The description of how to use this script is given below.
+
 Run local search on bootstrapped data
 ----------------------------------------
 The first script ``gadma-run_ls_on_boot_data`` runs local search from known optimum for initial AFS (the one that GADMA found) for each AFS from bootstrap. The usage is following:
@@ -79,3 +82,41 @@ To calculate confidence intervals:
                   calculate confidence intervals.
       --tex       Tex output.
       --acc N     Accuracy of output (default: 5).
+
+
+Get Confidence Intervals from table
+------------------------------------
+
+As it was said momentsLD engine has a different way to compute confidence intervals so GADMA has a special script
+for confidence intervals (CI) evaluation for momentsLD engine ``gadma-get_confidence_intervals``. After finishing its work GADMA will create a special
+file ``data_for_ci.py`` containing all necessary information for CI evaluation.
+
+Use ``gadma-get_confidence_intervals`` with input data ``data_for_ci.py``. GADMA will calculate CI for parameters
+print results and save them in the excel and csv file.
+
+.. code-block::
+
+    # data_for_ci.py
+    ...
+    def model_func(params, rho=None, theta=0.001):
+        ...
+
+    rep_data_file = binary file with parsed ld_stats
+    opt_params = list with optimal values of parameters for the model
+    rs = list with recombination rate bins
+    param_names = list with names of parameters
+
+
+.. code-block:: console
+
+    $ gadma-get_confidence_intervals_for_ld data_for_ci.py --help
+    usage: GADMA module for calculating confidence intervals from calculated LD params [-h] <filename>
+
+    positional arguments:
+      <filename>  Filename (.py) with result from run on data. Output of gadma.
+
+    optional arguments:
+      -h, --help  show this help message and exit
+
+
+

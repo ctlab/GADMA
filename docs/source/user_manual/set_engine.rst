@@ -50,6 +50,11 @@ Engine comparison
      - ✓
      - ✓
      - ✕
+   * - Can simulate data
+     - ✓
+     - ✓
+     - ✓
+     - ✕
    * - Recombination rate
      - ✕
      - ✕

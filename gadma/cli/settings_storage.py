@@ -1368,7 +1368,10 @@ class SettingsStorage(object):
                                        f"and remove unexpected args.")
 
         if self.engine == "momentsLD":
-            if not self.ancestral_size_as_parameter and not self.fixed_ancestral_size:
+            if all([
+                not self.ancestral_size_as_parameter,
+                not (self.fixed_ancestral_size and self.custom_filename)
+            ]):
                 warnings.warn(
                     "Moments.LD engine need ancestral size as parameter. The option "
                     "`Ancestral size as parameter` is set to `True`"

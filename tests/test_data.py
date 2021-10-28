@@ -60,8 +60,6 @@ POP_MAP = os.path.join(
     DATA_PATH, 'vcf_ld', "pop_map.txt")
 REC_MAPS_DIR = os.path.join(
     DATA_PATH, 'vcf_ld', "rec_maps")
-VCF_DATA_FEW_CHR = os.path.join(
-    DATA_PATH, 'vcf_ld', "vcf_data_few_chr.vcf")
 VCF_DATA_LD = os.path.join(
     DATA_PATH, 'vcf_ld', "vcf_data.vcf")
 TEST_OUTPUT = os.path.join(
@@ -87,9 +85,16 @@ DATA_HOLDER_FOR_MODELS = VCFDataHolder(
 
 class TestDataHolder(unittest.TestCase):
 
+    def setUp(self):
+        if Path(TEST_OUTPUT).exists():
+            shutil.rmtree(TEST_OUTPUT)
+
     def tearDown(self):
         if Path("./output_dir").exists():
             shutil.rmtree("./output_dir")
+        if Path(TEST_OUTPUT).exists():
+            shutil.rmtree(TEST_OUTPUT)
+            os.remove(TEST_OUTPUT)
 
     def _check_data(self, data_holder, pop_labels, outgroup, sample_sizes):
         self.assertTrue(all(data_holder.projections == sample_sizes),
@@ -552,14 +557,6 @@ class TestSettingStorageLDStats(unittest.TestCase):
             self.assertTrue(np.allclose(
                 ld_stats_moments["means"][arr],
                 ld_stats_gadma["means"][arr]))
-
-
-class BedFilesCreation(unittest.TestCase):
-
-    def tearDown(self):
-        if Path(f"{TEST_OUTPUT}/").exists():
-            shutil.rmtree(f"{TEST_OUTPUT}/")
-        os.makedirs(TEST_OUTPUT)
 
     def test_create_bed_files(self):
         chromosomes = create_bed_files_and_extract_chromosomes(DATA_HOLDER_FOR_MODELS)

@@ -9,10 +9,6 @@ import sys
 import copy
 import pandas as pd
 
-# Need to import lib
-#
-print("Hello")
-
 
 def main():
     parser = argparse.ArgumentParser("GADMA module for calculating confidence "
@@ -106,10 +102,12 @@ def main():
     # opt_params[-1] is Nref
     for bound in phys_units_boundaries_list:
         for num, param in enumerate(param_names):
-            if param.startswith("t") or param.startswith("m"):
+            if param.startswith("t"):
                 bound[num] *= (2 * opt_params[-1])
             elif param.startswith("nu"):
                 bound[num] *= opt_params[-1]
+            elif param.startswith("m"):
+                bound[num] /= (2 * opt_params[-1])
             bound[num] = round(bound[num], 4)
 
     # create pandas dataframe
@@ -134,6 +132,7 @@ def main():
     results = os.path.join(os.path.dirname(filename), "ci_results.xlsx")
     all_ci_dataframe = pd.DataFrame(data=all_ci_data)
     all_ci_dataframe.to_excel(results, index=False)
+    all_ci_dataframe.to_csv(results, index=False)
     print(all_ci_dataframe)
 
 

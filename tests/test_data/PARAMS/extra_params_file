@@ -1,0 +1,65 @@
+#	It is extra parameters file for GADMA software.
+
+#	Lines started from # are ignored.
+#	Also comments at the end of a line are ignored too.
+#	Every line contains: Identificator of parameter : value.
+#	If you want to change some default parameters, you need to 
+#	remove # at the begining of line and change corresponding 
+#	parameter.
+
+
+#	Lower and upper bounds on N - sizes of populations, 
+#	T - time of time periods, M - migration rates.
+#	All bounds are relative to N_A: N is in N_A units, 
+#	T in 2 * N_A units and M in 1 / (2 * N_A).
+#	Default:	min_N = 0.01, max_N = 100.0, min_T = 0.0, 
+#				max_T = 5.0, min_M = 0.0, max_M = 10.0
+min_N: 0.01
+max_N: 100.0
+min_T: 0.001
+max_T: 5.0
+min_M: 0.0
+max_M: 10.0
+Size of generation: 10
+Fractions: [0.55560528752, 0.18828153004, 0.12600048532]
+Mean mutation strength: 0.625049
+Const for mutation strength: 1.01
+Mean mutation rate: 0.453272
+Const for mutation rate: 1.02
+Eps: 1
+Stuck generation number: 5
+Verbose: 1
+Vmin: 1
+Random N_A: False
+Time to print summary: 1
+
+#	Other parameters of run without description:
+acquisition_function: EI
+bed_file: null
+dadi_available: true
+demes_available: true
+demesdraw_available: true
+dynamics:
+- Sud
+- Lin
+- Exp
+fixed_ancestral_size: null
+global_log_transform: false
+global_maxeval: null
+global_maxiter: 2
+global_optimizer: Genetic_algorithm
+kernel: Matern52
+ld_kwargs: null
+local_log_transform: true
+local_maxeval: null
+local_maxiter: 1
+moments_available: true
+n_elitism: 2
+num_init_const: 5
+p_crossover: 0.18828153004
+p_mutation: 0.55560528752
+p_random: 0.12600048532
+preprocessed_data: null
+recombination_maps: null
+region_len: 6400000
+selection: false

@@ -454,13 +454,13 @@ class TestModels(unittest.TestCase):
     def _vcf_datasets_ld_precomputed(self):
 
         pops = ["pop0", "pop1", "pop2"]
-        for iter in range(1, 4):
+        for ii in range(1, 4):
             yield (
-                f"model{iter}",
+                f"model{ii}",
                 VCFDataHolder(
                     vcf_file=None,
                     preprocessed_data=os.path.join(
-                        EXAMPLE_FOLDER, "DATA", "vcf_ld", f"preprocessed_data_model{iter}.bp"
+                        EXAMPLE_FOLDER, "DATA", "vcf_ld", f"preprocessed_data_model{ii}.bp"
                     ),
                     popmap_file=None,
                     population_labels=pops,
@@ -618,7 +618,6 @@ class TestModels(unittest.TestCase):
                 model.mutation_rate = 1.25e-8
                 if engine.id == "momentsLD":
                     dataset = self._vcf_datasets_ld_precomputed()
-                    model.Nanc_size = Nanc
                 else:
                     dataset = self._sfs_datasets()
                 for description, data in dataset:
@@ -646,7 +645,6 @@ class TestModels(unittest.TestCase):
                     Nanc = None
                     if engine.id not in ["dadi", "moments"]:
                         Nanc = 10000
-
                     cmd = engine.generate_code(values, None, *args, nanc=Nanc)
                     # print(cmd)
 
@@ -657,7 +655,6 @@ class TestModels(unittest.TestCase):
                             engine.model = model
                         # read data
                         engine.data = data
-
                         true_ll = engine.evaluate(values, **options)
 
                         d = {}
