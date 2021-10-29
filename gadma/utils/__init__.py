@@ -22,4 +22,4 @@ from .distributions import trunc_normal_3_sigma_rule, trunc_lognormal_3_sigma_ru
 from .distributions import uniform_generator, trunc_lognormal_sigma_generator  # NOQA
 from .distributions import trunc_normal_sigma_generator, custom_generator  # NOQA
 from .distributions import rescale_generator  # NOQA
-from .utils import create_bed_files_and_extract_chromosomes # NOQA
+from .utils import create_bed_files_and_extract_chromosomes  # NOQA

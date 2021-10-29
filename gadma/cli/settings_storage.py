@@ -3,7 +3,8 @@ import ruamel.yaml
 import numpy as np
 from . import settings
 from .. import demes_available, momi_available
-from ..data import SFSDataHolder, VCFDataHolder, check_and_return_projections_and_labels
+from ..data import SFSDataHolder, \
+    VCFDataHolder, check_and_return_projections_and_labels
 from ..engines import get_engine, MomentsEngine
 from ..engines import all_engines, all_drawing_engines
 from ..models import StructureDemographicModel, CustomDemographicModel
@@ -76,7 +77,8 @@ def _get_variable(cls, par_label, domain, engine="dadi"):
     if (cls == FractionVariable or cls is GrowthRateVariable or
             not issubclass(cls, DemographicVariable)):
         return cls(name=par_label, domain=domain)
-    units = "genetic" if engine in ['dadi', 'moments',  "momentsLD"] else "physical"
+    units = "genetic" if engine in [
+        'dadi', 'moments',  "momentsLD"] else "physical"
     if par_label.lower().endswith("_phys"):
         units = "physical"
     if par_label.lower().endswith("_gen"):
@@ -100,7 +102,8 @@ def get_variables(parameter_identifiers, lower_bound, upper_bound,
         domains = list(zip(lower_bound, upper_bound))
     else:
         domains = [None for _ in parameter_identifiers]
-    units = "genetic" if engine in ["dadi", "moments", "momentsLD"] else "physical"
+    units = "genetic" if engine in [
+        "dadi", "moments", "momentsLD"] else "physical"
     if parameter_identifiers is not None:
         classes = [get_variable_class(p_id) for p_id in parameter_identifiers]
     else:
@@ -213,12 +216,14 @@ class SettingsStorage(object):
                          'parameter_identifiers', 'migration_masks']
         exist_file_attrs = ['input_data', 'custom_filename',
                             'bed_file', "preprocessed_data"]
-        exist_dir_attrs = ['directory_with_bootstrap', 'resume_from', 'recombination_maps']
+        exist_dir_attrs = ['directory_with_bootstrap',
+                           'resume_from', 'recombination_maps']
         empty_dir_attrs = ['output_directory']
         data_holder_attrs = ['projections', 'outgroup',
                              'population_labels', 'sequence_length',
                              'recombination_maps', 'ld_kwargs',
-                             'output_directory', "region_len", "preprocessed_data"]
+                             'output_directory', "region_len",
+                             "preprocessed_data"]
         bounds_attrs = ['min_n', 'max_n', 'min_t', 'max_t', 'min_m', 'max_m',
                         'dynamics']
         bounds_lists = ['lower_bound', 'upper_bound', 'parameter_identifiers']
@@ -1190,39 +1195,47 @@ class SettingsStorage(object):
                 self.fixed_ancestral_size is None,
                 self.engine == "momentsLD"
             ]):
-                variables.insert(0, PopulationSizeVariable("Nanc", units="physical"))
+                variables.insert(0, PopulationSizeVariable("Nanc",
+                                                           units="physical"))
+
             if self.model_func is not None:
-                return CustomDemographicModel(function=self.model_func,
-                                              variables=variables,
-                                              gen_time=gen_time,
-                                              theta0=theta0,
-                                              mutation_rate=mut_rate,
-                                              recombination_rate=rec_rate,
-                                              fixed_anc_size=self.fixed_ancestral_size,
-                                              has_anc_size=self.ancestral_size_as_parameter)
+                return CustomDemographicModel(
+                    function=self.model_func,
+                    variables=variables,
+                    gen_time=gen_time,
+                    theta0=theta0,
+                    mutation_rate=mut_rate,
+                    recombination_rate=rec_rate,
+                    fixed_anc_size=self.fixed_ancestral_size,
+                    has_anc_size=self.ancestral_size_as_parameter
+                )
             module_name = module_name_from_path(self.custom_filename)
             spec = importlib.util.spec_from_file_location(module_name,
                                                           self.custom_filename)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
-            return CustomDemographicModel(function=module.model_func,
-                                          variables=variables,
-                                          gen_time=gen_time,
-                                          theta0=theta0,
-                                          mutation_rate=mut_rate,
-                                          recombination_rate=rec_rate,
-                                          fixed_anc_size=self.fixed_ancestral_size,
-                                          has_anc_size=self.ancestral_size_as_parameter)
+            return CustomDemographicModel(
+                function=module.model_func,
+                variables=variables,
+                gen_time=gen_time,
+                theta0=theta0,
+                mutation_rate=mut_rate,
+                recombination_rate=rec_rate,
+                fixed_anc_size=self.fixed_ancestral_size,
+                has_anc_size=self.ancestral_size_as_parameter
+            )
 
         elif self.custom_filename is None and self.model_func is not None:
-            return CustomDemographicModel(function=self.model_func,
-                                          variables=None,
-                                          gen_time=gen_time,
-                                          theta0=theta0,
-                                          mutation_rate=mut_rate,
-                                          recombination_rate=rec_rate,
-                                          fixed_anc_size=self.fixed_ancestral_size,
-                                          has_anc_size=self.ancestral_size_as_parameter)
+            return CustomDemographicModel(
+                function=self.model_func,
+                variables=None,
+                gen_time=gen_time,
+                theta0=theta0,
+                mutation_rate=mut_rate,
+                recombination_rate=rec_rate,
+                fixed_anc_size=self.fixed_ancestral_size,
+                has_anc_size=self.ancestral_size_as_parameter
+            )
         else:
             raise ValueError("Some settings are missed so no model is "
                              "generated")
@@ -1359,7 +1372,8 @@ class SettingsStorage(object):
                                  f"argument.")
             else:
                 import moments.LD
-                Full_arg_spec = inspect.getfullargspec(moments.LD.Parsing.compute_ld_statistics)
+                Full_arg_spec = inspect.getfullargspec(
+                    moments.LD.Parsing.compute_ld_statistics)
                 args_parsing_ld = Full_arg_spec[0]
                 for key in self.ld_kwargs:
                     if key not in args_parsing_ld:
@@ -1381,7 +1395,8 @@ class SettingsStorage(object):
             if self.data_holder.projections is None:
                 if self.data_holder.population_labels is None:
                     (self.data_holder.projections,
-                     self.data_holder.population_labels) = check_and_return_projections_and_labels(
+                     self.data_holder.population_labels
+                     ) = check_and_return_projections_and_labels(
                         self.data_holder)
                 else:
                     (self.data_holder.projections,

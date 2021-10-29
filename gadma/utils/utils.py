@@ -767,7 +767,9 @@ def create_bed_files_and_extract_chromosomes(data_holder):
     if region_num < min_region_num:
         while region_num < min_region_num:
             region_num += (len(chromosomes))
-            region_len = (total_len / (len(chromosomes)) / (region_num / (len(chromosomes))))
+            region_len = (
+                    total_len / (len(chromosomes)) / (region_num / (len(chromosomes)))
+            )
 
     for chrom in chromosomes:
         stop_position = 0

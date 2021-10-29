@@ -32,14 +32,18 @@ def usage():
                        "Usage: \n\tgadma\t-p/--params\t<params_file>\n" \
                        "\t\t-e/--extra\t<extra_params_file>\n" \
                        "\n\n" \
-                       "Instead/With -p/--params and -e/--extra option you can set:\n" \
+                       "Instead/With -p/--params and " \
+                       "-e/--extra option you can set:\n" \
                        "\t-o/--output\t<output_dir>\t\toutput directory.\n" \
-                       "\t-i/--input\t<in.fs>/<in.txt>/\tinput data for demographic " \
+                       "\t-i/--input\t<in.fs>/<in.txt>/" \
+                       "\tinput data for demographic " \
                        "inference\n" \
-                       "\t\t\t<in.vcf>,<popmap>\t(AFS, dadi format or VCF).\n" \
+                       "\t\t\t<in.vcf>,<popmap>" \
+                       "\t(AFS, dadi format or VCF).\n" \
                        "\t--resume\t<resume_dir>\t\tresume another launch from " \
                        "<resume_dir>.\n" \
-                       "\t--only_models\t\tflag to take models only from another\n" \
+                       "\t--only_models\t" \
+                       "\tflag to take models only from another\n" \
                        "\t\t\t\tlaunch (--resume option).\n\n" \
                        "\t-h/--help\t\tshow this help message and exit.\n" \
                        "\t-v/--version\t\tshow version and exit.\n" \
