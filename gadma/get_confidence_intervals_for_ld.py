@@ -145,7 +145,6 @@ def main():
     }
     results = os.path.join(os.path.dirname(filename), "ci_results.xlsx")
     all_ci_dataframe = pd.DataFrame(data=all_ci_data)
-    all_ci_dataframe.to_excel(results, index=False)
     all_ci_dataframe.to_csv(results, index=False)
     print(all_ci_dataframe)
 

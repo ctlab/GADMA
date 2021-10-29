@@ -92,7 +92,7 @@ for confidence intervals (CI) evaluation for momentsLD engine ``gadma-get_confid
 file ``data_for_ci.py`` containing all necessary information for CI evaluation.
 
 Use ``gadma-get_confidence_intervals`` with input data ``data_for_ci.py``. GADMA will calculate CI for parameters
-print results and save them in the excel and csv file.
+print results and save them in the csv file.
 
 .. code-block::
 

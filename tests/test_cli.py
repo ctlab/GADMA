@@ -384,6 +384,7 @@ class TestCLI(unittest.TestCase):
         settings = SettingsStorage()
         settings.from_file(old_param_file)
 
+    @pytest.mark.timeout(0)
     def test_another_param_file(self):
         param_file = os.path.join(DATA_PATH, "PARAMS",
                                   'another_test_params')

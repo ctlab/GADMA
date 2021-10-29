@@ -524,7 +524,7 @@ class TestLocalOpt(TestBaseOptClass):
 #            self.run_example(engine.id, get_2pop_sim_example_1)
 
 class TestCoreRun(unittest.TestCase):
-    @pytest.mark.timeout(800)
+    @pytest.mark.timeout(0)
     def test_core_run(self):
         settings = test_args()
         settings.input_data = os.path.join(DATA_PATH, "DATA", "sfs",

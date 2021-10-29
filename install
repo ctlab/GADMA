@@ -14,5 +14,5 @@ pip3 install demes
 pip3 install h5py
 pip3 install scikit-allel
 pip3 install demesdraw
-pip3 install git+https://bitbucket.org/simongravel/moments.git@moments
+pip3 install git+https://bitbucket.org/simongravel/moments.git@moments --ld_extensions
 pip3 install .
