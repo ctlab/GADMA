@@ -75,6 +75,7 @@ class TestConfidenceIntervals(unittest.TestCase):
             self.assertRaises(ValueError, gadma.run_ls_on_boot_data.main)
 
     def test_run_ci_evaluation(self):
+        moments.LD.Inference._varcov_inv_cache = {}
         warnings.filterwarnings(action='ignore', category=UserWarning,
                         module='.*\.stats', lineno=1604)
         for engine in all_engines():

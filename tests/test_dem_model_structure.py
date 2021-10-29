@@ -1,12 +1,12 @@
 import json
 import unittest
 from gadma import *
-from gadma.engines import MomentsLdEngine
 import itertools
 import os
 import copy
 import numpy as np
 import pytest
+from gadma.engines.engine import get_engine
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
 
@@ -291,7 +291,6 @@ class TestModelStructure(unittest.TestCase):
         self.assertTrue(failed <= 5, "Dadi failed more that 5 times")
 
     def _data_for_ll_ld_test(self, ii):
-
         return VCFDataHolder(
             vcf_file=None,
             preprocessed_data=os.path.join(
@@ -303,62 +302,68 @@ class TestModelStructure(unittest.TestCase):
         )
 
     def test_test_likelihood_after_increase_moments_ld(self):
-        structure = (2, 1)
+        LL_TEST_STRUCTURE = [(2, 1)]
         args_for_ld_test_ll_after_increase = []
         for ii in [2, 5, 19]:
             args_for_ld_test_ll_after_increase.append(
                 list(itertools.product([False, True], repeat=7))[ii]
             )
         ii = 1
-        for create_migs, create_sels, create_dyns, sym_migs, fracs, has_anc, inbr in \
-                args_for_ld_test_ll_after_increase:
-            if not create_migs:
-                sym_migs = False
+        for structure in LL_TEST_STRUCTURE:
+            for create_migs, create_sels, create_dyns, sym_migs, fracs, has_anc, inbr in \
+                    args_for_ld_test_ll_after_increase:
 
-            def model_generator(structure):
-                return StructureDemographicModel(structure,
-                                                 np.array(structure) + 1,
-                                                 has_migs=create_migs,
-                                                 has_sels=create_sels,
-                                                 has_dyns=create_dyns,
-                                                 sym_migs=sym_migs,
-                                                 frac_split=fracs,
-                                                 has_anc_size=True)
-            dm = model_generator(structure)
-            dm.mutation_rate = 1e-8
-            engine = MomentsLdEngine()
-            engine.model = dm
-            engine.set_data(self._data_for_ll_ld_test(ii))
-            x_file = os.path.join(LL_TEST_DATA, "all_x.txt")
-            with open(x_file, "r") as file:
-                all_x = json.load(file)
-            x = all_x[f"{ii}"]
-            ll_true = engine.evaluate(x)
-            for i in range(len(structure)):
-                new_structure = list(copy.copy(structure))
-                new_structure[i] += 1
-                msg = f"Increase structure from {structure} to " \
-                      f"{new_structure} for engine {engine.id}. " \
-                      f"create_migs: {create_migs}, " \
-                      f"create_sels: {create_sels}, " \
-                      f"create_dyns: {create_dyns}, " \
-                      f"sym_migs: {sym_migs}, " \
-                      f"fracs: {fracs}, " \
-                      f"has_anc: {True}, "
-                #                        print(msg)
-                new_dm = copy.deepcopy(dm)
-                new_dm, new_X = new_dm.increase_structure(
-                    new_structure, [x])
-                an_dm = copy.deepcopy(dm)
-                _, X_none = an_dm.increase_structure()
-                self.assertEqual(X_none, None)
-                engine.set_model(new_dm)
-                new_ll = engine.evaluate(new_X[0])
+                moments.LD.Inference._varcov_inv_cache = {}
 
-                is_equal = np.allclose(ll_true, new_ll)
-                self.assertTrue(is_equal,
-                                msg=f"{ll_true} != {new_ll} : {msg}")
-            ii += 1
+                if not create_migs:
+                    sym_migs = False
+
+                def model_generator(structure):
+                    return StructureDemographicModel(structure,
+                                                     np.array(structure) + 1,
+                                                     has_migs=create_migs,
+                                                     has_sels=create_sels,
+                                                     has_dyns=create_dyns,
+                                                     sym_migs=sym_migs,
+                                                     frac_split=fracs,
+                                                     has_anc_size=True)
+                dm = model_generator(structure)
+                dm.mutation_rate = 1e-8
+                engine = get_engine("momentsLD")
+                engine.model = dm
+                engine.set_data(self._data_for_ll_ld_test(ii))
+                print("POPOPOSS")
+                print(engine.model.number_of_populations())
+                x_file = os.path.join(LL_TEST_DATA, "all_x.txt")
+                with open(x_file, "r") as file:
+                    all_x = json.load(file)
+                x = all_x[f"{ii}"]
+                ll_true = engine.evaluate(x)
+                for i in range(len(structure)):
+                    new_structure = list(copy.copy(structure))
+                    new_structure[i] += 1
+                    msg = f"Increase structure from {structure} to " \
+                          f"{new_structure} for engine {engine.id}. " \
+                          f"create_migs: {create_migs}, " \
+                          f"create_sels: {create_sels}, " \
+                          f"create_dyns: {create_dyns}, " \
+                          f"sym_migs: {sym_migs}, " \
+                          f"fracs: {fracs}, " \
+                          f"has_anc: {True}, "
+                    #                        print(msg)
+                    new_dm = copy.deepcopy(dm)
+                    new_dm, new_X = new_dm.increase_structure(
+                        new_structure, [x])
+                    an_dm = copy.deepcopy(dm)
+                    _, X_none = an_dm.increase_structure()
+                    self.assertEqual(X_none, None)
+                    engine.set_model(new_dm)
+                    new_ll = engine.evaluate(new_X[0])
+
+                    is_equal = np.allclose(ll_true, new_ll)
+                    self.assertTrue(is_equal,
+                                    msg=f"{ll_true} != {new_ll} : {msg}")
+                ii += 1
 
     def test_fails(self):
         bad_struct = [[0], [0, 1], [1, 0]]

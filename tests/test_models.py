@@ -645,6 +645,12 @@ class TestModels(unittest.TestCase):
                     Nanc = None
                     if engine.id not in ["dadi", "moments"]:
                         Nanc = 10000
+                    if engine.id == "momentsLD":
+                        model = copy.deepcopy(model)
+                        model.Nanc_size = Nanc
+                        engine.model = model
+                        moments.LD.Inference._varcov_inv_cache = {}
+
                     cmd = engine.generate_code(values, None, *args, nanc=Nanc)
                     # print(cmd)
 

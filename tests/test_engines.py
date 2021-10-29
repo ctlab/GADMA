@@ -671,6 +671,7 @@ class TestModelSimulation(unittest.TestCase):
 class TestModelEvaluation(unittest.TestCase):
 
     def tearDown(self):
+        moments.LD.Inference._varcov_inv_cache = {}
         if Path(f"{TEST_OUTPUT}/").exists():
             shutil.rmtree(f"{TEST_OUTPUT}/")
         os.mkdir(TEST_OUTPUT)

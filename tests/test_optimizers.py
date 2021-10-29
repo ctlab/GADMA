@@ -590,6 +590,7 @@ class TestCoreRun(unittest.TestCase):
 
             elif engine.id == "momentsLD":
                 try:
+                    moments.LD.Inference._varcov_inv_cache = {}
                     settings = SettingsStorage()
                     settings.engine = engine.id
                     settings.output_directory = "Some_out_dir"
