@@ -7,6 +7,8 @@ import os
 import numpy as np
 from pathlib import Path
 import shutil
+import pytest
+
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
 
@@ -736,6 +738,7 @@ class TestModelEvaluation(unittest.TestCase):
 
         return values, simulated, dm
 
+    @pytest.mark.timeout(0)
     def test_evaluation(self):
         # use data read with gadma
         engine = get_engine('momentsLD')
@@ -786,6 +789,7 @@ class TestModelEvaluation(unittest.TestCase):
 
         self.assertEqual(ll_gadma, ll_moments)
 
+    @pytest.mark.timeout(0)
     def test_draw_curves(self):
 
         engine = get_engine('momentsLD')
