@@ -91,7 +91,6 @@ def main():
 
     pool = multiprocessing.Pool(processes=n_processes)
 
-    t1 = time.time()
     try:
         if data_holder.recombination_maps is not None:
             if len(listdir(data_holder.recombination_maps)) == len(chromosomes):
@@ -113,12 +112,12 @@ def main():
     finally:
         shutil.rmtree(settings_storage.output_directory)
 
-    t2 = time.time()
-    time_to_compute = round((t2 - t1) / 60, 2)
-    print(f"LD stats computing took {time_to_compute} minutes")
-
 
 def read_data(item):
+    """
+    Function for reading data using multiprocessing
+    :param item: ReadInfo object contains information about region to read
+    """
     results = {
         f"{item.reg_num}":
             moments.LD.Parsing.compute_ld_statistics(
@@ -135,6 +134,10 @@ def read_data(item):
 
 
 def read_data_without_rec_map(item):
+    """
+    Function for reading data using multiprocessing without recombination map
+    :param item: ReadInfo object contains information about region to read
+    """
     results = {
         f"{item.reg_num}":
             moments.LD.Parsing.compute_ld_statistics(
@@ -150,6 +153,10 @@ def read_data_without_rec_map(item):
 
 
 def read_data_rec_maps_in_one_file(item):
+    """
+    Function for reading data using multiprocessing with one file containing few recombination masps
+    :param item: ReadInfo object contains information about region to read
+    """
     results = {
         f"{item.reg_num}":
             moments.LD.Parsing.compute_ld_statistics(
@@ -168,13 +175,14 @@ def read_data_rec_maps_in_one_file(item):
 def extract_rec_map_name_and_extension(rec_map):
     extension = rec_map.split(".")[1]
     rec_map_name = rec_map.split(".")[0]
-    # if rec_map_name[-1
     rec_map_name = "_".join(rec_map_name.split('_')[:-1])
     return rec_map_name, extension
 
 
 class ReadInfo:
-
+    """
+    Class for storing data about region used in Parsing LD stats
+    """
     def __init__(
             self, reg_num, filename, rec_map,
             bed_file, pop_file, pops, kwargs,

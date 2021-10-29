@@ -11,6 +11,10 @@ import pandas as pd
 
 
 def main():
+    """
+    Main function of script for momentsLD CI evaluation. Reads read generated data_for_ci.py file
+    and calculate confidence intervals from it.
+    """
     parser = argparse.ArgumentParser("GADMA module for calculating confidence "
                                      "intervals from calculated LD params")
 
