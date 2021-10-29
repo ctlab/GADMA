@@ -54,8 +54,9 @@ class VCFDataHolder(DataHolder):
     Class for VCF data holding.
     """
     def __init__(self, vcf_file, popmap_file, projections=None, outgroup=None,
-                 population_labels=None, sequence_length=None, recombination_maps=None,
-                 ld_kwargs=None, output_directory=None, region_len=None,
+                 population_labels=None, sequence_length=None,
+                 recombination_maps=None, ld_kwargs=None,
+                 output_directory=None, region_len=None,
                  preprocessed_data=None):
         super(VCFDataHolder, self).__init__(
             filename=vcf_file,

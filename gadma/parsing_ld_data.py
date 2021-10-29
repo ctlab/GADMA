@@ -1,14 +1,12 @@
-import collections
 import multiprocessing
 from collections import ChainMap
 import moments.LD
-import numpy as np
 import shutil
 import allel
 from os import listdir
-import time
 import pickle
-from gadma.utils.utils import create_bed_files_and_extract_chromosomes, check_file_existence
+from gadma.utils.utils import create_bed_files_and_extract_chromosomes,\
+    check_file_existence
 from gadma.cli import arg_parser
 from gadma.data.data import VCFDataHolder
 from gadma.engines.engine import get_engine
@@ -92,13 +90,18 @@ def main():
     pool = multiprocessing.Pool(processes=n_processes)
 
     try:
+        number_of_rec_maps = len(listdir(data_holder.recombination_maps))
         if data_holder.recombination_maps is not None:
-            if len(listdir(data_holder.recombination_maps)) == len(chromosomes):
+            if number_of_rec_maps == len(chromosomes):
                 result = pool.map(read_data, read_information_list)
             else:
-                result = pool.map(read_data_rec_maps_in_one_file, read_information_list)
+                result = pool.map(
+                    read_data_rec_maps_in_one_file, read_information_list
+                )
         else:
-            result = pool.map(read_data_without_rec_map, read_information_list)
+            result = pool.map(
+                read_data_without_rec_map, read_information_list
+            )
 
         pool.close()
         regions = dict(ChainMap(*result))
@@ -154,7 +157,8 @@ def read_data_without_rec_map(item):
 
 def read_data_rec_maps_in_one_file(item):
     """
-    Function for reading data using multiprocessing with one file containing few recombination masps
+    Function for reading data using multiprocessing
+    with one file containing few recombination maps
     :param item: ReadInfo object contains information about region to read
     """
     results = {

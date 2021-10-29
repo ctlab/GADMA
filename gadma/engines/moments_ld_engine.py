@@ -1,5 +1,3 @@
-import sys
-
 import numpy as np
 import collections
 import pickle
@@ -12,7 +10,6 @@ from ..utils import DynamicVariable, get_correct_dtype
 from ..utils import create_bed_files_and_extract_chromosomes
 from ..code_generator import id2printfunc
 from ..data import check_and_return_projections_and_labels
-from ..utils import PopulationSizeVariable
 from os import listdir
 import moments.LD
 
@@ -49,7 +46,9 @@ class MomentsLdEngine(Engine):
                         CustomDemographicModel]
     supported_data = [VCFDataHolder, dict, moments.LD.LDstats_mod.LDstats]
 
-    r_bins = np.array([0, 1e-6, 2e-6, 5e-6, 1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3])
+    r_bins = np.array(
+        [0, 1e-6, 2e-6, 5e-6, 1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3]
+    )
     kwargs = {
         "r_bins": r_bins,
         "report": False,
@@ -88,40 +87,46 @@ class MomentsLdEngine(Engine):
             bed_files = data_holder.output_directory + "/bed_files"
             reg_num = 0
             region_stats = {}
-            if data_holder.recombination_maps is not None:
+            rec_maps = data_holder.recombination_maps
+            if rec_maps is not None:
                 rec_map, extension = extract_rec_map_name_and_extension(
-                    listdir(data_holder.recombination_maps)[0]
+                    listdir(rec_maps)[0]
                 )
-                if len(listdir(data_holder.recombination_maps)) == len(chromosomes):
+                if len(
+                        listdir(rec_maps)
+                ) == len(chromosomes):
                     for chrom in sorted_choromosomes_list:
                         for num in range(1, chromosomes[chrom] + 1):
                             region_stats.update({
                                 f"{reg_num}":
                                 moments.LD.Parsing.compute_ld_statistics(
                                     data_holder.filename,
-                                    rec_map_file=f"{data_holder.recombination_maps}"
-                                                 f"/{rec_map}_{chrom}.{extension}",
+                                    rec_map_file=f"{rec_maps}"
+                                                 f"/{rec_map}_"
+                                                 f"{chrom}.{extension}",
                                     pop_file=data_holder.popmap_file,
-                                    bed_file=f"{bed_files}/bed_file_{chrom}_{num}.bed",
+                                    bed_file=f"{bed_files}/"
+                                             f"bed_file_{chrom}_{num}.bed",
                                     pops=pops,
                                     **kwargs
                                 )
                             })
                             reg_num += 1
 
-                elif len(listdir(data_holder.recombination_maps)) != len(chromosomes):
-                    rec_map = listdir(data_holder.recombination_maps)[0]
+                elif len(listdir(rec_maps)) != len(chromosomes):
+                    rec_map = listdir(rec_maps)[0]
                     for chrom in sorted_choromosomes_list:
                         for num in range(1, chromosomes[chrom] + 1):
                             region_stats.update({
                                 f"{reg_num}":
                                 moments.LD.Parsing.compute_ld_statistics(
                                     data_holder.filename,
-                                    rec_map_file=f"{data_holder.recombination_maps}"
+                                    rec_map_file=f"{rec_maps}"
                                                  f"/{rec_map}",
                                     map_name=f"{chrom}",
                                     pop_file=data_holder.popmap_file,
-                                    bed_file=f"{bed_files}/bed_file_{chrom}_{num}.bed",
+                                    bed_file=f"{bed_files}"
+                                             f"/bed_file_{chrom}_{num}.bed",
                                     pops=pops,
                                     **kwargs
                                 )
@@ -136,7 +141,8 @@ class MomentsLdEngine(Engine):
                             moments.LD.Parsing.compute_ld_statistics(
                                 data_holder.filename,
                                 pop_file=data_holder.popmap_file,
-                                bed_file=f"{bed_files}/bed_file_{chrom}_{num}.bed",
+                                bed_file=f"{bed_files}"
+                                         f"/bed_file_{chrom}_{num}.bed",
                                 pops=pops,
                                 **kwargs
                             )
@@ -146,7 +152,9 @@ class MomentsLdEngine(Engine):
         else:
             print("Read preprocessed data")
             if data_holder.filename is not None:
-                chromosomes = create_bed_files_and_extract_chromosomes(data_holder)
+                chromosomes = create_bed_files_and_extract_chromosomes(
+                    data_holder
+                )
             with open(data_holder.preprocessed_data, "rb") as fin:
                 region_stats = pickle.load(fin)
             data = moments.LD.Parsing.bootstrap_data(region_stats)
@@ -202,7 +210,9 @@ class MomentsLdEngine(Engine):
             if self.data_holder.ld_kwargs:
                 for key in self.data_holder.ld_kwargs:
                     try:
-                        self.kwargs[key] = eval(self.data_holder.ld_kwargs[key])
+                        self.kwargs[key] = eval(
+                            self.data_holder.ld_kwargs[key]
+                        )
                     except:  # NOQA
                         self.kwargs[key] = self.data_holder.ld_kwargs[key]
                 self.r_bins = self.kwargs["r_bins"]
@@ -216,8 +226,10 @@ class MomentsLdEngine(Engine):
                     if value.name == "Nanc":
                         Nref = values_list[num]
                         values_list.pop(num)
-            else: # for test cases
-                values_list = [var2value[var] for var in self.model.variables]
+            else:  # for test cases
+                values_list = [
+                    var2value[var] for var in self.model.variables
+                ]
                 Nref = 10000
             rhos = 4 * Nref * np.array(self.r_bins)
             if self.model.mutation_rate is not None:
@@ -444,8 +456,10 @@ class MomentsLdEngine(Engine):
 
     def update_data_holder_with_inner_data(self):
         if self.data_holder.filename is not None:
-            (self.data_holder.projections,
-             self.data_holder.population_labels) = check_and_return_projections_and_labels(
+            (
+                self.data_holder.projections,
+                self.data_holder.population_labels
+             ) = check_and_return_projections_and_labels(
                 self.data_holder)
         self.data_holder.outgroup = None
 

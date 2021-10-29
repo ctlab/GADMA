@@ -1,7 +1,8 @@
 import argparse
 import os.path
 
-from gadma.utils.utils import abspath, check_file_existence, module_name_from_path
+from gadma.utils.utils import abspath, \
+    check_file_existence, module_name_from_path
 import moments.LD
 import pickle
 import importlib.util
@@ -12,8 +13,9 @@ import pandas as pd
 
 def main():
     """
-    Main function of script for momentsLD CI evaluation. Reads read generated data_for_ci.py file
-    and calculate confidence intervals from it.
+    Main function of script for momentsLD CI evaluation.
+    Reads read generated data_for_ci.py file and
+    calculate confidence intervals from it.
     """
     parser = argparse.ArgumentParser("GADMA module for calculating confidence "
                                      "intervals from calculated LD params")
@@ -116,13 +118,21 @@ def main():
 
     # create pandas dataframe
 
-    fim_bounds_list = [f"{lower_fim[num]} - {upper_fim[num]}" for num in range(len(param_names))]
-    gim_bounds_list = [f"{lower_gim[num]} - {upper_gim[num]}" for num in range(len(param_names))]
+    fim_bounds_list = [
+        f"{lower_fim[num]} "
+        f"- {upper_fim[num]}" for num in range(len(param_names))
+    ]
+    gim_bounds_list = [
+        f"{lower_gim[num]} "
+        f"- {upper_gim[num]}" for num in range(len(param_names))
+    ]
     fim_bounds_list_phys_units = [
-            f"{lower_fim_phys_units[num]} - {upper_fim_phys_units[num]}" for num in range(len(param_names))
+            f"{lower_fim_phys_units[num]} "
+            f"- {upper_fim_phys_units[num]}" for num in range(len(param_names))
         ]
     gim_bounds_list_phys_units = [
-            f"{lower_gim_phys_units[num]} - {upper_gim_phys_units[num]}" for num in range(len(param_names))
+            f"{lower_gim_phys_units[num]} "
+            f"- {upper_gim_phys_units[num]}" for num in range(len(param_names))
         ]
 
     all_ci_data = {

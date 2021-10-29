@@ -4,7 +4,6 @@ from ..models import CustomDemographicModel, EpochDemographicModel, \
     Epoch, Split, BinaryOperation, StructureDemographicModel
 from ..utils import DiscreteVariable, DynamicVariable, Variable
 from ..utils import create_bed_files_and_extract_chromosomes
-from ..data import check_and_return_projections_and_labels
 import numpy as np
 import copy
 import sys
@@ -72,8 +71,10 @@ def _print_momentsLD_func(engine, values):
 
     ret_str = f"def {FUNCTION_NAME}(params, rho=None, theta=0.001):\n"
     ret_str += "    %s = params\n" % ", ".join([x.name for x in f_vars])
-    ret_str += "    Nanc = 1.0 #This value can be used in splits with fraction variable\n"
-    ret_str += "    Y = moments.LD.Numerics.steady_state(rho=rho, theta=theta)\n" \
+    ret_str += "    Nanc = 1.0 #This value can be used in splits " \
+               "with fraction variable\n"
+    ret_str += "    Y = moments.LD.Numerics.steady_state" \
+               "(rho=rho, theta=theta)\n" \
                f"    Y = moments.LD.LDstats(Y, num_pops=1, pop_ids={pops})\n"
     n_split = 0
 
@@ -152,7 +153,8 @@ def _print_momentsLD_func(engine, values):
                         y, (Variable, BinaryOperation)) else y
 
             kwargs = [f"{key}={value}" for key, value in kwargs.items()]
-            ret_str += f"    Y.integrate({', '.join(kwargs)}, rho=rho, theta=theta)\n"
+            ret_str += f"    Y.integrate({', '.join(kwargs)}, " \
+                       f"rho=rho, theta=theta)\n"
         elif event.__class__ is Split:
             ret_str += f"    Y = Y.split({n_split})\n"
             n_split += 1
@@ -166,7 +168,7 @@ def _print_momentsLD_load_data(engine, data_holder):
 
     :param data_holder: Data holder with data.
     """
-    from ..engines import MomentsLdEngine, extract_rec_map_name_and_extension
+    from ..engines import extract_rec_map_name_and_extension
     ret_str = ""
 
     ret_str += f"bed_files = \"{data_holder.output_directory}" \
@@ -209,10 +211,13 @@ def _print_momentsLD_load_data(engine, data_holder):
         ret_str += "        for num in range(1, chromosomes[chrom]):\n"
         ret_str += "            region_stats.update({\n"
         ret_str += "                f\"{reg_num}\":\n" \
-                   "                    moments.LD.Parsing.compute_ld_statistics(\n"
+                   "                    moments.LD." \
+                   "Parsing.compute_ld_statistics(\n"
         ret_str += "                        vcf_file=vcf_file,\n"
-        ret_str += f"                        rec_map_file=f\"{data_holder.recombination_maps}/\n"
-        ret_str += "                         {rec_map_name}_{chrom}.{extension}\",\n"
+        ret_str += f"                        rec_map_file=" \
+                   f"f\"{data_holder.recombination_maps}/\n"
+        ret_str += "                         " \
+                   "{rec_map_name}_{chrom}.{extension}\",\n"
         ret_str += f"                        pop_file=pop_map,\n"
         ret_str += "                        bed_file=f\"{bed_files}/"
         ret_str += "bed_file_{chrom}_{num}.bed\",\n"
@@ -230,7 +235,8 @@ def _print_momentsLD_load_data(engine, data_holder):
         ret_str += "        for num in range(1, chromosomes[chrom]):\n"
         ret_str += "            region_stats.update({\n"
         ret_str += "                f\"{reg_num}\":\n" \
-                   "                    moments.LD.Parsing.compute_ld_statistics(\n"
+                   "                    " \
+                   "moments.LD.Parsing.compute_ld_statistics(\n"
         ret_str += "                        vcf_file=vcf_file,\n"
         ret_str += f"                        pop_file=pop_map,\n"
         ret_str += "                        bed_file=f\"{bed_files}/"
@@ -269,7 +275,8 @@ def _print_momentsLD_simulation(engine, nanc):
 def _print_LdCurves(engine):
     r_bins = engine.kwargs["r_bins"]
     ret_str = "stats_to_plot = [\n"
-    ret_str += "    [name] for name in model.names()[:-1][0] if name != 'pi2_0_0_0_0'\n"
+    ret_str += "    [name] for name in model.names()[:-1][0] " \
+               "if name != 'pi2_0_0_0_0'\n"
     ret_str += "]\n"
     ret_str += "moments.LD.Plotting.plot_ld_curves_comp(\n"
     ret_str += "    model_for_plot,\n"
@@ -287,12 +294,14 @@ def _print_LdCurves(engine):
 
 def _print_ll():
     ret_str = "model = moments.LD.Inference.remove_normalized_lds(model)\n"
-    ret_str += "means, varcovs = moments.LD.Inference.remove_normalized_data(\n"
+    ret_str += "means, varcovs = " \
+               "moments.LD.Inference.remove_normalized_data(\n"
     ret_str += "    data['means'],\n"
     ret_str += "    data['varcovs'],\n"
     ret_str += "    num_pops=model.num_pops,\n"
     ret_str += "    normalization=0)\n"
-    ret_str += f"ll_model = moments.LD.Inference.ll_over_bins(means, model, varcovs)\n\n"
+    ret_str += f"ll_model = " \
+               f"moments.LD.Inference.ll_over_bins(means, model, varcovs)\n\n"
     ret_str += "print('Model log likelihood (LL(model, data)): " \
                "{0}'.format(ll_model))\n\n"
     return ret_str
@@ -327,8 +336,8 @@ def print_moments_ld_code(engine, values, filename, args=None,
                           nanc=None, gen_time=None, gen_time_units=None):
     """
     Generates code for `momentsLD` to file. Code have function of demographic
-    model that simulates model and main part where simulation takes place as well
-    as calculation of log-likelihood.
+    model that simulates model and main part where simulation takes place
+    as well as calculation of log-likelihood.
 
     :param engine: Engine that was used with data and model.
     :param values: Value of model parameters.
@@ -340,9 +349,10 @@ def print_moments_ld_code(engine, values, filename, args=None,
 
     """
     if isinstance(engine.model, StructureDemographicModel):
-        engine, values, fraction_vars_to_fix_list = remove_fraction_variable_for_two_sudden_children(
-            engine, values
-        )
+        engine, values, fraction_vars_to_fix_list = \
+            remove_fraction_variable_for_two_sudden_children(
+                engine, values
+            )
     var2value = engine.model.var2value(values)
 
     if isinstance(engine.model, CustomDemographicModel):
@@ -362,7 +372,8 @@ def print_moments_ld_code(engine, values, filename, args=None,
     nanc = Nanc_value
     values = engine.model.translate_values(units="genetic", values=values)
     var2value = engine.model.var2value(values)
-    ret_str = "import moments.LD\nimport numpy as np\nimport pickle\nimport copy\n\n\n"
+    ret_str = "import moments.LD\n" \
+              "import numpy as np\nimport pickle\nimport copy\n\n\n"
     ret_str += _print_momentsLD_func(engine, values)
     ret_str += "\n"
     ret_str += _print_momentsLD_load_data(engine, engine.data_holder)

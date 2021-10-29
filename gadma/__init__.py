@@ -1,5 +1,6 @@
 try:
     import matplotlib
+
     matplotlib.use("Agg")
 except ImportError:
     pass
@@ -7,6 +8,7 @@ except ImportError:
 __version__ = "unknown"
 try:
     from . import version
+
     __version__ = version.version
 except ImportError:
     pass
@@ -27,6 +29,7 @@ except ImportError:
     moments = None
 try:
     import moments.LD
+
     momentsLD = 1
 except ImportError:
     momentsLD = None
@@ -58,6 +61,7 @@ except ImportError:
 try:
     import smac  # NOQA
     import ConfigSpace  # NOQA
+
     smac_available = True
 except ImportError:
     smac = None
@@ -112,7 +116,7 @@ from .core import CoreRun, shared_dict  # NOQA
 from .Inference import load_data_from_dir, get_claic_score, optimize_ga  # NOQA
 from .run_ls_on_boot_data import load_parameters_from_python_file  # NOQA
 from . import get_confidence_intervals  # NOQA
-from . import get_confidence_intervals_for_ld
+from . import get_confidence_intervals_for_ld # NOQA
 
 warnings.simplefilter('always', UserWarning)
 warnings.formatwarning = warning_format

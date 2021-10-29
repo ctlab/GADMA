@@ -196,7 +196,8 @@ class MomentsEngine(DadiOrMomentsEngine):
                 pop_labels = self.data_holder.population_labels
             else:
                 (self.data_holder.projections,
-                 self.data_holder.population_labels) = check_and_return_projections_and_labels(
+                 self.data_holder.population_labels
+                 ) = check_and_return_projections_and_labels(
                     self.data_holder)
         else:
             n_pop = len(self.data.sample_sizes)

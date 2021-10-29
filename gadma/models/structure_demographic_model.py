@@ -236,7 +236,6 @@ class StructureDemographicModel(EpochDemographicModel):
                 inbr_args.append(var)
             self.add_inbreeding(inbr_args)
 
-
         return self
 
     def get_structure(self):

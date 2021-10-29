@@ -2,7 +2,6 @@ import tempfile
 from .settings_storage import HOME_DIR
 from . import SettingsStorage
 from ..core import SUPPORT_STRING
-from ..utils import ensure_dir_existence
 from .. import __version__
 
 import warnings
@@ -12,7 +11,6 @@ import sys
 import os
 import numpy as np
 import itertools
-import inspect
 
 TEST_SETTINGS = os.path.join(HOME_DIR, "test_settings")
 
