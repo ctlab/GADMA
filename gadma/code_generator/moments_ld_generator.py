@@ -66,7 +66,6 @@ def _print_momentsLD_func(engine, values):
             if isinstance(model.Nanc_size, Variable):
                 f_vars.pop(f_vars.index(model.Nanc_size))
 
-    # Change place of Nanc_param in params
     for variable in f_vars:
         if variable.name == "Nanc":
             f_vars.pop(f_vars.index(variable))
@@ -328,7 +327,7 @@ def print_moments_ld_code(engine, values, filename, args=None,
                           nanc=None, gen_time=None, gen_time_units=None):
     """
     Generates code for `momentsLD` to file. Code have function of demographic
-    model that simulates AFS and main part where simulation takes place as well
+    model that simulates model and main part where simulation takes place as well
     as calculation of log-likelihood.
 
     :param engine: Engine that was used with data and model.
@@ -413,7 +412,6 @@ def generate_file_for_ci_evaluation(engine, values, nanc):
 
 def extract_opt_params(engine, values, nanc):
 
-    # need to check this part of code
     var2value = engine.model.var2value(values)
     values = [var2value[var] for var in engine.model.variables
               if not isinstance(var, DiscreteVariable)]
