@@ -1,6 +1,7 @@
 import unittest
 from gadma import *
 import numpy as np
+import pytest
 from .test_optimizers import get_func, get_1pop_sim_example_1
 from .test_optimizers import get_1pop_sim_example_2, get_2pop_sim_example_1
 from .test_data import YRI_CEU_DATA
@@ -389,6 +390,8 @@ class TestGeneticAlg(unittest.TestCase):
 
 
 class TestInference(unittest.TestCase):
+
+    @pytest.mark.timeout(0)
     def test_inference_ga(self):
         for engine in all_engines():
             with self.subTest(engine=engine.id):
