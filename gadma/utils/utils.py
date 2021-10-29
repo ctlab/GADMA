@@ -768,14 +768,16 @@ def create_bed_files_and_extract_chromosomes(data_holder):
         while region_num < min_region_num:
             region_num += (len(chromosomes))
             region_len = (
-                    total_len / (len(chromosomes)) / (region_num / (len(chromosomes)))
+                    total_len / (len(chromosomes)) /
+                    (region_num / (len(chromosomes)))
             )
 
     for chrom in chromosomes:
         stop_position = 0
         number_of_chrom_parts = round(chromosomes[chrom] / region_len)
         for num in range(1, number_of_chrom_parts + 1):
-            with open(f"{output_dir}/bed_files/bed_file_{chrom}_{num}.bed", "w") as file:
+            with open(f"{output_dir}"
+                      f"/bed_files/bed_file_{chrom}_{num}.bed", "w") as file:
                 start_position = stop_position
                 stop_position = int(region_len * num)
                 file.write(f"{chrom}\t{start_position}\t{stop_position}")

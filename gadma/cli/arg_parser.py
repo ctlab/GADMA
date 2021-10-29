@@ -40,7 +40,8 @@ def usage():
                        "inference\n" \
                        "\t\t\t<in.vcf>,<popmap>" \
                        "\t(AFS, dadi format or VCF).\n" \
-                       "\t--resume\t<resume_dir>\t\tresume another launch from " \
+                       "\t--resume\t<resume_dir>\t" \
+                       "\tresume another launch from " \
                        "<resume_dir>.\n" \
                        "\t--only_models\t" \
                        "\tflag to take models only from another\n" \

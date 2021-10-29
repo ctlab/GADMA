@@ -1368,7 +1368,8 @@ class SettingsStorage(object):
                 raise ValueError("You can't pass ld_kwargs argument for "
                                  "if you don't use "
                                  "moments.LD engine. Your current engine is "
-                                 f"{self.engine}. Change engine or delete dict "
+                                 f"{self.engine}. "
+                                 f"Change engine or delete dict "
                                  f"argument.")
             else:
                 import moments.LD
@@ -1377,9 +1378,12 @@ class SettingsStorage(object):
                 args_parsing_ld = Full_arg_spec[0]
                 for key in self.ld_kwargs:
                     if key not in args_parsing_ld:
-                        raise KeyError("Computing_ld_stats function hasn't "
-                                       f"argument {key}! Check your param_file "
-                                       f"and remove unexpected args.")
+                        raise KeyError(
+                            "Computing_ld_stats function hasn't "
+                            f"argument {key}! "
+                            f"Check your param_file "
+                            f"and remove unexpected args."
+                        )
 
         if self.engine == "momentsLD":
             if all([
@@ -1387,7 +1391,8 @@ class SettingsStorage(object):
                 not (self.fixed_ancestral_size and self.custom_filename)
             ]):
                 warnings.warn(
-                    "Moments.LD engine need ancestral size as parameter. The option "
+                    "Moments.LD engine need ancestral size as parameter. "
+                    "The option "
                     "`Ancestral size as parameter` is set to `True`"
                 )
                 self.ancestral_size_as_parameter = True
