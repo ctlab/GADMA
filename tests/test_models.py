@@ -615,7 +615,6 @@ class TestModels(unittest.TestCase):
                 models.append(model7)
 
             for ind, model in enumerate(models):
-                model.mutation_rate = 1.25e-8
                 if engine.id == "momentsLD":
                     dataset = self._vcf_datasets_ld_precomputed()
                 else:
