@@ -19,6 +19,6 @@ git clone https://bitbucket.org/simongravel/moments.git
 cd moments
 python setup.py build_ext --inplace
 python setup.py install --ld_extensions
-cd
+cd .. 
 rm -r moments
 pip3 install .
