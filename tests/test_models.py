@@ -647,6 +647,7 @@ class TestModels(unittest.TestCase):
                     if engine.id == "momentsLD":
                         model = copy.deepcopy(model)
                         model.Nanc_size = Nanc
+                        model.mutation_rate = 1.25e-8
                         engine.model = model
                         moments.LD.Inference._varcov_inv_cache = {}
 
