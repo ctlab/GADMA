@@ -4,6 +4,7 @@ import os
 import numpy as np
 import copy
 import shutil
+import pytest
 from pathlib import Path
 
 import gadma
