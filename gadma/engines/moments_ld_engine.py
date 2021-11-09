@@ -68,12 +68,8 @@ class MomentsLdEngine(Engine):
         if data_holder.preprocessed_data is None:
             if isinstance(data_holder, VCFDataHolder):
                 pops = data_holder.population_labels
-            else:
-                raise ValueError("Wrong type of data_holder: "
-                                 f"{data_holder.__class__}")
 
             kwargs = cls.kwargs
-
             if data_holder.ld_kwargs:
                 for key in data_holder.ld_kwargs:
                     try:
@@ -127,6 +123,7 @@ class MomentsLdEngine(Engine):
                                     pop_file=data_holder.popmap_file,
                                     bed_file=f"{bed_files}"
                                              f"/bed_file_{chrom}_{num}.bed",
+                                    chromosome=f"{chrom}",
                                     pops=pops,
                                     **kwargs
                                 )
@@ -220,7 +217,7 @@ class MomentsLdEngine(Engine):
             if self.model.fixed_anc_size:
                 Nref = self.model.fixed_anc_size
                 values_list = [var2value[var] for var in self.model.variables]
-            elif not self.model.fixed_anc_size and self.model.has_anc_size:
+            elif (not self.model.fixed_anc_size) and self.model.has_anc_size:
                 values_list = [var2value[var] for var in self.model.variables]
                 for num, value in enumerate(self.model.variables):
                     if value.name == "Nanc":
@@ -422,32 +419,15 @@ class MomentsLdEngine(Engine):
 
     def get_N_ancestral(self, values):
         var2value = self.model.var2value(values)
-        if self.model.has_anc_size:
-            if isinstance(self.model, StructureDemographicModel):
-                Nref = self.model.get_value_from_var2value(
-                    var2value, self.model.Nanc_size)
-                return Nref
-            elif isinstance(self.model, CustomDemographicModel):
-                if self.model.fixed_anc_size:
-                    return self.model.fixed_anc_size
-                elif not self.model.fixed_anc_size:
-                    Nref = self.model.get_value_from_var2value(
-                        var2value, self.model.variables[0])
-                    return Nref
-        else:
-            raise ValueError(
-                'Need ancestral population size as parameter'
-            )
+        Nref = self.model.get_value_from_var2value(
+            var2value, self.model.Nanc_size)
+        return Nref
 
     def get_theta(self, values):
         var2value = self.model.var2value(values)
-        if self.model.Nanc_size and self.model.mutation_rate:
-            Nref = self.model.get_value_from_var2value(
-                var2value, self.model.Nanc_size)
-            theta = 4 * Nref * self.model.mutation_rate
-        else:
-            raise ValueError("Theta can't be calculated without"
-                             "ancestral N size.")
+        Nref = self.model.get_value_from_var2value(
+            var2value, self.model.Nanc_size)
+        theta = 4 * Nref * self.model.mutation_rate
         return theta
 
     def get_N_ancestral_from_theta(self, theta):

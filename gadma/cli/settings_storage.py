@@ -1397,6 +1397,12 @@ class SettingsStorage(object):
                 )
                 self.ancestral_size_as_parameter = True
 
+            if self.mutation_rate is None:
+                raise ValueError(
+                    "momentsLD engine needs mutation rate "
+                    "parameter for correct work"
+                )
+
             if self.data_holder.projections is None:
                 if self.data_holder.population_labels is None:
                     (self.data_holder.projections,

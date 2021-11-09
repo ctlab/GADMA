@@ -332,8 +332,6 @@ class TestModelStructure(unittest.TestCase):
                 engine = get_engine("momentsLD")
                 engine.model = dm
                 engine.set_data(self._data_for_ll_ld_test(ii))
-                print("POPOPOSS")
-                print(engine.model.number_of_populations())
                 x_file = os.path.join(LL_TEST_DATA, "all_x.txt")
                 with open(x_file, "r") as file:
                     all_x = json.load(file)

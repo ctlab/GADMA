@@ -5,3 +5,4 @@ final_structure: 1,2
 recombination_maps: tests/test_data/DATA/vcf_ld/rec_maps
 ld_kwargs: {'cM': False, 'pops': ["deme0", "deme1"], 'report': True, 'r_bins': 'np.logspace(-6, -3, 7)', 'use_genomes_shmenomes': False}
 output_directory: tests/test_data/DATA/vcf_ld/test_output
+Mutation rate: 2.35e-8

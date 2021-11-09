@@ -394,6 +394,8 @@ class TestInference(unittest.TestCase):
     @pytest.mark.timeout(0)
     def test_inference_ga(self):
         for engine in all_engines():
+            if engine.id != "momentsLD":
+                continue
             with self.subTest(engine=engine.id):
                 if engine.id == "dadi":
                     args = ([4, 6, 8],)

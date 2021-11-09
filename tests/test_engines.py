@@ -4,6 +4,7 @@ from gadma import *
 from gadma.engines import register_engine, Engine
 from gadma.models import Model
 import os
+import pickle
 import numpy as np
 from pathlib import Path
 import shutil
@@ -739,14 +740,25 @@ class TestModelEvaluation(unittest.TestCase):
         return values, simulated, dm
 
     @pytest.mark.timeout(0)
-    def test_evaluation(self):
+    def test_evaluation_ld(self):
         # use data read with gadma
         engine = get_engine('momentsLD')
+
+        preprocessed_test_data = os.path.join(
+            DATA_PATH, 'DATA', 'vcf_ld',
+            'preprocessed_data.bp'
+        )
+        with open(preprocessed_test_data, 'rb') as file:
+            region_stats_moments_ld = pickle.load(file)
+        engine.set_data(region_stats_moments_ld)
+        self.assertRaises(AttributeError, engine.generate_code, [], "filename")
+
         engine.data_holder = VCFDataHolder(
             vcf_file=VCF_DATA_LD, popmap_file=POP_MAP,
             recombination_maps=REC_MAPS_DIR,
             output_directory=TEST_OUTPUT,
-            population_labels=["deme0", "deme1"]
+            population_labels=["deme0", "deme1"],
+            ld_kwargs={"cM": True, "report": "False"}
         )
         engine.set_data(engine.data_holder)
         data_gadma = engine.data
@@ -788,6 +800,10 @@ class TestModelEvaluation(unittest.TestCase):
         ll_gadma = engine.evaluate(vals)
 
         self.assertEqual(ll_gadma, ll_moments)
+
+        theta = 4 * 10000 * 6.0e-5
+        self.assertEqual(theta, engine.get_theta(vals))
+        self.assertEqual(10000, engine.get_N_ancestral_from_theta(theta))
 
     @pytest.mark.timeout(0)
     def test_draw_curves(self):

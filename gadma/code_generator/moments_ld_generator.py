@@ -60,14 +60,12 @@ def _print_momentsLD_func(engine, values):
               if not isinstance(x, DiscreteVariable)]
     if model.has_anc_size:
         if isinstance(model, CustomDemographicModel):
-            pass
+            for variable in f_vars:
+                if variable.name == "Nanc":
+                    f_vars.pop(f_vars.index(variable))
         elif isinstance(model, StructureDemographicModel):
             if isinstance(model.Nanc_size, Variable):
                 f_vars.pop(f_vars.index(model.Nanc_size))
-
-    for variable in f_vars:
-        if variable.name == "Nanc":
-            f_vars.pop(f_vars.index(variable))
 
     ret_str = f"def {FUNCTION_NAME}(params, rho=None, theta=0.001):\n"
     ret_str += "    %s = params\n" % ", ".join([x.name for x in f_vars])
@@ -181,14 +179,18 @@ def _print_momentsLD_load_data(engine, data_holder):
     else:
         ret_str += "chromosomes = None\n"
     kwargs = engine.kwargs
-
+    rec_maps = data_holder.recombination_maps
     pops = data_holder.population_labels
-    if data_holder.recombination_maps is not None:
-        rec_map, extension = extract_rec_map_name_and_extension(
-            listdir(data_holder.recombination_maps)[0]
-        )
-        ret_str += f"extension = \"{extension}\"\n"
-        ret_str += f"rec_map_name = \"{rec_map}\n"
+    if rec_maps is not None:
+        if len(listdir(rec_maps)) == len(chromosomes):
+            rec_map, extension = extract_rec_map_name_and_extension(
+                listdir(rec_maps)[0]
+            )
+            ret_str += f"extension = \"{extension}\"\n"
+            ret_str += f"rec_map_name = \"{rec_map}\"\n"
+        else:
+            rec_map = listdir(rec_maps)[0]
+            ret_str += f"rec_map = \"{rec_map}\"\n"
     ret_str += "kwargs = {\n"
     ret_str += f"    \"r_bins\": {[ii for ii in kwargs['r_bins']]},\n"
     ret_str += f"    \"report\": {kwargs['report']},\n"
@@ -198,11 +200,12 @@ def _print_momentsLD_load_data(engine, data_holder):
     ret_str += "}\n"
     ret_str += f"vcf_file = \"{data_holder.filename}\"\n"
     ret_str += f"pop_map = \"{data_holder.popmap_file}\"\n"
-    if data_holder.recombination_maps is not None:
-        ret_str += f"rec_maps = \"{data_holder.recombination_maps}\"\n"
+    if rec_maps is not None:
+        ret_str += f"rec_maps = \"{rec_maps}\"\n"
+
     ret_str += f"preprocessed_data = \"{data_holder.preprocessed_data}\"\n"
 
-    if data_holder.recombination_maps is not None:
+    if rec_maps is not None:
         ret_str += "if preprocessed_data is not None:\n"
         ret_str += "    with open(preprocessed_data, \"rb\") as fin:\n"
         ret_str += "        region_stats = pickle.load(fin)\n"
@@ -215,9 +218,17 @@ def _print_momentsLD_load_data(engine, data_holder):
                    "Parsing.compute_ld_statistics(\n"
         ret_str += "                        vcf_file=vcf_file,\n"
         ret_str += f"                        rec_map_file=" \
-                   f"f\"{data_holder.recombination_maps}/\n"
-        ret_str += "                         " \
-                   "{rec_map_name}_{chrom}.{extension}\",\n"
+                   f"f\"{rec_maps}/\"\n"
+        if len(listdir(rec_maps)) == len(chromosomes):
+            ret_str += "                        " \
+                       "f\"{rec_map_name}_{chrom}.{extension}\",\n"
+        else:
+            ret_str += "                        " \
+                       "f\"{rec_map}\",\n"
+            ret_str += "                        " \
+                       "map_name=f\"{chrom}\",\n"
+            ret_str += "                        " \
+                       "chromosome=f\"{chrom}\",\n"
         ret_str += f"                        pop_file=pop_map,\n"
         ret_str += "                        bed_file=f\"{bed_files}/"
         ret_str += "bed_file_{chrom}_{num}.bed\",\n"
@@ -359,10 +370,9 @@ def print_moments_ld_code(engine, values, filename, args=None,
         if engine.model.fixed_anc_size:
             Nanc_value = engine.model.fixed_anc_size
         else:
-            Nanc_value = engine.get_value_from_var2value(
-                var2value,
-                engine.model.variables[0]
-            )
+            for variable in engine.model.variables:
+                if variable.name == "Nanc":
+                    Nanc_value = var2value[variable]
     else:
         Nanc_value = engine.get_value_from_var2value(
             var2value,

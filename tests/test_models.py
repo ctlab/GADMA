@@ -43,6 +43,12 @@ class TestModels(unittest.TestCase):
         if Path(TEST_OUTPUT).exists():
             shutil.rmtree(TEST_OUTPUT)
 
+        REC_MAP_DIR = os.path.join(
+            EXAMPLE_FOLDER, "DATA", "vcf_ld", f"rec_maps_code_generation"
+        )
+        if Path(REC_MAP_DIR).exists():
+            shutil.rmtree(REC_MAP_DIR)
+
     def test_init(self):
         var = TimeVariable('t')
         m = Model(raise_excep=False)
@@ -453,20 +459,64 @@ class TestModels(unittest.TestCase):
 
     def _vcf_datasets_ld_precomputed(self):
 
+        YRI_CEU_SIM_LD_DATA = os.path.join(
+            EXAMPLE_FOLDER, "DATA", "vcf_ld", f"fake_data.vcf"
+        )
+        YRI_CEU_SIM_LD_POPS = os.path.join(
+            EXAMPLE_FOLDER, "DATA", "vcf_ld", f"fake_data_pop_map.txt"
+        )
+
         pops = ["pop0", "pop1", "pop2"]
-        for ii in range(1, 4):
-            yield (
-                f"model{ii}",
-                VCFDataHolder(
-                    vcf_file=None,
-                    preprocessed_data=os.path.join(
-                        EXAMPLE_FOLDER, "DATA", "vcf_ld", f"preprocessed_data_model{ii}.bp"
-                    ),
-                    popmap_file=None,
-                    population_labels=pops,
-                    output_directory=TEST_OUTPUT
-                    )
-                )
+        data_holder = VCFDataHolder(
+            vcf_file=YRI_CEU_SIM_LD_DATA,
+            popmap_file=YRI_CEU_SIM_LD_POPS,
+            population_labels=pops,
+            output_directory=TEST_OUTPUT
+        )
+        data_holder.preprocessed_data = os.path.join(
+            EXAMPLE_FOLDER, "DATA", "vcf_ld", f"preprocessed_data_model1.bp"
+        )
+
+        yield (
+            "model1",
+            data_holder)
+
+        data_holder.preprocessed_data = os.path.join(
+            EXAMPLE_FOLDER, "DATA", "vcf_ld", f"preprocessed_data_model2.bp"
+        )
+        data_holder.recombination_maps = os.path.join(
+            EXAMPLE_FOLDER, "DATA", "vcf_ld", f"rec_maps_code_generation"
+        )
+        if not Path(data_holder.recombination_maps).exists():
+            os.mkdir(data_holder.recombination_maps)
+        for ii in range(20):
+            with open(f"{data_holder.recombination_maps}/flat_map_{ii + 1}.txt", "w+") as fout:
+                fout.write("pos\tMap(cM)\n")
+                fout.write("0\t0\n")
+                fout.write("1000000\t1.5\n")
+
+        yield (
+            "model2",
+            data_holder)
+
+        data_holder.preprocessed_data = os.path.join(
+            EXAMPLE_FOLDER, "DATA", "vcf_ld", f"preprocessed_data_model3.bp"
+        )
+
+        if Path(data_holder.recombination_maps).exists():
+            shutil.rmtree(data_holder.recombination_maps)
+            os.mkdir(data_holder.recombination_maps)
+        chrom_number = "\t".join([str(ii) for ii in range(1, 21)])
+        zero_list = "\t".join([str(0) for ii in range(1, 21)])
+        one_half = "\t".join([str(1.5) for ii in range(1, 21)])
+        with open(f"{data_holder.recombination_maps}/flat_map.txt", "w+") as fout:
+            fout.write(f"pos\t{chrom_number}\n")
+            fout.write(f"0\t{zero_list}\n")
+            fout.write(f"1000000\t{one_half}\n")
+
+        yield (
+            "model3",
+            data_holder)
 
     def test_add_split_after_inbreeding(self):
         nu1 = PopulationSizeVariable('nu1')
@@ -611,7 +661,15 @@ class TestModels(unittest.TestCase):
 
                 model7 = CustomDemographicModel(func, variables)
                 if engine.id == "momentsLD":
+                    model8 = copy.deepcopy(model7)
                     model7.fixed_anc_size = 10000
+                    model8.has_anc_size = True
+                    model8.add_variable(PopulationSizeVariable("Nanc",
+                                                               units="physical"))
+
+                    model8.fix_variable(model8.variables[-1], 10000)
+                    model8.unfix_variable(model8._variables[-1])
+                    models.append(model8)
                 models.append(model7)
 
             for ind, model in enumerate(models):

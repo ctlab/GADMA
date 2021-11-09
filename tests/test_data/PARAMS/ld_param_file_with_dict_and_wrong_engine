@@ -6,3 +6,4 @@ recombination_maps: tests/test_data/DATA/vcf_ld/rec_maps
 ld_kwargs: {'cM': False, 'report': True}
 output_directory: tests/test_data/DATA/vcf_ld/test_output
 sequence_length: 12125125125
+Mutation rate: 2.35e-8

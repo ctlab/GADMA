@@ -24,7 +24,6 @@ def main():
                          f"{data_holder.__class__}")
 
     engine = get_engine(settings_storage.engine)
-
     kwargs = engine.kwargs
 
     if data_holder.ld_kwargs:
@@ -36,29 +35,35 @@ def main():
 
     chromosomes = create_bed_files_and_extract_chromosomes(data_holder)
 
-    one_rec_map_few_chromosomes = False
-    if (len(listdir(data_holder.recombination_maps)) == 1 and
-            len(chromosomes) > 1):
-        one_rec_map_few_chromosomes = True
+    if data_holder.recombination_maps:
+        rec_map = listdir(data_holder.recombination_maps)[0]
+        rec_map_name, extension = extract_rec_map_name_and_extension(rec_map)
+        rec_map_exist = True
+        one_rec_map_few_chromosomes = False
+        if (len(listdir(data_holder.recombination_maps)) == 1 and
+                len(chromosomes) > 1):
+            one_rec_map_few_chromosomes = True
+            rec_map_name = listdir(data_holder.recombination_maps)[0]
+    else:
+        rec_map_exist = False
 
-    rec_map = listdir(data_holder.recombination_maps)[0]
-    rec_map_name, extension = extract_rec_map_name_and_extension(rec_map)
     bed_files = data_holder.output_directory + "/bed_files/"
-
     read_information_list = []
-
     region_number = 0
 
     filename = data_holder.filename
     popmap_file = data_holder.popmap_file
     sorted_choromosomes_list = sorted(chrom for chrom in chromosomes)
     for chrom in sorted_choromosomes_list:
-        if one_rec_map_few_chromosomes:
-            rec_map = f"{data_holder.recombination_maps}/" \
-                      f"{rec_map_name}.{extension}"
+        if rec_map_exist:
+            if one_rec_map_few_chromosomes:
+                rec_map = f"{data_holder.recombination_maps}/" \
+                          f"{rec_map_name}"
+            else:
+                rec_map = f"{data_holder.recombination_maps}/" \
+                          f"{rec_map_name}_{chrom}.{extension}"
         else:
-            rec_map = f"{data_holder.recombination_maps}/" \
-                      f"{rec_map_name}_{chrom}.{extension}"
+            rec_map = None
         for ii in range(1, chromosomes[chrom] + 1):
             bed_file = f"{bed_files}bed_file_{chrom}_{ii}.bed"
             read_information_list.append(
@@ -75,18 +80,8 @@ def main():
             )
             region_number += 1
 
-    h5_file_path = data_holder.filename.split(".vcf")[0] + ".h5"
-    if not check_file_existence(h5_file_path):
-        allel.vcf_to_hdf5(
-            data_holder.filename,
-            h5_file_path,
-            fields="*",
-            exclude_fields=["calldata/GQ"],
-            overwrite=True,
-        )
-
+    create_h5_file(data_holder.filename)
     n_processes = settings_storage.number_of_processes
-
     pool = multiprocessing.Pool(processes=n_processes)
 
     try:
@@ -110,8 +105,8 @@ def main():
             pickle.dump(regions, fout)
 
         params_file = vars(args)["params"]
-        with open(f"./{params_file}", "a") as params:
-            params.write("preprocessed_data: ./preprocessed_data.bp\n")
+        with open(f"{params_file}", "a") as params:
+            params.write("\npreprocessed_data: ./preprocessed_data.bp\n")
     finally:
         shutil.rmtree(settings_storage.output_directory)
 
@@ -166,9 +161,10 @@ def read_data_rec_maps_in_one_file(item):
             moments.LD.Parsing.compute_ld_statistics(
                 vcf_file=item.filename,
                 rec_map_file=item.rec_map,
-                map_name=item.bed_file.split("_")[2],
+                map_name=item.chromosome,
                 pop_file=item.pop_file,
                 bed_file=item.bed_file,
+                chromosome=item.chromosome,
                 pops=item.pops,
                 **item.kwargs
             )
@@ -181,6 +177,18 @@ def extract_rec_map_name_and_extension(rec_map):
     rec_map_name = rec_map.split(".")[0]
     rec_map_name = "_".join(rec_map_name.split('_')[:-1])
     return rec_map_name, extension
+
+
+def create_h5_file(vcf_file):
+    h5_file_path = vcf_file.split(".vcf")[0] + ".h5"
+    if not check_file_existence(h5_file_path):
+        allel.vcf_to_hdf5(
+            vcf_file,
+            h5_file_path,
+            fields="*",
+            exclude_fields=["calldata/GQ"],
+            overwrite=True,
+        )
 
 
 class ReadInfo:
@@ -200,10 +208,6 @@ class ReadInfo:
         self.pops = pops
         self.kwargs = kwargs
         self.chromosome = chromosome
-
-    def __str__(self):
-        return f"Reg_num: {self.reg_num}, Chromosome: {self.chromosome}," \
-               f" Bed: {self.bed_file}"
 
 
 if __name__ == "__main__":

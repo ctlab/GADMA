@@ -6,5 +6,6 @@ recombination_maps: tests/test_data/DATA/vcf_ld/rec_maps
 output_directory: tests/test_data/DATA/vcf_ld/test_output
 ancestral_size_as_parameter: True
 Mutation rate: 2.35e-8
-Number of repeats : 10
+Number of repeats : 1
 Number of processes : 1
+ld_kwargs: {"report": False, "cM": "True"}

@@ -81,14 +81,38 @@ class TestConfidenceIntervals(unittest.TestCase):
         for engine in all_engines():
             if engine.id == "momentsLD":
                 results = os.path.join(DATA_DIR, "ci_test_ld", "ci_results.xlsx")
+                incorrect_data_for_ci_ld = os.path.join(
+                    DATA_DIR, "ci_test_ld", "ci_test_incorrect_file.py"
+                )
                 try:
                     data_for_ci_ld = os.path.join(DATA_DIR, "ci_test_ld", "data_for_ci_test.py")
                     sys.argv = ["gadma-get_confidence_intervals_for_ld", data_for_ci_ld]
                     gadma.get_confidence_intervals_for_ld.main()
                     self.assertTrue(os.path.exists(results))
+
+                    not_exist_data = os.path.join(DATA_DIR, "ci_test_ld", "not_exist.py")
+                    sys.argv = ["gadma-get_confidence_intervals_for_ld", not_exist_data]
+                    self.assertRaises(ValueError, gadma.get_confidence_intervals_for_ld.main)
+
+                    line_to_ignore = 'rep_data_file = ' \
+                                     'os.path.join(os.path.dirname(__file__), ' \
+                                     '\"preprocessed_data.bp\")'
+                    with open(data_for_ci_ld, 'r') as original_data:
+                        lines = original_data.readlines()
+
+                    with open(incorrect_data_for_ci_ld, 'w') as file:
+                        for line in lines:
+                            if line.rstrip('\n') != line_to_ignore:
+                                file.write(f'{line}')
+                    sys.argv = ["gadma-get_confidence_intervals_for_ld", incorrect_data_for_ci_ld]
+                    self.assertRaises(ValueError, gadma.get_confidence_intervals_for_ld.main)
+
                 finally:
                     if os.path.exists(results):
                         os.remove(results)
+                    if os.path.exists(incorrect_data_for_ci_ld):
+                        os.remove(incorrect_data_for_ci_ld)
+
             else:
                 output_dir = os.path.join(DATA_DIR, f"run_ls_out_{engine.id}")
                 table = os.path.join(output_dir, 'result_table')

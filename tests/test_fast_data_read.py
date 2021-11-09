@@ -2,6 +2,8 @@ import os
 import sys
 import allel
 import shutil
+import pickle
+import pytest
 import unittest
 import moments.LD
 import numpy as np
@@ -11,8 +13,12 @@ from gadma.data.data import VCFDataHolder
 from gadma.engines.engine import get_engine
 from gadma.utils.utils import create_bed_files_and_extract_chromosomes
 from gadma.parsing_ld_data import (
-    main, read_data, extract_rec_map_name_and_extension, ReadInfo
+    main, extract_rec_map_name_and_extension, ReadInfo
 )
+from gadma.parsing_ld_data import (
+    read_data, read_data_without_rec_map, read_data_rec_maps_in_one_file
+)
+from gadma.parsing_ld_data import create_h5_file
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
 
@@ -24,17 +30,21 @@ TEST_BED_FILE = os.path.join(
     DATA_PATH, 'DATA', 'vcf_ld', "test_bed_files", 'bed_file_1_1.bed')
 VCF_DATA_LD = os.path.join(
     DATA_PATH, 'DATA', 'vcf_ld', "vcf_data.vcf")
+H5_FILE = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "vcf_data.h5")
 FEW_REC_MAPS = os.path.join(
     DATA_PATH, 'DATA', 'vcf_ld', "rec_maps.txt")
 TEST_OUTPUT = os.path.join(
     DATA_PATH, 'DATA', 'vcf_ld', "test_output")
 VCF_DATA_FEW_CHR = os.path.join(
     DATA_PATH, 'DATA', 'vcf_ld', "vcf_data_few_chr.vcf")
+BED_FILES_DIR = os.path.join(
+    DATA_PATH, 'DATA', 'vcf_ld', "test_bed_files")
 
 engine = get_engine('momentsLD')
 kwargs = engine.kwargs
 
-read_info = ReadInfo(
+READ_INFO = ReadInfo(
     reg_num=1,
     filename=VCF_DATA_LD,
     pop_file=POP_MAP,
@@ -45,8 +55,17 @@ read_info = ReadInfo(
     kwargs=kwargs
 )
 
+DATA_HOLDER = VCFDataHolder(
+    vcf_file=VCF_DATA_LD,
+    popmap_file=POP_MAP,
+
+)
+
 
 class TestFastDataRead(unittest.TestCase):
+    def tearDown(self):
+        if Path('./preprocessed_data.bp').exists():
+            os.remove('./preprocessed_data.bp')
 
     def test_rec_map_and_extension_extraction(self):
         rec_map = 'rec_map_1.map'
@@ -56,8 +75,8 @@ class TestFastDataRead(unittest.TestCase):
         )
 
     def test_read_data_without_rec_map_function(self):
-        read_info.rec_map = None
-        read_function_results = read_data(read_info)['1']
+        READ_INFO.rec_map = None
+        read_function_results = read_data_without_rec_map(READ_INFO)['1']
 
         results = moments.LD.Parsing.compute_ld_statistics(
             vcf_file=VCF_DATA_LD,
@@ -81,9 +100,9 @@ class TestFastDataRead(unittest.TestCase):
             )
 
     def test_read_data_function(self):
-        read_info.rec_map = REC_MAP
+        READ_INFO.rec_map = REC_MAP
 
-        read_function_results = read_data(read_info)['1']
+        read_function_results = read_data(READ_INFO)['1']
 
         results = moments.LD.Parsing.compute_ld_statistics(
             vcf_file=VCF_DATA_LD,
@@ -94,7 +113,7 @@ class TestFastDataRead(unittest.TestCase):
             chromosome="1",
             **kwargs
         )
-
+        self.assertTrue(isinstance(results, dict))
         self.assertEqual(
             len(results['sums']),
             len(read_function_results['sums'])
@@ -108,9 +127,9 @@ class TestFastDataRead(unittest.TestCase):
             )
 
     def test_read_data_rec_maps_in_one_file_function(self):
-        read_info.rec_map = FEW_REC_MAPS
+        READ_INFO.rec_map = FEW_REC_MAPS
 
-        read_function_results = read_data(read_info)['1']
+        read_function_results = read_data_rec_maps_in_one_file(READ_INFO)['1']
 
         results = moments.LD.Parsing.compute_ld_statistics(
             vcf_file=VCF_DATA_LD,
@@ -135,10 +154,55 @@ class TestFastDataRead(unittest.TestCase):
                 )
             )
 
+    @pytest.mark.timeout(0)
     def test_main_func(self):
-        param_file = os.path.join(DATA_PATH, "PARAMS", 'another_test_params')
+        param_file = os.path.join(DATA_PATH, 'PARAMS', 'another_test_params')
         sys.argv = ['python', '-p', param_file]
         self.assertRaises(ValueError, main)
+
+        data_reading_case_list = ['without_rec_map', 'with_rec_map', 'with_rec_maps_in_one_file']
+        for case in data_reading_case_list:
+            param_file = os.path.join(
+                DATA_PATH, 'PARAMS', 'ld_data_parsing_params',
+                f'ld_data_parsings_params_{case}'
+            )
+            sys.argv = ['gadma-parsing_ld_stats', '-p', param_file]
+            try:
+                main()
+                self.assertTrue(Path('./preprocessed_data.bp').exists())
+                with open('./preprocessed_data.bp', 'rb') as fin:
+                    region_stats = pickle.load(fin)
+
+                preprocessed_test_data = os.path.join(
+                    DATA_PATH, 'DATA', 'vcf_ld',
+                    f'parsing_test_data_{case}.bp'
+                )
+
+                with open(preprocessed_test_data, 'rb') as file:
+                    region_stats_moments_ld = pickle.load(file)
+
+                self.assertEqual(
+                    len(region_stats['0']),
+                    len(region_stats_moments_ld['0'])
+                )
+                for region in range(15):
+                    for ii in range(len(region_stats[f'{region}']['sums'])):
+                        self.assertTrue(
+                            np.allclose(
+                                region_stats[f'{region}']['sums'][ii],
+                                region_stats_moments_ld[f'{region}']['sums'][ii]
+                            )
+                        )
+            finally:
+                rewrite_params_file(param_file)
+
+    def test_h5_creation(self):
+        vcf_file = VCF_DATA_LD
+        if Path(H5_FILE).exists():
+            os.remove(H5_FILE)
+        self.assertTrue(not Path(H5_FILE).exists())
+        create_h5_file(vcf_file)
+        self.assertTrue(Path(H5_FILE).exists())
 
 
 class TestBedFilesCreation(unittest.TestCase):
@@ -165,7 +229,7 @@ class TestBedFilesCreation(unittest.TestCase):
         regions_num = len(
             listdir(f'{self.data_holder.output_directory}/bed_files/'))
         self.assertEqual(regions_num, round(
-            self.chromosome_len/self.data_holder.region_len))
+            self.chromosome_len / self.data_holder.region_len))
 
     def test_one_chrom_small_region_num(self):
         self.data_holder.filename = VCF_DATA_LD
@@ -190,7 +254,7 @@ class TestBedFilesCreation(unittest.TestCase):
         self.assertEqual(
             len(set(vcf_data['variants/CHROM'])), len(chromosomes))
         self.assertEqual(regions_num, round(
-            self.chromosome_len/self.data_holder.region_len) * 4)
+            self.chromosome_len / self.data_holder.region_len) * 2)
 
     def test_few_chrom_small_region_num(self):
         self.data_holder.filename = VCF_DATA_FEW_CHR
@@ -203,3 +267,13 @@ class TestBedFilesCreation(unittest.TestCase):
         regions_num = len(
             listdir(f'{self.data_holder.output_directory}/bed_files/'))
         self.assertEqual(regions_num, 16)
+
+
+def rewrite_params_file(params_file):
+    remove_line = 'preprocessed_data: ./preprocessed_data.bp\n'
+    with open(params_file, 'r') as file:
+        lines = file.readlines()
+    with open(params_file, 'w') as file:
+        for line in lines:
+            if line != remove_line:
+                file.write(line)

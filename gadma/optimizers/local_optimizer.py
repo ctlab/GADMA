@@ -96,7 +96,6 @@ class LocalOptimizer(Optimizer):
         :type restore_x_transform: function
         """
         optimize_kwargs = {"x0": x0, "options": options}
-        print('local_optimizer')
         return super(LocalOptimizer, self).optimize(
             f=f,
             variables=variables,

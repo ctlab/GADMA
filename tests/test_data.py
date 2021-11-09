@@ -11,6 +11,7 @@ import os
 import numpy as np
 from pathlib import Path
 from gadma import *
+from tests.test_fast_data_read import rewrite_params_file
 import warnings # we ignore warning of unclosed files in dadi
 
 warnings.filterwarnings(action='ignore', category=UserWarning,
@@ -511,6 +512,11 @@ class TestSettingStorageLDStats(unittest.TestCase):
         sys.argv = ['gadma', '-p', param_file]
         self.assertRaises(KeyError, get_settings_test)
 
+        DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
+        param_file = os.path.join(DATA_PATH, "PARAMS", 'ld_params_test_no_mutation_rate')
+        sys.argv = ['gadma', '-p', param_file]
+        self.assertRaises(ValueError, get_settings_test)
+
         param_file = os.path.join(DATA_PATH, "PARAMS", 'ld_param_file_with_dict_and_wrong_engine')
         sys.argv = ['gadma', '-p', param_file]
         self.assertRaises(ValueError, get_settings_test)
@@ -520,59 +526,41 @@ class TestSettingStorageLDStats(unittest.TestCase):
         settings, args = get_settings_test()
         self.assertTrue(settings.ancestral_size_as_parameter, True)
 
+    @pytest.mark.timeout(0)
     def test_correct_LD_data_processing(self):
-        try:
-            with open(PREPROCESSED_DATA, "rb") as fin:
-                ld_stats_moments = pickle.load(fin)
-        except: # NOQA
-            pops = ["deme0", "deme1"]
-            r_bins = np.array([0, 1e-6, 2e-6, 5e-6, 1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3])
-            moments_regions = {}
+        data_reading_case_list = ['without_rec_map', 'with_rec_map', 'with_rec_maps_in_one_file']
+        for case in data_reading_case_list:
+            param_file = os.path.join(
+                os.path.dirname(__file__), "test_data",
+                'PARAMS', 'ld_data_parsing_params',
+                f'ld_data_parsings_params_{case}'
+            )
+            sys.argv = ['gadma', '-p', param_file]
+            settings, _ = get_settings_test()
+            try:
+                data_gadma = settings.read_data()
 
-            for ii in range(1, 16):
-                moments_regions.update(
-                    {
-                        f"{ii}": moments.LD.Parsing.compute_ld_statistics(
-                            VCF_DATA_LD,
-                            rec_map_file=f"{REC_MAPS_DIR}/rec_map_1.txt",
-                            pop_file=POP_MAP,
-                            bed_file=f"{TEST_BED_FILES}/bed_file_1_{ii}.bed",
-                            pops=pops,
-                            r_bins=r_bins,
-                            report=False,
-                        )
-                    }
+                preprocessed_test_data = os.path.join(
+                    DATA_PATH, 'vcf_ld',
+                    f'parsing_test_data_{case}.bp'
                 )
 
-            ld_stats_moments = moments.LD.Parsing.bootstrap_data(moments_regions)
-            with open(f"{PREPROCESSED_DATA}", "wb+") as fout:
-                pickle.dump(ld_stats_moments, fout)
-        DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
-        param_file = os.path.join(DATA_PATH, "PARAMS", 'ld_params_test_correct')
-        sys.argv = ['gadma', '-p', param_file]
-        settings, _ = get_settings_test()
-        ld_stats_gadma = settings.read_data()
-        self.assertEqual(len(ld_stats_moments), len(ld_stats_gadma))
-        for arr in range(len(ld_stats_moments["means"])):
-            self.assertTrue(np.allclose(
-                ld_stats_moments["means"][arr],
-                ld_stats_gadma["means"][arr]))
+                with open(preprocessed_test_data, 'rb') as file:
+                    region_stats_moments_ld = pickle.load(file)
+                    data_moments_ld = moments.LD.Parsing.bootstrap_data(region_stats_moments_ld)
 
-    def test_create_bed_files(self):
-        chromosomes = create_bed_files_and_extract_chromosomes(DATA_HOLDER_FOR_MODELS)
-
-        test_bed_files_reference_info = []
-        test_bed_files_check_info = []
-
-        for file in listdir(f"{TEST_BED_FILES}/"):
-            with open(f"{TEST_BED_FILES}/{file}", "r") as bed_file:
-                test_bed_files_reference_info.append(bed_file.readline())
-
-        for file in listdir(f"{TEST_OUTPUT}/bed_files/"):
-            with open(f"{TEST_OUTPUT}/bed_files/{file}", "r") as bed_file:
-                test_bed_files_check_info.append(bed_file.readline())
-
-        self.assertTrue(len(listdir(f"{TEST_OUTPUT}/bed_files/")), 15)
-        for ii, nums in enumerate(test_bed_files_reference_info):
-            self.assertEqual(test_bed_files_reference_info[ii],
-                             test_bed_files_check_info[ii])
+                self.assertEqual(
+                    len(data_gadma['means']),
+                    len(data_moments_ld['means'])
+                )
+                for arr in range(len(data_gadma["means"])):
+                    if not (any(np.isnan(
+                            data_moments_ld["means"][arr]) |
+                             np.isnan(data_gadma["means"][arr]))):
+                        self.assertTrue(np.allclose(
+                            data_moments_ld["means"][arr],
+                            data_gadma["means"][arr]))
+            finally:
+                if Path(f"{TEST_OUTPUT}/bed_files/").exists():
+                    shutil.rmtree(f"{TEST_OUTPUT}/bed_files/")
+                rewrite_params_file(param_file)
