@@ -591,7 +591,7 @@ class TestModels(unittest.TestCase):
         model2 = EpochDemographicModel()
         model2.add_epoch(t, [nu1])
         model2.add_split(0, [nu1, nu2])
-        model2.add_epoch(10, [nu2, fxnu1], [[0, m], [0, 0]], [d1, d2],
+        model2.add_epoch(0.5, [nu2, fxnu1], [[0, m], [0, 0]], [d1, d2],
                          [0, s])
         model2.add_split(1, [nu2, nu1])
         model2.add_epoch(t, [nu1, nu2, nu1], None, None, [s, 0, s])
