@@ -45,10 +45,6 @@ class TestEngines(unittest.TestCase):
         self.assertRaises(ValueError,
                           dadi_engine.set_and_evaluate, [], model, None)
 
-        engine.supported_models.append(EpochDemographicModel)
-        engine.model = EpochDemographicModel()
-        self.assertRaises(NotImplementedError, engine.get_N_ancestral, [])
-
     def model_3pop_dadi(self, ns, pts):
         import dadi
         def dadi_func(params, ns, pts):
@@ -323,3 +319,83 @@ class TestEngines(unittest.TestCase):
         engine.model = dm
         engine.data = engine.simulate(values=values, ns=[20])
         engine.draw_sfs_plots(values=values, grid_sizes=0.01, save_file=None)
+
+
+def test_fsc2():
+    np.random.seed(0)
+
+    eng = get_engine('fsc2')
+    ns = [4, 4, 4]  # pop sizes to simulate
+    nu1 = PopulationSizeVariable('nu1')
+    nu2 = PopulationSizeVariable('nu2')
+    nu3 = PopulationSizeVariable('nu3')
+    t1 = TimeVariable('t1')
+    t2 = TimeVariable('t2')
+    t3 = TimeVariable('t3')
+    m12 = MigrationVariable('m12')
+    dyn = DynamicVariable('dyn_exp')
+
+    dm = EpochDemographicModel()
+    dm.add_epoch(t1, [nu1])
+    dm.add_split(0, [nu1, nu1])
+    dm.add_epoch(t2, [nu1, nu2], dyn_args=['Sud', dyn])
+    dm.add_split(0, [nu1, nu3])
+    dm.add_epoch(t3, [nu1, nu2, nu3], mig_args=[[0, m12, 0], [0, 0, 0], [0, 0, 0]])
+
+    values = {'nu1': nu1.resample(),
+              'nu2': nu2.resample(),
+              'nu3': nu3.resample(),
+              't1': t1.resample(),
+              't2': t2.resample(),
+              't3': t3.resample(),
+              'm12': m12.resample(),
+              'dyn_exp': 'Exp'}
+    # var2value = dm.var2value(values)
+
+    eng.simuate(dm, ns, values=values)
+
+
+def test_fsc2_evaluate():
+
+    engine = get_engine('fsc2')
+
+    ns = [4, 4, 4]
+    nu1 = PopulationSizeVariable('nu1')
+    nu2 = PopulationSizeVariable('nu2')
+    nu3 = PopulationSizeVariable('nu3')
+    t1 = TimeVariable('t1')
+    t2 = TimeVariable('t2')
+    t3 = TimeVariable('t3')
+    m12 = MigrationVariable('m12')
+    dyn = DynamicVariable('dyn_exp')
+
+    dm = EpochDemographicModel()
+    dm.add_epoch(t1, [nu1])
+    dm.add_split(0, [nu1, nu1])
+    dm.add_epoch(t2, [nu1, nu2], dyn_args=['Sud', dyn])
+    dm.add_split(0, [nu1, nu3])
+    dm.add_epoch(t3, [nu1, nu2, nu3], mig_args=[[0, m12, 0], [0, 0, 0], [0, 0, 0]])
+
+    engine.set_model(dm)
+
+    values = {'nu1': nu1.resample(),
+              'nu2': nu2.resample(),
+              'nu3': nu3.resample(),
+              't1': t1.resample(),
+              't2': t2.resample(),
+              't3': t3.resample(),
+              'm12': m12.resample(),
+              'dyn_exp': 'Exp'}
+    obs_path = os.path.join(DATA_PATH, "DATA", "fsc",
+                            "evaluate_test_observed_DSFS.obs")
+
+    data = SFSDataHolder(
+            os.path.join(DATA_PATH, "DATA", "fsc",
+            "evaluate_test_observed_DSFS.obs"),
+    )
+    engine.set_data(data)
+
+    engine.evaluate(values, ns, obs_path=obs_path)
+    # true_data = engine.simulate(dm, ns, values=values)
+    # engine.set_data(true_data)
+

@@ -5,3 +5,4 @@ from .dadi_engine import DadiEngine  # NOQA
 from .moments_engine import MomentsEngine  # NOQA
 from .dadi_moments_common import DadiOrMomentsEngine  # NOQA
 from .demes_engine import DemesEngine  # NOQA
+from .fsc2_engine import Fsc2Engine  # NOQA
