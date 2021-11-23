@@ -32,7 +32,7 @@ if smac_available:
     from ConfigSpace.hyperparameters import CategoricalHyperparameter
     from smac.facade.smac_bo_facade import SMAC4BO
     from smac.utils.constants import MAXINT
-    from smac.tae.execute_ta_run import StatusType
+    from smac.tae import StatusType
     from smac.stats.stats import Stats
     from smac.optimizer.random_configuration_chooser import ChooserProb
     from smac.runhistory.runhistory import RunHistory

@@ -12,7 +12,7 @@ import math
 from .. import smac_available
 if smac_available:
     from smac.runhistory.runhistory import RunHistory
-    from smac.tae.execute_ta_run import StatusType
+    from smac.tae import StatusType
 
 
 def logarithm_transform(x):
