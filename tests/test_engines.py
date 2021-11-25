@@ -807,13 +807,17 @@ class TestModelEvaluation(unittest.TestCase):
 
     @pytest.mark.timeout(0)
     def test_draw_curves(self):
-
+        preprocessed_test_data = os.path.join(
+            DATA_PATH, 'DATA', 'vcf_ld',
+            'preprocessed_data_YRI_CEU.bp'
+        )
         engine = get_engine('momentsLD')
         engine.data_holder = VCFDataHolder(
             vcf_file=VCF_DATA_LD, popmap_file=POP_MAP,
             recombination_maps=REC_MAPS_DIR,
             output_directory=TEST_OUTPUT,
-            population_labels=["deme0", "deme1"]
+            population_labels=["deme0", "deme1"],
+            preprocessed_data=preprocessed_test_data
         )
 
         values, simulated_by_moments, dm = self.model_for_gadma_moments_evaluation()

@@ -223,16 +223,8 @@ class MomentsLdEngine(Engine):
                     if value.name == "Nanc":
                         Nref = values_list[num]
                         values_list.pop(num)
-            else:  # for test cases
-                values_list = [
-                    var2value[var] for var in self.model.variables
-                ]
-                Nref = 10000
             rhos = 4 * Nref * np.array(self.r_bins)
-            if self.model.mutation_rate is not None:
-                theta = 4 * Nref * self.model.mutation_rate
-            else:
-                theta = 4 * Nref * 1.5e-8
+            theta = 4 * Nref * self.model.mutation_rate
             ld_stats = self.model.function(values_list, rhos, theta)
             model = moments.LD.LDstats(
                 [(y_l + y_r) / 2 for y_l, y_r in zip(

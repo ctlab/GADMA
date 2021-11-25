@@ -595,18 +595,27 @@ class TestCoreRun(unittest.TestCase):
                     settings.engine = engine.id
                     settings.output_directory = "Some_out_dir"
                     settings.num_init_const = 2
-                    settings.global_maxiter = 4
+                    settings.global_maxiter = 1
                     settings.local_maxiter = 1
+                    settings.only_sudden = True
                     settings.model_plot_engine = "demes"
                     settings.time_for_generation = 1
                     settings.initial_structure = [1, 1]
                     settings.mutation_rate = 1.5e8
                     settings.units_of_time_in_drawing = "kya"
-                    vcf_file = os.path.join(DATA_PATH, "DATA", "vcf_ld", "YRI_CEU_sim_data.vcf")
-                    popmap = os.path.join(DATA_PATH, "DATA", "vcf_ld", "samples.txt")
+                    vcf_file = os.path.join(
+                        DATA_PATH, "DATA",
+                        "vcf_ld", "small",
+                        "data.vcf")
+                    popmap = os.path.join(
+                        DATA_PATH, "DATA",
+                        "vcf_ld", "small",
+                        "pop_map.txt")
                     settings.input_data = f"{vcf_file}, {popmap}"
                     settings.preprocessed_data = os.path.join(
-                        DATA_PATH, "DATA", "vcf_ld", "preprocessed_data_YRI_CEU.bp"
+                        DATA_PATH, "DATA",
+                        "vcf_ld", "small",
+                        "preprocessed_data.bp"
                     )
                     settings.is_valid()
                     gadma.core.core.job(0, shared_dict, settings)

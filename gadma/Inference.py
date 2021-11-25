@@ -114,9 +114,9 @@ def optimize_ga(data, model_func, engine, args=(),
                 gen_size=10, mut_strength=0.2, const_mut_strength=1.1,
                 mut_rate=0.2, const_mut_rate=1.2, eps=1e-2, n_stuck_gen=100,
                 n_elitism=2, p_mutation=0.3, p_crossover=0.3, p_random=0.2,
-                ga_maxiter=None, ga_maxeval=None,
+                ga_maxiter=None, ga_maxeval=None, mutation_rate=None,
                 local_optimizer='BFGS_log', ls_maxiter=None, ls_maxeval=None,
-                verbose=1, callback=None,
+                verbose=1, callback=None, fixed_ancestral_size=None,
                 save_file=None, eval_file=None, report_file=None):
     r"""
     Runs genetic algorithm optimizer in order to find best values of
@@ -237,6 +237,8 @@ def optimize_ga(data, model_func, engine, args=(),
     settings.p_crossover = p_crossover
     settings.p_random = p_random
     settings.local_optimizer = local_optimizer
+    settings.fixed_ancestral_size = fixed_ancestral_size
+    settings.mutation_rate = mutation_rate
 
     # We could use CoreRun here but instead we will launch everything manually
     engine = get_engine(engine)

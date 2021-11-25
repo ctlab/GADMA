@@ -64,7 +64,7 @@ class TestGeneticAlg(unittest.TestCase):
         variables.append(FractionVariable('f', domain=[0, 1]))
         variables.append(TimeVariable('t', domain=[1e-15, 1]))
         variables.append(DynamicVariable('var_disc',
-                                          domain=[2, 0, 'Exp']))
+                                         domain=[2, 0, 'Exp']))
         variables[0].domain = [90, 100]
 
         for r_type in random_types:
@@ -81,7 +81,6 @@ class TestGeneticAlg(unittest.TestCase):
         self.assertRaises(ValueError, ga.randomize, variables,
                           random_type='some_unknown_type')
 
-
     def test_mutation(self):
         mut_types = ['uniform', 'gaussian', 'resample']
         ga = get_global_optimizer('Genetic_algorithm')
@@ -90,7 +89,7 @@ class TestGeneticAlg(unittest.TestCase):
         n_var = 5
         variables = []
         for i in range(n_var - 1):
-            variables.append(ContinuousVariable('var%d' % i, domain=[0,1]))
+            variables.append(ContinuousVariable('var%d' % i, domain=[0, 1]))
         variables.append(DiscreteVariable('var_disc_%d' % i,
                                           domain=[2, 3, 'Ex']))
         variables[0].domain = [90, 100]
@@ -102,7 +101,7 @@ class TestGeneticAlg(unittest.TestCase):
         x_mut = x_arr
         while x_mut[1] != 0:
             x_mut = ga.mutation_by_ind(x_arr, variables, 1,
-                                    mutation_type='gaussian')
+                                       mutation_type='gaussian')
         for ind in range(n_var):
             for mut_type in mut_types:
                 with self.subTest(mut_type=mut_type,
@@ -126,8 +125,8 @@ class TestGeneticAlg(unittest.TestCase):
                     self.assertEqual((x_mut.weights - x_arr.weights)[ind], 1, msg=msg)
 
                     x_mut2 = ga.mutation_by_ind(x_list, variables, ind,
-                                               mutation_type=mut_type,
-                                               one_fifth_rule=False)
+                                                mutation_type=mut_type,
+                                                one_fifth_rule=False)
                     self.assertIsInstance(x_mut2, WeightedMetaArray, msg=msg)
                     self.assertTrue((x_mut2.weights == x_mut.weights).all(), msg=msg)
                     self.assertEqual(x_mut2.metadata[-1], 'm')
@@ -145,7 +144,6 @@ class TestGeneticAlg(unittest.TestCase):
         self.assertRaises(ValueError, ga.mutation, x_arr,
                           variables, mutation_type='bad_type')
 
-
     def test_crossover(self):
         cross_types = ['uniform', 'k_point']
         ks = range(1, 5)
@@ -154,7 +152,7 @@ class TestGeneticAlg(unittest.TestCase):
         n_var = 20
         variables = []
         for i in range(n_var - 1):
-            variables.append(ContinuousVariable('var%d' % i, domain=[0,1]))
+            variables.append(ContinuousVariable('var%d' % i, domain=[0, 1]))
         variables.append(DiscreteVariable('var_disc_%d' % i,
                                           domain=[2, 3, 'Ex']))
         variables[0].domain = [90, 100]
@@ -186,6 +184,7 @@ class TestGeneticAlg(unittest.TestCase):
     def test_selection(self):
         def f(x):
             return np.sum(x)
+
         def f_inf(x):
             return np.inf
 
@@ -195,7 +194,7 @@ class TestGeneticAlg(unittest.TestCase):
         n_var = 5
         variables = []
         for i in range(n_var):
-            variables.append(ContinuousVariable('var%d' % i, domain=[0,1]))
+            variables.append(ContinuousVariable('var%d' % i, domain=[0, 1]))
         variables[0].domain = [90, 100]
         X_gen = [[var.resample() for var in variables] for _ in range(20)]
         for sel_type in sel_types:
@@ -215,10 +214,11 @@ class TestGeneticAlg(unittest.TestCase):
     def test_opt_without_report_file(self):
         def f(x):
             return np.sum(x)
+
         n_var = 5
         variables = []
         for i in range(n_var):
-            variables.append(ContinuousVariable('var%d' % i, domain=[0,1]))
+            variables.append(ContinuousVariable('var%d' % i, domain=[0, 1]))
         x = [[var.resample() for var in variables] for _ in range(20)]
         ga = get_global_optimizer("Genetic_algorithm")
         run_info = ga._create_run_info()
@@ -228,7 +228,7 @@ class TestGeneticAlg(unittest.TestCase):
     def run_example(self, engine_id, example_func, not_bayesopt=False):
         args = ()
         if engine_id == 'dadi':
-            args = ([4,6,8],)
+            args = ([4, 6, 8],)
         f, variables = example_func(engine_id, args)
 
         report_file = 'report_file'
@@ -255,65 +255,65 @@ class TestGeneticAlg(unittest.TestCase):
                 # As GA stops when got maxeval n_eval could be higher
                 self.assertTrue(int_lines <= 20)
 
-#    def test_1pop_example_1(self):
-#        for engine in all_engines():
-#            with self.subTest(engine=engine.id):
-#                self.run_example(engine.id, get_1pop_sim_example_1)
-#
-#    def test_1pop_example_2(self):
-#        for engine in all_engines():
-#            with self.subTest(engine=engine.id):
-#                self.run_example(engine.id, get_1pop_sim_example_2,
-#                                 not_bayesopt=True)
-#
-#    def test_2pop_example_1(self):
-#        for engine in all_engines():
-#            with self.subTest(engine=engine.id):
-#                self.run_example(engine.id, get_2pop_sim_example_1)
-#
-#    def test_yri_ceu(self):
-#        nu1F = PopulationSizeVariable('nu1F')
-#        nu2B = PopulationSizeVariable('nu2B')
-#        nu2F = PopulationSizeVariable('nu2F')
-#        m = MigrationVariable('m')
-#        Tp = TimeVariable('Tp')
-#        T = TimeVariable('T')
-#        Dyn = DynamicVariable('Dyn')
-#
-#        dm = EpochDemographicModel()
-#        dm.add_epoch(Tp, [nu1F])
-#        dm.add_split(0, [nu1F, nu2B])
-#        dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', Dyn])
-#
-#        data = SFSDataHolder(YRI_CEU_DATA, projections=(6, 6))
-#        engine = get_engine('moments')
-#        engine.set_model(dm)
-#        engine.set_data(data)
-#
-#        ga = get_global_optimizer("Genetic_algorithm")
-#        ga.maximize = True
-#        def f(x):
-#            y = engine.evaluate(x)
-#            return y
-#        res = ga.optimize(f, dm.variables, verbose=0, maxeval=30)
-#        # print(res)
-#
-#        var2value = engine.model.var2value(res.x)
-#        engine.model.fix_dynamics(res.x)
-#        x0 = [var2value[var] for var in engine.model.variables]
-#        ls = get_local_optimizer("BFGS")
-#        ls.maximize = True
-#        # print(ls.optimize(f, engine.model.variables, x0, verbose=0, maxiter=1))
-#
-#        def callback(x, y):
-#            pass
-#        res = ga.optimize(f, dm.variables, verbose=10, maxeval=30,
-#                          report_file='report_file', save_file='save_file',
-#                          eval_file='eval_file', callback=callback)
-#
-#    def test_run_gadma_test(self):
-#        sys.argv = ['gadma', '--test']
-#        gadma.core.main()
+       # def test_1pop_example_1(self):
+       #     for engine in all_engines():
+       #         with self.subTest(engine=engine.id):
+       #             self.run_example(engine.id, get_1pop_sim_example_1)
+       #
+       # def test_1pop_example_2(self):
+       #     for engine in all_engines():
+       #         with self.subTest(engine=engine.id):
+       #             self.run_example(engine.id, get_1pop_sim_example_2,
+       #                              not_bayesopt=True)
+       #
+       # def test_2pop_example_1(self):
+       #     for engine in all_engines():
+       #         with self.subTest(engine=engine.id):
+       #             self.run_example(engine.id, get_2pop_sim_example_1)
+       #
+       # def test_yri_ceu(self):
+       #     nu1F = PopulationSizeVariable('nu1F')
+       #     nu2B = PopulationSizeVariable('nu2B')
+       #     nu2F = PopulationSizeVariable('nu2F')
+       #     m = MigrationVariable('m')
+       #     Tp = TimeVariable('Tp')
+       #     T = TimeVariable('T')
+       #     Dyn = DynamicVariable('Dyn')
+       #
+       #     dm = EpochDemographicModel()
+       #     dm.add_epoch(Tp, [nu1F])
+       #     dm.add_split(0, [nu1F, nu2B])
+       #     dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', Dyn])
+       #
+       #     data = SFSDataHolder(YRI_CEU_DATA, projections=(6, 6))
+       #     engine = get_engine('moments')
+       #     engine.set_model(dm)
+       #     engine.set_data(data)
+       #
+       #     ga = get_global_optimizer("Genetic_algorithm")
+       #     ga.maximize = True
+       #     def f(x):
+       #         y = engine.evaluate(x)
+       #         return y
+       #     res = ga.optimize(f, dm.variables, verbose=0, maxeval=30)
+       #     # print(res)
+       #
+       #     var2value = engine.model.var2value(res.x)
+       #     engine.model.fix_dynamics(res.x)
+       #     x0 = [var2value[var] for var in engine.model.variables]
+       #     ls = get_local_optimizer("BFGS")
+       #     ls.maximize = True
+       #     # print(ls.optimize(f, engine.model.variables, x0, verbose=0, maxiter=1))
+       #
+       #     def callback(x, y):
+       #         pass
+       #     res = ga.optimize(f, dm.variables, verbose=10, maxeval=30,
+       #                       report_file='report_file', save_file='save_file',
+       #                       eval_file='eval_file', callback=callback)
+       #
+       # def test_run_gadma_test(self):
+       #     sys.argv = ['gadma', '--test']
+       #     gadma.core.main()
 
     def test_missed_lines(self):
         ga = get_global_optimizer("Genetic_algorithm")
@@ -394,8 +394,6 @@ class TestInference(unittest.TestCase):
     @pytest.mark.timeout(0)
     def test_inference_ga(self):
         for engine in all_engines():
-            if engine.id != "momentsLD":
-                continue
             with self.subTest(engine=engine.id):
                 if engine.id == "dadi":
                     args = ([4, 6, 8],)
@@ -469,14 +467,18 @@ class TestInference(unittest.TestCase):
                             Y_init.append(y)
                         except AttributeError as e:
                             Y_init.append(-np.inf)
+
                 time = 2 * timeit.timeit(f, number=1) / num_init
                 optimize_ga(data, func, engine.id, args=args,
-                    p_ids = p_ids, maxtime_per_eval=0.1,
-                    num_init=num_init, X_init=X_init, Y_init=None,
-                    gen_size=10, ga_maxiter=5, ls_maxiter=1,
-                    verbose=1, callback=None,
-                    save_file='save_file', eval_file='eval_file',)
-#                    report_file='report_file')
+                            p_ids=p_ids, maxtime_per_eval=0.1,
+                            num_init=num_init, X_init=X_init, Y_init=None,
+                            gen_size=10, ga_maxiter=5, ls_maxiter=1,
+                            verbose=1, callback=None,
+                            save_file='save_file', eval_file='eval_file',
+                            mutation_rate=1.5e-8,
+                            fixed_ancestral_size=10000)
+
+    #                    report_file='report_file')
 
     def test_inference_claic_funcs(self):
         dirname = os.path.join(EXAMPLE_FOLDER, "DATA",
@@ -528,16 +530,16 @@ class TestInference(unittest.TestCase):
             elif engine.id == 'moments':
                 pts = [4, 6, 8]
                 c1 = gadma.Inference.get_claic_score(func, boots, p0, data,
-                                                engine.id, pts=pts)
+                                                     engine.id, pts=pts)
                 c2 = gadma.Inference.get_claic_score(func, boots, p0, data,
-                                                engine.id)
+                                                     engine.id)
                 # old interface
                 c3 = gadma.Inference.get_claic_score(func, boots, p0, data,
-                                                pts=None, eps=1e-2)
+                                                     pts=None, eps=1e-2)
                 c4 = gadma.Inference.get_claic_score(func, boots, p0, data,
-                                                None, 1e-2)
+                                                     None, 1e-2)
                 c5 = gadma.Inference.get_claic_score(func, boots, p0, data,
-                                                None, eps=1e-2)
+                                                     None, eps=1e-2)
 
                 self.assertEqual(c1, c2)
                 self.assertEqual(c2, c3)
@@ -548,5 +550,5 @@ class TestInference(unittest.TestCase):
                 self.assertRaises(Exception, gadma.Inference.get_claic_score,
                                   func, boots, p0, data, pts=pts)
             # else:
-                # c1 = gadma.Inference.get_claic_score(func, boots, p0, data,
-                #                                 engine.id, pts=None)
+            # c1 = gadma.Inference.get_claic_score(func, boots, p0, data,
+            #                                 engine.id, pts=None)
