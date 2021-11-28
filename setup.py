@@ -36,7 +36,7 @@ with open('README.md') as f:
 
 requirements = ['numpy', 'scipy', 'matplotlib',
                 'Pillow', 'Cython', 'mpmath', 'nlopt', 'ruamel.yaml',
-                'dadi']
+                'dadi', 'momi']
 
 setup(
     name=NAME,

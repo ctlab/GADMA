@@ -19,7 +19,7 @@ Output directory: /home/katenos/Workspace/popgen/temp/GADMA/my_example_run
 #	Input data can be sfs file (should end with .fs) or 
 #	file of SNP's in dadi format (should end with .txt) or
 #   VCF file + popmap file (sample population map).
-Input data: /home/katenos/Workspace/popgen/temp/GADMA/examples/changing_theta/YRI_CEU.fs
+Input data: tests/test_data/DATA/sfs/YRI_CEU.fs
 
 #	'Population labels' is sequence of population names (the same
 #	names as in input file)
@@ -34,7 +34,7 @@ Input data: /home/katenos/Workspace/popgen/temp/GADMA/examples/changing_theta/YR
 #	then we can write YRI, CEU, CHB or YRI, CHB, CEU 
 #	(YRI must be at the first place)
 #	Default: from input file
-Population labels: [Pop1, Pop2]
+Population labels: [YRI, CEU]
 
 #	Also one can project spectrum to less size.
 #	For example, we have 80 individuals in each of three 
@@ -54,7 +54,7 @@ Outgroup: True
 #   Should be used together with Mutation rate and can be replaced
 #   be Thera0 setting.
 #   Default: None
-Sequence length: Null
+Sequence length: 4.04e6
 
 #!!!
 #	Are SNP's linked or unlinked?
@@ -100,12 +100,12 @@ Relative parameters: False
 #	in alignment and missed calls.
 #	Note: one should estimate μ based on generation time.
 #	Default: 1.0
-Theta0: 0.37976
+Theta0: Null
 
 #   Instead of Theta0 mutation rate can be set independently.
 #   Should be used together with Sequence length option.
 #   Default: None
-Mutation rate: Null
+Mutation rate: 2.35e-8
 
 #	Time (years) for one generation. Can be float. 
 #	Is important for drawing models. If one don't want to draw, 
@@ -265,11 +265,6 @@ Print models' code every N iteration: 100
 #   Could be moments or demes.
 #   Default: moments
 Model plot engine: moments
-
-#   Engine that will draw SFS plots.
-#   If None then it will be the same as engine that is used for inference.
-#   Default: None
-SFS plot engine: Null
 
 #	One can automatically draw models every N iteration. 
 #	If 0 then never.

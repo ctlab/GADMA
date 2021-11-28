@@ -33,7 +33,7 @@ if smac_available:
     from ConfigSpace.hyperparameters import CategoricalHyperparameter
     from smac.facade.smac_bo_facade import SMAC4BO
     from smac.utils.constants import MAXINT
-    from smac.tae.execute_ta_run import StatusType
+    from smac.tae import StatusType
     from smac.stats.stats import Stats
     from smac.optimizer.random_configuration_chooser import ChooserProb
     from smac.runhistory.runhistory import RunHistory
@@ -361,9 +361,9 @@ class SMACSquirrelOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                   iter_callback):
         from .smac_optim import SMAC4EPMOpimizer
 
-        min_maxiter = get_maxeval_for_bo(maxeval, maxiter)
+        maxiter = get_maxeval_for_bo(maxeval, maxiter)
         if maxeval is None:
-            maxeval = (min_maxiter * self.n_suggestions +
+            maxeval = (maxiter * self.n_suggestions +
                        self.run_info.result.n_eval)
         x_best = X_init[0]
         y_best = Y_init[0]
@@ -757,8 +757,8 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             add_to_runhistory(x, y)
 
         # begin Bayesian optimization
-        while self.run_info.result.n_eval < maxeval or \
-                (maxiter is not None and
+        while self.run_info.result.n_eval < maxeval and \
+                (maxiter is None or
                  self.run_info.result.n_iter < maxiter):
             total_t_start = time.time()
 

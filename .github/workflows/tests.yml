@@ -6,9 +6,7 @@ name: build
 # events but only for the master branch
 on:
   push:
-    branches: [ master, devel, smac_bo ]
   pull_request:
-    branches: [ master, devel ]
 
 jobs:
   build:
@@ -50,6 +48,16 @@ jobs:
         run: |
           pip3 install --upgrade numpy
         if: matrix.python-version == 3.8
+
+      - name: Install hdf5, msprime and momi2 (MacOS).
+        run: |
+          brew install gsl homebrew/core/hdf5
+          pip3 install msprime
+          brew install libomp
+          export LDFLAGS="-L/usr/local/opt/llvm/lib"
+          export CPPFLAGS="-I/usr/local/opt/llvm/include"
+          CC=$(brew --prefix llvm)/bin/clang pip install momi
+        if: matrix.os == 'macos-10.15'
 
       - name: Install GADMA and its dependencies (Linux and MacOS).
         run: |

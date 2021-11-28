@@ -2,6 +2,7 @@ import os
 import ruamel.yaml
 import numpy as np
 from . import settings
+from .. import demes_available, momi_available
 from ..data import SFSDataHolder, VCFDataHolder
 from ..engines import get_engine, MomentsEngine
 from ..engines import all_engines, all_drawing_engines
@@ -9,9 +10,10 @@ from ..models import StructureDemographicModel, CustomDemographicModel
 from ..optimizers import get_local_optimizer, get_global_optimizer
 from ..optimizers import LinearConstrain
 from ..utils import check_dir_existence, check_file_existence, abspath,\
-    module_name_from_path, custom_generator
+    module_name_from_path, custom_generator, ensure_dir_existence
 from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable,\
-    ContinuousVariable, DynamicVariable
+    ContinuousVariable, DynamicVariable, GrowthRateVariable,\
+    SelectionVariable, FractionVariable, DemographicVariable
 import warnings
 import importlib.util
 import sys
@@ -40,10 +42,49 @@ DEPRECATED_IDENTIFIERS = ["flush_delay",
                           "distribution", "std",
                           "mean_mutation_rate_for_hc",
                           "const_for_mutation_rate_for_hc",
-                          "stop_iteration_for_hc"]
+                          "stop_iteration_for_hc", "sfs_plot_engine"]
 
 
-def get_variables(parameter_identifiers, lower_bound, upper_bound):
+def get_variable_class(par_label):
+    first_letter = par_label[0].lower()
+    if first_letter not in settings.P_IDS:
+        raise ValueError(f"Unknown type of parameter: {par_label}. Should "
+                         "start with one of the following letters: "
+                         f"{settings.P_IDS.keys()}")
+    cls = settings.P_IDS[par_label[0].lower()]
+    if isinstance(cls, list):
+        assert first_letter == 'g'
+        if par_label.lower().startswith("gamma"):
+            return SelectionVariable
+        return GrowthRateVariable
+    return cls
+
+
+def _get_variable(cls, par_label, domain, engine="dadi"):
+    """
+    Returns correct variable from its label.
+    If engine is `dadi` or `moments` then variable will be in `genetic` units
+    by default if othervise is not stated. If engine is something else (`momi`)
+    then units are `physical` by default.
+
+    If parameter label has `_phys` or `_gen` at the end then it is mark about
+    the units. For example, engine is `dadi` but label is `nu_phys` that
+    means that variable will be :class:`gadma.PopulationSizeVariable` in
+    `physical` units.
+    """
+    if (cls == FractionVariable or cls is GrowthRateVariable or
+            not issubclass(cls, DemographicVariable)):
+        return cls(name=par_label, domain=domain)
+    units = "genetic" if engine in ['dadi', 'moments'] else "physical"
+    if par_label.lower().endswith("_phys"):
+        units = "physical"
+    if par_label.lower().endswith("_gen"):
+        units = "genetic"
+    return cls(name=par_label, units=units, domain=domain)
+
+
+def get_variables(parameter_identifiers, lower_bound, upper_bound,
+                  engine="dadi"):
     assert not (
         parameter_identifiers is None and
         lower_bound is None and
@@ -54,26 +95,70 @@ def get_variables(parameter_identifiers, lower_bound, upper_bound):
         (lower_bound is not None and upper_bound is not None)
     ), "Both lower and upper bounds should be set or both equal to None. "\
        f"{lower_bound} {upper_bound}"
-    var_classes = list()
-    if parameter_identifiers is not None:
-        for p_id in parameter_identifiers:
-            var_classes.append(settings.P_IDS[p_id[0].lower()])
+    if lower_bound is not None:
+        domains = list(zip(lower_bound, upper_bound))
     else:
-        for _ in lower_bound:
-            var_classes.append(ContinuousVariable)
-    names = [f"var{i}" for i in range(len(var_classes))]
+        domains = [None for _ in parameter_identifiers]
+    units = "genetic" if engine in ["dadi", "moments"] else "physical"
     if parameter_identifiers is not None:
-        p_ids = parameter_identifiers
-        if len(set(p_ids)) == len(p_ids):
-            names = p_ids
-    variables = list()
-    for i, (var_cls, name) in enumerate(zip(var_classes, names)):
-        if lower_bound is not None:
-            variables.append(var_cls(name, domain=[lower_bound[i],
-                                                   upper_bound[i]]))
-        else:
-            variables.append(var_cls(name))
+        classes = [get_variable_class(p_id) for p_id in parameter_identifiers]
+    else:
+        warnings.warn("Any parameter identifiers were not found. Please "
+                      "check the bounds and units of the parameters "
+                      f"carefully. Units will be {units}.")
+        classes = [ContinuousVariable for _ in lower_bound]
+        parameter_identifiers = [f"var{i}" for i in range(len(lower_bound))]
+    variables = []
+    for cls, name, domain in zip(classes, parameter_identifiers, domains):
+        variables.append(_get_variable(
+            cls=cls,
+            par_label=name,
+            domain=domain,
+            engine=engine,
+        ))
     return variables
+
+
+def get_par_labels_from_file(filename):
+    with open(filename) as f:
+        big_comment = False
+        big_comment_str = ""
+        found_func = False
+        for line in f:
+            if line.startswith("#") or len(line.strip()) == 0:
+                continue
+            if found_func and line.strip().startswith("'''"):
+                if big_comment and big_comment_str == "'''":
+                    big_comment = False
+                    big_comment_str = ""
+                else:
+                    big_comment = True
+                    if big_comment_str == "":
+                        big_comment_str = "'''"
+            elif found_func and line.strip().startswith('"""'):
+                if big_comment and big_comment_str == '"""':
+                    big_comment = False
+                    big_comment_str = ""
+                else:
+                    big_comment = True
+                    if big_comment_str == "":
+                        big_comment_str = '"""'
+            elif found_func and not big_comment:
+                break
+            if line.startswith("def model_func"):
+                found_func = True
+        try:
+            p_ids = line.strip().split("=")[0].split(",")
+            p_ids = [x.strip() for x in p_ids]
+            for x in p_ids:
+                get_variable_class(x)
+                if not x.isidentifier() or iskeyword(x):
+                    raise IndexError
+            return p_ids
+        except IndexError:  # two commas will create x = "" (x[0])
+            pass
+        except ValueError:  # not in P_IDS
+            pass
 
 
 class SettingsStorage(object):
@@ -114,7 +199,7 @@ class SettingsStorage(object):
                       'relative_parameters', 'only_models',
                       'symmetric_migrations', 'split_fractions',
                       'generate_x_transform', 'global_log_transform',
-                      'local_log_transform', 'inbreeding',
+                      'local_log_transform', 'inbreeding', 'selection',
                       'ancestral_size_as_parameter']
         int_list_attrs = ['pts', 'initial_structure', 'final_structure',
                           'projections']
@@ -138,7 +223,8 @@ class SettingsStorage(object):
                         'model_func', 'get_engine_args', 'data_holder',
                         'units_of_time_in_drawing', 'resume_from_settings',
                         'dadi_available', 'moments_available',
-                        'model_plot_engine', 'sfs_plot_engine',
+                        'model_plot_engine', 'demes_available',
+                        'demesdraw_available',
                         'kernel', 'acquisition_function']
 
         super_hasattr = True
@@ -325,10 +411,12 @@ class SettingsStorage(object):
                 value = [x.strip() for x in value.split(",")]
             value = [x.strip() for x in value]
             for val in value:
-                if val.lower()[0] not in settings.P_IDS:
-                    raise ValueError("Each parameter identifier should start"
-                                     " with symbol from the following list: "
-                                     f"{settings.P_IDS.keys()}")
+                get_variable_class(val)
+            # Check that identifiers are different
+            if not len(set(value)) == len(value):
+                raise ValueError("Parameter identifiers should contain unique "
+                                 "names of the parameters. Names are not "
+                                 f"unique, there are repeats: {value}")
 
         # 2. Dependencies checks
         # 2.1 Const of mutation strength and rate
@@ -394,15 +482,10 @@ class SettingsStorage(object):
                                  f"{[engine.id in all_engines()]}")
         elif name == 'model_plot_engine':
             engine = get_engine(value)
-            if not engine.can_draw:
+            if not engine.can_draw_model:
                 raise ValueError(f"Engine {value} cannot draw model plots. "
                                  f"Available engines are: "
                                  f"{[engine.id in all_drawing_engines()]}")
-        elif name == 'sfs_plot_engine' and value is not None:
-            engine = get_engine(value)
-            if not hasattr(engine, "draw_sfs_plots"):
-                raise ValueError(f"Engine {value} cannot draw sfs plots. "
-                                 f"Available engines are: dadi, moments")
         # 3.4 For local and global optimizer we need check existence
         elif name == 'global_optimizer':
             get_global_optimizer(value)
@@ -496,21 +579,13 @@ class SettingsStorage(object):
                 raise ValueError(f"Lower bound {name} should be greater "
                                  "than 0.")
             domain_changed = True
-            if name.endswith('n'):
-                cls = PopulationSizeVariable
-            elif name.endswith('t'):
-                cls = TimeVariable
-            elif name.endswith('m'):
-                cls = MigrationVariable
-            elif name == "dynamics":
-                cls = DynamicVariable
+            cls = get_variable_class(name.split("_")[-1])
+            if cls == DynamicVariable:
                 if isinstance(value, str):
                     value = [x.strip() for x in value.split(",")]
                     for i in range(len(value)):
                         if value[i].isdigit():
                             value[i] = int(value[i])
-            else:
-                raise AttributeError("Check for supported variables")
 
             old_domain = np.array(cls.default_domain)
             if name.startswith('min'):
@@ -634,59 +709,27 @@ class SettingsStorage(object):
                 return self.initial_structure
             elif (name == "parameter_identifiers" and
                     self.custom_filename is not None):
-                with open(self.custom_filename) as f:
-                    big_comment = False
-                    big_comment_str = ""
-                    found_func = False
-                    for line in f:
-                        if line.startswith("#") or len(line.strip()) == 0:
-                            continue
-                        if found_func and line.strip().startswith("'''"):
-                            if big_comment and big_comment_str == "'''":
-                                big_comment = False
-                                big_comment_str = ""
-                            else:
-                                big_comment = True
-                                if big_comment_str == "":
-                                    big_comment_str = "'''"
-                        elif found_func and line.strip().startswith('"""'):
-                            if big_comment and big_comment_str == '"""':
-                                big_comment = False
-                                big_comment_str = ""
-                            else:
-                                big_comment = True
-                                if big_comment_str == "":
-                                    big_comment_str = '"""'
-                        elif found_func and not big_comment:
-                            break
-                        if line.startswith("def model_func"):
-                            found_func = True
-                    try:
-                        p_ids = line.strip().split("=")[0].split(",")
-                        p_ids = [x.strip() for x in p_ids]
-                        for x in p_ids:
-                            settings.P_IDS[x[0].lower()]
-                            if not x.isidentifier() or iskeyword(x):
-                                raise IndexError
-                        object.__setattr__(self,
-                                           "parameter_identifiers", p_ids)
-#                        print(f"Found parameter identifiers in file: {p_ids}")
-                        return p_ids
-                    except IndexError:  # two commas will create x = "" (x[0])
-                        pass
-                    except KeyError:  # not in P_IDS
-                        pass
+                p_ids = get_par_labels_from_file(self.custom_filename)
+                if p_ids is not None:
+                    object.__setattr__(self,
+                                       "parameter_identifiers", p_ids)
+                return p_ids
             elif ((name == "lower_bound" or name == "upper_bound") and
                   (self.custom_filename is not None or
                    self.model_func is not None)):
                 if self.parameter_identifiers is not None:
                     bound = list()
                     for p_id in self.parameter_identifiers:
-                        domain = settings.P_IDS[p_id[0].lower()].default_domain
+                        var = _get_variable(
+                            cls=get_variable_class(p_id),
+                            par_label=p_id,
+                            domain=None,
+                            engine=self.engine
+                        )
                         if name == "lower_bound":
-                            bound.append(domain[0])
+                            bound.append(var.domain[0])
                         else:
-                            bound.append(domain[1])
+                            bound.append(var.domain[1])
                     return bound
             if hasattr(settings, name):
                 return getattr(settings, name)
@@ -753,18 +796,20 @@ class SettingsStorage(object):
         be set.
         """
         engine = get_engine(self.engine)
-        data = engine.read_data(self.data_holder)
-        self.projections = data.sample_sizes
-        self.population_labels = data.pop_ids
-        self.outgroup = not data.folded
+        engine.data = self.data_holder  # it is reading
+        self.data_holder = engine.data_holder
+        self.projections = self.data_holder.projections
+        self.outgroup = self.data_holder.outgroup
+        self.population_labels = self.data_holder.population_labels
+        self._inner_data = engine.data
+
         if self.pts is None:
             max_n = max(self.projections)
             x = (int((max_n - 1) / 10) + 1) * 10
             super(SettingsStorage, self).__setattr__("pts",
                                                      [x, x + 10, x + 20])
-        self._inner_data = data
         self.number_of_populations = len(self.projections)
-        return data
+        return engine.data
 
     def read_bootstrap_data(self, return_filenames=False):
         """
@@ -947,7 +992,7 @@ class SettingsStorage(object):
                                  Dumper=ruamel.yaml.RoundTripDumper)
         # save missed attributes at the end of extra file
         final_dict = dict()
-        with open(extra_params_file, 'a') as fl:
+        with open(extra_params_file, 'a', encoding="utf-8") as fl:
             fl.write("\n#\tOther parameters of run without description:\n")
             for attr_name in set(dir(self) + dir(settings)):
                 if (attr_name.startswith("_") or
@@ -1090,7 +1135,7 @@ class SettingsStorage(object):
         if (self.initial_structure is not None and
                 self.final_structure is not None):
             create_migs = not self.no_migrations
-            create_sels = False
+            create_sels = self.selection
             create_dyns = not self.only_sudden
             sym_migs = self.symmetric_migrations
             split_f = self.split_fractions
@@ -1119,8 +1164,18 @@ class SettingsStorage(object):
                 self.model_func is not None) and
                 self.lower_bound is not None and
                 self.upper_bound is not None):
+            # get_variables take bounds equal to None into account
+            lower_bound = self.lower_bound
+            upper_bound = self.upper_bound
+            if not hasattr(super(SettingsStorage, self), "lower_bound"):
+                lower_bound = None
+
+            if not hasattr(super(SettingsStorage, self), "upper_bound"):
+                upper_bound = None
+
             variables = get_variables(self.parameter_identifiers,
-                                      self.lower_bound, self.upper_bound)
+                                      self.lower_bound, self.upper_bound,
+                                      engine=self.engine)
             if self.model_func is not None:
                 return CustomDemographicModel(function=self.model_func,
                                               variables=variables,
@@ -1150,3 +1205,126 @@ class SettingsStorage(object):
         else:
             raise ValueError("Some settings are missed so no model is "
                              "generated")
+
+    def Nanc_will_be_available(self):
+        if self.ancestral_size_as_parameter:
+            return True
+        mu_is_set = self.mutation_rate is not None
+        L_is_set = self.sequence_length is not None
+        if mu_is_set and L_is_set:
+            return True
+        if self.theta0 is not None:
+            return True
+        return False
+
+    def is_valid(self):
+        """
+        Checks that settings are fine. Rises arrors if something is not right.
+        """
+        if (self.input_data is None and
+                self.resume_from is None):
+            raise AttributeError("Input file is required. It could be set by "
+                                 "-i/--input option or via parameters file.")
+        if (self.output_directory is None and
+                self.resume_from is None):
+            raise AttributeError(
+                "Output directory is required. It could be set by -o/--output "
+                "option or via parameters file."
+            )
+        assert self.output_directory is not None
+
+        ensure_dir_existence(self.output_directory,
+                             check_emptiness=True)
+
+        if self.inbreeding:
+            if self.projections is not None:
+                warnings.warn(
+                    "For correct inference of the inbreeding input data should"
+                    " not be projected. Projections were taken as"
+                    f" {self.projections}, please check that data is not "
+                    "downsized."
+                )
+            if self.engine != "dadi":
+                raise ValueError(
+                    "Please check your engine. If you want to infer "
+                    "inbreeding please change engine to `dadi`"
+                )
+        if (self.recombination_rate is not None and
+                self.recombination_rate != 0):
+            if self.engine in ['moments', 'dadi']:
+                warnings.warn(f"Engine {self.engine} will ignore "
+                              "not-zero recombination rate.")
+        # check for custom model and engine to draw
+        if self.custom_filename is not None:
+            if self.model_plot_engine != self.engine:
+                if get_engine(self.engine).can_draw_model:
+                    warnings.warn(
+                        "Custom model was set, engine to draw models will be "
+                        f"the same as for evaluations: {self.engine}"
+                    )
+                    self.model_plot_engine = self.engine
+                else:
+                    warnings.warn(
+                        "Custom model could be drawn with the same engine that"
+                        " will be used for evaluation only. However that "
+                        f"engine {self.engine} cannot draw models. No picture"
+                        "of model will be generated."
+                    )
+
+        if self.engine == "momi":
+            if "Lin" in self.dynamics:
+                warnings.warn("Momi engine does not support Linear size "
+                              "function. It is removed from possible dynamics")
+                self.dynamics = [dyn for dyn in self.dynamics if dyn != "Lin"]
+            if not self.ancestral_size_as_parameter:
+                warnings.warn(
+                    "Momi engine need ancestral size as parameter. The option "
+                    "`Ancestral size as parameter` is set to `True`"
+                )
+                self.ancestral_size_as_parameter = True
+            if not self.no_migrations:
+                warnings.warn(
+                    "Momi engine does not support continous migrations. The "
+                    "option `No migrations` is set to `True`"
+                )
+                self.no_migrations = True
+
+            if self.selection:
+                warnings.warn(
+                    "Momi engine does not support inference of selection "
+                    "coefficients. The option `Selection` is set to `False`"
+                )
+                self.selection = False
+
+        if self.model_plot_engine == "momi":
+            if not self.no_migrations or "Lin" in self.dynamics:
+                warnings.warn(
+                    "Momi was chosen to draw models. Mind the fact that it "
+                    "does not support linear size change and does not draw "
+                    "migrations"
+                )
+            if self.units_of_time_in_drawing.lower() not in ["generations",
+                                                             "years"]:
+                warnings.warn(
+                    "Model plot engine momi does not draw time in "
+                    f"{self.units_of_time_in_drawing}, units are switched "
+                    "to `years`"
+                )
+                self.units_of_time_in_drawing = "years"
+
+        if self.sequence_length is None and momi_available:
+            warnings.warn("Code for momi will not be generated as `Sequence "
+                          "length` is missed.")
+        for engine, is_available in zip(["demes", "momi"],
+                                        [demes_available, momi_available]):
+            if is_available:
+                if not self.Nanc_will_be_available():
+                    warnings.warn(
+                        f"Code for {engine} engine will not be generated as "
+                        "ancestral size will be missed in the dem. model. "
+                        "The following options should be set to enable it:\n"
+                        f"`Ancestral size as parameter`: True "
+                        f"(got `self.ancestral_size_as_parameter`)\nor\n"
+                        f"`Mutation rate` (got {self.mutation_rate})\n"
+                        f"`Sequence length` (got {self.sequence_length})\nor\n"
+                        f"`Theta0` (got {self.theta0})")

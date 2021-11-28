@@ -43,7 +43,7 @@ if smac_available:
     from smac.optimizer.ei_optimization import LocalAndSortedRandomSearch
     from smac.epm.util_funcs import get_types
 
-    from smac.tae.execute_ta_run import StatusType
+    from smac.tae import StatusType
 
     from smac.utils.constants import MAXINT
 

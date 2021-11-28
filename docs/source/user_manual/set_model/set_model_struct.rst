@@ -160,6 +160,18 @@ For example, if there is model structure equal to (2, 1, 1) and one want to have
 .. note::
     When option ``Migration masks`` is used together with ``Symmetric migration`` masks should be symmetrical. There is no such option to make some migrations symmetrical and other not.
 
+Selection coefficients
+_______________________
+
+To enable inference of selection coefficients in demographic history set option ``Selection`` to ``True``:
+
+.. code-block:: none
+
+    # param file
+    ...
+    Selection: True
+    ...
+
 Split fractions
 __________________
 

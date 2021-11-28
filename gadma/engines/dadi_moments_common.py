@@ -28,8 +28,10 @@ class DadiOrMomentsEngine(Engine):
                         CustomDemographicModel]  #:
     supported_data = [VCFDataHolder, SFSDataHolder]  #:
     inner_data_type = None  # base_module.Spectrum  #:
+
     can_evaluate = True
-    can_draw = False  # dadi cannot
+    can_draw_model = False  # dadi cannot
+    can_draw_comp = True  # draw comparison between simulated AFS and real one
     can_simulate = True
 
     @classmethod
@@ -37,22 +39,29 @@ class DadiOrMomentsEngine(Engine):
         """
         Reads SFS data from `data_holder`.
 
-        Could read two types of data:
+        Could read three types of data:
 
             * :py:mod:`dadi` SFS data type
             * :py:mod:`dadi` SNP data type
+            * :py:mod:`fastimcoal2` data (.obs)
 
-        Check :py:mod:`dadi` manual for additional information.
+        Check :py:mod:`dadi` and :py:mod:`fastsimcoal2` manual
+        for additional information.
 
         :param data_holder: holder of the data.
         :type data_holder: :class:`SFSDataHolder`
         """
         if isinstance(data_holder, SFSDataHolder):
-            data = read_dadi_data(cls.base_module, data_holder)
+            data = read_sfs_data(cls.base_module, data_holder)
         else:
             assert isinstance(data_holder, VCFDataHolder)
             data = read_vcf_data(cls.base_module, data_holder)
         return data
+
+    def update_data_holder_with_inner_data(self):
+        self.data_holder.projections = self.inner_data.sample_sizes
+        self.data_holder.population_labels = self.inner_data.pop_ids
+        self.data_holder.outgroup = not self.inner_data.folded
 
     @property
     def multinom(self):
@@ -150,7 +159,8 @@ class DadiOrMomentsEngine(Engine):
         theta = self.get_theta(values, grid_sizes)
         return self.get_N_ancestral_from_theta(theta)
 
-    def draw_sfs_plots(self, values, grid_sizes, save_file=None, vmin=None):
+    def draw_data_comp_plot(self, values, grid_sizes, save_file=None,
+                            vmin=None):
         """
         Draws plots of SFS data for observed data and simulated by model data.
 
@@ -175,14 +185,26 @@ class DadiOrMomentsEngine(Engine):
         show = save_file is None
         n_pop = len(self.data.sample_sizes)
         # Get simulated data
-        model = self.simulate(values, self.data.sample_sizes, grid_sizes)
+        model = self.simulate(
+            values,
+            self.data.sample_sizes,
+            None,
+            None,
+            grid_sizes
+        )
+        # check for the multinom
+        if self.multinom:
+            model = self.base_module.Inference.optimally_scaled_sfs(
+                model=model,
+                data=self.data
+            )
         # Draw
         if n_pop == 1:
-            self.base_module.Plotting.plot_1d_comp_multinom(model, self.data)
+            self.base_module.Plotting.plot_1d_comp_Poisson(model, self.data)
             if show:
                 plt.show()
         else:
-            func_name = f"plot_{n_pop}d_comp_multinom"
+            func_name = f"plot_{n_pop}d_comp_Poisson"
             plotting_func = getattr(self.base_module.Plotting, func_name)
             plotting_func(model, self.data, vmin=vmin, show=show)
         if not show:
@@ -202,6 +224,8 @@ class DadiOrMomentsEngine(Engine):
                                                  time_in_generations=False)
         model_sfs = self.simulate(values_gen,
                                   self.data.sample_sizes,
+                                  None,
+                                  None,
                                   grid_sizes)
         # TODO: process it
         if not self.multinom and self.model.linear_constrain is not None:
@@ -254,7 +278,13 @@ class DadiOrMomentsEngine(Engine):
                 p[is_not_discrete] = x
             else:
                 p = x
-            return self.simulate(p, self.data.sample_sizes, grid_sizes)
+            return self.simulate(
+                p,
+                self.data.sample_sizes,
+                None,
+                None,
+                grid_sizes
+            )
 
         cached_simul = cache_func(simul_func)
 
@@ -454,17 +484,16 @@ def _read_data_snp_type(module, data_holder):
         raise SyntaxError("Construction of data_dict failed: " + str(e))
     population_labels, has_outgroup, size = _get_default_from_snp_format(
         data_holder.filename)
-    if data_holder.projections is not None:
-        size = data_holder.projections
     if data_holder.population_labels is not None:
         if len(data_holder.population_labels) < len(population_labels):
             for label in data_holder.population_labels:
                 assert label in population_labels
-            if len(size) > len(data_holder.population_labels):
-                pop2size = {pop: siz
-                            for pop, siz in zip(population_labels, size)}
-                size = [pop2size[x] for x in data_holder.population_labels]
+        pop2size = {pop: siz
+                    for pop, siz in zip(population_labels, size)}
+        size = [pop2size[x] for x in data_holder.population_labels]
         population_labels = data_holder.population_labels
+    if data_holder.projections is not None:
+        size = data_holder.projections
     sfs = module.Spectrum.from_data_dict(dd, population_labels,
                                          projections=size,
                                          polarized=has_outgroup)
@@ -473,9 +502,99 @@ def _read_data_snp_type(module, data_holder):
     return sfs
 
 
-def read_dadi_data(module, data_holder):
+def _read_fsc_data(module, data_holder):
     """
-    Reads file in one of dadi's formats.
+    Reads file in .obs fastsimcoal2 format and returns dadi's Spectrum object.
+
+    :param module: dadi or moments module (or analogue)
+    :param data_holder: object holding the data.
+    :type  data_holder: gadma.data.SFSDataHolder
+
+    :returns: data
+    :rtype: (str, :class:`dadi.Spectrum`)
+    """
+
+    mask = None
+
+    with open(data_holder.filename, 'r') as f:
+        n_observations = int(next(f).split()[0])
+        if n_observations > 1:
+            warnings.warn("Multiple observations are found in "
+                          f"{data_holder.filename}. Calculating mean SFS")
+
+        if 'DSFS' in data_holder.filename or 'MSFS' in data_holder.filename:
+            # determine dimensionality
+            ndim = [int(i) + 1 for i in next(f).strip().split('\t')[1].split()]
+            total = np.zeros(ndim)
+            for line in f:
+                if not line.isspace():
+                    # in files generated by easySFS numeric values are
+                    # separeted with spaces, while in fsc examples files
+                    # values are separeted with tabs... but Python's split()
+                    # works with both
+                    total += np.array([float(i)
+                                      for i in line.split()]).reshape(ndim)
+            if not data_holder.outgroup:
+                # in files generated by easySFS and in example files from
+                # fastsimcoal manual enries in folded SFS are masked with zeros
+                mask = np.where(total == 0, True, False)
+
+        elif 'joint' in data_holder.filename:
+            # skip header & determine dimensionality for pop1
+            dim1 = len(next(f).split('\t')) - 1
+
+            # determine dimensionality for pop2
+            lines = f.readlines()
+            if n_observations == 1:
+                dim2 = len(lines)
+            else:
+                for i, line in enumerate(lines[1:]):
+                    if line.split()[0].split('_')[1] == '0':
+                        dim2 = int(lines[i].split()[0].split('_')[1]) + 1
+                        break
+
+            total = np.zeros((dim1, dim2))
+            for k in range(n_observations):
+                observation = lines[k * dim2:(k+1) * dim2]
+                observation = [line.strip().split('\t')[1].split() for line
+                               in observation]
+                for i in range(dim2):
+                    for j in range(dim1):
+                        observation[i][j] = float(observation[i][j])
+                total += np.array(observation).T
+
+            # construct triangular mask manually if reading unfolded SFS
+            if not data_holder.outgroup:
+                mask = np.arange(dim1 * dim2).reshape((dim1, dim2))
+                # elements mask[i, j] where i + j >= dim1 + 2 are masked
+                mask = np.where(mask // dim2 + mask % dim2 >= dim1 + 2,
+                                True, False)
+        else:
+            # skip header & determine dimensionality
+            ndim = len(next(f).split('\t'))
+            total = np.zeros(ndim)
+            for line in f:
+                if not line.isspace():
+                    total += np.array([float(i) for i in line.strip().split()])
+
+            if not data_holder.outgroup:
+                mask = np.arange(ndim)
+                mask = np.where(mask > ndim / 2, True, False)
+
+    data = module.Spectrum(total / n_observations,
+                           pop_ids=data_holder.population_labels,
+                           data_folded=not data_holder.outgroup,
+                           mask=mask)
+    if data_holder.projections:
+        data = data.project(data_holder.projections)
+
+    assert data.S() > 0, "Result SFS built from FSC file is zero matrix."
+    return data
+
+
+def read_sfs_data(module, data_holder):
+    """
+    Reads file in one of dadi's or fastsimcoal2 formats.
 
     :param module: dadi or moments module (or analogue)
     :param data_holder: object holding the data.
@@ -489,6 +608,9 @@ def read_dadi_data(module, data_holder):
         return _read_data_sfs_type(module, data_holder)
     elif ext == '.txt':
         return _read_data_snp_type(module, data_holder)
+    elif ext == '.obs':
+        # fastsimcoal2 data
+        return _read_fsc_data(module, data_holder)
     else:
         # Try to guess
         try:

@@ -1,4 +1,5 @@
 import unittest
+import pytest
 
 from .test_data import YRI_CEU_DATA
 from gadma import *
@@ -44,15 +45,23 @@ def get_1pop_sim_example_1(engine_id, args=(), data_size=4):
     t = TimeVariable('t')
     nu1 = PopulationSizeVariable('nu1')
     nu2 = PopulationSizeVariable('nu2')
+    Nanc = PopulationSizeVariable("Nanc", units="physical")
 
-    dm = EpochDemographicModel()
+    Nanc_size = None
+    if engine_id not in ["dadi", "moments"]:
+        Nanc_size = Nanc
+
+    dm = EpochDemographicModel(Nanc_size=Nanc_size, mutation_rate=1e-8)
+
     dm.add_epoch(t, [nu1])
     dm.add_epoch(t, [nu2])
-    values = {'nu1': 0.1, 'nu2': 2, 't': 1.5}
+    values = {'Nanc': 10000, 'nu1': 0.1, 'nu2': 2, 't': 1.5}
 
     engine = get_engine(engine_id)
     engine.set_model(dm)
-    data = engine.simulate(values, [data_size], *args)
+    seq_len = 1e6
+    pops = None
+    data = engine.simulate(values, [data_size], seq_len, pops, *args)
     engine.set_data(data)
 
     variables = dm.variables
@@ -67,14 +76,24 @@ def get_1pop_sim_example_2(engine_id, args=(), data_size=4):
     t = TimeVariable('t')
     nu1 = PopulationSizeVariable('nu1')
     Dyn = DynamicVariable('Dyn')
+    Nanc = PopulationSizeVariable("Nanc", units="physical")
 
-    dm = EpochDemographicModel()
+    Nanc_size = None
+    if engine_id not in ["dadi", "moments"]:
+        Nanc_size = Nanc
+    if engine_id in ["momi"]:
+        Dyn.domain = ["Sud", "Exp"]
+
+    dm = EpochDemographicModel(Nanc_size=Nanc_size, mutation_rate=1e-8)
+
     dm.add_epoch(t, [nu1], dyn_args=[Dyn])
-    values = {'nu1': 5, 't': 1.5, 'Dyn': 'Exp'}
+    values = {'Nanc': 10000, 'nu1': 5, 't': 1.5, 'Dyn': 'Exp'}
 
     engine = get_engine(engine_id)
     engine.set_model(dm)
-    data = engine.simulate(values, [data_size], *args)
+    seq_len = 1e6
+    pops = None
+    data = engine.simulate(values, [data_size], seq_len, pops, *args)
     engine.set_data(data)
 
     variables = dm.variables
@@ -89,15 +108,23 @@ def get_2pop_sim_example_1(engine_id, args=(), data_size=4):
     t = TimeVariable('t')
     nu1 = PopulationSizeVariable('nu1')
     nu2 = PopulationSizeVariable('nu2')
+    Nanc = PopulationSizeVariable("Nanc", units="physical")
 
-    dm = EpochDemographicModel()
+    Nanc_size = None
+    if engine_id not in ["dadi", "moments"]:
+        Nanc_size = Nanc
+
+    dm = EpochDemographicModel(Nanc_size=Nanc_size, mutation_rate=1e-8)
+
     dm.add_split(0, [nu1, nu2])
     dm.add_epoch(t, [nu1, nu2])
-    values = {'nu1': 1, 'nu2': 0.5, 't': 1.5}
+    values = {'Nanc': 10000, 'nu1': 1, 'nu2': 0.5, 't': 1.5}
 
     engine = get_engine(engine_id)
     engine.set_model(dm)
-    data = engine.simulate(values, [data_size, data_size], *args)
+    seq_len = 1e6
+    pops = None
+    data = engine.simulate(values, [data_size, data_size], seq_len, pops, *args)
     engine.set_data(data)
 
     variables = dm.variables
@@ -268,6 +295,7 @@ class TestLocalOpt(TestBaseOptClass):
         var1 = ContinuousVariable('var1', domain=[0, 1])
         var2 = ContinuousVariable('var2', domain=[1, 2])
         var3 = ContinuousVariable('var3', domain=[0, 20])
+        variables = [var1, var2, var3]
         x0 = [0.5, 1.5, 10]
         eval_file = 'eval_file'
         save_file = 'save_file'
@@ -289,10 +317,11 @@ class TestLocalOpt(TestBaseOptClass):
             maxit = 30
             maxev = 10
             wrap.counter = 0
-            res = opt.optimize(wrap, [var1, var2, var3], x0, args=(5,),
+            res = opt.optimize(wrap, variables, x0, args=(5,),
                                verbose=1, maxiter=maxit, maxeval=maxev,
                                eval_file=eval_file,
                                save_file=save_file, report_file=report_file)
+            self.assertTrue(calc_func(x0, 5) >= calc_func(res.x, 5))
             self.assertTrue(res.n_iter <= maxit)
             method = None
             if isinstance(opt, ScipyOptimizer):
@@ -318,137 +347,148 @@ class TestLocalOpt(TestBaseOptClass):
             self.assertEqual(res.n_eval + 1, nlines(eval_file))
             self.assertTrue(os.path.getsize(save_file) > 0)
             self.assertTrue(os.path.getsize(report_file) > 0)
+
+            # maxiter = 0
+            res2 = opt.optimize(wrap, variables, res.x, args=(5,),
+                               verbose=1, maxiter=0, maxeval=maxev,
+                               eval_file=eval_file,
+                               save_file=save_file, report_file=report_file)
+            self.assertEqual(res.y, res2.y)
+            self.assertEqual(calc_func(res.x, 5), calc_func(res2.x, 5))
+            self.assertEqual(res2.n_iter, 0)
+            self.assertEqual(res2.n_eval, 1)
+
             os.remove(eval_file)
             os.remove(save_file)
-            os.remove(report_file)
+            os.remove(report_file)        
 
-    def get_yri_ceu_ll(self, x_dict, ns=[20,20]):
-        def func(x_dict, ns, pts):
-            # Define the grid we'll use
-            xx = yy = dadi.Numerics.default_grid(pts)
-
-            # phi for the equilibrium ancestral population
-            phi = dadi.PhiManip.phi_1D(xx)
-            # Now do the population growth event.
-            phi = dadi.Integration.one_pop(phi, xx, x_dict['Tp'],
-                                           nu=x_dict['nu1F'])
-
-            # The divergence
-            phi = dadi.PhiManip.phi_1D_to_2D(xx, phi)
-            # We need to define a function to describe the non-constant
-            # population 2 size. lambda is a convenient way to do so.
-            nu2_func = lambda t: x_dict['nu2B'] * (x_dict['nu2F'] / x_dict['nu2B'])**(t/x_dict['T'])  # NOQA
-            phi = dadi.Integration.two_pops(phi, xx, x_dict['T'],
-                                            nu1=x_dict['nu1F'], nu2=nu2_func,
-                                            m12=x_dict['m'], m21=x_dict['m'])
-
-            sfs = dadi.Spectrum.from_phi(phi, ns, (xx, yy))
-            return sfs
-
-        pts = [40, 50, 60]
-        data = dadi.Spectrum.from_file(YRI_CEU_DATA)
-        data = data.project(ns)
-        func_ex = dadi.Numerics.make_extrap_log_func(func)
-
-        model = func_ex(x_dict, data.sample_sizes, pts)
-        ll_model = dadi.Inference.ll_multinom(model, data)
-        return ll_model
-
-    def test_yri_ceu_example(self):
-        nu1F = PopulationSizeVariable('nu1F')
-        nu2B = PopulationSizeVariable('nu2B')
-        nu2F = PopulationSizeVariable('nu2F')
-        m = MigrationVariable('m')
-        Tp = TimeVariable('Tp')
-        T = TimeVariable('T')
-        Dyn = DynamicVariable('Dyn')
-
-        dm = EpochDemographicModel()
-        dm.add_epoch(Tp, [nu1F])
-        dm.add_split(0, [nu1F, nu2B])
-        dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', 'Exp'])
-        dic = {'nu1F': 2.0, 'nu2B': 0.1, 'nu2F': 2, 'm': 1,
-               'Tp':  0.2, 'T': 0.2}
-
-        proj = (4, 4)
-        data = SFSDataHolder(YRI_CEU_DATA, projections=proj)
-        d = DadiEngine(model=dm, data=data)
-        values = [dic[var.name] for var in dm.variables]
-
-        d = get_engine('dadi')
-        d.set_data(data)
-        d.set_model(dm)
-
-        args = ([40, 50, 60],)
-        def f(x, *args):
-                y = - d.evaluate(list(x), *args)
-                #print(x, y)
-                return y
-
-        for opt in all_global_optimizers():
-            with self.subTest(optimizer=opt.id):
-                if hasattr(opt, "kernel_name"):
-                    opt.kernel_name = "auto"
-                res = opt.optimize(f, dm.variables, num_init=10,
-                                   args=args, maxeval=15, maxiter=3)
-        for opt_name in ["BFGS", "L-BFGS-B"]: #all_local_optimizers():
-            opt = get_local_optimizer(opt_name)
-            with self.subTest(local_optimizer=opt.id):
-                res = opt.optimize(f, dm.variables, x0=values,
-                                   args=args, maxiter=2)
-                self.assertEqual(res.y, f(res.x, *args))
-                self.assertEqual(res.y, -self.get_yri_ceu_ll(
-                    {var.name: val for var, val in zip(dm.variables, res.x)},
-                    proj))
-                self.assertTrue(res.y <= f(values, *args))
-
-    def run_example(self, engine_id, example_func, will_collapse=False):
-        args = ()
-        if engine_id == 'dadi':
-            args = ([40,50,60],)
-        f, variables = example_func(engine_id, args)
-        x0 = [var.resample() for var in variables]
-
-        def callback(x, y):
-            pass
-
-#        save_file = 'save_file'
-        report_file = 'report_file'
-        eval_file = 'eval_file'
-
-        for opt in all_local_optimizers():
-            with self.subTest(local_optimizer=opt.id):
-#                print(opt.id)
-                msg = f"(optimization {opt.id}, engine {engine_id})"
-                if will_collapse and opt.id != 'None' and opt.id != None:
-                    self.assertRaises(AssertionError, opt.optimize, f,
-                                      variables, x0=x0, args=args,
-                                      maxeval=10, maxiter=2,
-                                      callback=callback,
-                                      report_file=report_file,
-#                                      save_file=save_file,
-                                      eval_file=eval_file)
-                else:
-                    res = opt.optimize(f, variables, x0=x0,
-                                       args=args, maxiter=2, maxeval=10,
-                                       callback=callback,
-                                       verbose=1,
-                                       report_file=report_file,
-#                                       save_file=save_file,
-                                       eval_file=eval_file)
-                    self.assertEqual(res.y, f(res.x, *args), msg=msg)
-                    self.assertTrue(res.y <= f(x0, *args),
-                                    msg=msg + f" {res.y} > {f(x0, *args)}")
-
-    def test_1pop_example_1(self):
-        for engine in all_engines():
-            self.run_example(engine.id, get_1pop_sim_example_1)
-
-    def test_1pop_example_2(self):
-        for engine in all_engines():
-            self.run_example(engine.id, get_1pop_sim_example_2,
-                             will_collapse=True)
-
+#    def get_yri_ceu_ll(self, x_dict, ns=[20,20]):
+#        def func(x_dict, ns, pts):
+#            # Define the grid we'll use
+#            xx = yy = dadi.Numerics.default_grid(pts)
+#
+#            # phi for the equilibrium ancestral population
+#            phi = dadi.PhiManip.phi_1D(xx)
+#            # Now do the population growth event.
+#            phi = dadi.Integration.one_pop(phi, xx, x_dict['Tp'],
+#                                           nu=x_dict['nu1F'])
+#
+#            # The divergence
+#            phi = dadi.PhiManip.phi_1D_to_2D(xx, phi)
+#            # We need to define a function to describe the non-constant
+#            # population 2 size. lambda is a convenient way to do so.
+#            nu2_func = lambda t: x_dict['nu2B'] * (x_dict['nu2F'] / x_dict['nu2B'])**(t/x_dict['T'])  # NOQA
+#            phi = dadi.Integration.two_pops(phi, xx, x_dict['T'],
+#                                            nu1=x_dict['nu1F'], nu2=nu2_func,
+#                                            m12=x_dict['m'], m21=x_dict['m'])
+#
+#            sfs = dadi.Spectrum.from_phi(phi, ns, (xx, yy))
+#            return sfs
+#
+#        pts = [40, 50, 60]
+#        data = dadi.Spectrum.from_file(YRI_CEU_DATA)
+#        data = data.project(ns)
+#        func_ex = dadi.Numerics.make_extrap_log_func(func)
+#
+#        model = func_ex(x_dict, data.sample_sizes, pts)
+#        ll_model = dadi.Inference.ll_multinom(model, data)
+#        return ll_model
+#
+#    def test_yri_ceu_example(self):
+#        nu1F = PopulationSizeVariable('nu1F')
+#        nu2B = PopulationSizeVariable('nu2B')
+#        nu2F = PopulationSizeVariable('nu2F')
+#        m = MigrationVariable('m')
+#        Tp = TimeVariable('Tp')
+#        T = TimeVariable('T')
+#        Dyn = DynamicVariable('Dyn')
+#
+#        dm = EpochDemographicModel()
+#        dm.add_epoch(Tp, [nu1F])
+#        dm.add_split(0, [nu1F, nu2B])
+#        dm.add_epoch(T, [nu1F, nu2F], [[None, m], [m, None]], ['Sud', 'Exp'])
+#        dic = {'nu1F': 2.0, 'nu2B': 0.1, 'nu2F': 2, 'm': 1,
+#               'Tp':  0.2, 'T': 0.2}
+#
+#        proj = (4, 4)
+#        data = SFSDataHolder(YRI_CEU_DATA, projections=proj)
+#        d = DadiEngine(model=dm, data=data)
+#        values = [dic[var.name] for var in dm.variables]
+#
+#        d = get_engine('dadi')
+#        d.set_data(data)
+#        d.set_model(dm)
+#
+#        args = ([40, 50, 60],)
+#        def f(x, *args):
+#                y = - d.evaluate(list(x), *args)
+#                #print(x, y)
+#                return y
+#
+#        for opt in all_global_optimizers():
+#            with self.subTest(optimizer=opt.id):
+#                if hasattr(opt, "kernel_name"):
+#                    opt.kernel_name = "auto"
+#                res = opt.optimize(f, dm.variables, num_init=10,
+#                                   args=args, maxeval=15, maxiter=3)
+#        for opt_name in ["BFGS", "L-BFGS-B"]: #all_local_optimizers():
+#            opt = get_local_optimizer(opt_name)
+#            with self.subTest(local_optimizer=opt.id):
+#                res = opt.optimize(f, dm.variables, x0=values,
+#                                   args=args, maxiter=2)
+#                self.assertEqual(res.y, f(res.x, *args))
+#                self.assertEqual(res.y, -self.get_yri_ceu_ll(
+#                    {var.name: val for var, val in zip(dm.variables, res.x)},
+#                    proj))
+#                self.assertTrue(res.y <= f(values, *args))
+#
+#    def run_example(self, engine_id, example_func, will_collapse=False):
+#        args = ()
+#        if engine_id == 'dadi':
+#            args = ([40,50,60],)
+#        f, variables = example_func(engine_id, args)
+#        x0 = [var.resample() for var in variables]
+#
+#        def callback(x, y):
+#            pass
+#
+##        save_file = 'save_file'
+#        report_file = 'report_file'
+#        eval_file = 'eval_file'
+#
+#        for opt in all_local_optimizers():
+#            with self.subTest(local_optimizer=opt.id):
+##                print(opt.id)
+#                msg = f"(optimization {opt.id}, engine {engine_id})"
+#                if will_collapse and opt.id != 'None' and opt.id != None:
+#                    self.assertRaises(AssertionError, opt.optimize, f,
+#                                      variables, x0=x0, args=args,
+#                                      maxeval=10, maxiter=2,
+#                                      callback=callback,
+#                                      report_file=report_file,
+##                                      save_file=save_file,
+#                                      eval_file=eval_file)
+#                else:
+#                    res = opt.optimize(f, variables, x0=x0,
+#                                       args=args, maxiter=2, maxeval=10,
+#                                       callback=callback,
+#                                       verbose=1,
+#                                       report_file=report_file,
+##                                       save_file=save_file,
+#                                       eval_file=eval_file)
+#                    self.assertEqual(res.y, f(res.x, *args), msg=msg)
+#                    self.assertTrue(res.y <= f(x0, *args),
+#                                    msg=msg + f" {res.y} > {f(x0, *args)}")
+#
+#    def test_1pop_example_1(self):
+#        for engine in all_engines():
+#            self.run_example(engine.id, get_1pop_sim_example_1)
+#
+#    def test_1pop_example_2(self):
+#        for engine in all_engines():
+#            self.run_example(engine.id, get_1pop_sim_example_2,
+#                             will_collapse=True)
+#
     def test_combinations_misses(self):
         ls_opt = get_local_optimizer("BFGS")
         ls_opt.maximize = False
@@ -484,6 +524,7 @@ class TestLocalOpt(TestBaseOptClass):
 #            self.run_example(engine.id, get_2pop_sim_example_1)
 
 class TestCoreRun(unittest.TestCase):
+    @pytest.mark.timeout(800)
     def test_core_run(self):
         settings = test_args()
         settings.input_data = os.path.join(DATA_PATH, "DATA", "sfs",
@@ -503,11 +544,49 @@ class TestCoreRun(unittest.TestCase):
         settings.linked_snp_s = True
         settings.relative_parameters = True
         settings.pts = [4, 6, 8]
-        settings.global_maxiter = 4
+        settings.global_maxiter = 2
         settings.local_maxiter = 1
         shared_dict = gadma.shared_dict.SharedDictForCoreRun(
             multiprocessing=False)
         gadma.core.core.job(0, shared_dict, settings)
+
+        for engine in all_engines():
+            print(engine.id)
+            try:
+                settings = SettingsStorage()
+                settings.engine = engine.id
+                settings.output_directory = "Some_out_dir"
+                settings.num_init_const = 2
+                settings.global_maxiter = 4
+                settings.local_maxiter = 1
+                settings.model_plot_engine = "demes"
+                vcf_file = os.path.join(DATA_PATH, "DATA", "vcf", 'out_of_africa_chr22_sim.vcf')
+                popmap = os.path.join(DATA_PATH, "DATA", "vcf", 'out_of_africa_chr22_sim.popmap')
+                settings.input_data = f"{vcf_file}, {popmap}"
+                settings.is_valid()
+                gadma.core.core.job(0, shared_dict, settings)
+            finally:
+                if check_dir_existence("Some_out_dir"):
+                    shutil.rmtree("Some_out_dir")
+
+            # best place to check
+            if engine.id == "momi":
+                try:
+                    # prints warning that units will be years
+                    settings.model_plot_engine = "momi"
+                    settings.time_for_generation = 1
+                    settings.units_of_time_in_drawing = "kya"
+                    settings.selection = True
+                    settings.is_valid()
+                    self.assertEqual(settings.units_of_time_in_drawing, "years")
+                    self.assertFalse(settings.selection)
+                    settings.engine = "moments"
+                    settings.no_migrations = False
+                    settings.is_valid()
+                finally:
+                    if check_dir_existence("Some_out_dir"):
+                        shutil.rmtree("Some_out_dir")
+
 
     def test_core_run_restore(self):
         old_run_out = os.path.join(DATA_PATH, "my_example_run")
@@ -652,6 +731,40 @@ class TestGlobalOptimizer(unittest.TestCase):
         self.assertEqual(_X[:len(Y_init)-1], X_init[:-1])
         self.assertEqual(_X[len(Y_init)-1:len(Y_out)-1+len(Y_out)], X_out)
         self.assertEqual(len(_X), len(X))
+
+    def test_optimizer_run(self):
+        f = scipy.optimize.rosen
+        variables = [
+            PopulationSizeVariable("nu", domain=[0, 2]),
+            ContinuousVariable("var1", domain=[-1, 1.5]),
+            DiscreteVariable("d1", domain=[0, 1]),
+        ]
+
+        for opt in all_global_optimizers():
+            report_file = "report_file"
+            if os.path.isfile(report_file):
+                os.remove(report_file)
+
+            kwargs = {
+                "f": f,
+                "variables": variables,
+                "verbose": 1,
+                "report_file": report_file,
+                "num_init": 2,
+            }
+            if opt.id == "Genetic_algorithm":
+                opt.gen_size = 2
+
+            res1 = opt.optimize(**kwargs, maxiter=None, maxeval=5)
+            res2 = opt.optimize(**kwargs, maxiter=5, maxeval=None)
+            res3 = opt.optimize(**kwargs, maxiter=5, maxeval=5)
+
+            self.assertTrue(res1.n_eval <= 5)
+            self.assertTrue(res2.n_iter <= 5)
+            self.assertTrue(res3.n_eval <= 5)
+            self.assertTrue(res3.n_iter <= 5)
+
+            os.remove(report_file)
 
 
 class TestSMACOptimizations(unittest.TestCase):

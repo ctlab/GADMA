@@ -26,12 +26,14 @@ Data formats
    vcf_data_format
    fs_data_format
    snp_data_format
+   obs_data_format
 
 GADMA supports several types of input data, which are familiar to anyone who has used ``dadi`` or ``moments`` in the past:
 
    * `VCF file format (.vcf + popmap file) <vcf_data_format.rst>`__
    * `Frequency spectrum file format (.fs or .sfs) <fs_data_format.rst>`__
    * `SNP data format (.txt) <snp_data_format.rst>`__
+   * `Fastsimcoal2 frequency spectrum file format (.obs) <obs_data_format.rst>`__
 
 Input file can be specified to GADMA in two ways:
 
@@ -48,7 +50,7 @@ Input file can be specified to GADMA in two ways:
       $ gadma --input snp_file.txt -o out_dir
 
 .. note::
-    If VCF file is set as input data then popmap file should be given as well. 
+    If VCF file is set as input data then popmap file should be given as well.
     Files should be separated by comma, however,
     **do not use space between two files if files are set via command line**:
 
@@ -64,7 +66,7 @@ Input file can be specified to GADMA in two ways:
       # param_file
 
       # Input file path
-      Input data : fs_file.fs 
+      Input data : fs_file.fs
       ...
 
 Extra information about data
@@ -78,10 +80,10 @@ Extra information about input AFS can also be put in the parameter file. For exa
 
    # Input file path
    Input data : fs_file.fs
-    
+
    # (New) size of the AFS
    Projections : 20,20
-    
+
    # Labels of populations
    Population labels : CEU, YRI
 

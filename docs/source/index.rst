@@ -12,10 +12,11 @@ GADMA [Noskova2020]_ implements methods for automatic inference of the joint dem
 
 GADMA features variuos optimization methods (`global <https://gadma.readthedocs.io/en/latest/api/gadma.optimizers.html#global-optimizers-list>`_ and `local <https://gadma.readthedocs.io/en/latest/api/gadma.optimizers.html#local-optimizers-list>`_ search algorithms) which may be used for `any general optimization problem <https://gadma.readthedocs.io/en/latest/api_examples/optimization_example.html>`_.
 
-GADMA provides choice of several engines of demographic inference:
+GADMA provides choice of several engines for the demographic inference:
 
 * `dadi <https://bitbucket.org/gutenkunstlab/dadi/>`_  developed by Ryan Gutenkunst [Gutenkunst2009]_
 * `moments <https://bitbucket.org/simongravel/moments/>`_  developed by Simon Gravel [Jouganous2017]_
+* `momi <https://github.com/popgenmethods/momi2/>`_ [Kamm2020]_
 
 Base usage of GADMA via command-line:
 

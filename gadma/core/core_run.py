@@ -6,6 +6,7 @@ from ..utils import WeightedMetaArray
 from ..optimizers import GlobalOptimizerAndLocalOptimizer
 from ..utils import get_aic_score, get_claic_score, ident_transform, bcolors
 from ..models import EpochDemographicModel, StructureDemographicModel
+from ..models import CustomDemographicModel
 from .draw_and_generate_code import draw_plots_to_file, generate_code_to_file
 from .draw_and_generate_code import get_Nanc_gen_time_and_units
 from ..cli import SettingsStorage
@@ -104,15 +105,18 @@ class CoreRun(object):
                 # If our model is built via gadma then we can write code for
                 # all engines.
                 if isinstance(self.model, EpochDemographicModel):
-                    demes_will_not_work = False
-                    mu_is_None = self.engine.model.mutation_rate is None
+                    Nanc_will_be = self.settings.Nanc_will_be_available()
                     L_is_None = self.settings.sequence_length is None
-                    mu_and_L = not mu_is_None and not L_is_None
-                    if not (self.engine.model.has_anc_size or
-                            self.engine.model.theta0 is not None or mu_and_L):
-                        demes_will_not_work = True
+                    is_custom = isinstance(self.engine.model,
+                                           CustomDemographicModel)
                     for engine in all_available_engines():
-                        if engine.id == "demes" and demes_will_not_work:
+                        if engine.id == "demes" and not Nanc_will_be:
+                            continue
+                        if (engine.id == "momi" and
+                                (not Nanc_will_be or L_is_None) and
+                                not is_custom):
+                            continue
+                        if is_custom and self.engine.id != engine.id:
                             continue
                         engine_dir = os.path.join(self.code_dir, engine.id)
                         ensure_dir_existence(engine_dir)
@@ -245,7 +249,7 @@ class CoreRun(object):
                     save_file = os.path.join(self.code_dir, engine.id,
                                              filename)
                     args = self.settings.get_engine_args(engine.id)
-                    engine.set_data(self.engine.data)
+                    # engine.set_data(self.engine.data)
                     engine.data_holder = self.engine.data_holder
                     engine.set_model(self.engine.model)
                     try:

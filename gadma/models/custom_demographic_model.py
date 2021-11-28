@@ -33,3 +33,7 @@ class CustomDemographicModel(DemographicModel):
         if variables is None:
             variables = VariablePool()
         self.variables = VariablePool(variables)
+
+    def translate_values(self, units, values, Nanc=None,
+                         time_in_generations=False, rescale_back=False):
+        return values

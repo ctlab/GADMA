@@ -233,6 +233,7 @@ class ScipyOptimizer(LocalOptimizer, ContinuousOptimizer):
             self.run_info.result.success = True
             self.run_info.result.status = 0
             self.run_info.result.message = "maxiter or maxeval is 0"
+            return self.run_info
 
         options = copy.copy(options)
         if maxiter is not None:

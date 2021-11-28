@@ -1,0 +1,25 @@
+# Set data first
+Input file: out_of_africa_chr22_sim.vcf, out_of_africa_chr22_sim.popmap
+
+# Output folder. It should be empty.
+Output directory: gadma_result
+
+
+# Set engine for simulations. We use momi.
+Engine: momi
+
+# For engine momi mutation rate and sequence length are required
+Mutation rate: 1.29e-8
+Sequence length: 51304566
+
+# Now set our custom demographic model from file.
+# There should be a function model_func in the file with a model.
+Custom filename: demographic_model.py
+
+# for short example
+global_maxiter: 30
+local_maxiter: 2
+
+# How many repeats to run and how many processes to use.
+Number of repeats: 2
+Number of processes: 2

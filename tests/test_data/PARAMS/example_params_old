@@ -318,3 +318,7 @@ Number of repeats : 3
 #   the number of processes.
 #   Default: 1
 Number of processes : 3
+
+
+# Some deprecated option
+Flush_delay: 1e-5

@@ -14,6 +14,7 @@ Specifying a model
 
       * ``Theta0``
       * ``Mutation rate``
+      * ``Recombination rate``
 
     Please read more about ``Theta0`` and ``Mutation rate`` :ref:`here <theta>`.
 
@@ -39,6 +40,7 @@ GADMA could infer two base types of demographic models:
       * ``Migration masks`` enables/disables migrations selectively.
       * ``Split fractions`` infers fractions in which ancestral population is split.
       * ``Inbreeding`` infers inbreeding coefficients (only for ``dadi`` engine).
+      * ``Selection`` infers selection coefficients.
       * ``Ancestral size as parameter`` disables multinomial approach of ``dadi`` and ``moments`` engines when ancestral size is inferred implicitly.
       * ``Upper bound of first split`` limits upper bound of the most ancient split.
       * ``Upper bound of second split`` limits upper bounds of next to the most ancient split.
