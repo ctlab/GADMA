@@ -1,3 +1,5 @@
+import ast
+
 import numpy as np
 import collections
 import pickle
@@ -73,8 +75,8 @@ class MomentsLdEngine(Engine):
             if data_holder.ld_kwargs:
                 for key in data_holder.ld_kwargs:
                     try:
-                        kwargs[key] = eval(data_holder.ld_kwargs[key])
-                    except:  # NOQA
+                        kwargs[key] = ast.literal_eval(data_holder.ld_kwargs[key])
+                    except ValueError:
                         kwargs[key] = data_holder.ld_kwargs[key]
 
             chromosomes = create_bed_files_and_extract_chromosomes(data_holder)
@@ -207,10 +209,10 @@ class MomentsLdEngine(Engine):
             if self.data_holder.ld_kwargs:
                 for key in self.data_holder.ld_kwargs:
                     try:
-                        self.kwargs[key] = eval(
+                        self.kwargs[key] = ast.literal_eval(
                             self.data_holder.ld_kwargs[key]
                         )
-                    except:  # NOQA
+                    except ValueError:
                         self.kwargs[key] = self.data_holder.ld_kwargs[key]
                 self.r_bins = self.kwargs["r_bins"]
         if isinstance(self.model, CustomDemographicModel):
