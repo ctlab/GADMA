@@ -75,7 +75,8 @@ class MomentsLdEngine(Engine):
             if data_holder.ld_kwargs:
                 for key in data_holder.ld_kwargs:
                     try:
-                        kwargs[key] = ast.literal_eval(data_holder.ld_kwargs[key])
+                        kwargs[key] = ast.literal_eval(
+                            data_holder.ld_kwargs[key])
                     except ValueError:
                         kwargs[key] = data_holder.ld_kwargs[key]
 
