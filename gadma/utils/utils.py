@@ -32,7 +32,7 @@ def _is_valid_for_log(variable):
     if not isinstance(variable, ContinuousVariable):
         return False
     zero_is_valid = (variable.correct_value(0) or
-					 np.isclose(0, variable.domain[0])))
+                     np.isclose(0, variable.domain[0]))
     return not isinstance(variable, FractionVariable) and not zero_is_valid
 
 
