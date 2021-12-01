@@ -57,8 +57,13 @@ def get_maxeval_for_bo(maxeval, maxiter):
     return min(maxit, maxev)
 
 
-def choose_kernel_if_needed(optimizer, variables, X, Y,
-                            kernels=["exponential", "matern32", "matern52", "rbf"]):
+def choose_kernel_if_needed(
+    optimizer,
+    variables,
+    X,
+    Y,
+    kernels=["exponential", "matern32", "matern52", "rbf"]
+):
     # If needed we choose our kernel
     if optimizer.kernel_name.lower() == "auto":
         optimizer.kernel_name = get_best_kernel(
@@ -1015,7 +1020,8 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
 
             # shuffle our list in-place
             # random.shuffle(combinations)
-            mark, gp, acq, acq_opt, rh2epm = combinations[np.random.choice([0, 1])]
+            kernel_ind = np.random.choice([0, 1])
+            mark, gp, acq, acq_opt, rh2epm = combinations[kernel_ind]
             # for mark, gp, acq, acq_opt, rh2epm in combinations:
             X, y = rh2epm.transform(runhistory)
 
