@@ -415,8 +415,8 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
         # If we maximize then we transform f to -f
         # Otherwise there will be troubles with multiplications to sign
         if len(variables) == 0 and self.maximize:
-            def minus_f(x):
-                return - f(x)
+            def minus_f(x, *args):
+                return - f(x, *args)
             return super(ManuallyConstrOptimizer, self).optimize(
                 minus_f,
                 variables,
@@ -424,7 +424,7 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
                 **kwargs,
             )
         return super(ManuallyConstrOptimizer, self).optimize(
-            minus_f,
+            f,
             variables,
             *args,
             **kwargs,
