@@ -796,7 +796,7 @@ class TestSMACOptimizations(unittest.TestCase):
         if not smac_available:  # We are successful when smac is not available
             return
         import smac
-        from smac.tae.execute_ta_run import StatusType
+        from smac.tae import StatusType
         opt = get_global_optimizer("SMAC_squirrel_optimization")
         variables = [DiscreteVariable("d1", domain=[1, 2, 3])]
         api_config, config_space = opt.get_configs(variables)

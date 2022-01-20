@@ -66,6 +66,10 @@ def choose_kernel_if_needed(
 ):
     # If needed we choose our kernel
     if optimizer.kernel_name.lower() == "auto":
+        # Safeguard, just in case...
+        Y = np.array(Y)
+        if np.any(~np.isfinite(Y)):
+            Y[~np.isfinite(Y)] = np.max(Y[np.isfinite(Y)])
         optimizer.kernel_name = get_best_kernel(
             optimizer=optimizer,
             variables=variables,
