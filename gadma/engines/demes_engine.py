@@ -250,7 +250,6 @@ class DemesEngine(Engine):
             positions=None,
             num_lines_per_migration=10,
             seed=None,
-            optimisation_rounds=None,
             labels='xticks-mid',
             fill=True
         )

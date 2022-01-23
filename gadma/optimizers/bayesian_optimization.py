@@ -2,6 +2,7 @@ import operator as op
 import numpy as np
 import copy
 import time
+import random
 from collections import OrderedDict
 
 from .gaussian_process import GPyGaussianProcess, SMACGaussianProcess
@@ -32,7 +33,7 @@ if smac_available:
     from ConfigSpace.hyperparameters import CategoricalHyperparameter
     from smac.facade.smac_bo_facade import SMAC4BO
     from smac.utils.constants import MAXINT
-    from smac.tae.execute_ta_run import StatusType
+    from smac.tae import StatusType
     from smac.stats.stats import Stats
     from smac.optimizer.random_configuration_chooser import ChooserProb
     from smac.runhistory.runhistory import RunHistory
@@ -56,15 +57,26 @@ def get_maxeval_for_bo(maxeval, maxiter):
     return min(maxit, maxev)
 
 
-def choose_kernel_if_needed(optimizer, variables, X, Y):
+def choose_kernel_if_needed(
+    optimizer,
+    variables,
+    X,
+    Y,
+    kernels=["exponential", "matern32", "matern52", "rbf"]
+):
     # If needed we choose our kernel
     if optimizer.kernel_name.lower() == "auto":
+        # Safeguard, just in case...
+        Y = np.array(Y)
+        if np.any(~np.isfinite(Y)):
+            Y[~np.isfinite(Y)] = np.max(Y[np.isfinite(Y)])
         optimizer.kernel_name = get_best_kernel(
             optimizer=optimizer,
             variables=variables,
             X=X,
             Y=Y,
-            mode="rassmusen"
+            mode="rassmusen",
+            kernels=kernels,
         )
         message = f"Kernel was chosen automatikally: {optimizer.kernel_name}\n"
         return optimizer.kernel_name, message
@@ -113,6 +125,12 @@ class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
     @staticmethod
     def _write_report_to_stream(variables, run_info, stream):
+
+        def get_x_repr(x):
+            if isinstance(x, WeightedMetaArray):
+                return x.str_as_list()
+            return str(list(x))
+
         bo_obj = run_info.bo_obj
         if bo_obj is not None:
             bo_obj._compute_results()
@@ -120,8 +138,6 @@ class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         y_best = run_info.result.y
         n_iter = run_info.result.n_iter
 
-        if n_iter > 0:
-            print("\n", file=stream)
         print('====================== Iteration %05d ======================' %
               n_iter, file=stream)
 
@@ -132,7 +148,7 @@ class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
         print("Fitness function\tParameters", file=stream)
         for x, y in zip(run_info.result.X_out, run_info.result.Y_out):
-            print(f"{y}\t{list(x)}", file=stream)
+            print(f"{y}\t{get_x_repr(x)}", file=stream)
 
         if bo_obj is not None:
             print('\nCurrent state of the model:', file=stream)
@@ -162,9 +178,10 @@ class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         print('*************************************************************',
               file=stream)
         print('Current optimum: %0.3f' % y_best, file=stream)
-        print(f'On parameters: {list(x_best)}', file=stream)
+        print(f'On parameters: {get_x_repr(x_best)}', file=stream)
         print('*************************************************************',
               file=stream)
+        print("\n", file=stream)
 
     def _create_run_info(self):
         """
@@ -425,15 +442,19 @@ if smac_available:
 
 class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
     """
-    Class for Bayesian optimization with SMAC from Black Box challenge.
+    Class for Bayesian optimization with SMAC library.
+
+    :param kernel: Name of Gaussian process kernel.
+    :param acquisition_type: Name of acquisition function.
+
+    Other parameters are standard for :class:`gadma.GlobalOptimizer`.
     """
-    def __init__(self, kernel="Auto", ARD=True, acquisition_type='MPI',
+    def __init__(self, kernel="Auto", acquisition_type='MPI',
                  random_type='resample', custom_rand_gen=None,
                  log_transform=False, maximize=False):
         if not smac_available:
             raise ValueError("Install SMAC to use it in Bayesian optimization")
         self.kernel_name = kernel
-        self.ARD = ARD
         self.acquisition_type = acquisition_type
         super(SMACBayesianOptimizer, self).__init__(
             random_type=random_type,
@@ -814,3 +835,273 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
 if smac_available:
     register_global_optimizer("SMAC_BO_optimization", SMACBayesianOptimizer)
+
+
+class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
+    """
+    Class for Bayesian optimization with 4 combinations of Gaussian Processes
+    using SMAC library.
+
+    Four different combinations are used on each iteration: Matern52 and RBF
+    as kernels of GP; and MPI and logEI as acquisition functions.
+    """
+    def __init__(self, kernels_to_choose=["matern52", "rbf"],
+                 random_type='resample', custom_rand_gen=None,
+                 log_transform=False, maximize=False):
+        if not smac_available:
+            raise ValueError("Install SMAC to use it in Bayesian optimization")
+        super(SMACBOKernelCombination, self).__init__(
+            random_type=random_type,
+            custom_rand_gen=custom_rand_gen,
+            log_transform=log_transform,
+            maximize=maximize
+        )
+        self.kernels_to_choose = kernels_to_choose
+
+    def _create_run_info(self):
+        run_info = super(SMACBOKernelCombination, self)._create_run_info()
+        run_info.gp_train_times = []
+        run_info.gp_predict_times = []
+        run_info.acq_opt_times = []
+        run_info.eval_times = []
+        run_info.iter_times = []
+        return run_info
+
+    def _update_run_info(self, run_info, x_best, y_best, X, Y,
+                         n_eval, gp_train_time=None, gp_predict_time=None,
+                         acq_opt_time=None, eval_time=None, iter_time=None):
+        super(SMACBOKernelCombination, self)._update_run_info(
+            run_info=run_info,
+            x_best=x_best,
+            y_best=y_best,
+            X=X,
+            Y=Y,
+            n_eval=n_eval
+        )
+        run_info.gp_train_times.append(gp_train_time)
+        run_info.gp_predict_times.append(gp_predict_time)
+        run_info.acq_opt_times.append(acq_opt_time)
+        run_info.eval_times.append(eval_time)
+        run_info.iter_times.append(iter_time)
+        return run_info
+
+    def _create_gp_model(self, config_space, kernel_name):
+        opt = SMACBayesianOptimizer(kernel=kernel_name)
+        return opt.get_model(config_space=config_space)
+
+    def _create_acquisition_function(self, model, acquisition_name):
+        assert acquisition_name in ["PI", "logEI"]
+        opt = SMACBayesianOptimizer(acquisition_type=acquisition_name)
+        return opt.get_acquisition_function(model=model)
+
+    @staticmethod
+    def _write_report_to_stream(variables, run_info, stream):
+        run_info.bo_obj = None
+        GPyOptBayesianOptimizer._write_report_to_stream(
+            variables=variables,
+            run_info=run_info,
+            stream=stream
+        )
+
+    def do_gp_optimization(self):
+        """
+        We optimize gp:
+        1) every iteration for first 50 iterations
+        2) every 5th iteration for next 50 iterations
+        3) every 10th iteration for the last iterations
+        """
+        n_iter = self.run_info.result.n_iter + 1  # this is correct
+        if n_iter <= 100:
+            return True
+        if n_iter <= 200:
+            return (n_iter % 5) == 0
+        return (n_iter % 10) == 0
+
+    def _optimize(self, f, variables, X_init, Y_init, maxiter, maxeval,
+                  iter_callback):
+        maxeval = get_maxeval_for_bo(maxeval, maxiter)
+
+        # Create help optimizer with usual SMAC to call the same functions
+        help_opt = SMACBayesianOptimizer(kernel="Auto")
+        help_opt_log = SMACBayesianOptimizer(
+            kernel="Auto", acquisition_type="logEI"
+        )
+
+        kernel_name1, message1 = choose_kernel_if_needed(
+            optimizer=help_opt,
+            variables=variables,
+            X=X_init,
+            Y=Y_init,
+            kernels=self.kernels_to_choose
+        )
+        help_opt.kernel_name = kernel_name1
+
+        kernel_name2, message2 = choose_kernel_if_needed(
+            optimizer=help_opt_log,
+            variables=variables,
+            X=X_init,
+            Y=Y_init,
+            kernels=self.kernels_to_choose
+        )
+        help_opt_log.kernel_name = kernel_name2
+
+        message = f"For usual Y:\n{message1}For log_transformed Y:\n{message2}"
+
+        x_best = X_init[0]
+        y_best = Y_init[0]
+        iter_callback(x_best, y_best, X_init, Y_init, message=message)
+
+        # Get config space
+        config_space = help_opt.get_config_space(variables)
+        # get scenario, runhistory and stats
+        scenario = help_opt.get_scenario(maxeval, config_space)
+        runhistory = RunHistory()
+        stats = Stats(scenario)
+        # for acq function optimizer
+        rnd_chooser = ChooserProb(rng=help_opt._get_random_state(), prob=0.0)
+
+        # get classes to get valid train data from run history
+        rh2epm_no_transform = help_opt.get_runhistory2epm(scenario)
+        rh2epm_log = help_opt_log.get_runhistory2epm(scenario)
+        acq2rh2epm = {"PI": rh2epm_no_transform, "logEI": rh2epm_log}
+
+        # we will add configs to run history by using the following function
+        def add_to_runhistory(config, cost):
+            runhistory.add(
+                config=config,
+                cost=cost,
+                time=0,
+                status=StatusType.SUCCESS
+            )
+
+        combinations = []
+        for model_name, acq_name in [(kernel_name1, "PI"),
+                                     (kernel_name2, "logEI")]:
+            gp = self._create_gp_model(config_space, model_name)
+            acq = self._create_acquisition_function(
+                model=gp,
+                acquisition_name=acq_name
+            )
+            acq_opt = help_opt.get_acquisition_function_optimizer(
+                config_space,
+                acq
+            )
+            mark = f"{model_name}_{acq_name}"
+            combinations.append(
+                (mark, gp, acq, acq_opt, acq2rh2epm[acq_name])
+            )
+
+        # transform our X_init for valid configurations
+        # we create random valid configs and then fill them with our values
+        X_init_configs = config_space.sample_configuration(len(X_init))
+        for x in X_init:
+            for i, x in enumerate(X_init):
+                for ind, (var, par) in enumerate(zip(variables, x)):
+                    if isinstance(variables[ind], ContinuousVariable):
+                        par = float(par)
+                    X_init_configs[i][var.name] = par
+
+        # add our initial design to run history
+        for x, y in zip(X_init_configs, Y_init):
+            add_to_runhistory(x, y)
+
+        # begin Bayesian optimization
+        while self.run_info.result.n_eval < maxeval or \
+                (maxiter is not None and
+                 self.run_info.result.n_iter * 4 < maxiter):
+            do_gp_optim = self.do_gp_optimization()
+            message = f"GP was optimized: {do_gp_optim}"
+
+            total_t_start = time.time()
+
+            gp_train_time = 0
+            gp_predict_time = 0
+            acq_opt_time = 0
+            eval_time = 0
+            iter_configs = []
+            iter_X = []
+            iter_y = []
+
+            # shuffle our list in-place
+            # random.shuffle(combinations)
+            kernel_ind = np.random.choice([0, 1])
+            mark, gp, acq, acq_opt, rh2epm = combinations[kernel_ind]
+            # for mark, gp, acq, acq_opt, rh2epm in combinations:
+            X, y = rh2epm.transform(runhistory)
+
+            # If all are not finite then we return nothing
+            if np.all(~np.isfinite(y)):
+                return self.run_info.result
+
+            # Safeguard, just in case...
+            if np.any(~np.isfinite(y)):
+                y[~np.isfinite(y)] = np.max(y[np.isfinite(y)])
+
+            t_start = time.time()
+            gp.train(X, y, optimize=do_gp_optim)
+            gp_train_time += time.time() - t_start
+
+            t_start = time.time()
+            # we do not care what model is used here
+            predictions = gp.predict(X)[0]
+            best_index = np.argmin(predictions)
+            best_observation = y[best_index]
+            x_best_array = X[best_index]
+            gp_predict_time += time.time() - t_start
+
+            t_start = time.time()
+            acq.update(
+                model=gp.gp_model,
+                eta=best_observation,
+                incumbent_array=x_best_array,
+                num_data=len(X),
+                X=X,
+            )
+            new_config_iterator = acq_opt.maximize(
+                runhistory=runhistory,
+                stats=stats,
+                num_points=10000,
+                random_configuration_chooser=rnd_chooser,
+            )
+            accept = False
+            for next_config in new_config_iterator:
+                if next_config in runhistory.get_all_configs():
+                    continue
+                else:
+                    accept = True
+                    break
+            assert accept
+            acq_opt_time += time.time() - t_start
+
+            t_eval = time.time()
+            x = [next_config[var.name] for var in variables]
+            cost = f(x)
+            eval_time += time.time() - t_eval
+
+            iter_configs.append((next_config, cost))
+
+            x = WeightedMetaArray(x)
+            x.metadata = mark
+            iter_X.append(x)
+            iter_y.append(cost)
+            if cost < y_best:
+                x_best = x
+                y_best = cost
+
+            for config, cost in iter_configs:
+                add_to_runhistory(config, cost)
+
+            total_iter_time = time.time() - total_t_start
+            update_kwargs = {"gp_train_time": gp_train_time,
+                             "gp_predict_time": gp_predict_time,
+                             "acq_opt_time": acq_opt_time,
+                             "eval_time": eval_time,
+                             "iter_time": total_iter_time,
+                             "message": message}
+            iter_callback(x_best, y_best, iter_X, iter_y, **update_kwargs)
+
+        return self.run_info.result
+
+
+if smac_available:
+    register_global_optimizer("SMAC_BO_combination", SMACBOKernelCombination)

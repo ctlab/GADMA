@@ -75,9 +75,10 @@ jobs:
         run: |
           pip3 install scikit-optimize
           pip3 install configspace
-          pip3 install smac==0.12.4
+          pip3 install smac==0.13.1
           pip3 install bayesmark
         if: matrix.os == 'ubuntu-18.04'
+
       - name: Downgrade scipy for SMAC (Linux).
         run: |
           pip3 install scipy==1.6.3

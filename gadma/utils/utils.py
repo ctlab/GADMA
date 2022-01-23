@@ -15,7 +15,7 @@ from .. import smac_available
 from pathlib import Path
 if smac_available:
     from smac.runhistory.runhistory import RunHistory
-    from smac.tae.execute_ta_run import StatusType
+    from smac.tae import StatusType
 
 
 def logarithm_transform(x):
@@ -162,7 +162,7 @@ def lru_cache(func):
     return lru_cache_wrapper
 
 
-def cache_func(f):
+def cache_func(f, maxeval=None):
     """
     Cashes function with one argument.
     :param f: function such that f(x).
@@ -177,7 +177,8 @@ def cache_func(f):
 
     @wraps(tuple_wrapper)
     def cache_wrapper(x):
-        # sometimes does not work so we want to know why it is not working
+        if maxeval is not None and tuple_wrapper.cache_info.misses >= maxeval:
+            return None
         try:
             return tuple_wrapper(tuple(x))
         except TypeError as e:
