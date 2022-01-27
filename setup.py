@@ -33,7 +33,7 @@ with open('README.md') as f:
 
 requirements = ['numpy', 'scipy', 'matplotlib',
                 'Pillow', 'Cython', 'mpmath', 'nlopt', 'ruamel.yaml',
-                'dadi', 'momi', 'scikit-allel', 'h5py']
+                'dadi',]
 
 setup(
     name=NAME,

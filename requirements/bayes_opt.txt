@@ -1,0 +1,6 @@
+scikit-optimize
+configspace
+smac==0.13.1
+bayesmark
+GPy
+GPyOpt

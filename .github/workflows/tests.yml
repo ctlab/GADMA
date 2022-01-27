@@ -16,6 +16,12 @@ jobs:
       matrix:
         os: [ubuntu-18.04, windows-2019, macos-10.15]
         python-version: [3.6, 3.8]
+        include:
+          - os: windows-2019
+            triplet: x64-windows
+    env:
+      CONDA_ENV_NAME: gadma_env
+
     steps:
       - name: Cancel previous runs.
         uses: styfle/cancel-workflow-action@0.6.0
@@ -30,24 +36,30 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies for tests.
+      - name: Install minimal requirements before everything else
         run: |
-          pip3 install coverage
-          pip3 install codecov
-          pip3 install pycodestyle
-          pip3 install numpy==1.19.4
-          pip3 install GPy
-          pip3 install GPyOpt
-          pip3 install pandas
-          pip3 install ruamel.yaml==0.16.12
-          pip3 install pytest
-          pip3 install pytest-cov
-          pip3 install pytest-timeout
+          pip3 install -r requirements/minimal.txt
 
-      - name: Upgrade NumPy for Python 3.8.
+      - name: Install conda (Windows)
+        if: runner.os == 'Windows' &&  matrix.python-version == '3.8'
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: ${{ matrix.python }}
+          channels: conda-forge, r, bioconda
+          #channel-priority: strict
+          auto-update-conda: true
+          use-only-tar-bz2: true
+
+      # For future, to check msprime versions: conda search msprime --info
+      - name: Install msprime via conda (Windows python3.8)
+        if: runner.os == 'Windows' &&  matrix.python-version == '3.8'
+        shell: bash -l {0} #We need a login shell to get conda
         run: |
-          pip3 install --upgrade numpy
-        if: matrix.python-version == 3.8
+          # We install msprime from conda to avoid GSL-related build issues
+          # when pip installing without binary wheels (on Windows).
+          # We install a special version of msprime 0.7.4=py36
+          #conda activate ${{ env.CONDA_ENV_NAME }}
+          conda create -n ${{ env.CONDA_ENV_NAME }} msprime python=${{ matrix.python-version }}
 
       - name: Install hdf5, msprime and momi2 (MacOS).
         run: |
@@ -59,34 +71,55 @@ jobs:
           CC=$(brew --prefix llvm)/bin/clang pip install momi
         if: matrix.os == 'macos-10.15'
 
-      - name: Install GADMA and its dependencies (Linux and MacOS).
+      - name: Install GADMA and its dependencies (Windows python3.8).
+        if: runner.os == 'Windows' &&  matrix.python-version == '3.8'
+        shell: bash -l {0}
         run: |
-          ./install
-        if: matrix.os != 'windows-2019'
+          conda activate ${{ env.CONDA_ENV_NAME }}
+          bash install
+          pip3 install -r requirements/bayes_opt.txt
 
-      - name: Install GADMA and its dependencies (Windows).
+      - name: Install GADMA and its dependencies (the rest).
+        if: runner.os != 'Windows' ||  matrix.python-version != '3.8'
         run: |
           bash install
-          python -c "import moments"
-        shell: cmd
-        if: matrix.os == 'windows-2019'
+          pip3 install -r requirements/bayes_opt.txt
 
-      - name: Install SMAC (Linux).
+      - name: Uninstall SMAC (Windows).
+        if: runner.os == 'Windows'
+        shell: bash -l {0}
         run: |
-          pip3 install scikit-optimize
-          pip3 install configspace
-          pip3 install smac==0.13.1
-          pip3 install bayesmark
-        if: matrix.os == 'ubuntu-18.04'
+          pip3 uninstall -y smac
 
-      - name: Downgrade scipy for SMAC (Linux).
+      - name: Install moments-LD and momi engines (Linux).
+        if: runner.os == 'Linux'
         run: |
-          pip3 install scipy==1.6.3
-        if: matrix.os == 'ubuntu-18.04' && matrix.python-version == '3.8'
+          git clone https://bitbucket.org/simongravel/moments.git
+          cd moments
+          python3 setup.py build_ext --inplace
+          python3 setup.py install --ld_extensions
+          cd ..
+          rm -rf moments/
+
+      - name: Check installations of packages.
+        run: |
+          python3 -c "import numpy"
+          python3 -c "import scipy"
+          python3 -c "import dadi"
+          python3 -c "import moments"
+          python3 -c "import gadma"
+
+      - name: Install dependencies for tests.
+        run: |
+          pip3 install -r requirements/tests.txt
 
       - name: Run tests and codecov.
+        shell: bash -l {0} #We need a login shell to get conda
         run: |
-          python -m pytest --timeout=400 --cov=gadma --cov-report=xml -v tests --disable-warnings
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            conda activate ${{ env.CONDA_ENV_NAME }}
+          fi
+          pytest --timeout=400 --cov=gadma --cov-report=xml -v tests --disable-warnings
         
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1

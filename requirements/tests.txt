@@ -1,0 +1,6 @@
+coverage
+codecov
+pycodestyle
+pytest
+pytest-cov
+pytest-timeout
