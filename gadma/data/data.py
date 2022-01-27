@@ -54,7 +54,10 @@ class VCFDataHolder(DataHolder):
     Class for VCF data holding.
     """
     def __init__(self, vcf_file, popmap_file, projections=None, outgroup=None,
-                 population_labels=None, sequence_length=None,  bed_file=None):
+                 population_labels=None, sequence_length=None,
+                 recombination_maps=None, ld_kwargs=None,
+                 output_directory=None, region_len=None,
+                 preprocessed_data=None):
         super(VCFDataHolder, self).__init__(
             filename=vcf_file,
             projections=projections,
@@ -63,7 +66,12 @@ class VCFDataHolder(DataHolder):
             sequence_length=sequence_length
         )
         self.popmap_file = popmap_file
-        self.bed_file = bed_file
+        self.recombination_maps = recombination_maps
+        self.ld_kwargs = ld_kwargs
+        self.output_directory = output_directory
+        self.region_len = region_len
+        self.bed_file = None
+        self.preprocessed_data = preprocessed_data
 
 
 # class FSCDataHolder(DataHolder):
@@ -90,3 +98,10 @@ class VCFDataHolder(DataHolder):
 #             population_labels=population_labels,
 #             sequence_length=sequence_length
 #         )
+
+# def check_all_ld_data_correct(data_holder):
+#     if data_holder.bed_file:
+#         extension = data_holder.bed_file[-4:]
+#         if extension != '.bed':
+#             raise FileExistsError("Check passed bed file. It doesn't have"
+#                                   ".bed extension.")

@@ -3,7 +3,8 @@ import ruamel.yaml
 import numpy as np
 from . import settings
 from .. import demes_available, momi_available
-from ..data import SFSDataHolder, VCFDataHolder
+from ..data import SFSDataHolder, \
+    VCFDataHolder, check_and_return_projections_and_labels
 from ..engines import get_engine, MomentsEngine
 from ..engines import all_engines, all_drawing_engines
 from ..models import StructureDemographicModel, CustomDemographicModel
@@ -19,6 +20,7 @@ import importlib.util
 import sys
 import copy
 import numbers
+import inspect
 from keyword import iskeyword
 
 HOME_DIR = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
@@ -75,7 +77,8 @@ def _get_variable(cls, par_label, domain, engine="dadi"):
     if (cls == FractionVariable or cls is GrowthRateVariable or
             not issubclass(cls, DemographicVariable)):
         return cls(name=par_label, domain=domain)
-    units = "genetic" if engine in ['dadi', 'moments'] else "physical"
+    units = "genetic" if engine in [
+        'dadi', 'moments',  "momentsLD"] else "physical"
     if par_label.lower().endswith("_phys"):
         units = "physical"
     if par_label.lower().endswith("_gen"):
@@ -99,7 +102,8 @@ def get_variables(parameter_identifiers, lower_bound, upper_bound,
         domains = list(zip(lower_bound, upper_bound))
     else:
         domains = [None for _ in parameter_identifiers]
-    units = "genetic" if engine in ["dadi", "moments"] else "physical"
+    units = "genetic" if engine in [
+        "dadi", "moments", "momentsLD"] else "physical"
     if parameter_identifiers is not None:
         classes = [get_variable_class(p_id) for p_id in parameter_identifiers]
     else:
@@ -182,7 +186,7 @@ class SettingsStorage(object):
                      'number_of_repeats', 'number_of_processes',
                      'number_of_populations', 'global_maxiter',
                      'global_maxeval', 'local_maxiter', 'local_maxeval',
-                     'num_init_const']
+                     'num_init_const', "region_len", 'fixed_ancestral_size']
         float_attrs = ['theta0', 'time_for_generation', 'eps',
                        'const_of_time_in_drawing', 'vmin', 'min_n', 'max_n',
                        'min_t', 'max_t', 'min_m', 'max_m',
@@ -210,11 +214,16 @@ class SettingsStorage(object):
         special_attrs = ['const_for_mutation_strength',
                          'const_for_mutation_rate', 'vmin',
                          'parameter_identifiers', 'migration_masks']
-        exist_file_attrs = ['input_data', 'custom_filename']
-        exist_dir_attrs = ['directory_with_bootstrap', 'resume_from']
+        exist_file_attrs = ['input_data', 'custom_filename',
+                            'bed_file', "preprocessed_data"]
+        exist_dir_attrs = ['directory_with_bootstrap',
+                           'resume_from', 'recombination_maps']
         empty_dir_attrs = ['output_directory']
         data_holder_attrs = ['projections', 'outgroup',
-                             'population_labels', 'sequence_length']
+                             'population_labels', 'sequence_length',
+                             'recombination_maps', 'ld_kwargs',
+                             'output_directory', "region_len",
+                             "preprocessed_data"]
         bounds_attrs = ['min_n', 'max_n', 'min_t', 'max_t', 'min_m', 'max_m',
                         'dynamics']
         bounds_lists = ['lower_bound', 'upper_bound', 'parameter_identifiers']
@@ -226,6 +235,7 @@ class SettingsStorage(object):
                         'model_plot_engine', 'demes_available',
                         'demesdraw_available',
                         'kernel', 'acquisition_function']
+        dict_attrs = ['ld_kwargs']
 
         super_hasattr = True
         setattr_at_the_end = True
@@ -243,7 +253,8 @@ class SettingsStorage(object):
                 name not in empty_dir_attrs and
                 name not in data_holder_attrs and
                 name not in bounds_attrs and name not in missed_attrs and
-                name not in bounds_lists and not super_hasattr):
+                name not in bounds_lists and not super_hasattr and
+                name not in dict_attrs):
             raise ValueError(f"Setting {name} should be checked.")
 
         # -1. For structures it could be one number. We need to transfrom
@@ -406,7 +417,6 @@ class SettingsStorage(object):
 
         # 1.10 Check that identifiers are good:
         if name == "parameter_identifiers" and value is not None:
-            # print(name, value)
             if isinstance(value, str):
                 value = [x.strip() for x in value.split(",")]
             value = [x.strip() for x in value]
@@ -458,6 +468,10 @@ class SettingsStorage(object):
                     outgroup=self.outgroup,
                     population_labels=self.population_labels,
                     sequence_length=self.sequence_length,
+                    recombination_maps=self.recombination_maps,
+                    ld_kwargs=self.ld_kwargs,
+                    output_directory=self.output_directory,
+                    preprocessed_data=self.preprocessed_data
                 )
             else:
                 data_holder = SFSDataHolder(
@@ -469,6 +483,7 @@ class SettingsStorage(object):
                 )
             super(SettingsStorage, self).__setattr__('data_holder',
                                                      data_holder)
+
         # 3.2 If we change some attributes of data_holder we need update it
         elif name in data_holder_attrs:
             if hasattr(self, 'data_holder'):
@@ -796,13 +811,12 @@ class SettingsStorage(object):
         be set.
         """
         engine = get_engine(self.engine)
-        engine.data = self.data_holder  # it is reading
+        engine.data = self.data_holder
         self.data_holder = engine.data_holder
         self.projections = self.data_holder.projections
         self.outgroup = self.data_holder.outgroup
         self.population_labels = self.data_holder.population_labels
         self._inner_data = engine.data
-
         if self.pts is None:
             max_n = max(self.projections)
             x = (int((max_n - 1) / 10) + 1) * 10
@@ -1176,32 +1190,52 @@ class SettingsStorage(object):
             variables = get_variables(self.parameter_identifiers,
                                       self.lower_bound, self.upper_bound,
                                       engine=self.engine)
+            if all([
+                self.ancestral_size_as_parameter,
+                self.fixed_ancestral_size is None,
+                self.engine == "momentsLD"
+            ]):
+                variables.insert(0, PopulationSizeVariable("Nanc",
+                                                           units="physical"))
+
             if self.model_func is not None:
-                return CustomDemographicModel(function=self.model_func,
-                                              variables=variables,
-                                              gen_time=gen_time,
-                                              theta0=theta0,
-                                              mutation_rate=mut_rate,
-                                              recombination_rate=rec_rate)
+                return CustomDemographicModel(
+                    function=self.model_func,
+                    variables=variables,
+                    gen_time=gen_time,
+                    theta0=theta0,
+                    mutation_rate=mut_rate,
+                    recombination_rate=rec_rate,
+                    fixed_anc_size=self.fixed_ancestral_size,
+                    has_anc_size=self.ancestral_size_as_parameter
+                )
             module_name = module_name_from_path(self.custom_filename)
             spec = importlib.util.spec_from_file_location(module_name,
                                                           self.custom_filename)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
-            return CustomDemographicModel(function=module.model_func,
-                                          variables=variables,
-                                          gen_time=gen_time,
-                                          theta0=theta0,
-                                          mutation_rate=mut_rate,
-                                          recombination_rate=rec_rate)
+            return CustomDemographicModel(
+                function=module.model_func,
+                variables=variables,
+                gen_time=gen_time,
+                theta0=theta0,
+                mutation_rate=mut_rate,
+                recombination_rate=rec_rate,
+                fixed_anc_size=self.fixed_ancestral_size,
+                has_anc_size=self.ancestral_size_as_parameter
+            )
 
         elif self.custom_filename is None and self.model_func is not None:
-            return CustomDemographicModel(function=self.model_func,
-                                          variables=None,
-                                          gen_time=gen_time,
-                                          theta0=theta0,
-                                          mutation_rate=mut_rate,
-                                          recombination_rate=rec_rate)
+            return CustomDemographicModel(
+                function=self.model_func,
+                variables=None,
+                gen_time=gen_time,
+                theta0=theta0,
+                mutation_rate=mut_rate,
+                recombination_rate=rec_rate,
+                fixed_anc_size=self.fixed_ancestral_size,
+                has_anc_size=self.ancestral_size_as_parameter
+            )
         else:
             raise ValueError("Some settings are missed so no model is "
                              "generated")
@@ -1328,3 +1362,54 @@ class SettingsStorage(object):
                         f"`Mutation rate` (got {self.mutation_rate})\n"
                         f"`Sequence length` (got {self.sequence_length})\nor\n"
                         f"`Theta0` (got {self.theta0})")
+
+        if self.ld_kwargs:
+            if self.engine != "momentsLD":
+                raise ValueError("You can't pass ld_kwargs argument for "
+                                 "if you don't use "
+                                 "moments.LD engine. Your current engine is "
+                                 f"{self.engine}. "
+                                 f"Change engine or delete dict "
+                                 f"argument.")
+            else:
+                import moments.LD
+                Full_arg_spec = inspect.getfullargspec(
+                    moments.LD.Parsing.compute_ld_statistics)
+                args_parsing_ld = Full_arg_spec[0]
+                for key in self.ld_kwargs:
+                    if key not in args_parsing_ld:
+                        raise KeyError(
+                            "Computing_ld_stats function hasn't "
+                            f"argument {key}! "
+                            f"Check your param_file "
+                            f"and remove unexpected args."
+                        )
+
+        if self.engine == "momentsLD":
+            if all([
+                not self.ancestral_size_as_parameter,
+                not (self.fixed_ancestral_size and self.custom_filename)
+            ]):
+                warnings.warn(
+                    "Moments.LD engine need ancestral size as parameter. "
+                    "The option "
+                    "`Ancestral size as parameter` is set to `True`"
+                )
+                self.ancestral_size_as_parameter = True
+
+            if self.mutation_rate is None:
+                raise ValueError(
+                    "momentsLD engine needs mutation rate "
+                    "parameter for correct work"
+                )
+
+            if self.data_holder.projections is None:
+                if self.data_holder.population_labels is None:
+                    (self.data_holder.projections,
+                     self.data_holder.population_labels
+                     ) = check_and_return_projections_and_labels(
+                        self.data_holder)
+                else:
+                    (self.data_holder.projections,
+                     labels) = check_and_return_projections_and_labels(
+                        self.data_holder)

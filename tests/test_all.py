@@ -9,6 +9,7 @@ from gadma.utils import StdAndFileLogger
 import dadi
 import copy
 import pickle
+from pathlib import Path
 import shutil
 import os
 import sys
@@ -42,6 +43,12 @@ def rosenbrock(X):
 
 
 class TestRestore(unittest.TestCase):
+    def tearDown(self):
+        if Path("./save_file").exists():
+            os.remove("./save_file")
+        if Path("./report_file").exists():
+            os.remove("./report_file")
+
     def test_ga_restore(self):
         ga = get_global_optimizer("Genetic_algorithm")
         f = rosenbrock
@@ -119,12 +126,12 @@ class TestRestore(unittest.TestCase):
 
     def test_gs_and_ls_restore(self):
         param_file = os.path.join(DATA_PATH, "PARAMS", 'another_test_params')
-        base_out_dir = "test_gs_and_ls_restore_output"
+        base_out_dir = os.path.join(DATA_PATH, "test_gs_and_ls_restore_output")
         sys.argv = ['gadma', '-p', param_file, '-o', base_out_dir]
         settings, _ = get_settings_test()
         settings.linked_snp_s = False
         settings.silence = True
-        out_dir = 'some_not_existed_dir'
+        out_dir = os.path.join(DATA_PATH, 'some_not_existed_dir')
         shared_dict = gadma.shared_dict.SharedDictForCoreRun(multiprocessing=False)
         if os.path.exists(out_dir):
             rmdir(out_dir)
@@ -157,6 +164,8 @@ class TestRestore(unittest.TestCase):
             self.assertTrue(res3.y >= res2.y)
         if os.path.exists(settings.output_directory):
             rmdir(settings.output_directory)
+        if os.path.exists(out_dir):
+            rmdir(out_dir)
 
     def test_restore_finished_run(self):
         finished_run_dir = os.path.join(DATA_PATH, 'my_example_run')

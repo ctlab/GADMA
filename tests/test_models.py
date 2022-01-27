@@ -1,6 +1,7 @@
 import unittest
 import pytest
-
+from pathlib import Path
+import shutil
 
 from gadma import *
 from gadma import ContinuousVariable
@@ -28,9 +29,26 @@ import operator as op
 import sys
 
 EXAMPLE_FOLDER = os.path.join(os.path.dirname(__file__), "test_data")
+TEST_OUTPUT = os.path.join(
+                        EXAMPLE_FOLDER, "DATA", "vcf_ld", "test_output"
+                    )
 
 
 class TestModels(unittest.TestCase):
+    def setUp(self):
+        if not Path(TEST_OUTPUT).exists():
+            os.mkdir(TEST_OUTPUT)
+
+    def tearDown(self):
+        if Path(TEST_OUTPUT).exists():
+            shutil.rmtree(TEST_OUTPUT)
+
+        REC_MAP_DIR = os.path.join(
+            EXAMPLE_FOLDER, "DATA", "vcf_ld", f"rec_maps_code_generation"
+        )
+        if Path(REC_MAP_DIR).exists():
+            shutil.rmtree(REC_MAP_DIR)
+
     def test_init(self):
         var = TimeVariable('t')
         m = Model(raise_excep=False)
@@ -306,6 +324,8 @@ class TestModels(unittest.TestCase):
 
         data = SFSDataHolder(YRI_CEU_DATA, sequence_length=4e6)
         for engine in all_engines():
+            if engine.id == "momentsLD":
+                continue
             with self.subTest(engine=engine.id):
                 if engine.id == 'dadi':
                     args = ([5, 10, 15],)
@@ -437,6 +457,67 @@ class TestModels(unittest.TestCase):
                     popmap_file=os.path.join(EXAMPLE_FOLDER, "DATA", "vcf", "out_of_africa_chr22_sim_3pop.popmap")
                ))
 
+    def _vcf_datasets_ld_precomputed(self):
+
+        YRI_CEU_SIM_LD_DATA = os.path.join(
+            EXAMPLE_FOLDER, "DATA", "vcf_ld", f"fake_data.vcf"
+        )
+        YRI_CEU_SIM_LD_POPS = os.path.join(
+            EXAMPLE_FOLDER, "DATA", "vcf_ld", f"fake_data_pop_map.txt"
+        )
+
+        pops = ["pop0", "pop1", "pop2"]
+        data_holder = VCFDataHolder(
+            vcf_file=YRI_CEU_SIM_LD_DATA,
+            popmap_file=YRI_CEU_SIM_LD_POPS,
+            population_labels=pops,
+            output_directory=TEST_OUTPUT
+        )
+        data_holder.preprocessed_data = os.path.join(
+            EXAMPLE_FOLDER, "DATA", "vcf_ld", f"preprocessed_data_model1.bp"
+        )
+
+        yield (
+            "model1",
+            data_holder)
+
+        data_holder.preprocessed_data = os.path.join(
+            EXAMPLE_FOLDER, "DATA", "vcf_ld", f"preprocessed_data_model2.bp"
+        )
+        data_holder.recombination_maps = os.path.join(
+            EXAMPLE_FOLDER, "DATA", "vcf_ld", f"rec_maps_code_generation"
+        )
+        if not Path(data_holder.recombination_maps).exists():
+            os.mkdir(data_holder.recombination_maps)
+        for ii in range(20):
+            with open(f"{data_holder.recombination_maps}/flat_map_{ii + 1}.txt", "w+") as fout:
+                fout.write("pos\tMap(cM)\n")
+                fout.write("0\t0\n")
+                fout.write("1000000\t1.5\n")
+
+        yield (
+            "model2",
+            data_holder)
+
+        data_holder.preprocessed_data = os.path.join(
+            EXAMPLE_FOLDER, "DATA", "vcf_ld", f"preprocessed_data_model3.bp"
+        )
+
+        if Path(data_holder.recombination_maps).exists():
+            shutil.rmtree(data_holder.recombination_maps)
+            os.mkdir(data_holder.recombination_maps)
+        chrom_number = "\t".join([str(ii) for ii in range(1, 21)])
+        zero_list = "\t".join([str(0) for ii in range(1, 21)])
+        one_half = "\t".join([str(1.5) for ii in range(1, 21)])
+        with open(f"{data_holder.recombination_maps}/flat_map.txt", "w+") as fout:
+            fout.write(f"pos\t{chrom_number}\n")
+            fout.write(f"0\t{zero_list}\n")
+            fout.write(f"1000000\t{one_half}\n")
+
+        yield (
+            "model3",
+            data_holder)
+
     def test_add_split_after_inbreeding(self):
         nu1 = PopulationSizeVariable('nu1')
         nu2 = PopulationSizeVariable('nu2')
@@ -465,7 +546,7 @@ class TestModels(unittest.TestCase):
         with pytest.raises(ValueError):
             dm.add_epoch(T, [nu1, nu2], [[None, m], [m, None]], ['Sud', 'Exp'])
 
-    @pytest.mark.timeout(800)
+    @pytest.mark.timeout(0)
     def test_code_generation(self):
         # old format
         warnings.filterwarnings(action='ignore', category=UserWarning,
@@ -510,7 +591,7 @@ class TestModels(unittest.TestCase):
         model2 = EpochDemographicModel()
         model2.add_epoch(t, [nu1])
         model2.add_split(0, [nu1, nu2])
-        model2.add_epoch(10, [nu2, fxnu1], [[0, m], [0, 0]], [d1, d2],
+        model2.add_epoch(0.5, [nu2, fxnu1], [[0, m], [0, 0]], [d1, d2],
                          [0, s])
         model2.add_split(1, [nu2, nu1])
         model2.add_epoch(t, [nu1, nu2, nu1], None, None, [s, 0, s])
@@ -556,11 +637,14 @@ class TestModels(unittest.TestCase):
                   f: 0.5, h: 0.3, f1: 0.1, f2: 0.3,
                   Nanc: 10000, Nu2: 5000, T3: 4000,
                   'nu1F': 1.0, 'nu2B': 0.7, 'nu2F': 1.0, 'T': 0.5, 'Tp': 0.3,
-                  'N_1F':20000, 'r_2': -1e-5, 'N_2F': 5000,
-                  'T_1': 500, 'T_2':100}
+                  'N_1F': 20000, 'r_2': -1e-5, 'N_2F': 5000,
+                  'T_1': 500, 'T_2': 100}
 
         for engine in all_available_engines():
             models = [model1, model2, model3, model5, model6]
+            if engine.id == "momentsLD":
+                # momentsLD has problems with model 5 and 6 because of physical values
+                models = models[:3]
             if engine.can_evaluate:
                 customfile = os.path.join(
                     EXAMPLE_FOLDER, "MODELS",
@@ -576,10 +660,24 @@ class TestModels(unittest.TestCase):
                 variables = get_variables(par_labels, None, None, engine=engine.id)
 
                 model7 = CustomDemographicModel(func, variables)
+                if engine.id == "momentsLD":
+                    model8 = copy.deepcopy(model7)
+                    model7.fixed_anc_size = 10000
+                    model8.has_anc_size = True
+                    model8.add_variable(PopulationSizeVariable("Nanc",
+                                                               units="physical"))
+
+                    model8.fix_variable(model8.variables[-1], 10000)
+                    model8.unfix_variable(model8._variables[-1])
+                    models.append(model8)
                 models.append(model7)
 
             for ind, model in enumerate(models):
-                for description, data in self._sfs_datasets():
+                if engine.id == "momentsLD":
+                    dataset = self._vcf_datasets_ld_precomputed()
+                else:
+                    dataset = self._sfs_datasets()
+                for description, data in dataset:
                     msg = f"for model {ind + 1} and {description} data and " \
                           f"{engine.id} engine"
                     print(msg)
@@ -590,8 +688,9 @@ class TestModels(unittest.TestCase):
                         options = {}
                         args = ()
 
-                    if engine.id == "momi":
+                    if engine.id in ["momi", "momentsLD"]:
                         # there is an error in momi for that case
+                        # data for moments was simulated with msprime, which can't work with Lin DynVar
                         if description == "fs without pop labels":
                             continue
                         values['d2'] = "Exp"
@@ -603,6 +702,12 @@ class TestModels(unittest.TestCase):
                     Nanc = None
                     if engine.id not in ["dadi", "moments"]:
                         Nanc = 10000
+                    if engine.id == "momentsLD":
+                        model = copy.deepcopy(model)
+                        model.Nanc_size = Nanc
+                        model.mutation_rate = 1.25e-8
+                        engine.model = model
+                        moments.LD.Inference._varcov_inv_cache = {}
 
                     cmd = engine.generate_code(values, None, *args, nanc=Nanc)
                     # print(cmd)
@@ -614,7 +719,6 @@ class TestModels(unittest.TestCase):
                             engine.model = model
                         # read data
                         engine.data = data
-
                         true_ll = engine.evaluate(values, **options)
 
                         d = {}
@@ -631,7 +735,7 @@ class TestModels(unittest.TestCase):
                         if description == "fs without pop labels":
                             engine.data_holder.population_labels = None
                             engine.generate_code(values, None, *args, nanc=Nanc)
-                    if engine.id == "momi":
+                    if engine.id in ["momi", "momentsLD"]:
                         values['d2'] = "Lin"
 
     def test_models_eq(self):

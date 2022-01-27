@@ -1,4 +1,4 @@
-LInstallation
+Installation
 ==============
 
 Dependencies

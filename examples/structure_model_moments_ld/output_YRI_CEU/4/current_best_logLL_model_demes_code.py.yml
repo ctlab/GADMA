@@ -1,0 +1,22 @@
+time_units: generations
+generation_time: 1.0
+demes:
+- name: ancestral
+  epochs:
+  - {end_time: 3322.9203919653173, start_size: 6750.002698717834}
+- name: YRI_CEU
+  ancestors: [ancestral]
+  epochs:
+  - {end_time: 1221.0306125115578, start_size: 6750.002698717834, end_size: 589.233529587945,
+    size_function: linear}
+- name: YRI
+  ancestors: [YRI_CEU]
+  epochs:
+  - {end_time: 0.0, start_size: 11515.474400566587}
+- name: CEU
+  ancestors: [YRI_CEU]
+  epochs:
+  - {end_time: 0.0, start_size: 217.91574922757752, end_size: 181624.7587451769}
+migrations:
+- demes: [CEU, YRI]
+  rate: 5.6969683307404565e-05

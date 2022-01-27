@@ -17,7 +17,6 @@ def get_Nanc_gen_time_and_units(x, engine, settings):
     in plot drawing.
     """
     Nanc = engine.get_N_ancestral(x, *settings.get_engine_args())
-    gen_time = None
     if settings.time_for_generation is not None:
         gen_time = settings.time_for_generation *\
                    settings.const_of_time_in_drawing
@@ -46,7 +45,6 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
     """
     if not matplotlib_available:
         raise ValueError("Matplotlib is required to draw models.")
-        return
     model_plot_engine = get_engine(settings.model_plot_engine)
     model_plot_engine.data_holder = engine.data_holder
     model_plot_engine.model = engine.model
@@ -176,20 +174,24 @@ def generate_code_to_file(x, engine, settings, filename):
         engines = [get_engine(engine_id) for engine_id in engines_ids]
     else:
         engines = [copy.deepcopy(engine)]
-    fails = {}  # engine.id: reason
+    failes = {}  # engine.id: reason
+
     for other_engine in engines:
         save_file = prefix + f"_{other_engine.id}_code.py"
         # other_engine.set_data(engine.data)
         other_engine.data_holder = copy.deepcopy(engine.data_holder)
         other_engine.set_model(engine.model)
         args = settings.get_engine_args(other_engine.id)
+        if other_engine.id == "momentsLD":
+            args = ["Void"]
         try:
             other_engine.generate_code(x, save_file, *args, Nanc, gen_time,
                                        gen_time_units)
         except Exception as e:
-            fails[other_engine.id] = str(e)
-    if len(fails) == len(engines):
-        raise ValueError("; ".join([f"{id}: {fails[id]}" for id in fails]))
+            failes[other_engine.id] = str(e)
+
+    if len(failes) > 0:
+        raise ValueError("; ".join([f"{id}: {failes[id]}" for id in failes]))
 
 
 def print_runs_summary(start_time, shared_dict, settings):
@@ -242,6 +244,12 @@ def print_runs_summary(start_time, shared_dict, settings):
                 addit_str += f"(theta = {theta: .2f})"
             elif not is_custom:
                 Nanc = engine.get_N_ancestral(x, *settings.get_engine_args())
+            elif all([
+                is_custom,
+                engine.id == "momentsLD",
+                engine.model.fixed_anc_size
+            ]):
+                Nanc = engine.model.fixed_anc_size
             # Nanc can be None if we have custom demographic model and
             # we cannot get Nanc size from theta
             model_str = ""

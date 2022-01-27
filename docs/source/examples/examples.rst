@@ -9,3 +9,4 @@ Examples
    custom_model_example_momi
    optimize_ga
    changing_theta_example
+   structure_model_moments_ld_example

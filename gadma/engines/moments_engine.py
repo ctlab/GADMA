@@ -3,6 +3,7 @@ from .dadi_moments_common import DadiOrMomentsEngine
 from ..models import CustomDemographicModel, Epoch, Split
 from ..utils import DynamicVariable, get_correct_dtype
 from .. import SFSDataHolder, moments_available
+from ..data import check_and_return_projections_and_labels
 import numpy as np
 
 
@@ -179,21 +180,25 @@ class MomentsEngine(DadiOrMomentsEngine):
         :param nref: An ancestral population size. If None then parameters
                      will be drawn in genetic units.
         :type nref: int
-        :param gen_type: Time of one generation. Should be in units of
+        :param gen_time: Time of one generation. Should be in units of
                          ``gen_time_units``.
-        :type gen_type: float
+        :type gen_time: float
         :param gen_time_units: Units of `gen_type`. For example, it
                                could be Years, Generations, Thousand Years and
                                so on.
         """
         moments = self.base_module
-        # From moments docs about ns:
-        # List of sample sizes to be passed as the ns argument to model_func.
-        # Actual values do not matter, as long as the dimensionality is
-        # correct. So we take small size for fast drawing.
+
         if self.data_holder is not None:
-            n_pop = len(self.data_holder.projections)
-            pop_labels = self.data_holder.population_labels
+            if (self.data_holder.projections is not None
+                    and self.data_holder.population_labels is not None):
+                n_pop = len(self.data_holder.projections)
+                pop_labels = self.data_holder.population_labels
+            else:
+                (self.data_holder.projections,
+                 self.data_holder.population_labels
+                 ) = check_and_return_projections_and_labels(
+                    self.data_holder)
         else:
             n_pop = len(self.data.sample_sizes)
             pop_labels = self.data.pop_ids
@@ -220,7 +225,6 @@ class MomentsEngine(DadiOrMomentsEngine):
         """
         Returns simulated expected SFS for :attr:`demographic_model` with
         values as parameters.
-
         :param values: Values of demographic model parameters.
         :param ns: sample sizes of the simulated SFS.
         """

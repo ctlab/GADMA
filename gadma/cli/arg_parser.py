@@ -2,7 +2,6 @@ import tempfile
 from .settings_storage import HOME_DIR
 from . import SettingsStorage
 from ..core import SUPPORT_STRING
-from ..utils import ensure_dir_existence
 from .. import __version__
 
 import warnings
@@ -30,27 +29,33 @@ def usage():
     Returns usage of tool.
     '''
     return version() + "" \
-        "Usage: \n\tgadma\t-p/--params\t<params_file>\n"\
-        "\t\t-e/--extra\t<extra_params_file>\n"\
-        "\n\n"\
-        "Instead/With -p/--params and -e/--extra option you can set:\n"\
-        "\t-o/--output\t<output_dir>\t\toutput directory.\n"\
-        "\t-i/--input\t<in.fs>/<in.txt>/\tinput data for demographic "\
-        "inference\n"\
-        "\t\t\t<in.vcf>,<popmap>\t(AFS, dadi format or VCF).\n"\
-        "\t--resume\t<resume_dir>\t\tresume another launch from "\
-        "<resume_dir>.\n"\
-        "\t--only_models\t\tflag to take models only from another\n"\
-        "\t\t\t\tlaunch (--resume option).\n\n"\
-        "\t-h/--help\t\tshow this help message and exit.\n"\
-        "\t-v/--version\t\tshow version and exit.\n"\
-        "\t--test\t\t\trun test case.\n" + SUPPORT_STRING
+                       "Usage: \n\tgadma\t-p/--params\t<params_file>\n" \
+                       "\t\t-e/--extra\t<extra_params_file>\n" \
+                       "\n\n" \
+                       "Instead/With -p/--params and " \
+                       "-e/--extra option you can set:\n" \
+                       "\t-o/--output\t<output_dir>\t\toutput directory.\n" \
+                       "\t-i/--input\t<in.fs>/<in.txt>/" \
+                       "\tinput data for demographic " \
+                       "inference\n" \
+                       "\t\t\t<in.vcf>,<popmap>" \
+                       "\t(AFS, dadi format or VCF).\n" \
+                       "\t--resume\t<resume_dir>\t" \
+                       "\tresume another launch from " \
+                       "<resume_dir>.\n" \
+                       "\t--only_models\t" \
+                       "\tflag to take models only from another\n" \
+                       "\t\t\t\tlaunch (--resume option).\n\n" \
+                       "\t-h/--help\t\tshow this help message and exit.\n" \
+                       "\t-v/--version\t\tshow version and exit.\n" \
+                       "\t--test\t\t\trun test case.\n" + SUPPORT_STRING
 
 
 class ArgParser(argparse.ArgumentParser):
     """
     Overrided class for argument parser.
     """
+
     def format_help(self):
         """
         Returns usage by calling :func:`usage`.
@@ -196,7 +201,7 @@ def get_settings():
 
             def differ_in_element(attr_list):
                 for attr in attr_list:
-                    if getattr(settings_storage, attr) !=\
+                    if getattr(settings_storage, attr) != \
                             getattr(old_settings, attr):
                         yield attr
 
@@ -228,8 +233,8 @@ def get_settings():
                             settings_storage.initial_structure[1:]):
                         for _ in range(nint):
                             default_mask.append([
-                                [0 if i == j else 1 for i in range(npop+2)]
-                                for j in range(npop+2)])
+                                [0 if i == j else 1 for i in range(npop + 2)]
+                                for j in range(npop + 2)])
                     if old_settings.migration_masks is None:
                         old_masks = default_mask
                     else:
@@ -261,7 +266,7 @@ def get_settings():
                                     continue
                                 if old_mask[i][j] == new_mask[i][j]:
                                     continue
-                                change = f"{old_mask[i][j]} -> "\
+                                change = f"{old_mask[i][j]} -> " \
                                          f"{new_mask[i][j]}"
                                 warnings.warn(
                                     f"Migration mask number {i_mask} is "
@@ -273,6 +278,28 @@ def get_settings():
         if settings_storage.only_models:
             warnings.warn("Option `only models`/--only_models  must be used "
                           " --resume option only. It would be ignored.")
+
+    # if settings_storage.ld_kwargs:
+    #     value = settings_storage.ld_kwargs
+    #     if settings_storage.engine == 'momentsLD':
+    #         import moments.LD
+    #         Full_arg_spec = inspect.getfullargspec(
+    #             moments.LD.Parsing.compute_ld_statistics)
+    #         args_parsing_ld = Full_arg_spec[0]
+    #         for key in value:
+    #             if key not in args_parsing_ld:
+    #                 raise KeyError(
+    #                     "Computing_ld_stats function hasn't "
+    #                     f"argument {key}! Check your param_file "
+    #                     f"and remove unexpected args.")
+    #     else:
+    #         raise ValueError(
+    #             "You can't pass dictionary with arguments for "
+    #             "computing LDStats if you don't use "
+    #             "moments.LD engine. Your current engine is "
+    #             f"{settings_storage.engine}. Change engine or delete dict "
+    #             f"argument.")
+
     return settings_storage, args
 
 

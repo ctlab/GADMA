@@ -1,0 +1,28 @@
+Input data : tests/test_data/DATA/vcf_ld/vcf_data_few_chr.vcf, tests/test_data/DATA/vcf_ld/pop_map.txt
+Engine : momentsLD
+initial_structure: 1,1
+final_structure: 1,2
+recombination_maps: tests/test_data/DATA/vcf_ld/rec_maps_in_one_file
+output_directory: tests/test_data/DATA/vcf_ld/test_output
+ancestral_size_as_parameter: True
+Mutation rate: 2.35e-8
+Number of repeats : 1
+Number of processes : 1
+ld_kwargs: {"use_h5": False, }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

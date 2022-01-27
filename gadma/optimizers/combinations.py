@@ -233,7 +233,6 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         message = f"GLOBAL OPTIMIZATION: {global_result.message}; "\
                   f"LOCAL OPTIMIZATION: {local_result.message}"
         status = local_result.status
-
         if not np.isinf(local_result.y):
             y_best = local_result.y
             x_best[is_not_discrete] = local_result.x

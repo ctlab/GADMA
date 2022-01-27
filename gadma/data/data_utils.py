@@ -46,6 +46,8 @@ def read_popinfo(popinfo_file):
     with open(popinfo_file) as fl:
         for line in fl:
             sample, pop = line.strip().split()
+            if sample == "sample" and pop == 'pop':
+                continue
             if sample in sample2pop and pop != sample2pop[sample]:
                 raise ValueError(f"Sample {sample} is presented in popmap "
                                  f"{popinfo_file} at least twice "

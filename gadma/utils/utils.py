@@ -9,7 +9,10 @@ from multiprocessing import Process, Queue, queues
 import warnings
 import copy
 import math
+import allel
+import pandas
 from .. import smac_available
+from pathlib import Path
 if smac_available:
     from smac.runhistory.runhistory import RunHistory
     from smac.tae import StatusType
@@ -738,3 +741,47 @@ class bcolors:
 def warning_format(message, category, filename, lineno, file=None, line=None):
     return f"{bcolors.WARNING}{category.__name__}: {message}"\
            f"{bcolors.ENDC} ({filename}:{lineno})\n"
+
+
+def create_bed_files_and_extract_chromosomes(data_holder):
+    output_dir = data_holder.output_directory
+    vcf_file = data_holder.filename
+    if data_holder.region_len is not None:
+        region_len = data_holder.region_len
+    else:
+        region_len = 64000000
+    min_region_num = 15
+    read_vcf = allel.read_vcf(vcf_file)
+    chromosomes = {ii: 0 for ii in set(read_vcf['variants/CHROM'])}
+
+    for chrom in chromosomes:
+        chromosomes[chrom] = max(
+            read_vcf['variants/POS'][read_vcf['variants/CHROM'] == chrom]
+        )
+
+    Path(f"{output_dir}/bed_files/").mkdir(parents=True, exist_ok=True)
+
+    region_num = sum(
+        [int(round(chromosomes[ii] / region_len)) for ii in chromosomes]
+    )
+    total_len = sum([int(chromosomes[ii]) for ii in chromosomes])
+    if region_num < min_region_num:
+        while region_num < min_region_num:
+            region_num += (len(chromosomes))
+            region_len = (
+                    total_len / (len(chromosomes)) /
+                    (region_num / (len(chromosomes)))
+            )
+
+    for chrom in chromosomes:
+        stop_position = 0
+        number_of_chrom_parts = round(chromosomes[chrom] / region_len)
+        for num in range(1, number_of_chrom_parts + 1):
+            with open(f"{output_dir}"
+                      f"/bed_files/bed_file_{chrom}_{num}.bed", "w") as file:
+                start_position = stop_position
+                stop_position = int(region_len * num)
+                file.write(f"{chrom}\t{start_position}\t{stop_position}")
+        chromosomes[chrom] = number_of_chrom_parts
+
+    return chromosomes

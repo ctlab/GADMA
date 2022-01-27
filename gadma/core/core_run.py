@@ -253,6 +253,8 @@ class CoreRun(object):
                     engine.data_holder = self.engine.data_holder
                     engine.set_model(self.engine.model)
                     try:
+                        if engine.id == "momentsLD":
+                            args = None
                         engine.generate_code(x, save_file, *args, Nanc,
                                              gen_time=gen_time,
                                              gen_time_units=gen_time_units)
@@ -261,6 +263,8 @@ class CoreRun(object):
             else:
                 save_file = os.path.join(self.code_dir, filename)
                 args = self.settings.get_engine_args()
+                if self.engine.id == "momentsLD":
+                    args = None
                 self.engine.generate_code(x, save_file, *args,  Nanc,
                                           gen_time=gen_time,
                                           gen_time_units=gen_time_units)
@@ -415,10 +419,8 @@ class CoreRun(object):
             self.optimize_kwargs['local_x_transform'] = x_transform[1]
         f = self.engine.evaluate
         variables = self.model.variables
-
         optimizer = GlobalOptimizerAndLocalOptimizer(self.global_optimizer,
                                                      self.local_optimizer)
-
         opt_kwargs = {**self.optimize_kwargs, **initial_kwargs}
         result = optimizer.optimize(f, variables, **opt_kwargs)
         self.intermediate_callback(result.x, result.y)
@@ -440,7 +442,6 @@ class CoreRun(object):
         assert self.settings.final_structure is not None
 
         options = self.get_run_options()
-
         restore_file, struct, only_models, x_transform = next(options)
         if struct is not None and struct != self.model.get_structure():
             warnings.warn(f"Initial structure ({struct}) with saved file "

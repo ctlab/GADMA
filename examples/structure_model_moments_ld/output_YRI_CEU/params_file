@@ -1,0 +1,57 @@
+#	It is a parameters file for GADMA software.
+
+#	Lines started from # are ignored.
+#	Also comments at the end of a line are ignored too.
+#	Every line contains: Identificator of parameter : value.
+
+#!!! 	means pay attention to this parameter, they are primary.
+
+#!!!
+#	Output directory to write all GADMA out.
+#	One need to set it to a missing or empty directory.
+#	If it is resumed from other directory and output directory 
+#	isn't set, GADMA will add '_resumed' for previous output 
+#	directory.
+Output directory: /home/stas/git/gadma_moments/data_for_documentation/data/output_YRI_CEU_resume
+Input data: /home/stas/git/gadma_moments/data_for_documentation/data/YRI_CEU_sim_data.vcf,
+  /home/stas/git/gadma_moments/data_for_documentation/data/samples.txt
+Population labels: [YRI, CEU]
+Projections: [20, 20]
+Outgroup: Null
+Sequence length: 1000000
+Linked SNP's: True
+Directory with bootstrap: Null
+Engine: momentsLD
+Pts: [20, 30, 40]
+Relative parameters: False
+Theta0: Null
+Mutation rate: 2.35e-08
+Recombination rate: Null
+Time for generation: Null
+Custom filename: Null
+Lower bound: Null
+Upper bound: Null
+Parameter identifiers: Null
+Initial structure: [2, 1]
+Final structure: [2, 1]
+Only sudden: False
+No migrations: False
+Symmetric migrations: True
+Migration masks: Null
+Split fractions: True
+Inbreeding: False
+Ancestral size as parameter: True
+Upper bound of first split: Null
+Upper bound of second split: Null
+Local optimizer: BFGS_log
+Print models' code every N iteration: 0
+Model plot engine: demes
+Draw models every N iteration: 100
+Units of time in drawing: generations
+Vmin: 1
+Silence: False
+Verbose: 1
+Number of repeats: 6
+Number of processes: 6
+Resume from: /home/stas/git/gadma_moments/data_for_documentation/data/output_YRI_CEU
+Only models: False

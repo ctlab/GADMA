@@ -4,6 +4,8 @@ import os
 import numpy as np
 import copy
 import shutil
+import pytest
+from pathlib import Path
 
 import gadma
 from gadma.cli.arg_parser import ArgParser, get_settings,\
@@ -27,6 +29,10 @@ def get_settings_test():
 
 
 class TestCLI(unittest.TestCase):
+    def tearDown(self):
+        if Path("./some_dir").exists():
+            shutil.rmtree("./some_dir")
+
     def test_argparser(self):
         parser = ArgParser()
         parser.format_help()
@@ -47,6 +53,7 @@ class TestCLI(unittest.TestCase):
             sys.argv = ['gadma', '-p', param_file, '-o', 'some_dir',
                         '-i', another_fs]
             settings, _ = get_settings_test()
+            # А тут setting дважды, поэтому он ниже просто перезаписывается
 
             sys.argv = ['gadma', '-p', param_file, '-o', 'some_dir',
                         '-i', another_fs, '--only_models']
@@ -378,6 +385,7 @@ class TestCLI(unittest.TestCase):
         settings = SettingsStorage()
         settings.from_file(old_param_file)
 
+    @pytest.mark.timeout(0)
     def test_another_param_file(self):
         param_file = os.path.join(DATA_PATH, "PARAMS",
                                   'another_test_params')

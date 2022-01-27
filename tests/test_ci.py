@@ -24,6 +24,9 @@ class TestConfidenceIntervals(unittest.TestCase):
             os.remove(params_file)
 
         for engine in all_engines():
+            # momentsLD has different method for CI evaluation
+            if engine.id == "momentsLD":
+                continue
             model_name = f"small_1pop_dem_model_{engine.id}.py"
             model_name = os.path.join(DATA_DIR, "MODELS", model_name)
             no_ids_model_name = os.path.join(DATA_DIR, "MODELS",
@@ -72,26 +75,62 @@ class TestConfidenceIntervals(unittest.TestCase):
             self.assertRaises(ValueError, gadma.run_ls_on_boot_data.main)
 
     def test_run_ci_evaluation(self):
+        moments.LD.Inference._varcov_inv_cache = {}
         warnings.filterwarnings(action='ignore', category=UserWarning,
                         module='.*\.stats', lineno=1604)
         for engine in all_engines():
-            output_dir = os.path.join(DATA_DIR, f"run_ls_out_{engine.id}")
-            table = os.path.join(output_dir, 'result_table')
-            try:
-                for is_log, is_tex, has_acc in itertools.product([False, True],
-                                                                 repeat=3):
-                    for ext in [".csv", ".pkl"]:
-                        sys.argv = ["gadma-get_confidence_intervals", 
-                                    table + ext]
-                        if is_log:
-                            sys.argv.extend(["--log"])
-                        if is_tex:
-                            sys.argv.extend(["--tex"])
-                        if has_acc:
-                            sys.argv.extend(["--acc", "10"])
-                        gadma.get_confidence_intervals.main()
-            finally:
-                shutil.rmtree(output_dir)
+            if engine.id == "momentsLD":
+                results = os.path.join(DATA_DIR, "ci_test_ld", "ci_results.xlsx")
+                incorrect_data_for_ci_ld = os.path.join(
+                    DATA_DIR, "ci_test_ld", "ci_test_incorrect_file.py"
+                )
+                try:
+                    data_for_ci_ld = os.path.join(DATA_DIR, "ci_test_ld", "data_for_ci_test.py")
+                    sys.argv = ["gadma-get_confidence_intervals_for_ld", data_for_ci_ld]
+                    gadma.get_confidence_intervals_for_ld.main()
+                    self.assertTrue(os.path.exists(results))
+
+                    not_exist_data = os.path.join(DATA_DIR, "ci_test_ld", "not_exist.py")
+                    sys.argv = ["gadma-get_confidence_intervals_for_ld", not_exist_data]
+                    self.assertRaises(ValueError, gadma.get_confidence_intervals_for_ld.main)
+
+                    line_to_ignore = 'rep_data_file = ' \
+                                     'os.path.join(os.path.dirname(__file__), ' \
+                                     '\"preprocessed_data.bp\")'
+                    with open(data_for_ci_ld, 'r') as original_data:
+                        lines = original_data.readlines()
+
+                    with open(incorrect_data_for_ci_ld, 'w') as file:
+                        for line in lines:
+                            if line.rstrip('\n') != line_to_ignore:
+                                file.write(f'{line}')
+                    sys.argv = ["gadma-get_confidence_intervals_for_ld", incorrect_data_for_ci_ld]
+                    self.assertRaises(ValueError, gadma.get_confidence_intervals_for_ld.main)
+
+                finally:
+                    if os.path.exists(results):
+                        os.remove(results)
+                    if os.path.exists(incorrect_data_for_ci_ld):
+                        os.remove(incorrect_data_for_ci_ld)
+
+            else:
+                output_dir = os.path.join(DATA_DIR, f"run_ls_out_{engine.id}")
+                table = os.path.join(output_dir, 'result_table')
+                try:
+                    for is_log, is_tex, has_acc in itertools.product([False, True],
+                                                                     repeat=3):
+                        for ext in [".csv", ".pkl"]:
+                            sys.argv = ["gadma-get_confidence_intervals",
+                                        table + ext]
+                            if is_log:
+                                sys.argv.extend(["--log"])
+                            if is_tex:
+                                sys.argv.extend(["--tex"])
+                            if has_acc:
+                                sys.argv.extend(["--acc", "10"])
+                            gadma.get_confidence_intervals.main()
+                finally:
+                    shutil.rmtree(output_dir)
 
     def test_missed_lines_and_failures(self):
         load_parameters_from_python_file(None)

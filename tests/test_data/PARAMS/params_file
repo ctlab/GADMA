@@ -1,0 +1,56 @@
+#	It is a parameters file for GADMA software.
+
+#	Lines started from # are ignored.
+#	Also comments at the end of a line are ignored too.
+#	Every line contains: Identificator of parameter : value.
+
+#!!! 	means pay attention to this parameter, they are primary.
+
+#!!!
+#	Output directory to write all GADMA out.
+#	One need to set it to a missing or empty directory.
+#	If it is resumed from other directory and output directory 
+#	isn't set, GADMA will add '_resumed' for previous output 
+#	directory.
+Output directory: /home/stas/git/gadma_moments/devel_fork/GADMA/tests/output_dir
+Input data: /home/stas/git/gadma_moments/devel_fork/GADMA/tests/test_data/DATA/sfs/small_1pop.fs
+Population labels: Null
+Projections: [4]
+Outgroup: Null
+Sequence length: Null
+Linked SNP's: True
+Directory with bootstrap: /home/stas/git/gadma_moments/devel_fork/GADMA/tests/test_data/DATA/sfs/small_1_pop_bootstrap
+Engine: dadi
+Pts: Null
+Relative parameters: True
+Theta0: Null
+Mutation rate: Null
+Recombination rate: Null
+Time for generation: Null
+Custom filename: /home/stas/git/gadma_moments/devel_fork/GADMA/tests/test_data/MODELS/small_1pop_dem_model_dadi.py
+Lower bound: [0.01, 0.01, 0.001, 0.001]
+Upper bound: [100.0, 100.0, 5.0, 5.0]
+Parameter identifiers: [nuB, nuF, TB, TF]
+Initial structure: Null
+Final structure: Null
+Only sudden: False
+No migrations: False
+Symmetric migrations: False
+Migration masks: Null
+Split fractions: True
+Inbreeding: False
+Ancestral size as parameter: False
+Upper bound of first split: Null
+Upper bound of second split: Null
+Local optimizer: Null
+Print models' code every N iteration: 10
+Model plot engine: demes
+Draw models every N iteration: 10
+Units of time in drawing: generations
+Vmin: 1
+Silence: False
+Verbose: 1
+Number of repeats: 1
+Number of processes: 1
+Resume from: Null
+Only models: False

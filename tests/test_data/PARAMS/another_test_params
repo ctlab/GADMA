@@ -17,6 +17,3 @@ Number of processes: 1
 global_maxiter: 2
 local_maxiter: 1
 num_init_const: 5
-
-
-

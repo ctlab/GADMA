@@ -7,6 +7,8 @@ from .. import demes_available, demesdraw_available
 # Main options. Output and input.
 output_directory = None
 input_data = None
+bed_file = None
+recombination_maps = None
 # input_data = None
 # number_of_populations = None
 population_labels = None
@@ -41,12 +43,18 @@ migration_masks = None
 inbreeding = False
 selection = False
 
+# LD params
+ld_kwargs = None
+region_len = 6400000
+preprocessed_data = None
+
 # Custom model
 custom_filename = None
 model_func = None
 lower_bound = None
 upper_bound = None
 parameter_identifiers = None
+fixed_ancestral_size = None
 
 # Structure of models
 initial_structure_unit = 1
