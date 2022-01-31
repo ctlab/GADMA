@@ -99,6 +99,7 @@ jobs:
           python3 setup.py install --ld_extensions
           cd ..
           rm -rf moments/
+          pip3 install momi
 
       - name: Check installations of packages.
         run: |
