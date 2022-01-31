@@ -108,6 +108,11 @@ jobs:
           python3 -c "import moments"
           python3 -c "import gadma"
 
+      - name: Show available engines and optimizations in gadma.
+        run: |
+          python3 -c "import gadma;print(gadma.engines.engine._registered_engines.keys())"
+          python3 -c "import gadma;print(gadma.optimizers.global_optimizer._registered_global_optimizers.keys())"
+
       - name: Install dependencies for tests.
         run: |
           pip3 install -r requirements/tests.txt
