@@ -1269,6 +1269,13 @@ class SettingsStorage(object):
 
         ensure_dir_existence(self.output_directory,
                              check_emptiness=True)
+        if not self.Nanc_will_be_available() and not self.relative_parameters:
+            self.relative_parameters = True
+            warnings.warn(
+                "Parameters will be in genetic units (Relative parameters). "
+                "Engines dadi and moments require mutation rate and sequence "
+                "length for unit translation"
+            )
 
         if self.inbreeding:
             if self.projections is not None:
