@@ -29,8 +29,7 @@ except ImportError:
     moments = None
 try:
     import moments.LD
-
-    momentsLD = 1
+    momentsLD = moments.LD.Parsing.ld_extensions
 except ImportError:
     momentsLD = None
 try:
