@@ -9,6 +9,7 @@ import moments.LD
 import numpy as np
 from os import listdir
 from pathlib import Path
+import gadma
 from gadma.data.data import VCFDataHolder
 from gadma.engines.engine import get_engine
 from gadma.utils.utils import create_bed_files_and_extract_chromosomes
