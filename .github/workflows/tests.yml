@@ -119,11 +119,7 @@ jobs:
           pip3 install -r requirements/tests.txt
 
       - name: Run tests and codecov.
-        shell: bash -l {0} #We need a login shell to get conda
         run: |
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            conda activate ${{ env.CONDA_ENV_NAME }}
-          fi
           pytest --timeout=400 --cov=gadma --cov-report=xml -v tests --disable-warnings
         
       - name: Upload coverage to Codecov

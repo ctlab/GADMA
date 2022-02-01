@@ -30,7 +30,7 @@ import sys
 
 EXAMPLE_FOLDER = os.path.join(os.path.dirname(__file__), "test_data")
 TEST_OUTPUT = os.path.join(
-                        EXAMPLE_FOLDER, r"DATA", "rvcf_ld", "test_output"
+                        EXAMPLE_FOLDER, r"DATA", r"vcf_ld", "test_output"
                     )
 
 
