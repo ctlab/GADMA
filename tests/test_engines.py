@@ -507,7 +507,7 @@ class TestModelSimulation(unittest.TestCase):
 
         return values, data, dm
 
-    @pytest.mark.skipif(not gadma.moments_LD_available)
+    @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_one_pop_moments_ld(self):
         engine = get_engine('momentsLD')
         values, data, dm = self.model_one_pop_moments_ld()
@@ -525,7 +525,7 @@ class TestModelSimulation(unittest.TestCase):
         self.assertTrue(np.allclose(model[1], data[1]), msg='Simulations differs in '
                                                             'engine and momentsLD')
 
-    @pytest.mark.skipif(not gadma.moments_LD_available)
+    @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def model_two_pops_moments_ld(self):
         import moments.LD
 
@@ -570,7 +570,7 @@ class TestModelSimulation(unittest.TestCase):
 
         return values, data, dm
 
-    @pytest.mark.skipif(not gadma.moments_LD_available)
+    @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_two_pops_moments_ld(self):
         engine = get_engine('momentsLD')
         values, data, dm = self.model_two_pops_moments_ld()
@@ -586,7 +586,7 @@ class TestModelSimulation(unittest.TestCase):
         self.assertTrue(np.allclose(model[1], data[1]), msg='Simulations differs in '
                                                             'engine and momentsLD')
 
-    @pytest.mark.skipif(not gadma.moments_LD_available)
+    @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def model_4pops_moments_ld(self):
         import moments.LD
 
@@ -651,7 +651,7 @@ class TestModelSimulation(unittest.TestCase):
 
         return values, simulated, dm
 
-    @pytest.mark.skipif(not gadma.moments_LD_available)
+    @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_4pops_moments_ld(self):
         values, simulated_by_moments, dm = self.model_4pops_moments_ld()
         vals = [values[var.name] for var in dm.variables
@@ -684,7 +684,7 @@ class TestModelEvaluation(unittest.TestCase):
             shutil.rmtree(f"{TEST_OUTPUT}/")
         os.mkdir(TEST_OUTPUT)
 
-    @pytest.mark.skipif(not gadma.moments_LD_available)
+    @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def model_for_gadma_moments_evaluation(self):
         def model_moments_ld(params, rho, theta):
             nu, nu1, nu2, tf, m12, m21 = params
@@ -745,7 +745,7 @@ class TestModelEvaluation(unittest.TestCase):
 
         return values, simulated, dm
 
-    @pytest.mark.skipif(not gadma.moments_LD_available)
+    @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     @pytest.mark.timeout(0)
     def test_evaluation_ld(self):
         # use data read with gadma
@@ -812,7 +812,7 @@ class TestModelEvaluation(unittest.TestCase):
         self.assertEqual(theta, engine.get_theta(vals))
         self.assertEqual(10000, engine.get_N_ancestral_from_theta(theta))
 
-    @pytest.mark.skipif(not gadma.moments_LD_available)
+    @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     @pytest.mark.timeout(0)
     def test_draw_curves(self):
         preprocessed_test_data = os.path.join(

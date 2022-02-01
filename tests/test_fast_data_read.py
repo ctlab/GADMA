@@ -38,6 +38,7 @@ FEW_REC_MAPS = os.path.join(
 TEST_OUTPUT = os.path.join(
     DATA_PATH, 'DATA', 'vcf_ld', "test_output")
 VCF_DATA_FEW_CHR = os.path.join(
+import gadma
     DATA_PATH, 'DATA', 'vcf_ld', "vcf_data_few_chr.vcf")
 BED_FILES_DIR = os.path.join(
     DATA_PATH, 'DATA', 'vcf_ld', "test_bed_files")
@@ -69,7 +70,7 @@ class TestFastDataRead(unittest.TestCase):
         if Path('./preprocessed_data.bp').exists():
             os.remove('./preprocessed_data.bp')
 
-    @pytest.mark.skipif(not gadma.moments_LD_available)
+    @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_rec_map_and_extension_extraction(self):
         rec_map = 'rec_map_1.map'
         self.assertEqual(
@@ -77,7 +78,7 @@ class TestFastDataRead(unittest.TestCase):
             extract_rec_map_name_and_extension(rec_map)
         )
 
-    @pytest.mark.skipif(not gadma.moments_LD_available)
+    @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_read_data_without_rec_map_function(self):
         READ_INFO.rec_map = None
         read_function_results = read_data_without_rec_map(READ_INFO)['1']
@@ -103,7 +104,7 @@ class TestFastDataRead(unittest.TestCase):
                 )
             )
 
-    @pytest.mark.skipif(not gadma.moments_LD_available)
+    @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_read_data_function(self):
         READ_INFO.rec_map = REC_MAP
 
@@ -131,7 +132,7 @@ class TestFastDataRead(unittest.TestCase):
                 )
             )
 
-    @pytest.mark.skipif(not gadma.moments_LD_available)
+    @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_read_data_rec_maps_in_one_file_function(self):
         READ_INFO.rec_map = FEW_REC_MAPS
 
@@ -160,7 +161,7 @@ class TestFastDataRead(unittest.TestCase):
                 )
             )
 
-    @pytest.mark.skipif(not gadma.moments_LD_available)
+    @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     @pytest.mark.timeout(0)
     def test_main_func(self):
         param_file = os.path.join(DATA_PATH, 'PARAMS', 'another_test_params')
@@ -203,7 +204,7 @@ class TestFastDataRead(unittest.TestCase):
             finally:
                 rewrite_params_file(param_file)
 
-    @pytest.mark.skipif(not gadma.moments_LD_available)
+    @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_h5_creation(self):
         vcf_file = VCF_DATA_LD
         if Path(H5_FILE).exists():
@@ -227,7 +228,7 @@ class TestBedFilesCreation(unittest.TestCase):
     vcf_data = allel.read_vcf(data_holder.filename)
     chromosome_len = max(vcf_data['variants/POS'])
 
-    @pytest.mark.skipif(not gadma.moments_LD_available)
+    @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_one_chrom_normal_region_num(self):
         self.data_holder.filename = VCF_DATA_LD
         self.data_holder.region_len = 50000
@@ -240,7 +241,7 @@ class TestBedFilesCreation(unittest.TestCase):
         self.assertEqual(regions_num, round(
             self.chromosome_len / self.data_holder.region_len))
 
-    @pytest.mark.skipif(not gadma.moments_LD_available)
+    @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_one_chrom_small_region_num(self):
         self.data_holder.filename = VCF_DATA_LD
         self.data_holder.region_len = 100000000
@@ -251,7 +252,7 @@ class TestBedFilesCreation(unittest.TestCase):
             listdir(f'{self.data_holder.output_directory}/bed_files/'))
         self.assertEqual(regions_num, 15)
 
-    @pytest.mark.skipif(not gadma.moments_LD_available)
+    @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_few_chrom_normal_region_num(self):
         self.data_holder.filename = VCF_DATA_FEW_CHR
         self.data_holder.region_len = 50000
@@ -267,7 +268,7 @@ class TestBedFilesCreation(unittest.TestCase):
         self.assertEqual(regions_num, round(
             self.chromosome_len / self.data_holder.region_len) * 2)
 
-    @pytest.mark.skipif(not gadma.moments_LD_available)
+    @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_few_chrom_small_region_num(self):
         self.data_holder.filename = VCF_DATA_FEW_CHR
         self.data_holder.region_len = 500000
