@@ -41,7 +41,7 @@ VCF_DATA_FEW_CHR = os.path.join(
 BED_FILES_DIR = os.path.join(
     DATA_PATH, 'DATA', 'vcf_ld', "test_bed_files")
 
-if gadma.moments_LD_available):
+if gadma.moments_LD_available:
     engine = get_engine('momentsLD')
     kwargs = engine.kwargs
 
