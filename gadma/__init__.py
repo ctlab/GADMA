@@ -31,7 +31,7 @@ try:
     import moments.LD
     momentsLD = moments.LD.Parsing.ld_extensions
 except ImportError:
-    momentsLD = None
+    momentsLD = 0
 try:
     import dadi
 except ImportError:
@@ -77,7 +77,7 @@ import warnings
 PIL_available = PIL is not None
 matplotlib_available = matplotlib is not None
 moments_available = moments is not None
-moments_LD_available = momentsLD is not None
+moments_LD_available = momentsLD == 1
 dadi_available = dadi is not None
 momi_available = momi is not None
 demes_available = demes is not None
