@@ -38,7 +38,6 @@ FEW_REC_MAPS = os.path.join(
 TEST_OUTPUT = os.path.join(
     DATA_PATH, 'DATA', 'vcf_ld', "test_output")
 VCF_DATA_FEW_CHR = os.path.join(
-import gadma
     DATA_PATH, 'DATA', 'vcf_ld', "vcf_data_few_chr.vcf")
 BED_FILES_DIR = os.path.join(
     DATA_PATH, 'DATA', 'vcf_ld', "test_bed_files")
