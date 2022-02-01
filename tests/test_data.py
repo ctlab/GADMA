@@ -4,6 +4,7 @@ import itertools
 import sys
 import shutil
 import pickle
+import gadma
 from gadma.utils.utils import create_bed_files_and_extract_chromosomes
 from os import listdir
 from collections import namedtuple
