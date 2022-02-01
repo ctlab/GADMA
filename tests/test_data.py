@@ -472,6 +472,7 @@ class TestVCFDataHolderLD(unittest.TestCase):
         self.assertEqual(ld_data.popmap_file, POP_MAP)
         self.assertEqual(ld_data.recombination_maps, REC_MAPS_DIR)
 
+    @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_sfs_data_holder(self):
         ld_wrong_data = SFSDataHolder(
             sfs_file=SFS_DATA)
@@ -493,6 +494,7 @@ class TestSettingStorageLDStats(unittest.TestCase):
         if Path(f"{TEST_OUTPUT}/bed_files/").exists():
             shutil.rmtree(f"{TEST_OUTPUT}/bed_files/")
 
+    @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_param_file_with_ld(self):
         DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
         param_file = os.path.join(DATA_PATH, "PARAMS", 'ld_params_test_correct')
@@ -506,6 +508,7 @@ class TestSettingStorageLDStats(unittest.TestCase):
         self.assertEqual(settings.data_holder.popmap_file, POP_MAP)
         self.assertEqual(settings.data_holder.recombination_maps, REC_MAPS_DIR)
 
+    @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_errors_in_param_file(self):
         DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
         param_file = os.path.join(DATA_PATH, "PARAMS", 'ld_param_file_with_wrong_keys_in_dict')
@@ -526,6 +529,7 @@ class TestSettingStorageLDStats(unittest.TestCase):
         settings, args = get_settings_test()
         self.assertTrue(settings.ancestral_size_as_parameter, True)
 
+    @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     @pytest.mark.timeout(0)
     def test_correct_LD_data_processing(self):
         data_reading_case_list = ['without_rec_map', 'with_rec_map', 'with_rec_maps_in_one_file']
