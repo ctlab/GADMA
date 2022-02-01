@@ -1,5 +1,6 @@
 import json
 import unittest
+import gadma
 from gadma import *
 import itertools
 import os
@@ -301,6 +302,7 @@ class TestModelStructure(unittest.TestCase):
             output_directory=TEST_OUTPUT
         )
 
+    @pytest.mark.skipif(not gadma.moments_LD_available)
     def test_test_likelihood_after_increase_moments_ld(self):
         LL_TEST_STRUCTURE = [(2, 1)]
         args_for_ld_test_ll_after_increase = []
