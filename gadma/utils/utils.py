@@ -286,6 +286,7 @@ def timeout(f, time):
         q = Queue()
         p = Process(target=run_f_and_save_result_into_queue, name=f.__name__,
                     args=(f, q, *args), kwargs=kwargs)
+        p.daemon = True
         p.start()
         p.join(time)
         if p.is_alive():
