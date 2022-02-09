@@ -105,8 +105,8 @@ class TestEngines(unittest.TestCase):
         nu1 = PopulationSizeVariable('nu1')
         nu2 = PopulationSizeVariable('nu2')
         nu3 = PopulationSizeVariable('nu3')
-        t1 = TimeVariable('t1')
-        t2 = TimeVariable('t2')
+        t1 = TimeVariable('t1', domain=[1e-3, 5])
+        t2 = TimeVariable('t2', domain=[1e-3, 5])
         t3 = TimeVariable('t3')
         m12 = MigrationVariable('m12')
         dyn = DynamicVariable('dyn_exp')
@@ -161,7 +161,7 @@ class TestEngines(unittest.TestCase):
         nu2 = PopulationSizeVariable('nu2')
         nu3 = PopulationSizeVariable('nu3')
         nu4 = PopulationSizeVariable('nu4')
-        t = TimeVariable('t')
+        t = TimeVariable('t', domain=[1e-3, 5])
         m12 = MigrationVariable('m12')
         dyn = DynamicVariable('dyn_exp')
 
@@ -187,7 +187,7 @@ class TestEngines(unittest.TestCase):
         dm.add_epoch(t, [nu1, nu2, nu3, nu4])
         return data, dm, values, ll
 
-    def test_dadi_engime(self):
+    def test_dadi_engine(self):
         engine = get_engine('dadi')
 
         ns = (4, 4, 4)
@@ -285,7 +285,7 @@ class TestEngines(unittest.TestCase):
         nu2F = PopulationSizeVariable('nu2F')
         m = MigrationVariable('m')
         m13 = MigrationVariable('m13')
-        Tp = TimeVariable('Tp')
+        Tp = TimeVariable('Tp', domain=[1e-3, 5])
         T = TimeVariable('T')
         Dyn = DynamicVariable('Dyn')
 
@@ -342,7 +342,7 @@ class TestEngines(unittest.TestCase):
         engine = get_engine("moments")
 
         nu = PopulationSizeVariable('nu')
-        T = TimeVariable('T')
+        T = TimeVariable('T', domain=[1e-3, 5])
         Dyn = DynamicVariable('Dyn')
 
         dm = EpochDemographicModel(Nanc_size=1000)
