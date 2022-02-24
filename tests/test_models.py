@@ -471,7 +471,6 @@ class TestModels(unittest.TestCase):
             vcf_file=YRI_CEU_SIM_LD_DATA,
             popmap_file=YRI_CEU_SIM_LD_POPS,
             population_labels=pops,
-            output_directory=TEST_OUTPUT
         )
         data_holder.preprocessed_data = os.path.join(
             EXAMPLE_FOLDER, r"DATA", r"vcf_ld", f"preprocessed_data_model1.bp"
@@ -632,6 +631,26 @@ class TestModels(unittest.TestCase):
         model6.add_epoch(t, [nu1, nu2, nu1], None, None)
         model6.add_inbreeding([f1, f2, 0.5])
 
+        model_struct_1 = StructureDemographicModel(
+            initial_structure=[2, 1, 1],
+            final_structure=[2, 1, 1],
+            has_migs=True,
+            has_sels=False,
+            has_dyns=True,
+            sym_migs=True,
+            frac_split=True,
+        )
+        model_struct_2 = StructureDemographicModel(
+            initial_structure=[2, 1, 1],
+            final_structure=[2, 1, 1],
+            has_anc_size=True,
+            has_migs=True,
+            has_sels=False,
+            has_dyns=True,
+            sym_migs=True,
+            frac_split=True,
+        )
+
         values = {nu1: 2, nu2: 0.5, nu3: 0.5, t_copy: 0.3,
                   t2: 0.5, m: 0.1, s: 0.1, d1: 'Exp', d2: 'Lin',
                   f: 0.5, h: 0.3, f1: 0.1, f2: 0.3,
@@ -671,6 +690,9 @@ class TestModels(unittest.TestCase):
                     model8.unfix_variable(model8._variables[-1])
                     models.append(model8)
                 models.append(model7)
+            models.append(model_struct_1)
+            models.append(model_struct_2)
+            models = [model_struct_2]
 
             for ind, model in enumerate(models):
                 if engine.id == "momentsLD":
@@ -680,7 +702,10 @@ class TestModels(unittest.TestCase):
                 for description, data in dataset:
                     msg = f"for model {ind + 1} and {description} data and " \
                           f"{engine.id} engine"
-                    print(msg)
+                    # print(msg)
+                    if engine.id == "momi" and isinstance(model, StructureDemographicModel):
+                        if not model.has_anc_size:
+                            continue
                     if engine.id == 'dadi':
                         options = {'pts': [4, 6, 8]}
                         args = (options['pts'],)
@@ -688,12 +713,19 @@ class TestModels(unittest.TestCase):
                         options = {}
                         args = ()
 
+                    if isinstance(model, StructureDemographicModel):
+                        input_values = {var.name: var.resample() for var in model.variables}
+                    else:
+                        input_values = copy.copy(values)
+
                     if engine.id in ["momi", "momentsLD"]:
                         # there is an error in momi for that case
                         # data for moments was simulated with msprime, which can't work with Lin DynVar
                         if description == "fs without pop labels":
                             continue
-                        values['d2'] = "Exp"
+                        for key in input_values:
+                            if input_values[key] == "Lin":
+                                input_values[key] = "Exp"
                     data.sequence_length = 50818468
                     # we read data but save only updated data_holder
                     engine.data = data
@@ -703,25 +735,33 @@ class TestModels(unittest.TestCase):
                     if engine.id not in ["dadi", "moments"]:
                         Nanc = 10000
                     if engine.id == "momentsLD":
-                        model = copy.deepcopy(model)
-                        model.Nanc_size = Nanc
-                        model.mutation_rate = 1.25e-8
-                        engine.model = model
+                        new_model = copy.deepcopy(model)
+                        if new_model.has_anc_size and isinstance(new_model.Nanc_size, Variable):
+                            input_values[new_model.Nanc_size.name] = Nanc
+                        else:
+                            new_model.Nanc_size = Nanc
+                        new_model.mutation_rate = 1.25e-8
+                        engine.model = new_model
                         moments.LD.Inference._varcov_inv_cache = {}
 
-                    cmd = engine.generate_code(values, None, *args, nanc=Nanc)
-                    # print(cmd)
-
+                    cmd = engine.generate_code(input_values, None, *args, nanc=Nanc)
+                    #print(cmd)
+                    print(engine.model.as_custom_string(input_values))
                     if engine.can_evaluate:
                         if engine.id not in ['dadi', 'moments']:
-                            model = copy.deepcopy(model)
-                            model.Nanc_size = Nanc
-                            engine.model = model
+                            new_model = copy.deepcopy(model)
+                            if new_model.has_anc_size and isinstance(new_model.Nanc_size, Variable):
+                                input_values[new_model.Nanc_size.name] = Nanc
+                            else:
+                                new_model.Nanc_size = Nanc
+                            new_model.mutation_rate = 1.25e-8
+                            engine.model = new_model
                         # read data
                         engine.data = data
-                        true_ll = engine.evaluate(values, **options)
-
+                        true_ll = engine.evaluate(input_values, **options)
+                        print(engine.model.as_custom_string(input_values))
                         d = {}
+                        print(cmd)
                         exec(cmd, d)
 
                         msg += f": {true_ll} != {d['ll_model']}"
@@ -731,12 +771,10 @@ class TestModels(unittest.TestCase):
                                 engine.id in ["dadi", "moments"]):
                             engine.data_holder.population_labels = None
                             self.assertRaises(ValueError, engine.generate_code,
-                                              values, None, *args, nanc=Nanc)
+                                              input_values, None, *args, nanc=Nanc)
                         if description == "fs without pop labels":
                             engine.data_holder.population_labels = None
-                            engine.generate_code(values, None, *args, nanc=Nanc)
-                    if engine.id in ["momi", "momentsLD"]:
-                        values['d2'] = "Lin"
+                            engine.generate_code(input_values, None, *args, nanc=Nanc)
 
     def test_models_eq(self):
         # it does not check everything

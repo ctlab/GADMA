@@ -27,7 +27,6 @@ LL_TEST_DATA = os.path.join(
 DATA_HOLDER_FOR_MODELS = VCFDataHolder(
             vcf_file=VCF_DATA_LD,
             popmap_file=POP_MAP,
-            output_directory=TEST_OUTPUT,
             recombination_maps=REC_MAPS_DIR
 )
 
@@ -299,7 +298,6 @@ class TestModelStructure(unittest.TestCase):
             ),
             popmap_file=None,
             population_labels=["pop0", "pop1"],
-            output_directory=TEST_OUTPUT
         )
 
     @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")

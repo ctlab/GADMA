@@ -5,7 +5,7 @@ from . import settings
 from .. import demes_available, momi_available
 from ..data import SFSDataHolder, \
     VCFDataHolder, check_and_return_projections_and_labels
-from ..engines import get_engine, MomentsEngine
+from ..engines import get_engine, MomentsEngine, MomentsLdEngine
 from ..engines import all_engines, all_drawing_engines
 from ..models import StructureDemographicModel, CustomDemographicModel
 from ..optimizers import get_local_optimizer, get_global_optimizer
@@ -15,6 +15,9 @@ from ..utils import check_dir_existence, check_file_existence, abspath,\
 from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable,\
     ContinuousVariable, DynamicVariable, GrowthRateVariable,\
     SelectionVariable, FractionVariable, DemographicVariable
+from ..data import extract_chromosomes_from_vcf
+from ..data import create_recombination_maps_from_rate
+from ..data import create_bed_files_and_extract_chromosomes
 import warnings
 import importlib.util
 import sys
@@ -180,7 +183,7 @@ class SettingsStorage(object):
         :param name: Name of attribute.
         :param value: Value of the attribute.
         """
-        int_attrs = ['stuck_generation_number', 'sequence_length', 'verbose',
+        int_attrs = ['stuck_generation_number', 'verbose',
                      'print_models_code_every_n_iteration', 'n_elitism',
                      'draw_models_every_n_iteration', 'size_of_generation',
                      'number_of_repeats', 'number_of_processes',
@@ -221,9 +224,8 @@ class SettingsStorage(object):
         empty_dir_attrs = ['output_directory']
         data_holder_attrs = ['projections', 'outgroup',
                              'population_labels', 'sequence_length',
-                             'recombination_maps', 'ld_kwargs',
-                             'output_directory', "region_len",
-                             "preprocessed_data"]
+                             "preprocessed_data", "recombination_maps",
+                             'bed_files_dir']
         bounds_attrs = ['min_n', 'max_n', 'min_t', 'max_t', 'min_m', 'max_m',
                         'dynamics']
         bounds_lists = ['lower_bound', 'upper_bound', 'parameter_identifiers']
@@ -234,7 +236,7 @@ class SettingsStorage(object):
                         'dadi_available', 'moments_available',
                         'model_plot_engine', 'demes_available',
                         'demesdraw_available',
-                        'kernel', 'acquisition_function']
+                        'kernel', 'acquisition_function', 'sequence_length']
         dict_attrs = ['ld_kwargs']
 
         super_hasattr = True
@@ -392,6 +394,28 @@ class SettingsStorage(object):
                 value = [x.strip() for x in value.split(',')]
                 self.__setattr__(name, value)
 
+        # 1.8.-1 Sequence length could be integer or dict
+        if name == "sequence_length" and value is not None:
+            if isinstance(value, float) and value.is_integer():
+                value = int(value)
+            is_int = isinstance(value, numbers.Integral)
+            is_dict = isinstance(value, dict)
+            if not (is_int or is_dict):
+                raise ValueError(f"Setting {name} should be integer or "
+                                 "dictionary {chrom: length}")
+            if is_int and value < 0:
+                raise ValueError(f"Setting {name} ({value}) must be positive.")
+            new_val = {}
+            if is_dict:
+                for key, val in value.items():
+                    if not isinstance(val, numbers.Integral):
+                        raise ValueError(
+                            f"Setting {name} should contain integer values "
+                            "when it is a dictionary (got {value})."
+                        )
+                    new_val[str(key)] = val
+                value = new_val
+
         # 1.8.0 expand path of files:
         if (value is not None and
                 (name in empty_dir_attrs or
@@ -469,8 +493,6 @@ class SettingsStorage(object):
                     population_labels=self.population_labels,
                     sequence_length=self.sequence_length,
                     recombination_maps=self.recombination_maps,
-                    ld_kwargs=self.ld_kwargs,
-                    output_directory=self.output_directory,
                     preprocessed_data=self.preprocessed_data
                 )
             else:
@@ -707,6 +729,12 @@ class SettingsStorage(object):
                 transformed_value.append(new_mask)
             value = transformed_value
 
+        # 3.13 If we have ld_kwargs we put them as attribute to momentsLD
+        if name == 'ld_kwargs':
+            MomentsLdEngine.ld_kwargs = value
+        if name == 'number_of_processes':
+            MomentsLdEngine.n_processes = value
+
         if setattr_at_the_end:
             super(SettingsStorage, self).__setattr__(name, value)
             # assert(self.__getattr__(name) == value)
@@ -805,12 +833,61 @@ class SettingsStorage(object):
         fracs = [p_1, self.p_mutation, self.p_crossover, self.p_random]
         return fracs
 
+    def _prepare_for_moments_ld(self):
+        # if we have momentsLD then we should create bed files and rec maps
+        we_have_rec_rate = self.recombination_rate is not None
+        we_have_rec_maps = (self.recombination_maps is not None and
+                            os.path.isdir(self.recombination_maps))
+        we_have_rec = we_have_rec_rate or we_have_rec_maps
+        print(we_have_rec)
+        if isinstance(self.data_holder, VCFDataHolder):
+            if self.bed_files_dir is None:
+                try:
+                    path = os.path.join(self.output_directory, "_bed_files")
+                    create_bed_files_and_extract_chromosomes(
+                        data_holder=self.data_holder,
+                        output_dir=path,
+                        region_len=self.region_len,
+                    )
+                    self.bed_files_dir = path
+                except Exception as e:
+                    if (self.engine == "momentsLD" and
+                            self.preprocessed_data is None):
+                        raise ValueError(
+                            "Failed to generate bed files for region "
+                            "identification due to the following error:\n"
+                            f"{str(e)}"
+                        ) from e
+            else:
+                check_dir_existence(self.bed_file_dir)
+            # If we have recombination rate only then we have to create rec map
+            if not we_have_rec_maps and we_have_rec_rate:
+                try:
+                    path = os.path.join(
+                        self.output_directory, "_recombination_maps"
+                    )
+                    create_recombination_maps_from_rate(
+                        data_holder=self.data_holder,
+                        output_dir=path,
+                        recombination_rate=self.recombination_rate,
+                    )
+                    self.recombination_maps = path
+                except Exception:
+                    if self.engine == "momentsLD":
+                        raise ValueError(
+                            "Failed to generate recombination maps files "
+                            f"due to the following error: {str(e)}"
+                        ) from e
+        else:
+            assert self.engine != "momentsLD", "Set VCF data for momentsLD."
+
     def read_data(self):
         """
         Reads data with engine. Attribute of`engine` and `data_holder` should
         be set.
         """
         engine = get_engine(self.engine)
+        self._prepare_for_moments_ld()
         engine.data = self.data_holder
         self.data_holder = engine.data_holder
         self.projections = self.data_holder.projections
@@ -1253,7 +1330,7 @@ class SettingsStorage(object):
 
     def is_valid(self):
         """
-        Checks that settings are fine. Rises arrors if something is not right.
+        Checks that settings are fine. Rises errors if something is not right.
         """
         if (self.input_data is None and
                 self.resume_from is None):
@@ -1356,6 +1433,44 @@ class SettingsStorage(object):
         if self.sequence_length is None and momi_available:
             warnings.warn("Code for momi will not be generated as `Sequence "
                           "length` is missed.")
+
+        # Check for sequence length if we have several chrom lengths
+        if isinstance(self.sequence_length, dict):
+            if isinstance(self.data_holder, VCFDataHolder):
+                chromosomes = extract_chromosomes_from_vcf(
+                    self.data_holder.filename
+                )
+                if set(chromosomes) != set(self.sequence_length):
+                    raise ValueError(
+                        "Sequence length was set as a dict. However it "
+                        "contains different or not all chromosomes than "
+                        "VCF file.\n"
+                        f"Sequence length:\t{set(self.sequence_length)}\n"
+                        f"VCF file:\t{set(chromosomes)}")
+
+        # Checks for momentsLD
+        moments_ld_ok = True
+        if not isinstance(self.data_holder, VCFDataHolder):
+            moments_ld_ok = False
+            reason = "VCF input data is required."
+        else:
+            chromosomes = extract_chromosomes_from_vcf(
+                self.data_holder.filename
+            )
+            if (len(chromosomes) > 1 and
+                    not isinstance(self.sequence_length, dict)):
+                moments_ld_ok = False
+                reason = "There are more than one chromosome in VCF file and"\
+                         " only total length in `Sequence length`, please, "\
+                         "specify length for chromosomes separately via dict"
+        if not moments_ld_ok:
+            if self.engine != "momentsLD":
+                warnings.warn("Code for momentsLD will not be generated as: "
+                              f"{reason}")
+            else:
+                raise ValueError("MomentsLD requirements are not satisfied: "
+                                 f"{reason}")
+
         for engine, is_available in zip(["demes", "momi"],
                                         [demes_available, momi_available]):
             if is_available:
@@ -1370,14 +1485,13 @@ class SettingsStorage(object):
                         f"`Sequence length` (got {self.sequence_length})\nor\n"
                         f"`Theta0` (got {self.theta0})")
 
-        if self.ld_kwargs:
+        if self.ld_kwargs is not None:
             if self.engine != "momentsLD":
-                raise ValueError("You can't pass ld_kwargs argument for "
-                                 "if you don't use "
-                                 "moments.LD engine. Your current engine is "
-                                 f"{self.engine}. "
-                                 f"Change engine or delete dict "
-                                 f"argument.")
+                warnings.warn(
+                    "You cannot set ld_kwargs argument if you don't use "
+                    f"momentsLD engine. It will be ignored. "
+                    f"Your current engine is {self.engine}."
+                )
             else:
                 import moments.LD
                 Full_arg_spec = inspect.getfullargspec(

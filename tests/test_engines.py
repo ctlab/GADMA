@@ -3,6 +3,7 @@ import gadma
 from gadma import *
 from gadma.engines import register_engine, Engine
 from gadma.models import Model
+from gadma.data import create_bed_files_and_extract_chromosomes
 import os
 import pickle
 import numpy as np
@@ -30,7 +31,6 @@ R_BINS = np.array(
 DATA_HOLDER_FOR_MODELS = VCFDataHolder(
             vcf_file=VCF_DATA_LD,
             popmap_file=POP_MAP,
-            output_directory=TEST_OUTPUT,
             recombination_maps=REC_MAPS_DIR,
             population_labels=["deme0", "deme1"]
 )
@@ -470,8 +470,8 @@ class TestEngines(unittest.TestCase):
 class TestModelSimulation(unittest.TestCase):
 
     def tearDown(self):
-        if Path(f"{TEST_OUTPUT}/bed_files/").exists():
-            shutil.rmtree(f"{TEST_OUTPUT}/bed_files/")
+        if Path(f"{TEST_OUTPUT}/_bed_files/").exists():
+            shutil.rmtree(f"{TEST_OUTPUT}/_bed_files/")
 
     def model_one_pop_moments_ld(self):
         import moments.LD
@@ -763,10 +763,17 @@ class TestModelEvaluation(unittest.TestCase):
         engine.data_holder = VCFDataHolder(
             vcf_file=VCF_DATA_LD, popmap_file=POP_MAP,
             recombination_maps=REC_MAPS_DIR,
-            output_directory=TEST_OUTPUT,
             population_labels=["deme0", "deme1"],
-            ld_kwargs={"cM": True, "report": "False"}
+            sequence_length=1000000
         )
+        # create bed files
+        bed_files_dir = os.path.join(TEST_OUTPUT, "_bed_files")
+        create_bed_files_and_extract_chromosomes(
+            data_holder=engine.data_holder,
+            output_dir=bed_files_dir
+        )
+        engine.data_holder.bed_files_dir = bed_files_dir
+        engine.ld_kwargs = {"cM": True, "report": "False"}
         engine.set_data(engine.data_holder)
         data_gadma = engine.data
         data_moments = engine.data
@@ -823,7 +830,6 @@ class TestModelEvaluation(unittest.TestCase):
         engine.data_holder = VCFDataHolder(
             vcf_file=VCF_DATA_LD, popmap_file=POP_MAP,
             recombination_maps=REC_MAPS_DIR,
-            output_directory=TEST_OUTPUT,
             population_labels=["deme0", "deme1"],
             preprocessed_data=preprocessed_test_data
         )

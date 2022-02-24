@@ -23,6 +23,14 @@ class DataHolder(object):
         if self.filename is not None and check_file_existence(self.filename):
             self.filename = ensure_file_existence(self.filename)
 
+    def get_total_sequence_length(self):
+        """
+        Returns total sequence length as it could be a dict for each chrom.
+        """
+        if isinstance(self.sequence_length, dict):
+            return sum(self.sequence_length.values())
+        return self.sequence_length
+
 
 class SFSDataHolder(DataHolder):
     """
@@ -55,8 +63,9 @@ class VCFDataHolder(DataHolder):
     """
     def __init__(self, vcf_file, popmap_file, projections=None, outgroup=None,
                  population_labels=None, sequence_length=None,
-                 recombination_maps=None, ld_kwargs=None,
-                 output_directory=None, region_len=None,
+                 recombination_maps=None,# ld_kwargs=None,
+                 #output_directory=None, region_len=None,
+                 bed_files_dir=None,
                  preprocessed_data=None):
         super(VCFDataHolder, self).__init__(
             filename=vcf_file,
@@ -67,41 +76,8 @@ class VCFDataHolder(DataHolder):
         )
         self.popmap_file = popmap_file
         self.recombination_maps = recombination_maps
-        self.ld_kwargs = ld_kwargs
-        self.output_directory = output_directory
-        self.region_len = region_len
-        self.bed_file = None
+        #self.ld_kwargs = ld_kwargs
+        #self.output_directory = output_directory
+        #self.region_len = region_len
+        self.bed_files_dir = bed_files_dir
         self.preprocessed_data = preprocessed_data
-
-
-# class FSCDataHolder(DataHolder):
-#     """
-#     Class from holding data native to fastsimcoal2
-#
-#     Possible extensions:
-#     _DAFpop0.obs - single sample, derived allele (unfolded spectrum)
-#     _MAFpop0.obs - single sample, minor allele (folded spectrum)
-#     _jointDAFpop1_0.obs - two samples unfolded
-#     _jointMAFpop1_0.obs - two samples folded
-#     _DSFS.obs - multidimensional SFS for derived allele
-#     _MSFS.obs - multidimensional SFS for minor allele
-#     """
-#     def __init__(self, filename, projections=None, outgroup=None,
-#                  population_labels=None, sequence_length=None):
-#
-#         # outgroup = any(key in filename for key in ('DAF', 'DSFS'))
-#
-#         super(FSCDataHolder, self).__init__(
-#             filename=filename,
-#             projections=projections,
-#             outgroup=outgroup,
-#             population_labels=population_labels,
-#             sequence_length=sequence_length
-#         )
-
-# def check_all_ld_data_correct(data_holder):
-#     if data_holder.bed_file:
-#         extension = data_holder.bed_file[-4:]
-#         if extension != '.bed':
-#             raise FileExistsError("Check passed bed file. It doesn't have"
-#                                   ".bed extension.")

@@ -12,14 +12,10 @@ from pathlib import Path
 import gadma
 from gadma.data.data import VCFDataHolder
 from gadma.engines.engine import get_engine
-from gadma.utils.utils import create_bed_files_and_extract_chromosomes
-from gadma.parsing_ld_data import (
-    main, extract_rec_map_name_and_extension, ReadInfo
-)
-from gadma.parsing_ld_data import (
-    read_data, read_data_without_rec_map, read_data_rec_maps_in_one_file
-)
-from gadma.parsing_ld_data import create_h5_file
+from gadma.data.data_utils import create_bed_files_and_extract_chromosomes
+from gadma.parsing_ld_data import main
+from gadma.engines.moments_ld_engine import _read_data_one_job, create_h5_file
+from gadma.engines.moments_ld_engine import extract_rec_map_name_and_extension
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
 
@@ -46,16 +42,16 @@ if gadma.moments_LD_available:
     engine = get_engine('momentsLD')
     kwargs = engine.kwargs
 
-    READ_INFO = ReadInfo(
-        reg_num=1,
-        filename=VCF_DATA_LD,
-        pop_file=POP_MAP,
-        bed_file=TEST_BED_FILE,
-        chromosome="1",
-        pops=['deme0', 'deme1'],
-        rec_map=None,
-        kwargs=kwargs
-    )
+    REG_NUM = 1
+    PARSING_KWARGS = {
+        "vcf_file": VCF_DATA_LD,
+        "pop_file": POP_MAP,
+        "bed_file": TEST_BED_FILE,
+        "chromosome": "1",
+        "pops": ['deme0', 'deme1'],
+        "rec_map_file": None,
+        **kwargs
+    }
 
     DATA_HOLDER = VCFDataHolder(
         vcf_file=VCF_DATA_LD,
@@ -79,8 +75,10 @@ class TestFastDataRead(unittest.TestCase):
 
     @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_read_data_without_rec_map_function(self):
-        READ_INFO.rec_map = None
-        read_function_results = read_data_without_rec_map(READ_INFO)['1']
+        PARSING_KWARGS["rec_map_file"] = None
+        read_function_results = _read_data_one_job(
+            [REG_NUM, PARSING_KWARGS]
+        )['1']
 
         results = moments.LD.Parsing.compute_ld_statistics(
             vcf_file=VCF_DATA_LD,
@@ -105,9 +103,9 @@ class TestFastDataRead(unittest.TestCase):
 
     @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_read_data_function(self):
-        READ_INFO.rec_map = REC_MAP
+        PARSING_KWARGS["rec_map_file"] = REC_MAP
 
-        read_function_results = read_data(READ_INFO)['1']
+        read_function_results = _read_data_one_job([REG_NUM, PARSING_KWARGS])['1']
 
         results = moments.LD.Parsing.compute_ld_statistics(
             vcf_file=VCF_DATA_LD,
@@ -133,9 +131,11 @@ class TestFastDataRead(unittest.TestCase):
 
     @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_read_data_rec_maps_in_one_file_function(self):
-        READ_INFO.rec_map = FEW_REC_MAPS
+        PARSING_KWARGS["rec_map_file"] = FEW_REC_MAPS
 
-        read_function_results = read_data_rec_maps_in_one_file(READ_INFO)['1']
+        read_function_results = _read_data_one_job(
+            [REG_NUM, PARSING_KWARGS]
+        )['1']
 
         results = moments.LD.Parsing.compute_ld_statistics(
             vcf_file=VCF_DATA_LD,
@@ -167,7 +167,7 @@ class TestFastDataRead(unittest.TestCase):
         sys.argv = ['python', '-p', param_file]
         self.assertRaises(ValueError, main)
 
-        data_reading_case_list = ['without_rec_map', 'with_rec_map', 'with_rec_maps_in_one_file']
+        data_reading_case_list = ['without_rec_map', 'with_rec_map', 'with_rec_maps_in_one_file', 'with_rec_rate']
         for case in data_reading_case_list:
             param_file = os.path.join(
                 DATA_PATH, 'PARAMS', 'ld_data_parsing_params',
@@ -221,63 +221,83 @@ class TestBedFilesCreation(unittest.TestCase):
     data_holder = VCFDataHolder(
         vcf_file=VCF_DATA_LD,
         popmap_file=POP_MAP,
-        output_directory=TEST_OUTPUT,
-        region_len=50000
     )
+    output_dir = os.path.join(TEST_OUTPUT, "auto_bed_files")
+    region_len = 50000
     vcf_data = allel.read_vcf(data_holder.filename)
     chromosome_len = max(vcf_data['variants/POS'])
 
     @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_one_chrom_normal_region_num(self):
         self.data_holder.filename = VCF_DATA_LD
-        self.data_holder.region_len = 50000
+        self.data_holder.sequence_length = 1000000
+        self.region_len = 50000
 
         chromosomes = create_bed_files_and_extract_chromosomes(
-            data_holder=self.data_holder)
+            data_holder=self.data_holder,
+            output_dir=self.output_dir,
+            region_len=self.region_len
+        )
         self.assertEqual(1, len(chromosomes))
         regions_num = len(
-            listdir(f'{self.data_holder.output_directory}/bed_files/'))
+            listdir(self.output_dir)
+        )
         self.assertEqual(regions_num, round(
-            self.chromosome_len / self.data_holder.region_len))
+            self.chromosome_len / self.region_len))
 
     @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_one_chrom_small_region_num(self):
         self.data_holder.filename = VCF_DATA_LD
-        self.data_holder.region_len = 100000000
+        self.data_holder.sequence_length = 10000000
+        self.region_len = 100000000
+
         chromosomes = create_bed_files_and_extract_chromosomes(
-            data_holder=self.data_holder)
+            data_holder=self.data_holder,
+            output_dir=self.output_dir,
+            region_len=self.region_len,
+        )
         self.assertEqual(1, len(chromosomes))
         regions_num = len(
-            listdir(f'{self.data_holder.output_directory}/bed_files/'))
+            listdir(self.output_dir)
+        )
         self.assertEqual(regions_num, 15)
 
     @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_few_chrom_normal_region_num(self):
         self.data_holder.filename = VCF_DATA_FEW_CHR
-        self.data_holder.region_len = 50000
+        self.data_holder.sequence_length = {"1": 1000000, "2": 1000000}
+        self.region_len = 50000
 
         chromosomes = create_bed_files_and_extract_chromosomes(
-            data_holder=self.data_holder)
+            data_holder=self.data_holder,
+            output_dir=self.output_dir,
+            region_len=self.region_len,
+        )
         vcf_data = allel.read_vcf(self.data_holder.filename)
         chromosome_len = max(vcf_data['variants/POS'])
         regions_num = len(
-            listdir(f'{self.data_holder.output_directory}/bed_files/'))
+            listdir(self.output_dir)
+        )
         self.assertEqual(
             len(set(vcf_data['variants/CHROM'])), len(chromosomes))
         self.assertEqual(regions_num, round(
-            self.chromosome_len / self.data_holder.region_len) * 2)
+            self.chromosome_len / self.region_len) * 2)
 
     @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_few_chrom_small_region_num(self):
         self.data_holder.filename = VCF_DATA_FEW_CHR
-        self.data_holder.region_len = 500000
+        self.region_len = 500000
         chromosomes = create_bed_files_and_extract_chromosomes(
-            data_holder=self.data_holder)
+            data_holder=self.data_holder,
+            output_dir=self.output_dir,
+            region_len=self.region_len,
+        )
         vcf_data = allel.read_vcf(self.data_holder.filename)
         self.assertEqual(
             len(set(vcf_data['variants/CHROM'])), len(chromosomes))
         regions_num = len(
-            listdir(f'{self.data_holder.output_directory}/bed_files/'))
+            listdir(self.output_dir)
+        )
         self.assertEqual(regions_num, 16)
 
 

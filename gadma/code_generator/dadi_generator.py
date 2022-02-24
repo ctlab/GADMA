@@ -41,8 +41,16 @@ def _print_dadi_func(model, values):
             f_vars.pop(f_vars.index(model.Nanc_size))
     ret_str = f"def {FUNCTION_NAME}(params, ns, pts):\n"
     ret_str += "\t%s = params\n" % ", ".join([x.name for x in f_vars])
+    # Not very good solution !
+    if not model.has_anc_size:
+        ret_str += "\t_Nanc_size"
+    else:
+        ret_str += "\tNanc"
+    ret_str += " = 1.0  # This value can be used in splits with fractions\n"
+
     ret_str += "\txx = dadi.Numerics.default_grid(pts)\n"\
                "\tphi = dadi.PhiManip.phi_1D(xx)\n"
+
     inbreeding = False
     for ind, event in enumerate(model.events):
         if event.__class__ is Epoch:
@@ -242,7 +250,7 @@ def _print_main(engine, values, mode='dadi', nanc=None):
 
     mu_is_val = engine.model.mutation_rate is not None
     data_holder_is_val = engine.data_holder is not None
-    seq_len_is_val = engine.data_holder.sequence_length is not None
+    seq_len_is_val = engine.data_holder.get_total_sequence_length() is not None
 
     mu_and_L = mu_is_val and data_holder_is_val and seq_len_is_val
 
@@ -252,8 +260,8 @@ def _print_main(engine, values, mode='dadi', nanc=None):
             ret_str += "Nanc = int(theta / theta0)\n"
         elif mu_and_L:
             ret_str += f"mu = {engine.model.mutation_rate}\n"
-            ret_str += f"L = {engine.data_holder.sequence_length}\n"
-            ret_str += "theta0 = 4 * mu * L\n"
+            ret_str += f"L = {engine.data_holder.get_total_sequence_length()}"
+            ret_str += "\ntheta0 = 4 * mu * L\n"
     else:
         ret_str += "# As no theta0 or mut. rate + seq. length are not set\n"
         ret_str += "theta0 = 1.0\n"

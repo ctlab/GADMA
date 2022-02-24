@@ -14,6 +14,8 @@ import itertools
 
 TEST_SETTINGS = os.path.join(HOME_DIR, "test_settings")
 
+tool_name = "gadma"
+
 
 def version():
     '''
@@ -29,7 +31,7 @@ def usage():
     Returns usage of tool.
     '''
     return version() + "" \
-                       "Usage: \n\tgadma\t-p/--params\t<params_file>\n" \
+                       f"Usage: \n\t{tool_name}\t-p/--params\t<params_file>\n" \
                        "\t\t-e/--extra\t<extra_params_file>\n" \
                        "\n\n" \
                        "Instead/With -p/--params and " \

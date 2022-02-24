@@ -211,7 +211,7 @@ def print_main_part(engine, values, nanc):
     if isinstance(engine.model, CustomDemographicModel):
         ret_str += "model.gen_time = 1\n"
         ret_str += f"model.muts_per_gen = {engine.model.mutation_rate}\n"
-    length = engine.data_holder.sequence_length
+    length = engine.data_holder.get_total_sequence_length()
     assert length is not None, "Sequence length is required"
 
     ret_str += f"model.set_data(data, length={length})\n"

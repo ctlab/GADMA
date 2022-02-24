@@ -8,12 +8,49 @@ from . import Engine
 from ..models import DemographicModel, StructureDemographicModel
 from ..models import CustomDemographicModel, Epoch, Split
 from .. import VCFDataHolder, moments_LD_available
-from ..utils import DynamicVariable, get_correct_dtype
-from ..utils import create_bed_files_and_extract_chromosomes
+from ..utils import DynamicVariable, get_correct_dtype, check_file_existence
 from ..code_generator import id2printfunc
 from ..data import check_and_return_projections_and_labels
+from ..data import extract_chromosomes_from_vcf
 from os import listdir
 import moments.LD
+import multiprocessing
+from collections import ChainMap
+import allel
+import os
+
+
+def _read_data_one_job(args):
+    """
+    Function for reading data using multiprocessing
+    """
+    reg_num, kwargs = args
+    results = {
+        str(reg_num):
+            moments.LD.Parsing.compute_ld_statistics(
+                **kwargs
+            )
+    }
+    return results
+
+
+def extract_rec_map_name_and_extension(rec_map):
+    extension = rec_map.split(".")[1]
+    rec_map_name = rec_map.split(".")[0]
+    rec_map_name = "_".join(rec_map_name.split('_')[:-1])
+    return rec_map_name, extension
+
+
+def create_h5_file(vcf_file):
+    h5_file_path = vcf_file.split(".vcf")[0] + ".h5"
+    if not check_file_existence(h5_file_path):
+        allel.vcf_to_hdf5(
+            vcf_file,
+            h5_file_path,
+            fields="*",
+            exclude_fields=["calldata/GQ"],
+            overwrite=True,
+        )
 
 
 class MomentsLdEngine(Engine):
@@ -59,6 +96,82 @@ class MomentsLdEngine(Engine):
         "cM": True
     }
 
+    # given kwargs from user
+    ld_kwargs = None
+    n_processes = 1
+
+    @classmethod
+    def get_kwargs(cls):
+        kwargs = cls.kwargs
+        if cls.ld_kwargs is not None:
+            for key in cls.ld_kwargs:
+                try:
+                    kwargs[key] = ast.literal_eval(cls.ld_kwargs[key])
+                except ValueError:
+                    kwargs[key] = cls.ld_kwargs[key]
+        return kwargs
+
+    @classmethod
+    def _get_region_stats(cls, data_holder):
+        if isinstance(data_holder, VCFDataHolder):
+            pops = data_holder.population_labels
+
+        chromosomes = extract_chromosomes_from_vcf(data_holder.filename)
+
+        rec_map_exist = data_holder.recombination_maps is not None
+        if rec_map_exist:
+            first_rec_map = os.listdir(data_holder.recombination_maps)[0]
+            prefix, extension = extract_rec_map_name_and_extension(
+                first_rec_map
+            )
+            one_map = len(os.listdir(data_holder.recombination_maps)) == 1
+            first_rec_map = os.path.join(
+                data_holder.recombination_maps, first_rec_map
+            )
+
+        # We construct correct kwargs for each region
+        initial_kwargs = cls.get_kwargs()
+        all_kwargs = []
+        reg_num = 0
+        assert data_holder.bed_files_dir is not None, "Bed files were not "\
+                                                      "auto generated"
+        for filename in sorted(os.listdir(data_holder.bed_files_dir)):
+            chrom = filename.split("_")[-2]  # chromosome is next to the last
+            parsing_kwargs = dict(initial_kwargs)
+            parsing_kwargs["vcf_file"] = data_holder.filename
+            parsing_kwargs["pop_file"] = data_holder.popmap_file
+            parsing_kwargs["pops"] = data_holder.population_labels
+            parsing_kwargs["bed_file"] = os.path.join(
+                data_holder.bed_files_dir,
+                filename
+            )
+            parsing_kwargs["chromosome"] = chrom
+
+            if rec_map_exist:
+                if one_map:
+                    parsing_kwargs["rec_map_file"] = first_rec_map
+                else:
+                    parsing_kwargs["rec_map_file"] = os.path.join(
+                        data_holder.recombination_maps,
+                        f"{prefix}_{chrom}.{extension}"
+                    )
+                    parsing_kwargs["map_name"] = chrom
+            reg_num += 1
+            all_kwargs.append([str(reg_num-1), parsing_kwargs])
+
+        create_h5_file(data_holder.filename)
+        n_processes = cls.n_processes
+        if n_processes == 1:
+            result = []
+            for args in all_kwargs:
+                result.append(_read_data_one_job(args))
+        else:
+            pool = multiprocessing.Pool(processes=n_processes)
+
+            result = pool.map(_read_data_one_job, all_kwargs)
+            pool.close()
+        return dict(ChainMap(*result))
+
     @classmethod
     def _read_data(cls, data_holder):
         """
@@ -67,97 +180,15 @@ class MomentsLdEngine(Engine):
         :param data_holder: holder of the data.
         :type data_holder: :class:`VCFDataHolder`
         """
+        # If we have no preprocessed data then we create it
         if data_holder.preprocessed_data is None:
-            if isinstance(data_holder, VCFDataHolder):
-                pops = data_holder.population_labels
-
-            kwargs = cls.kwargs
-            if data_holder.ld_kwargs:
-                for key in data_holder.ld_kwargs:
-                    try:
-                        kwargs[key] = ast.literal_eval(
-                            data_holder.ld_kwargs[key])
-                    except ValueError:
-                        kwargs[key] = data_holder.ld_kwargs[key]
-
-            chromosomes = create_bed_files_and_extract_chromosomes(data_holder)
-            sorted_choromosomes_list = sorted(chrom for chrom in chromosomes)
-
-            bed_files = data_holder.output_directory + "/bed_files"
-            reg_num = 0
-            region_stats = {}
-            rec_maps = data_holder.recombination_maps
-            if rec_maps is not None:
-                rec_map, extension = extract_rec_map_name_and_extension(
-                    listdir(rec_maps)[0]
-                )
-                if len(
-                        listdir(rec_maps)
-                ) == len(chromosomes):
-                    for chrom in sorted_choromosomes_list:
-                        for num in range(1, chromosomes[chrom] + 1):
-                            region_stats.update({
-                                f"{reg_num}":
-                                moments.LD.Parsing.compute_ld_statistics(
-                                    data_holder.filename,
-                                    rec_map_file=f"{rec_maps}"
-                                                 f"/{rec_map}_"
-                                                 f"{chrom}.{extension}",
-                                    pop_file=data_holder.popmap_file,
-                                    bed_file=f"{bed_files}/"
-                                             f"bed_file_{chrom}_{num}.bed",
-                                    pops=pops,
-                                    **kwargs
-                                )
-                            })
-                            reg_num += 1
-
-                elif len(listdir(rec_maps)) != len(chromosomes):
-                    rec_map = listdir(rec_maps)[0]
-                    for chrom in sorted_choromosomes_list:
-                        for num in range(1, chromosomes[chrom] + 1):
-                            region_stats.update({
-                                f"{reg_num}":
-                                moments.LD.Parsing.compute_ld_statistics(
-                                    data_holder.filename,
-                                    rec_map_file=f"{rec_maps}"
-                                                 f"/{rec_map}",
-                                    map_name=f"{chrom}",
-                                    pop_file=data_holder.popmap_file,
-                                    bed_file=f"{bed_files}"
-                                             f"/bed_file_{chrom}_{num}.bed",
-                                    chromosome=f"{chrom}",
-                                    pops=pops,
-                                    **kwargs
-                                )
-                            })
-                            reg_num += 1
-            else:
-                print("No recombination map provided, using physical distance")
-                for chrom in sorted_choromosomes_list:
-                    for num in range(1, chromosomes[chrom] + 1):
-                        region_stats.update({
-                            f"{reg_num}":
-                            moments.LD.Parsing.compute_ld_statistics(
-                                data_holder.filename,
-                                pop_file=data_holder.popmap_file,
-                                bed_file=f"{bed_files}"
-                                         f"/bed_file_{chrom}_{num}.bed",
-                                pops=pops,
-                                **kwargs
-                            )
-                        })
-                        reg_num += 1
-            data = moments.LD.Parsing.bootstrap_data(region_stats)
+            region_stats = cls._get_region_stats(data_holder)
         else:
             print("Read preprocessed data")
-            if data_holder.filename is not None:
-                chromosomes = create_bed_files_and_extract_chromosomes(
-                    data_holder
-                )
             with open(data_holder.preprocessed_data, "rb") as fin:
                 region_stats = pickle.load(fin)
-            data = moments.LD.Parsing.bootstrap_data(region_stats)
+
+        data = moments.LD.Parsing.bootstrap_data(region_stats)
         return data
 
     @staticmethod
@@ -206,16 +237,7 @@ class MomentsLdEngine(Engine):
         """
         var2value = self.model.var2value(values)
 
-        if self.data_holder is not None:
-            if self.data_holder.ld_kwargs:
-                for key in self.data_holder.ld_kwargs:
-                    try:
-                        self.kwargs[key] = ast.literal_eval(
-                            self.data_holder.ld_kwargs[key]
-                        )
-                    except ValueError:
-                        self.kwargs[key] = self.data_holder.ld_kwargs[key]
-                self.r_bins = self.kwargs["r_bins"]
+        self.r_bins = self.get_kwargs()["r_bins"]
         if isinstance(self.model, CustomDemographicModel):
             if self.model.fixed_anc_size:
                 Nref = self.model.fixed_anc_size

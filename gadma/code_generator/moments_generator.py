@@ -40,6 +40,14 @@ def _print_moments_func(model, values, dt_fac):
             f_vars.pop(f_vars.index(model.Nanc_size))
     ret_str = f"def {FUNCTION_NAME}(params, ns):\n"
     ret_str += "\t%s = params\n" % ", ".join([x.name for x in f_vars])
+    # Not very good solution !
+    if not model.has_anc_size:
+        ret_str += "\t_Nanc_size"
+    else:
+        ret_str += "\tNanc"
+    ret_str += " = 1.0  # This value can be used in splits with fractions\n"
+
+
     ret_str += "\tsts = moments.LinearSystem_1D.steady_state_1D"\
                "(np.sum(ns))\n"\
                "\tfs = moments.Spectrum(sts)\n"

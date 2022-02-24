@@ -636,8 +636,6 @@ def read_vcf_data(module, data_holder):
     :returns: data
     :rtype: (str, :class:`dadi.Spectrum`)
     """
-    assert data_holder.bed_file is None, f"{module} does not support bed files"
-
     # Check that we have diploid VCF file
     ploidy = ploidy_from_vcf(data_holder.filename)
     assert ploidy == 2, "Only diploid VCF files could be read. "\

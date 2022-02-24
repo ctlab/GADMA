@@ -1,4 +1,5 @@
 Input data : tests/test_data/DATA/vcf_ld/vcf_data.vcf, tests/test_data/DATA/vcf_ld/pop_map.txt
+Sequence length: 999764
 Engine : momentsLD
 initial_structure: 1,1
 final_structure: 1,2
@@ -7,6 +8,37 @@ ancestral_size_as_parameter: True
 Mutation rate: 2.35e-8
 Number of repeats : 1
 Number of processes : 1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

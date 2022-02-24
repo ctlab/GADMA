@@ -3,7 +3,7 @@ import os.path
 from ..models import CustomDemographicModel, EpochDemographicModel, \
     Epoch, Split, BinaryOperation, StructureDemographicModel
 from ..utils import DiscreteVariable, DynamicVariable, Variable
-from ..utils import create_bed_files_and_extract_chromosomes
+from ..data import extract_chromosomes_from_vcf
 import numpy as np
 import copy
 import sys
@@ -69,8 +69,13 @@ def _print_momentsLD_func(engine, values):
 
     ret_str = f"def {FUNCTION_NAME}(params, rho=None, theta=0.001):\n"
     ret_str += "    %s = params\n" % ", ".join([x.name for x in f_vars])
-    ret_str += "    Nanc = 1.0 #This value can be used in splits " \
-               "with fraction variable\n"
+    # Not very good solution !
+    if not model.has_anc_size:
+        ret_str += "    _Nanc_size"
+    else:
+        ret_str += "    Nanc"
+
+    ret_str += " = 1.0  # This value can be used in splits with fractions\n"
     ret_str += "    Y = moments.LD.Numerics.steady_state" \
                "(rho=rho, theta=theta)\n" \
                f"    Y = moments.LD.LDstats(Y, num_pops=1, pop_ids={pops})\n"
@@ -169,16 +174,15 @@ def _print_momentsLD_load_data(engine, data_holder):
     from ..engines import extract_rec_map_name_and_extension
     ret_str = ""
 
-    ret_str += f"bed_files = \"{data_holder.output_directory}" \
-               + "/bed_files/\"\n"
+    ret_str += f"bed_files = \"{data_holder.bed_files_dir}\"\n"
     ret_str += "reg_num = 0\n" \
                "region_stats = {}\n"
     if data_holder.filename is not None:
-        chromosomes = create_bed_files_and_extract_chromosomes(data_holder)
+        chromosomes = extract_chromosomes_from_vcf(data_holder.filename)
         ret_str += f"chromosomes = {chromosomes}\n"
     else:
         ret_str += "chromosomes = None\n"
-    kwargs = engine.kwargs
+    kwargs = engine.get_kwargs()
     rec_maps = data_holder.recombination_maps
     pops = data_holder.population_labels
     if rec_maps is not None:
@@ -210,33 +214,33 @@ def _print_momentsLD_load_data(engine, data_holder):
         ret_str += "    with open(preprocessed_data, \"rb\") as fin:\n"
         ret_str += "        region_stats = pickle.load(fin)\n"
         ret_str += "else:\n"
-        ret_str += "    for chrom in chromosomes:\n"
-        ret_str += "        for num in range(1, chromosomes[chrom]):\n"
-        ret_str += "            region_stats.update({\n"
-        ret_str += "                f\"{reg_num}\":\n" \
-                   "                    moments.LD." \
+        ret_str += f"    for bed_file in sorted(os.listdir(bed_files)):\n"
+        ret_str += "        chrom = bed_file.split('_')[-2]\n"
+        ret_str += "        region_stats.update({\n"
+        ret_str += "            f\"{reg_num}\":\n" \
+                   "                moments.LD." \
                    "Parsing.compute_ld_statistics(\n"
-        ret_str += "                        vcf_file=vcf_file,\n"
-        ret_str += f"                        rec_map_file=" \
+        ret_str += "                    vcf_file=vcf_file,\n"
+        ret_str += f"                    rec_map_file=" \
                    f"f\"{rec_maps}/\"\n"
         if len(listdir(rec_maps)) == len(chromosomes):
-            ret_str += "                        " \
+            ret_str += "                    " \
                        "f\"{rec_map_name}_{chrom}.{extension}\",\n"
         else:
-            ret_str += "                        " \
+            ret_str += "                    " \
                        "f\"{rec_map}\",\n"
-            ret_str += "                        " \
+            ret_str += "                    " \
                        "map_name=f\"{chrom}\",\n"
-            ret_str += "                        " \
+            ret_str += "                    " \
                        "chromosome=f\"{chrom}\",\n"
-        ret_str += f"                        pop_file=pop_map,\n"
-        ret_str += "                        bed_file=f\"{bed_files}/"
-        ret_str += "bed_file_{chrom}_{num}.bed\",\n"
-        ret_str += f"                        pops={pops},\n"
-        ret_str += "                        **kwargs\n"
-        ret_str += "                    )\n"
-        ret_str += "            })\n"
-        ret_str += "            reg_num += 1\n"
+        ret_str += f"                    pop_file=pop_map,\n"
+        bed_path = "os.path.join(bed_files, bed_file)"
+        ret_str += f"                    bed_file=bed_path,\n"
+        ret_str += f"                    pops={pops},\n"
+        ret_str += "                    **kwargs\n"
+        ret_str += "                )\n"
+        ret_str += "        })\n"
+        ret_str += "        reg_num += 1\n"
     else:
         ret_str += "if preprocessed_data is not None:\n"
         ret_str += "    with open(preprocessed_data, \"rb\") as fin:\n"
@@ -264,7 +268,7 @@ def _print_momentsLD_load_data(engine, data_holder):
 
 def _print_momentsLD_simulation(engine, nanc):
     ret_str = ""
-    r_bins = engine.kwargs['r_bins']
+    r_bins = engine.get_kwargs()['r_bins']
     if nanc is not None:
         ret_str += f"Nanc = {nanc}\n"
     ret_str += f"r_bins = {[ii for ii in r_bins]}\n"
@@ -284,7 +288,7 @@ def _print_momentsLD_simulation(engine, nanc):
 
 
 def _print_LdCurves(engine):
-    r_bins = engine.kwargs["r_bins"]
+    r_bins = engine.get_kwargs()["r_bins"]
     ret_str = "stats_to_plot = [\n"
     ret_str += "    [name] for name in model.names()[:-1][0] " \
                "if name != 'pi2_0_0_0_0'\n"
@@ -378,17 +382,24 @@ def print_moments_ld_code(engine, values, filename, args=None,
             var2value,
             engine.model.Nanc_size
         )
+
     assert nanc is None or Nanc_value == nanc, f"{nanc}, {Nanc_value}"
     nanc = Nanc_value
     values = engine.model.translate_values(units="genetic", values=values)
     var2value = engine.model.var2value(values)
     ret_str = "import moments.LD\n" \
               "import numpy as np\nimport pickle\nimport copy\n\n\n"
+
     ret_str += _print_momentsLD_func(engine, values)
     ret_str += "\n"
+
     ret_str += _print_momentsLD_load_data(engine, engine.data_holder)
 
-    generate_file_for_ci_evaluation(engine, values, nanc)
+    # Here we assume that filename ends with .py
+    if filename is not None:
+        assert filename.split(".")[-1] == "py"
+        ci_filename = ".".join(filename.split(".")[:-1]) + "data_for_CI.py"
+        generate_file_for_ci_evaluation(engine, values, nanc, ci_filename)
 
     values = [var2value[var] for var in engine.model.variables
               if not isinstance(var, DiscreteVariable)]
@@ -404,18 +415,13 @@ def print_moments_ld_code(engine, values, filename, args=None,
                 engine.model.unfix_variable(engine.model._variables[ii])
 
 
-def generate_file_for_ci_evaluation(engine, values, nanc):
-    ci_data_filename = os.path.join(
-        engine.data_holder.output_directory,
-        "data_for_CI.py"
-    )
-
+def generate_file_for_ci_evaluation(engine, values, nanc, ci_filename):
     ret_str = "import moments.LD\nimport numpy as np\n\n"
     ret_str += _print_momentsLD_func(engine, values)
     ret_str += f"rep_data_file = \"{engine.data_holder.preprocessed_data}\"\n"
     ret_str += extract_opt_params(engine, values, nanc)
     if engine.data_holder.recombination_maps:
-        ret_str += f"rs = {[ii for ii in engine.kwargs['r_bins']]}\n"
+        ret_str += f"rs = {[ii for ii in engine.get_kwargs()['r_bins']]}\n"
     else:
         ret_str += "\n# You need recombination map if you wont to compute CI\n"
 
@@ -427,7 +433,7 @@ def generate_file_for_ci_evaluation(engine, values, nanc):
             f_vars.append(variable)
     ret_str += f"param_names = {[x.name for x in f_vars]}"
 
-    with open(ci_data_filename, "w") as file:
+    with open(ci_filename, "w") as file:
         file.write(ret_str)
 
 
@@ -445,6 +451,8 @@ def extract_opt_params(engine, values, nanc):
 
 def remove_fraction_variable_for_two_sudden_children(engine, values):
 
+    # Just in case to avoid errors we will copy engine
+    engine = copy.deepcopy(engine)
     var2value = engine.model.var2value(values)
 
     dyn_vars_list = []

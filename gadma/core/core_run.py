@@ -9,6 +9,7 @@ from ..models import EpochDemographicModel, StructureDemographicModel
 from ..models import CustomDemographicModel
 from .draw_and_generate_code import draw_plots_to_file, generate_code_to_file
 from .draw_and_generate_code import get_Nanc_gen_time_and_units
+from ..data import VCFDataHolder
 from ..cli import SettingsStorage
 import os
 import numpy as np
@@ -106,7 +107,8 @@ class CoreRun(object):
                 # all engines.
                 if isinstance(self.model, EpochDemographicModel):
                     Nanc_will_be = self.settings.Nanc_will_be_available()
-                    L_is_None = self.settings.sequence_length is None
+                    L = self.settings.data_holder.get_total_sequence_length()
+                    L_is_None = L is None
                     is_custom = isinstance(self.engine.model,
                                            CustomDemographicModel)
                     for engine in all_available_engines():
@@ -118,6 +120,17 @@ class CoreRun(object):
                             continue
                         if is_custom and self.engine.id != engine.id:
                             continue
+                        # conditions for momentsLD
+                        if engine.id == "momentsLD":
+                            have_vcf = isinstance(engine.data_holder,
+                                                  VCFDataHolder)
+                            if not have_vcf:
+                                continue
+                            bed_dir = engine.data_holder.bed_files_dir
+                            have_bed = bed_dir is not None
+                            preproc = engine.preprocessed_data is not None
+                            if not have_bed and not preproc:
+                                continue
                         engine_dir = os.path.join(self.code_dir, engine.id)
                         ensure_dir_existence(engine_dir)
         # Set counters to zero for callbacks to count number of their calls
@@ -234,6 +247,7 @@ class CoreRun(object):
         :param x: Vector of values for model parameters.
         :param y: Value of log-likelihood for this values.
         """
+
         n_iter = self.code_iter_callback_counter
         verbose = self.settings.print_models_code_every_n_iteration
         filename = f"iteration_{n_iter}"
