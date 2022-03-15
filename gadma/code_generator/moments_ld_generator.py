@@ -209,18 +209,18 @@ def _print_momentsLD_load_data(engine, data_holder):
 
     ret_str += f"preprocessed_data = \"{data_holder.preprocessed_data}\"\n"
 
+    ret_str += "if preprocessed_data is not None:\n"
+    ret_str += "    with open(preprocessed_data, \"rb\") as fin:\n"
+    ret_str += "        region_stats = pickle.load(fin)\n"
+    ret_str += "else:\n"
+    ret_str += f"    for bed_file in sorted(os.listdir(bed_files)):\n"
+    ret_str += "        chrom = bed_file.split('_')[-2]\n"
+    ret_str += "        region_stats.update({\n"
+    ret_str += "            f\"{reg_num}\":\n" \
+               "                moments.LD." \
+               "Parsing.compute_ld_statistics(\n"
+    ret_str += "                    vcf_file=vcf_file,\n"
     if rec_maps is not None:
-        ret_str += "if preprocessed_data is not None:\n"
-        ret_str += "    with open(preprocessed_data, \"rb\") as fin:\n"
-        ret_str += "        region_stats = pickle.load(fin)\n"
-        ret_str += "else:\n"
-        ret_str += f"    for bed_file in sorted(os.listdir(bed_files)):\n"
-        ret_str += "        chrom = bed_file.split('_')[-2]\n"
-        ret_str += "        region_stats.update({\n"
-        ret_str += "            f\"{reg_num}\":\n" \
-                   "                moments.LD." \
-                   "Parsing.compute_ld_statistics(\n"
-        ret_str += "                    vcf_file=vcf_file,\n"
         ret_str += f"                    rec_map_file=" \
                    f"f\"{rec_maps}/\"\n"
         if len(listdir(rec_maps)) == len(chromosomes):
@@ -233,35 +233,14 @@ def _print_momentsLD_load_data(engine, data_holder):
                        "map_name=f\"{chrom}\",\n"
             ret_str += "                    " \
                        "chromosome=f\"{chrom}\",\n"
-        ret_str += f"                    pop_file=pop_map,\n"
-        bed_path = "os.path.join(bed_files, bed_file)"
-        ret_str += f"                    bed_file=bed_path,\n"
-        ret_str += f"                    pops={pops},\n"
-        ret_str += "                    **kwargs\n"
-        ret_str += "                )\n"
-        ret_str += "        })\n"
-        ret_str += "        reg_num += 1\n"
-    else:
-        ret_str += "if preprocessed_data is not None:\n"
-        ret_str += "    with open(preprocessed_data, \"rb\") as fin:\n"
-        ret_str += "        region_stats = pickle.load(fin)\n"
-        ret_str += "else:\n"
-        ret_str += "    for chrom in chromosomes:\n"
-        ret_str += "        for num in range(1, chromosomes[chrom]):\n"
-        ret_str += "            region_stats.update({\n"
-        ret_str += "                f\"{reg_num}\":\n" \
-                   "                    " \
-                   "moments.LD.Parsing.compute_ld_statistics(\n"
-        ret_str += "                        vcf_file=vcf_file,\n"
-        ret_str += f"                        pop_file=pop_map,\n"
-        ret_str += "                        bed_file=f\"{bed_files}/"
-        ret_str += "bed_file_{chrom}_{num}.bed\",\n"
-        ret_str += f"                        pops={pops},\n"
-        ret_str += "                        **kwargs\n"
-        ret_str += "                    )\n"
-        ret_str += "            })\n"
-        ret_str += "            reg_num += 1\n"
-
+    ret_str += f"                    pop_file=pop_map,\n"
+    bed_path = "os.path.join(bed_files, bed_file)"
+    ret_str += f"                    bed_file=bed_path,\n"
+    ret_str += f"                    pops={pops},\n"
+    ret_str += "                    **kwargs\n"
+    ret_str += "                )\n"
+    ret_str += "        })\n"
+    ret_str += "        reg_num += 1\n"
     ret_str += "data = moments.LD.Parsing.bootstrap_data(region_stats)\n\n"
     return ret_str
 

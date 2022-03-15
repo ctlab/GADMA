@@ -660,6 +660,7 @@ class TestModels(unittest.TestCase):
                   'T_1': 500, 'T_2': 100}
 
         for engine in all_available_engines():
+            #print("!!!", engine)
             models = [model1, model2, model3, model5, model6]
             if engine.id == "momentsLD":
                 # momentsLD has problems with model 5 and 6 because of physical values
@@ -692,7 +693,6 @@ class TestModels(unittest.TestCase):
                 models.append(model7)
             models.append(model_struct_1)
             models.append(model_struct_2)
-            models = [model_struct_2]
 
             for ind, model in enumerate(models):
                 if engine.id == "momentsLD":
@@ -702,7 +702,7 @@ class TestModels(unittest.TestCase):
                 for description, data in dataset:
                     msg = f"for model {ind + 1} and {description} data and " \
                           f"{engine.id} engine"
-                    # print(msg)
+                    #print(msg)
                     if engine.id == "momi" and isinstance(model, StructureDemographicModel):
                         if not model.has_anc_size:
                             continue
@@ -714,7 +714,10 @@ class TestModels(unittest.TestCase):
                         args = ()
 
                     if isinstance(model, StructureDemographicModel):
-                        input_values = {var.name: var.resample() for var in model.variables}
+                        input_values = {var.name: 0.5 + np.random.uniform(-0.2, 0.2) if not isinstance(var, DiscreteVariable)
+                                        else "Sud" for var in model.variables}
+                        if model.has_anc_size:
+                            input_values[model.Nanc_size.name] = 10000
                     else:
                         input_values = copy.copy(values)
 
@@ -734,9 +737,8 @@ class TestModels(unittest.TestCase):
                     Nanc = None
                     if engine.id not in ["dadi", "moments"]:
                         Nanc = 10000
-                    if engine.id == "momentsLD":
                         new_model = copy.deepcopy(model)
-                        if new_model.has_anc_size and isinstance(new_model.Nanc_size, Variable):
+                        if new_model.has_anc_size and isinstance(new_model, StructureDemographicModel) and isinstance(new_model.Nanc_size, Variable):
                             input_values[new_model.Nanc_size.name] = Nanc
                         else:
                             new_model.Nanc_size = Nanc
@@ -746,22 +748,11 @@ class TestModels(unittest.TestCase):
 
                     cmd = engine.generate_code(input_values, None, *args, nanc=Nanc)
                     #print(cmd)
-                    print(engine.model.as_custom_string(input_values))
                     if engine.can_evaluate:
-                        if engine.id not in ['dadi', 'moments']:
-                            new_model = copy.deepcopy(model)
-                            if new_model.has_anc_size and isinstance(new_model.Nanc_size, Variable):
-                                input_values[new_model.Nanc_size.name] = Nanc
-                            else:
-                                new_model.Nanc_size = Nanc
-                            new_model.mutation_rate = 1.25e-8
-                            engine.model = new_model
                         # read data
                         engine.data = data
                         true_ll = engine.evaluate(input_values, **options)
-                        print(engine.model.as_custom_string(input_values))
                         d = {}
-                        print(cmd)
                         exec(cmd, d)
 
                         msg += f": {true_ll} != {d['ll_model']}"

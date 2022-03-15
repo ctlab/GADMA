@@ -196,7 +196,7 @@ def extract_chromosomes_from_vcf(vcf_filename):
     We read VCF and extract chromosomes presented there.
     """
     read_vcf = allel.read_vcf(vcf_filename)
-    return list(set(read_vcf['variants/CHROM']))
+    return sorted(list(set(read_vcf['variants/CHROM'])))
 
 
 def get_chrom2len(data_holder):
