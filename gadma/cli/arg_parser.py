@@ -31,7 +31,7 @@ def usage():
     Returns usage of tool.
     '''
     return version() + "" \
-                       f"Usage: \n\t{tool_name}\t-p/--params\t<params_file>\n" \
+                       f"Usage: \n\t{tool_name}\t-p/--params\t<params_file>\n"\
                        "\t\t-e/--extra\t<extra_params_file>\n" \
                        "\n\n" \
                        "Instead/With -p/--params and " \

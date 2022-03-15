@@ -47,7 +47,6 @@ def _print_moments_func(model, values, dt_fac):
         ret_str += "\tNanc"
     ret_str += " = 1.0  # This value can be used in splits with fractions\n"
 
-
     ret_str += "\tsts = moments.LinearSystem_1D.steady_state_1D"\
                "(np.sum(ns))\n"\
                "\tfs = moments.Spectrum(sts)\n"

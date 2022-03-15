@@ -16,6 +16,7 @@ gadma.cli.arg_parser.version = lambda: "GADMA module for data preprocessing "\
                                        "momentsLD engine\n"
 gadma.cli.arg_parser.tool_name = "gadma-parsing_ld_data"
 
+
 def main():
     settings_storage, args = arg_parser.get_settings()
 
@@ -24,7 +25,9 @@ def main():
     else:
         raise ValueError("Wrong type of data_holder: "
                          f"{settings_storage.data_holder.__class__}")
-    ensure_dir_existence(settings_storage.output_directory, check_emptiness=True)
+    ensure_dir_existence(
+        settings_storage.output_directory, check_emptiness=True
+    )
     assert settings_storage.engine == "momentsLD"
 
     try:

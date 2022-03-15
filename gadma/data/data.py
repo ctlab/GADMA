@@ -63,8 +63,8 @@ class VCFDataHolder(DataHolder):
     """
     def __init__(self, vcf_file, popmap_file, projections=None, outgroup=None,
                  population_labels=None, sequence_length=None,
-                 recombination_maps=None,# ld_kwargs=None,
-                 #output_directory=None, region_len=None,
+                 recombination_maps=None,  # ld_kwargs=None,
+                 # output_directory=None, region_len=None,
                  bed_files_dir=None,
                  preprocessed_data=None):
         super(VCFDataHolder, self).__init__(
@@ -76,8 +76,8 @@ class VCFDataHolder(DataHolder):
         )
         self.popmap_file = popmap_file
         self.recombination_maps = recombination_maps
-        #self.ld_kwargs = ld_kwargs
-        #self.output_directory = output_directory
-        #self.region_len = region_len
+        # self.ld_kwargs = ld_kwargs
+        # self.output_directory = output_directory
+        # self.region_len = region_len
         self.bed_files_dir = bed_files_dir
         self.preprocessed_data = preprocessed_data
