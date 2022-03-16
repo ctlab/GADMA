@@ -1,0 +1,20 @@
+Input data : /home/katenos/Workspace/popgen/GADMA/tests/test_data/DATA/vcf_ld/vcf_data_few_chr.vcf, /home/katenos/Workspace/popgen/GADMA/tests/test_data/DATA/vcf_ld/pop_map.txt
+Sequence length: {"1": 999764, 2: 999764}
+Engine : momentsLD
+initial_structure: 1,1
+final_structure: 1,2
+recombination rate: 1.5e-8
+output_directory: /home/katenos/Workspace/popgen/GADMA/tests/test_data/DATA/vcf_ld/test_output
+ancestral_size_as_parameter: True
+Mutation rate: 2.35e-8
+Number of repeats : 1
+Number of processes : 4
+
+
+
+
+
+
+
+
+
