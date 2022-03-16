@@ -227,9 +227,9 @@ class MomiEngine(Engine):
         if (self.data_holder is not None and
                 self.data_holder.sequence_length is not None):
             kwargs['length'] = self.data_holder.sequence_length
-        else:
-            assert self.inner_data.length is None, ("Please set data holder "
-                                                    "with sequence_length")
+        # else:
+        #     assert self.inner_data.length is None, ("Please set data holder"
+        #                                             " with sequence_length")
         momi_model.set_data(self.inner_data, **kwargs)
         ll = None
         try:
