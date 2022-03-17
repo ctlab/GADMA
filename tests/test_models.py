@@ -30,7 +30,7 @@ import sys
 
 EXAMPLE_FOLDER = os.path.join(os.path.dirname(__file__), "test_data")
 TEST_OUTPUT = os.path.join(
-                        EXAMPLE_FOLDER, r"DATA", r"vcf_ld", "test_output"
+                        EXAMPLE_FOLDER, r"DATA", r"ld_vcf", "test_output"
                     )
 
 
@@ -44,7 +44,7 @@ class TestModels(unittest.TestCase):
             shutil.rmtree(TEST_OUTPUT)
 
         REC_MAP_DIR = os.path.join(
-            EXAMPLE_FOLDER, r"DATA", r"vcf_ld", f"rec_maps_code_generation"
+            EXAMPLE_FOLDER, r"DATA", r"ld_vcf", f"rec_maps_code_generation"
         )
         if Path(REC_MAP_DIR).exists():
             shutil.rmtree(REC_MAP_DIR)
@@ -460,10 +460,10 @@ class TestModels(unittest.TestCase):
     def _vcf_datasets_ld_precomputed(self):
 
         YRI_CEU_SIM_LD_DATA = os.path.join(
-            EXAMPLE_FOLDER, r"DATA", r"vcf_ld", f"fake_data.vcf"
+            EXAMPLE_FOLDER, r"DATA", r"ld_vcf", f"fake_data.vcf"
         )
         YRI_CEU_SIM_LD_POPS = os.path.join(
-            EXAMPLE_FOLDER, r"DATA", r"vcf_ld", f"fake_data_pop_map.txt"
+            EXAMPLE_FOLDER, r"DATA", r"ld_vcf", f"fake_data_pop_map.txt"
         )
 
         pops = ["pop0", "pop1", "pop2"]
@@ -473,7 +473,7 @@ class TestModels(unittest.TestCase):
             population_labels=pops,
         )
         data_holder.preprocessed_data = os.path.join(
-            EXAMPLE_FOLDER, r"DATA", r"vcf_ld", f"preprocessed_data_model1.bp"
+            EXAMPLE_FOLDER, r"DATA", r"ld_vcf", f"preprocessed_data_model1.bp"
         )
 
         yield (
@@ -481,10 +481,10 @@ class TestModels(unittest.TestCase):
             data_holder)
 
         data_holder.preprocessed_data = os.path.join(
-            EXAMPLE_FOLDER, r"DATA", r"vcf_ld", f"preprocessed_data_model2.bp"
+            EXAMPLE_FOLDER, r"DATA", r"ld_vcf", f"preprocessed_data_model2.bp"
         )
         data_holder.recombination_maps = os.path.join(
-            EXAMPLE_FOLDER, r"DATA", r"vcf_ld", f"rec_maps_code_generation"
+            EXAMPLE_FOLDER, r"DATA", r"ld_vcf", f"rec_maps_code_generation"
         )
         if not Path(data_holder.recombination_maps).exists():
             os.mkdir(data_holder.recombination_maps)
@@ -499,7 +499,7 @@ class TestModels(unittest.TestCase):
             data_holder)
 
         data_holder.preprocessed_data = os.path.join(
-            EXAMPLE_FOLDER, r"DATA", r"vcf_ld", f"preprocessed_data_model3.bp"
+            EXAMPLE_FOLDER, r"DATA", r"ld_vcf", f"preprocessed_data_model3.bp"
         )
 
         if Path(data_holder.recombination_maps).exists():
