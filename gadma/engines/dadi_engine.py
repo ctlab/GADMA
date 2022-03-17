@@ -167,7 +167,12 @@ class DadiEngine(DadiOrMomentsEngine):
         return super(DadiEngine, self).get_theta(values, pts)
 
     def evaluate(self, values, pts):
-        return super(DadiEngine, self).evaluate(values, pts)
+        try:
+            return super(DadiEngine, self).evaluate(values, pts)
+        except AttributeError as e:
+            if str(e).strip() != "'MaskedArray' object has no attribute 'folded'":
+                raise e
+            return None
 
     def generate_code(self, values, filename, pts,
                       nanc=None, gen_time=None, gen_time_units=None):
