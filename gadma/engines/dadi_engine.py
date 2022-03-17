@@ -170,7 +170,8 @@ class DadiEngine(DadiOrMomentsEngine):
         try:
             return super(DadiEngine, self).evaluate(values, pts)
         except AttributeError as e:
-            if str(e).strip() != "'MaskedArray' object has no attribute 'folded'":
+            message = str(e).strip()
+            if message != "'MaskedArray' object has no attribute 'folded'":
                 raise e
             return None
 
