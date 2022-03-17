@@ -44,6 +44,7 @@ def _print_momentsLD_func(engine, values):
     pops = engine.data_holder.population_labels
     if isinstance(model, CustomDemographicModel):
         path_repr = repr(sys.modules[model.function.__module__].__file__)
+        path_repr = path_repr.encode('unicode_escape')
         ret_str = "import importlib.util\n\n"
         ret_str += "spec = importlib.util.spec_from_file_location('module', " \
                    f"{path_repr})\n"
@@ -174,7 +175,8 @@ def _print_momentsLD_load_data(engine, data_holder):
     from ..engines import extract_rec_map_name_and_extension
     ret_str = ""
 
-    ret_str += f"bed_files = \"{data_holder.bed_files_dir}\"\n"
+    path = data_holder.bed_files_dir.encode('unicode_escape')
+    ret_str += f"bed_files = \"{path}\"\n"
     ret_str += "reg_num = 0\n" \
                "region_stats = {}\n"
     if data_holder.filename is not None:
@@ -186,6 +188,7 @@ def _print_momentsLD_load_data(engine, data_holder):
     rec_maps = data_holder.recombination_maps
     pops = data_holder.population_labels
     if rec_maps is not None:
+        rec_maps = rec_maps.encode('unicode_escape')
         if len(listdir(rec_maps)) == len(chromosomes):
             rec_map, extension = extract_rec_map_name_and_extension(
                 listdir(rec_maps)[0]
@@ -202,8 +205,11 @@ def _print_momentsLD_load_data(engine, data_holder):
     ret_str += f"    \"use_genotypes\": {kwargs['use_genotypes']},\n"
     ret_str += f"    \"cM\": {kwargs['cM']},\n"
     ret_str += "}\n"
-    ret_str += f"vcf_file = \"{data_holder.filename}\"\n"
-    ret_str += f"pop_map = \"{data_holder.popmap_file}\"\n"
+
+    vcf_path = data_holder.filename.encode('unicode_escape')
+    popmap_path = data_holder.popmap_file.encode('unicode_escape')
+    ret_str += f"vcf_file = \"{vcf_path}\"\n"
+    ret_str += f"pop_map = \"{popmap_path}\"\n"
     if rec_maps is not None:
         ret_str += f"rec_maps = \"{rec_maps}\"\n"
 
