@@ -90,15 +90,18 @@ jobs:
         run: |
           pip3 uninstall -y smac
 
-      - name: Install moments-LD and momi engines (Linux).
-        if: runner.os == 'Linux'
+      - name: Install momentsLD engine.
         run: |
+          pip3 install Cython==0.29.18  # the last version cause erros on Windows and MacOS
           git clone https://bitbucket.org/simongravel/moments.git
           cd moments
           python3 setup.py build_ext --inplace
           python3 setup.py install --ld_extensions
           cd ..
-          rm -rf moments/
+
+      - name: Install momi engine (Linux).
+        if: runner.os == 'Linux'
+        run: |
           pip3 install momi
 
       - name: Check installations of packages.
