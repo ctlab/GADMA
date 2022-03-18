@@ -21,7 +21,7 @@ GADMA provides the following choice of engines for demographic inference:
 
 In order to choose engine:
 
-.. code-block::
+.. code-block:: none
 
    # param file
    ...
@@ -105,7 +105,7 @@ dadi
 
 When using the ``dadi`` engine, it is recommended to check the value of the ``Pts`` option in the ``params_file``. ``Pts`` is a sequence of three numbers, each of which is equal to the number of points in grid size. The greater the numbers are, the more accurate numerical solution of a partial differential equation ``dadi`` will give. However, finding such a more accurate solution takes more time. By default, GADMA takes ``Pts : n, n + 10, n + 20``, where ``n`` is the largest sample size among the populations of interest.
 
-.. code-block::
+.. code-block:: none
 
     # param file
     ...
@@ -120,7 +120,7 @@ moments
 
 ``moments`` engine [Jouganous2017] is very similar to ``dadi``. Usually it is much faster than ``dadi`` but maybe less accurate. It is the default engine for demographic inference with GADMA.
 
-.. code-block::
+.. code-block:: none
 
     # param file
     ...
@@ -140,7 +140,7 @@ Engines ``dadi`` and ``moments`` have a special type of demographic inference th
 
 Unfortunately, ``momi`` engine has some limitations on demographic parameters: it does not infer continuous migrations and linear size change. If an engine is chosen then GADMA informs about these limitations and disables migration and linear dynamic automatically.
 
-.. code-block::
+.. code-block:: none
 
     # param file
     ...
@@ -179,7 +179,7 @@ with recombination distances. When working with momentsLD it is recommended to u
 
 LD statistics are evaluated across several regions of a given sequence. GADMA allows to specify length of one region (``Region len`` option), it can be considered in a sense very similar to the ``Pts`` option for ``dadi`` engine. The greater the number of regions is, the lower noise level in the processed data will be. But at the same time, it is important to keep balance between the number of regions and the length of each individual region. Regions that are too small are also not suitable for work. By default, GADMA has ``Region len`` equal to 6,400,000 bp that will provide ~500 regions for full human data.
 
-.. code-block::
+.. code-block:: none
 
     # param file
     ...

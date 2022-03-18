@@ -44,7 +44,7 @@ How to use your own precomputed data
 You can precompute data on your own using ``moments.LD`` library opportunities. For correct GADMA work, you should save dictionary received after ``moments.LD.Parsing.compute_ld_statistics`` as binary file using ``pickle`` library.
 GADMA will read statistics and bootstrap regions from this file.
 
-.. code-block::
+.. code-block:: none
 
     # param file
     Input data : ./some.vcf, ./some_popmap
@@ -62,7 +62,7 @@ Engine ``momentsLD`` requieres bed files that determine regions for LD stats eva
 GADMA has a function for the auto-generation of bed files. This bed files subset chromosomes
 to equal regions. You can specify region length in the param file.
 
-.. code-block::
+.. code-block:: none
 
     # param file
     ...
@@ -88,7 +88,7 @@ in the genome. As default GADMA takes recombination maps in cM (centiMorgans).
 Option ``Recombination maps`` in `params_file` should be set to a directory containing a recombination map for each
 chromosome in a VCF file.
 
-.. code-block::
+.. code-block:: none
 
     # param file
     ...
@@ -97,7 +97,7 @@ chromosome in a VCF file.
 
 Files in the given  directory should be names according the following example:
 
-.. code-block::
+.. code-block:: none
 
     {map}_{chrom_name}.txt
     Example:
@@ -116,7 +116,7 @@ In automatic GADMA inference with structure the size of ancestral population is 
 as a parameter of the demographic model.
 This value is specific as it is used in ``momentsLD`` engine for ``theta`` (differs from ``moments`` or ``dadi`` and equals to``4 * Ne * mu``) and ``rhos`` evaluations. In case of custom demographic model the size of ancestral population can be fixed. One need to tell GADMA this fixed value via ``Fixed ancestral size`` in `params file`:
 
-.. code-block::
+.. code-block:: none
 
     # param file
     ...
@@ -131,7 +131,7 @@ All of these parameters have default (recomended) values in GADMA: recombination
 
 Default LD kwargs:
 
-.. code-block::
+.. code-block:: none
 
     r_bins : np.logspace(-6, -3, 7)
     report: False,
@@ -141,7 +141,7 @@ Default LD kwargs:
 
 If you want to change some of these arguments you can add to the parameter file ``ld_kwargs``.
 
-.. code-block::
+.. code-block:: none
 
     # param file
     ...
