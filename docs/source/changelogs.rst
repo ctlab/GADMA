@@ -1,6 +1,16 @@
 Changelogs
 ==============
 
+[2.0.0rc19] - 2022-03-18
+------------------------
+
+**Major release**
+
+1. We present a new engine - ``momentsLD``!  It is the first engine that use LD statistics for demographic inference in GADMA. For more information please see `documentation <user_manual/set_engine.rst>`__. As in case of the ``momi`` engine if there are some problems with usage of ``momentsLD`` engine please post an issue on GitHub, we really appreciate the feedback!
+
+2. Several bugs were fixed including Issue #58.
+
+
 [2.0.0rc18] - 2021-09-03
 ------------------------
 

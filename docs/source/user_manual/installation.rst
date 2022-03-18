@@ -15,6 +15,7 @@ GADMA requires the following dependencies:
 * ``dadi`` (>= 1.7.0)
 * ``moments`` (>= 1.0.0)
 * ``momi``
+* ``moments.LD`` (manual installation of ``moments`` with `--ld-extension` flag)
 * nlopt (for ``dadi``)
 * Cython (for ``moments``)
 * mpmath (for ``moments``)
@@ -31,6 +32,41 @@ To calculate confidence intervals one should install:
 
 .. note::
     ``momi`` package sometimes is not installed correctly for Windows and MacOS. If ``momi`` is not available please install it manually following the installation instructions in `momi's manual <https://momi2.readthedocs.io/en/latest/installation.html#>`_.
+
+.. note::
+    ``momentsLD`` - the extension of ``moments``, should be installed manually  following the installation instructions in `moments's manual <https://moments.readthedocs.io/en/latest/installation.html#>`_.
+
+Getting help for engine installation
+------------------------------------
+
+If there are some troubles installing the engine, please, first of all check the table below for the ability to install this engine on your system. You are always welcome to `open an issue <https://github.com/ctlab/GADMA/issues#>`_ on GitHub for getting help.
+
+GADMA has automatic tests on GitHUb for engines on different systems (Linux, Windows, MacOS). The following table indicates (according to our tests) if engine could be installed on specified system:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Feature
+     - ``dadi``
+     - ``moments``
+     - ``momi``
+     - ``momentsLD``
+
+   * - Linux
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+   * - Windows
+     - ✅
+     - ✅
+     - ❌
+     - ✅
+   * - MacOS
+     - ✅
+     - ✅
+     - ✅
+     - ✅
 
 Installing the latest release
 ------------------------------

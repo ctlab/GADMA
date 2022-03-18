@@ -13,7 +13,7 @@ from gadma.cli import arg_parser
 import os
 import gadma
 gadma.cli.arg_parser.version = lambda: "GADMA module for data preprocessing "\
-                                       "momentsLD engine\n"
+                                       "with momentsLD engine\n"
 gadma.cli.arg_parser.tool_name = "gadma-parsing_ld_data"
 
 
