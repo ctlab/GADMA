@@ -175,7 +175,7 @@ def _print_momentsLD_load_data(engine, data_holder):
     from ..engines import extract_rec_map_name_and_extension
     ret_str = ""
 
-    path = data_holder.bed_files_dir.encode('unicode_escape')
+    path = f"{data_holder.bed_files_dir}".encode('unicode_escape')
     ret_str += f"bed_files = \"{path}\"\n"
     ret_str += "reg_num = 0\n" \
                "region_stats = {}\n"
