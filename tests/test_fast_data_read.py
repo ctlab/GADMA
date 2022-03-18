@@ -13,7 +13,7 @@ import gadma
 from gadma.data.data import VCFDataHolder
 from gadma.engines.engine import get_engine
 from gadma.data.data_utils import create_bed_files_and_extract_chromosomes
-from gadma.parsing_ld_data import main
+from gadma.precompute_ld_data import main
 from gadma.engines.moments_ld_engine import _read_data_one_job, create_h5_file
 from gadma.engines.moments_ld_engine import extract_rec_map_name_and_extension
 

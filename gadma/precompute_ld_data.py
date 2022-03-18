@@ -14,7 +14,7 @@ import os
 import gadma
 gadma.cli.arg_parser.version = lambda: "GADMA module for data preprocessing "\
                                        "with momentsLD engine\n"
-gadma.cli.arg_parser.tool_name = "gadma-parsing_ld_data"
+gadma.cli.arg_parser.tool_name = "gadma-precompute_ld_data"
 
 
 def main():
