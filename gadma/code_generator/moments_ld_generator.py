@@ -44,7 +44,7 @@ def _print_momentsLD_func(engine, values):
     pops = engine.data_holder.population_labels
     if isinstance(model, CustomDemographicModel):
         path_repr = repr(sys.modules[model.function.__module__].__file__)
-        path_repr = path_repr.encode('unicode_escape')
+        path_repr = path_repr.replace("\\", "\\\\")
         ret_str = "import importlib.util\n\n"
         ret_str += "spec = importlib.util.spec_from_file_location('module', " \
                    f"{path_repr})\n"
@@ -175,7 +175,7 @@ def _print_momentsLD_load_data(engine, data_holder):
     from ..engines import extract_rec_map_name_and_extension
     ret_str = ""
 
-    path = f"{data_holder.bed_files_dir}".encode('unicode_escape')
+    path = f"{data_holder.bed_files_dir}".replace("\\", "\\\\")
     ret_str += f"bed_files = \"{path}\"\n"
     ret_str += "reg_num = 0\n" \
                "region_stats = {}\n"
@@ -188,7 +188,6 @@ def _print_momentsLD_load_data(engine, data_holder):
     rec_maps = data_holder.recombination_maps
     pops = data_holder.population_labels
     if rec_maps is not None:
-        rec_maps = rec_maps.encode('unicode_escape')
         if len(listdir(rec_maps)) == len(chromosomes):
             rec_map, extension = extract_rec_map_name_and_extension(
                 listdir(rec_maps)[0]
@@ -206,14 +205,16 @@ def _print_momentsLD_load_data(engine, data_holder):
     ret_str += f"    \"cM\": {kwargs['cM']},\n"
     ret_str += "}\n"
 
-    vcf_path = data_holder.filename.encode('unicode_escape')
-    popmap_path = data_holder.popmap_file.encode('unicode_escape')
+    vcf_path = data_holder.filename.replace("\\", "\\\\")
+    popmap_path = data_holder.popmap_file.replace("\\", "\\\\")
     ret_str += f"vcf_file = \"{vcf_path}\"\n"
     ret_str += f"pop_map = \"{popmap_path}\"\n"
     if rec_maps is not None:
-        ret_str += f"rec_maps = \"{rec_maps}\"\n"
+        rec_maps_path = rec_maps.replace('\\', '\\\\')
+        ret_str += f"rec_maps = \"{rec_maps_path}\"\n"
 
-    ret_str += f"preprocessed_data = \"{data_holder.preprocessed_data}\"\n"
+    prep_path = data_holder.preprocessed_data.replace("\\", "\\\\")
+    ret_str += f"preprocessed_data = \"{prep_path}\"\n"
 
     ret_str += "if preprocessed_data is not None:\n"
     ret_str += "    with open(preprocessed_data, \"rb\") as fin:\n"
