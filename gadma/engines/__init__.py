@@ -7,3 +7,4 @@ from .moments_ld_engine import MomentsLdEngine, extract_rec_map_name_and_extensi
 from .dadi_moments_common import DadiOrMomentsEngine  # NOQA
 from .demes_engine import DemesEngine  # NOQA
 from .momi_engine import MomiEngine  # NOQA
+from .fsc2_engine import FastSimCoal2Engine  # NOQA
