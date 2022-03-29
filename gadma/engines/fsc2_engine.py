@@ -27,7 +27,12 @@ TreeModelEvent = Union[Leaf, LineageMovement, PopulationSizeChange]
 Model = Union[EpochDemographicModel, TreeDemographicModel]
 ParameterValues = Union[List, Dict]
 
-FSC2_PATH = "/home/cafune/.local/bin/fsc2"  # TODO: Needs to be dynamically set up
+FSC2_PATH: Final[Optional[str]] = os.getenv('FSC2_PATH')
+
+
+def fsc2_available() -> bool:
+    if not FSC2_PATH:
+        return False
 
 
 class FastSimCoal2Engine(Engine):
@@ -529,8 +534,5 @@ class FastSimCoal2Engine(Engine):
         return new_name
 
 
-fsc2_available = True  # TODO: check for fsc2 availability
-# fsc2_available = Path(FSC2_PATH).exists()
-
-if fsc2_available:
+if Path(FSC2_PATH).exists():
     register_engine(FastSimCoal2Engine)
