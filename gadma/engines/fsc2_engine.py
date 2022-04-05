@@ -40,7 +40,7 @@ class FastSimCoal2Engine(Engine):
     id: Final[str] = 'fsc2'
     supported_models: Final[list] = [EpochDemographicModel,
                                      TreeDemographicModel]
-    supported_data: Final[list] = [SFSDataHolder]
+    supported_data: Final[list] = [SFSDataHolder]  # TODO: Edit the failed tests to skip the VCFDataHolder check
     inner_data_type = str
 
     can_evaluate = True
@@ -55,6 +55,11 @@ class FastSimCoal2Engine(Engine):
                              " use set_and_evaluate function instead.")
 
         var2value = self._process_values(values)
+
+        # TODO: Implement a check for a CustomDemographicModel
+        # The CustomDemographicModel should have a tuple with paths to fsc2 input files.
+        # If self.model is CustomDemographicModel, skip fsc2 input file generation
+        # and pass them straight to the fsc2 call.
 
         fsc2_model, values = self._get_fsc2_model(values)
         self.set_model(fsc2_model)
@@ -367,6 +372,8 @@ class FastSimCoal2Engine(Engine):
             os.system(command)
 
     def update_data_holder_with_inner_data(self):
+        # TODO: Code for processing inner data goes here
+        # See gadma.engines.momi_engine.MomiEngine.update_data_holder_with_inner_data
         pass
 
     @classmethod
