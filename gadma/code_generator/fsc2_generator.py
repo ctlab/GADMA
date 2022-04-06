@@ -63,7 +63,7 @@ class FSC2InputFile(object):
     def save_to_file(self, path: Union[str, PathLike]) -> NoReturn:
         """Save in-memory representation of the input file in filesystem"""
         self._path = Path(path)
-        self._path.write_text(self.file.getvalue())
+        self._path.write_text(self.file.getvalue(), encoding='utf-8')
 
 
 class TemplateFile(FSC2InputFile):
