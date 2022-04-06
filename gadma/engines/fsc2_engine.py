@@ -2,6 +2,7 @@ import io
 import os
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 from contextlib import redirect_stdout
@@ -18,7 +19,7 @@ from ..models import EpochDemographicModel, TreeDemographicModel, Epoch, Split, 
     LineageMovement
 
 from ..utils.variables import PopulationSizeVariable, TimeVariable, DynamicVariable
-from .. import SFSDataHolder
+from .. import SFSDataHolder, CustomDemographicModel
 from ..models.variables_combinations import Addition, Division
 from ..code_generator.fsc2_generator import EstimationFile, TemplateFile, DefinitionFile
 
@@ -33,6 +34,7 @@ FSC2_PATH: Final[Optional[str]] = os.getenv('FSC2_PATH')
 def fsc2_available() -> bool:
     if not FSC2_PATH:
         return False
+    return True
 
 
 class FastSimCoal2Engine(Engine):
@@ -44,6 +46,8 @@ class FastSimCoal2Engine(Engine):
     inner_data_type = str
 
     can_evaluate = True
+
+    prefix: Final[str] = 'gadma_fsc2'
 
     def __init__(self, data=None, model=None):
         super().__init__(data, model)
@@ -61,19 +65,23 @@ class FastSimCoal2Engine(Engine):
         # If self.model is CustomDemographicModel, skip fsc2 input file generation
         # and pass them straight to the fsc2 call.
 
+        if isinstance(self.model, CustomDemographicModel):
+            assert (isinstance(self.model.function, tuple)
+                    and all(isinstance(elem, (str, os.PathLike)) for elem in self.model.function))
+            tpl_file, est_file, def_file = self.model.function
+
         fsc2_model, values = self._get_fsc2_model(values)
         self.set_model(fsc2_model)
 
-        prefix: str = 'gadma_fsc2'
-        with tempfile.TemporaryDirectory(prefix=prefix) as workdir:
+        with tempfile.TemporaryDirectory(prefix=self.prefix) as workdir:
             sfs_name = Path(self.data).name
-            new_sfs_name = self._new_sfs_name(sfs_name, prefix)
+            new_sfs_name = self._new_sfs_name(sfs_name, self.prefix)
             shutil.copy(self.data, Path(workdir, new_sfs_name))
 
             tpl_file, est_file, def_file = self.generate_code(var2value)
-            tpl_file.save_to_file(Path(workdir, f'{prefix}.tpl'))
-            est_file.save_to_file(Path(workdir, f'{prefix}.est'))
-            def_file.save_to_file(Path(workdir, f'{prefix}.def'))
+            tpl_file.save_to_file(Path(workdir, f'{self.prefix}.tpl'))
+            est_file.save_to_file(Path(workdir, f'{self.prefix}.est'))
+            def_file.save_to_file(Path(workdir, f'{self.prefix}.def'))
 
             n_simulations: int = options['n_sims'] if 'n_sims' in options else 1000
             n_loops: int = options['n_loops'] if 'n_loops' in options else 20
@@ -91,7 +99,7 @@ class FastSimCoal2Engine(Engine):
             self.run_fsc2(FSC2_PATH, args, cwd=workdir, stdout=fsc2_stdout)
             print('-' * 80)
 
-            likelihood = self._find_max_obs_lhood(workdir, prefix)
+            likelihood = self._find_max_obs_lhood(workdir, self.prefix)
 
         return likelihood
 
@@ -117,16 +125,35 @@ class FastSimCoal2Engine(Engine):
 
     def generate_code(self,
                       values: ParameterValues,
-                      filename=None,
+                      filename: Optional[Union[str, os.PathLike]] = None,
                       nanc=None,
                       gen_time=None,
-                      gen_time_units="years") -> Tuple[TemplateFile,
-                                                       EstimationFile,
-                                                       DefinitionFile]:
+                      gen_time_units="years") -> Optional[Tuple[TemplateFile,
+                                                                EstimationFile,
+                                                                DefinitionFile]]:
+        """
+        Generate three input files for fastsimcoal2.
+
+        :param values: Model parameter values
+        :param filename: If this parameter is a string or a path-like object,
+            save the files in the directory specified by the parameter.
+            In this case, the function won't return anything.
+
+            TODO: @Ekaterina Noskova: 'path' might be a better name for this parameter
+        :param nanc: Unused.
+        :param gen_time: Unused.
+        :param gen_time_units: Unused.
+        :return: A tuple with three :py:class:`fsc2_generator.FSC2InputFile`: objects
+        """
         tpl_file = self._generate_template_file()
         est_file = self._generate_estimation_file(values)
         def_file = self._generate_definitions_file(values)
-
+        if isinstance(filename, (str, os.PathLike)):
+            assert Path(filename).exists()
+            tpl_file.save_to_file(filename + f"{self.prefix}.tpl")
+            est_file.save_to_file(filename + f"{self.prefix}.est")
+            def_file.save_to_file(filename + f"{self.prefix}.def")
+            return
         return tpl_file, est_file, def_file
 
     def _generate_template_file(self):
@@ -362,14 +389,11 @@ class FastSimCoal2Engine(Engine):
         :param stdout: IO stream for writing standard output.
         """
         assert Path(fsc2_path).exists(), "Can't find fsc2 binary"
-        args = " ".join([str(e) for e in args])
+        args: str = " ".join([str(e) for e in args])
         command = f"cd {cwd}; {fsc2_path} {args}"  # TODO
-        if stdout:
-            with redirect_stdout(stdout):
-                os.system(command)
-                # subprocess.run([fsc2_path, *args], stdout=stdout)
-        else:
-            os.system(command)
+        # os.system(command)
+        with redirect_stdout(stdout):
+            retcode = subprocess.call([fsc2_path, args], shell=True, cwd=cwd)
 
     def update_data_holder_with_inner_data(self):
         # TODO: Code for processing inner data goes here
