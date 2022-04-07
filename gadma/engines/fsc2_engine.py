@@ -19,7 +19,8 @@ from ..models import EpochDemographicModel, TreeDemographicModel, Epoch, Split, 
     LineageMovement
 
 from ..utils.variables import PopulationSizeVariable, TimeVariable, DynamicVariable
-from .. import SFSDataHolder, CustomDemographicModel
+from ..data import SFSDataHolder
+from ..models import CustomDemographicModel
 from ..models.variables_combinations import Addition, Division
 from ..code_generator.fsc2_generator import EstimationFile, TemplateFile, DefinitionFile
 
@@ -40,14 +41,16 @@ def fsc2_available() -> bool:
 class FastSimCoal2Engine(Engine):
     """Class representing the fastsimcoal2 engine"""
     id: Final[str] = 'fsc2'
-    supported_models: Final[list] = [EpochDemographicModel,
+    supported_models: Final[list] = [CustomDemographicModel,
+                                     EpochDemographicModel,
                                      TreeDemographicModel]
-    supported_data: Final[list] = [SFSDataHolder]  # TODO: Edit the failed tests to skip the VCFDataHolder check
+    # TODO: Edit the failed tests to skip the VCFDataHolder check
+    supported_data: Final[list] = [SFSDataHolder]
     inner_data_type = str
 
     can_evaluate = True
 
-    prefix: Final[str] = 'gadma_fsc2'
+    PREFIX: Final[str] = 'gadma_fsc2'
 
     def __init__(self, data=None, model=None):
         super().__init__(data, model)
@@ -60,28 +63,29 @@ class FastSimCoal2Engine(Engine):
 
         var2value = self._process_values(values)
 
-        # TODO: Implement a check for a CustomDemographicModel
-        # The CustomDemographicModel should have a tuple with paths to fsc2 input files.
+        # [x] TODO: Implement a check for a CustomDemographicModel
+        # The CustomDemographicModel instance should have a tuple with paths to fsc2 input files.
         # If self.model is CustomDemographicModel, skip fsc2 input file generation
         # and pass them straight to the fsc2 call.
+
+        fsc2_model, values = self._get_fsc2_model(values)
+        self.set_model(fsc2_model)
 
         if isinstance(self.model, CustomDemographicModel):
             assert (isinstance(self.model.function, tuple)
                     and all(isinstance(elem, (str, os.PathLike)) for elem in self.model.function))
             tpl_file, est_file, def_file = self.model.function
 
-        fsc2_model, values = self._get_fsc2_model(values)
-        self.set_model(fsc2_model)
-
-        with tempfile.TemporaryDirectory(prefix=self.prefix) as workdir:
+        with tempfile.TemporaryDirectory(prefix=self.PREFIX) as workdir:
             sfs_name = Path(self.data).name
-            new_sfs_name = self._new_sfs_name(sfs_name, self.prefix)
+            new_sfs_name = self._new_sfs_name(sfs_name, self.PREFIX)
             shutil.copy(self.data, Path(workdir, new_sfs_name))
 
-            tpl_file, est_file, def_file = self.generate_code(var2value)
-            tpl_file.save_to_file(Path(workdir, f'{self.prefix}.tpl'))
-            est_file.save_to_file(Path(workdir, f'{self.prefix}.est'))
-            def_file.save_to_file(Path(workdir, f'{self.prefix}.def'))
+            if isinstance(self.model, TreeDemographicModel):
+                tpl_file, est_file, def_file = self.generate_code(var2value)
+                tpl_file.save_to_file(Path(workdir, f'{self.PREFIX}.tpl'))
+                est_file.save_to_file(Path(workdir, f'{self.PREFIX}.est'))
+                def_file.save_to_file(Path(workdir, f'{self.PREFIX}.def'))
 
             n_simulations: int = options['n_sims'] if 'n_sims' in options else 1000
             n_loops: int = options['n_loops'] if 'n_loops' in options else 20
@@ -99,8 +103,7 @@ class FastSimCoal2Engine(Engine):
             self.run_fsc2(FSC2_PATH, args, cwd=workdir, stdout=fsc2_stdout)
             print('-' * 80)
 
-            likelihood = self._find_max_obs_lhood(workdir, self.prefix)
-
+            likelihood = self._find_max_obs_lhood(workdir, self.PREFIX)
         return likelihood
 
     def _process_values(self, values: ParameterValues) -> Dict:
@@ -150,9 +153,9 @@ class FastSimCoal2Engine(Engine):
         def_file = self._generate_definitions_file(values)
         if isinstance(filename, (str, os.PathLike)):
             assert Path(filename).exists()
-            tpl_file.save_to_file(filename + f"{self.prefix}.tpl")
-            est_file.save_to_file(filename + f"{self.prefix}.est")
-            def_file.save_to_file(filename + f"{self.prefix}.def")
+            tpl_file.save_to_file(filename + f"{self.PREFIX}.tpl")
+            est_file.save_to_file(filename + f"{self.PREFIX}.est")
+            def_file.save_to_file(filename + f"{self.PREFIX}.def")
             return
         return tpl_file, est_file, def_file
 
@@ -248,7 +251,7 @@ class FastSimCoal2Engine(Engine):
         :param values: Model parameter values
         :return: Migration matrices.
         """
-        # TODO: Will have to write code for resizing all matrices to one size according to the population count
+        # TODO: Write code for resizing all matrices to one size according to the population count
         matrices = []
         for event in self.model.events:
             if isinstance(event, Epoch):
@@ -388,9 +391,10 @@ class FastSimCoal2Engine(Engine):
         :param cwd: Working directory for calculations.
         :param stdout: IO stream for writing standard output.
         """
+        # TODO: Come up with a way to use the `subprocess` library
         assert Path(fsc2_path).exists(), "Can't find fsc2 binary"
         args: str = " ".join([str(e) for e in args])
-        command = f"cd {cwd}; {fsc2_path} {args}"  # TODO
+        command = f"cd {cwd}; {fsc2_path} {args}"
         # os.system(command)
         with redirect_stdout(stdout):
             retcode = subprocess.call([fsc2_path, args], shell=True, cwd=cwd)
@@ -435,9 +439,10 @@ class FastSimCoal2Engine(Engine):
             growth_rates.append(growth_rate)
         return growth_rates
 
-    def _get_fsc2_model(self, values: ParameterValues) -> Tuple[TreeDemographicModel,
+    def _get_fsc2_model(self, values: ParameterValues) -> Tuple[Union[CustomDemographicModel,
+                                                                      TreeDemographicModel],
                                                                 ParameterValues]:
-        model: TreeDemographicModel = self.model
+        model = self.model
         if isinstance(self.model, EpochDemographicModel):
             model, values = self.model.translate_to(TreeDemographicModel, values)
         return model, values
@@ -554,14 +559,16 @@ class FastSimCoal2Engine(Engine):
         assert isinstance(max_obs_lhood, float)
         return max_obs_lhood
 
-    def _new_sfs_name(self, sfs_name: str, prefix: str) -> str:
+    @staticmethod
+    def _new_sfs_name(sfs_name: str, prefix: str) -> str:
         pattern = re.compile(r'(.*)((?:_DAFpop0|_jointDAFpop1_0)\.obs)')
         match = re.search(pattern, sfs_name)
         if match:
             new_name = f'{prefix}{match.group(2)}'
-        pattern = re.compile(r'(.*)((?:DAFpop0|jointDAFpop1_0)\.obs)')
-        match = re.search(pattern, sfs_name)
-        new_name = f'{prefix}_{match.group(2)}'
+        else:
+            pattern = re.compile(r'(.*)((?:DAFpop0|jointDAFpop1_0)\.obs)')
+            match = re.search(pattern, sfs_name)
+            new_name = f'{prefix}_{match.group(2)}'
         return new_name
 
 
