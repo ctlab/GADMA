@@ -404,8 +404,9 @@ class FastSimCoal2Engine(Engine):
 
     def update_data_holder_with_inner_data(self):
         # TODO: Code for processing inner data goes here
-        # See gadma.engines.momi_engine.MomiEngine.update_data_holder_with_inner_data
-        pass
+        self.data_holder.projections = self._infer_sample_sizes()
+        self.data_holder.population_labels = None
+        self.data_holder.outgroup = None
 
     @classmethod
     def _read_data(cls, data_holder: SFSDataHolder) -> Any:
