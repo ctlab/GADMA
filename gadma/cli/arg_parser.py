@@ -151,6 +151,7 @@ def get_settings():
             settings_storage.resume_from = None
             settings_storage.only_models = False
         else:
+            setting_only_models = settings_storage.only_models
             if not os.path.exists(old_extra_file):
                 old_extra_file = None
             resume_from_settings = SettingsStorage.from_file(
@@ -163,7 +164,7 @@ def get_settings():
             settings_storage = copy.copy(resume_from_settings)
             settings_storage = settings_storage.update_from_file(args.params,
                                                                  args.extra)
-            settings_storage.only_models = False
+            settings_storage.only_models = setting_only_models
             if args.resume:
                 settings_storage.resume_from = args.resume
 
