@@ -15,8 +15,8 @@ import numpy as np
 from numpy import ndarray
 
 from . import Engine, register_engine
-from ..models import EpochDemographicModel, TreeDemographicModel, Epoch, Split, PopulationSizeChange, Leaf, \
-    LineageMovement
+from ..models import EpochDemographicModel, TreeDemographicModel, Epoch, Split, \
+    PopulationSizeChange, Leaf, LineageMovement
 
 from ..utils.variables import PopulationSizeVariable, TimeVariable, DynamicVariable
 from ..data import SFSDataHolder
@@ -156,7 +156,7 @@ class FastSimCoal2Engine(Engine):
             tpl_file.save_to_file(filename + f"{self.PREFIX}.tpl")
             est_file.save_to_file(filename + f"{self.PREFIX}.est")
             def_file.save_to_file(filename + f"{self.PREFIX}.def")
-            return
+            return None
         return tpl_file, est_file, def_file
 
     def _generate_template_file(self):
@@ -216,7 +216,7 @@ class FastSimCoal2Engine(Engine):
         sfs_file_data = sfs_file_data.expandtabs(1)
         sfs_file_data = StringIO(sfs_file_data)
         sfs: ndarray = np.genfromtxt(sfs_file_data, dtype=int, skip_header=2)
-        sfs = sfs[:, 1:]
+        sfs = sfs[:, 1:]  # FIXME
         sample_sizes: List[int] = list(sfs.shape)
         sample_sizes.reverse()
         return tuple(sample_sizes)
@@ -236,6 +236,7 @@ class FastSimCoal2Engine(Engine):
         return [event for event in self.model.events
                 if isinstance(event, Leaf)]
 
+    # Unused
     @property
     def _first_event(self):
         if self.model is None:
@@ -277,10 +278,12 @@ class FastSimCoal2Engine(Engine):
             fsc2_event = {}
             if isinstance(event, Leaf):
                 continue
+
             if isinstance(event.t, Addition):
                 time: str = self._time_to_complex_param(event.t)
             else:
                 time = event.t.name + '$'
+
             if isinstance(event, PopulationSizeChange):
                 source: int = event.pop
                 sink: int = event.pop
@@ -311,6 +314,7 @@ class FastSimCoal2Engine(Engine):
             fsc2_events.append(fsc2_event)
         return tuple(fsc2_events)
 
+    # Unused
     def _map_model_events(self,
                           model_tree_events: List[TreeModelEvent],
                           model_epoch_events: List[EpochModelEvent]) -> Dict[TreeModelEvent,
