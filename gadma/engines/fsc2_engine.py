@@ -298,13 +298,16 @@ class FastSimCoal2Engine(Engine):
                 new_sink_size = event.size_pop.name + '$'
                 new_sink_growth_rate: str = 'keep'
                 new_migration_matrix = 'keep'
-            fsc2_event["time"] = time
-            fsc2_event["source"] = source
-            fsc2_event["sink"] = sink
-            fsc2_event["migrants"] = migrants
-            fsc2_event["new_sink_size"] = new_sink_size
-            fsc2_event["new_sink_growth_rate"] = new_sink_growth_rate
-            fsc2_event["new_migration_matrix"] = new_migration_matrix
+            else:
+                raise RuntimeError(f'Wrong event type, expected types: '
+                                   f'{PopulationSizeChange, LineageMovement}')
+            fsc2_event.update({"time": time,
+                               "source": source,
+                               "sink": sink,
+                               "migrants": migrants,
+                               "new_sink_size": new_sink_size,
+                               "new_sink_growth_rate": new_sink_growth_rate,
+                               "new_migration_matrix": new_migration_matrix})
             fsc2_events.append(fsc2_event)
         return tuple(fsc2_events)
 
