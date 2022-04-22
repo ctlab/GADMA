@@ -1,5 +1,6 @@
 from .optimizer import ConstrainedOptimizer, Optimizer
 from .global_optimizer import GlobalOptimizer, register_global_optimizer
+from .global_optimizer import get_global_optimizer
 from ..utils import sort_by_other_list, choose_by_weight
 from ..utils import trunc_normal_3_sigma_rule, DiscreteVariable,\
                     WeightedMetaArray, get_correct_dtype
@@ -706,9 +707,9 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             run_info = self.load(save_file)
         except Exception:
             return False
-        for opt_id in ga_could_be_restored_after:
-            opt = get_global_otimizer(opt_id)
-            if opt.valiad_restore_file(save_file):
+        for opt_id in self.ga_could_be_restored_after:
+            opt = get_global_optimizer(opt_id)
+            if opt.valid_restore_file(save_file):
                 return True
         if (not isinstance(run_info.result.n_eval, int) or
                 not isinstance(run_info.result.n_iter, int) or
@@ -722,13 +723,13 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         return True
 
     def load(self, save_file):
-        for opt_id in ga_could_be_restored_after:
-            opt = get_global_otimizer(opt_id)
-            if opt.valiad_restore_file(save_file):
+        for opt_id in self.ga_could_be_restored_after:
+            opt = get_global_optimizer(opt_id)
+            if opt.valid_restore_file(save_file):
                 run_info = opt.load(save_file)
                 # we should be sure about our X_out and Y_out
-                run_info.X_out = list(run_info.X)
-                run_info.Y_out = list(run_info.Y)
+                run_info.result.X_out = list(run_info.result.X)
+                run_info.result.Y_out = list(run_info.result.Y)
                 # total_X_Y = list(zip(run_info.X, run_info.Y))
                 # total_X_Y = sorted(total_X_Y, key=lambda x: x[1])
                 # run_info.X_out = [x[0] for x in total_X_Y]
