@@ -87,6 +87,8 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
     :param maximize: If True then optimization will maximize function.
     :type maximize: bool
     """
+
+    ga_could_be_restored_after = ["SMAC_BO_optimization", "SMAC_BO_combination"]
     def __init__(self, gen_size=10, n_elitism=2,
                  p_mutation=0.3, p_crossover=0.3, p_random=0.2,
                  mut_strength=0.2, const_mut_strength=1.1,
@@ -704,6 +706,10 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
             run_info = self.load(save_file)
         except Exception:
             return False
+        for opt_id in ga_could_be_restored_after:
+            opt = get_global_otimizer(opt_id)
+            if opt.valiad_restore_file(save_file):
+                return True
         if (not isinstance(run_info.result.n_eval, int) or
                 not isinstance(run_info.result.n_iter, int) or
                 not isinstance(run_info.n_impr_gen, int)):
@@ -714,6 +720,22 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         if not isinstance(run_info.gen_times, list):
             return False
         return True
+
+    def load(self, save_file):
+        for opt_id in ga_could_be_restored_after:
+            opt = get_global_otimizer(opt_id)
+            if opt.valiad_restore_file(save_file):
+                run_info = opt.load(save_file)
+                # we should be sure about our X_out and Y_out
+                run_info.X_out = list(run_info.X)
+                run_info.Y_out = list(run_info.Y)
+                # total_X_Y = list(zip(run_info.X, run_info.Y))
+                # total_X_Y = sorted(total_X_Y, key=lambda x: x[1])
+                # run_info.X_out = [x[0] for x in total_X_Y]
+                # run_info.Y_out = [x[1] for x in total_X_Y]
+                return run_info
+        return super(GeneticAlgorithm, self).load(save_file)
+
 
     def _optimize(self, f, variables, X_init, Y_init, maxiter, maxeval,
                   iter_callback):
