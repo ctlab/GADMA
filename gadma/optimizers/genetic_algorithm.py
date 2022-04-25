@@ -89,7 +89,11 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
     :type maximize: bool
     """
 
-    ga_could_be_restored_after = ["SMAC_BO_optimization", "SMAC_BO_combination"]
+    ga_could_be_restored_after = [
+        "SMAC_BO_optimization",
+        "SMAC_BO_combination"
+    ]
+
     def __init__(self, gen_size=10, n_elitism=2,
                  p_mutation=0.3, p_crossover=0.3, p_random=0.2,
                  mut_strength=0.2, const_mut_strength=1.1,
@@ -736,7 +740,6 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                 # run_info.Y_out = [x[1] for x in total_X_Y]
                 return run_info
         return super(GeneticAlgorithm, self).load(save_file)
-
 
     def _optimize(self, f, variables, X_init, Y_init, maxiter, maxeval,
                   iter_callback):
