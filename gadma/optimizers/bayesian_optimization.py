@@ -953,7 +953,7 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
             kernel="Auto", acquisition_type="logEI"
         )
 
-        restored = False
+        kernel1_restored = False
         if self.run_info.kernel1 is None:
             kernel_name1, message1 = choose_kernel_if_needed(
                 optimizer=help_opt,
@@ -966,9 +966,10 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
         else:
             kernel_name1 = self.run_info.kernel1
             message1 = f"Kernel was restored: {kernel_name1}\n"
-            restored = True
+            kernel1_restored = True
         help_opt.kernel_name = self.run_info.kernel1
 
+	kernel2_restored = False
         if self.run_info.kernel2_log is None:
             kernel_name2, message2 = choose_kernel_if_needed(
                 optimizer=help_opt_log,
@@ -981,7 +982,7 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
         else:
             kernel_name2 = self.run_info.kernel2_log
             message2 = f"Kernel was restored: {kernel_name2}\n"
-            restored = True
+            kernel2_restored = True
         help_opt_log.kernel_name = self.run_info.kernel2_log
 
         message = f"For usual Y:\n{message1}For log_transformed Y:\n{message2}"
@@ -1048,11 +1049,8 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
         while self.run_info.result.n_eval < maxeval or \
                 (maxiter is not None and
                  self.run_info.result.n_iter * 4 < maxiter):
+            # we miss some optimizations but the case of restore is special
             do_gp_optim = self.do_gp_optimization()
-            if restored:  # first iteration
-                do_gp_optim = True
-                restored = False
-            message = f"GP was optimized: {do_gp_optim}\n"
 
             total_t_start = time.time()
 
@@ -1071,6 +1069,16 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
             # for mark, gp, acq, acq_opt, rh2epm in combinations:
             X, y = rh2epm.transform(runhistory)
 
+            # If the kernel was restored we should optimize GP
+            # jn the first iteration.
+            if kernel1_restored and kernel_ind == 0:
+                do_gp_optim = True
+                kernel1_restored = False
+            if kernel2_restored and kernel_ind == 1:
+                do_gp_optim = True
+                kernel2_restored = False
+
+            message = f"GP was optimized: {do_gp_optim}\n"
             message += f"Current number of points: {len(X)}"
 
             # If all are not finite then we return nothing
