@@ -513,8 +513,10 @@ class Optimizer(object):
             self.run_info.result.message = str(self.run_info.result.message)
             self.run_info.result.message += "(RESTORED)"
 
-        if self.run_info.result.success:
-            return self.run_info.result
+        # We beleave that optimizer will understand that the run was finished
+        # Otherwise there are problems when we want to run additional x iters
+        # if self.run_info.result.success:
+        #     return self.run_info.result
 
         optimize_kwargs = self.process_optimize_kwargs(f=f_in_opt,
                                                        variables=vars_in_opt,

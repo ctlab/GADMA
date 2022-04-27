@@ -213,6 +213,12 @@ class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         info.result.Y_out = info.result.Y
         super(GPyOptBayesianOptimizer, self).save(info, save_file)
 
+    def load(self, save_file):
+        run_info = super(GPyOptBayesianOptimizer, self).load(save_file)
+        run_info.result.X_out = list(run_info.result.X)
+        run_info.result.Y_out = list(run_info.result.Y)
+        return run_info
+
     def get_model(self, config_space):
         from GPyOpt.models import GPModel
         kernel = self.get_kernel(config_space)
@@ -365,6 +371,12 @@ class SMACSquirrelOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                 not isinstance(run_info.result.n_iter, int)):
             return False
         return True
+
+    def load(self, save_file):
+        run_info = super(SMACSquirrelOptimizer, self).load(save_file)
+        run_info.result.X_out = list(run_info.result.X)
+        run_info.result.Y_out = list(run_info.result.Y)
+        return run_info
 
     def _optimize(self, f, variables, X_init, Y_init, maxiter, maxeval,
                   iter_callback):
@@ -704,6 +716,12 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         run_info.iter_times.append(iter_time)
         return run_info
 
+    def load(self, save_file):
+        run_info = super(SMACBayesianOptimizer, self).load(save_file)
+        run_info.result.X_out = list(run_info.result.X)
+        run_info.result.Y_out = list(run_info.result.Y)
+        return run_info
+
     def _optimize(self, f, variables, X_init, Y_init, maxiter, maxeval,
                   iter_callback):
         maxeval = get_maxeval_for_bo(maxeval, maxiter)
@@ -865,6 +883,8 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
         run_info.acq_opt_times = []
         run_info.eval_times = []
         run_info.iter_times = []
+        run_info.kernel1 = None
+        run_info.kernel2_log = None
         return run_info
 
     def _update_run_info(self, run_info, x_best, y_best, X, Y,
@@ -883,6 +903,12 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
         run_info.acq_opt_times.append(acq_opt_time)
         run_info.eval_times.append(eval_time)
         run_info.iter_times.append(iter_time)
+        return run_info
+
+    def load(self, save_file):
+        run_info = super(SMACBayesianOptimizer, self).load(save_file)
+        run_info.result.X_out = list(run_info.result.X)
+        run_info.result.Y_out = list(run_info.result.Y)
         return run_info
 
     def _create_gp_model(self, config_space, kernel_name):
@@ -927,23 +953,27 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
             kernel="Auto", acquisition_type="logEI"
         )
 
-        kernel_name1, message1 = choose_kernel_if_needed(
-            optimizer=help_opt,
-            variables=variables,
-            X=X_init,
-            Y=Y_init,
-            kernels=self.kernels_to_choose
-        )
-        help_opt.kernel_name = kernel_name1
+        if self.run_info.kernel1 is None:
+            kernel_name1, message1 = choose_kernel_if_needed(
+                optimizer=help_opt,
+                variables=variables,
+                X=X_init,
+                Y=Y_init,
+                kernels=self.kernels_to_choose
+            )
+            self.run_info.kernel1 = kernel_name1
+        help_opt.kernel_name = self.run_info.kernel1
 
-        kernel_name2, message2 = choose_kernel_if_needed(
-            optimizer=help_opt_log,
-            variables=variables,
-            X=X_init,
-            Y=Y_init,
-            kernels=self.kernels_to_choose
-        )
-        help_opt_log.kernel_name = kernel_name2
+        if self.run_info.kernel2_log is None:
+            kernel_name2, message2 = choose_kernel_if_needed(
+                optimizer=help_opt_log,
+                variables=variables,
+                X=X_init,
+                Y=Y_init,
+                kernels=self.kernels_to_choose
+            )
+            self.run_info.kernel2_log = kernel_name2
+        help_opt_log.kernel_name = self.run_info.kernel2_log
 
         message = f"For usual Y:\n{message1}For log_transformed Y:\n{message2}"
 
