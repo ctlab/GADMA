@@ -964,7 +964,7 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
             self.run_info.kernel1 = kernel_name1
         else:
             kernel_name1 = self.run_info.kernel1
-            message1 = "Kernel was restored:"
+            message1 = "Kernel was restored: {kernel_name1}\n"
         help_opt.kernel_name = self.run_info.kernel1
 
         if self.run_info.kernel2_log is None:
@@ -978,7 +978,7 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
             self.run_info.kernel2_log = kernel_name2
         else:
             kernel_name2 = self.run_info.kernel2_log
-            message2 = "Kernel was restored:"
+            message2 = "Kernel was restored:: {kernel_name2}\n"
         help_opt_log.kernel_name = self.run_info.kernel2_log
 
         message = f"For usual Y:\n{message1}For log_transformed Y:\n{message2}"
