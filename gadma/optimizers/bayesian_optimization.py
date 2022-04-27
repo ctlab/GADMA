@@ -931,21 +931,17 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
 
     def do_gp_optimization(self):
         """
-        NOW: always
-
-        OLD OPTION:
         We optimize gp:
         1) every iteration for first 50 iterations
         2) every 5th iteration for next 50 iterations
         3) every 10th iteration for the last iterations
         """
-        return True
-        # n_iter = self.run_info.result.n_iter + 1  # this is correct
-        # if n_iter <= 100:
-        #     return True
-        # if n_iter <= 200:
-        #     return (n_iter % 5) == 0
-        # return (n_iter % 10) == 0
+        n_iter = self.run_info.result.n_iter + 1  # this is correct
+        if n_iter <= 100:
+            return True
+        if n_iter <= 200:
+            return (n_iter % 5) == 0
+        return (n_iter % 10) == 0
 
     def _optimize(self, f, variables, X_init, Y_init, maxiter, maxeval,
                   iter_callback):
@@ -957,6 +953,7 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
             kernel="Auto", acquisition_type="logEI"
         )
 
+        restored = False
         if self.run_info.kernel1 is None:
             kernel_name1, message1 = choose_kernel_if_needed(
                 optimizer=help_opt,
@@ -969,6 +966,7 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
         else:
             kernel_name1 = self.run_info.kernel1
             message1 = f"Kernel was restored: {kernel_name1}\n"
+            restored = True
         help_opt.kernel_name = self.run_info.kernel1
 
         if self.run_info.kernel2_log is None:
@@ -983,6 +981,7 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
         else:
             kernel_name2 = self.run_info.kernel2_log
             message2 = f"Kernel was restored: {kernel_name2}\n"
+            restored = True
         help_opt_log.kernel_name = self.run_info.kernel2_log
 
         message = f"For usual Y:\n{message1}For log_transformed Y:\n{message2}"
@@ -1050,8 +1049,10 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
                 (maxiter is not None and
                  self.run_info.result.n_iter * 4 < maxiter):
             do_gp_optim = self.do_gp_optimization()
+            if restored:  # first iteration
+                do_gp_optim = True
+                restored = False
             message = f"GP was optimized: {do_gp_optim}\n"
-            message += f"Current number of points: {len(self.run_info.result.Y)}"
 
             total_t_start = time.time()
 
@@ -1069,6 +1070,8 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
             mark, gp, acq, acq_opt, rh2epm = combinations[kernel_ind]
             # for mark, gp, acq, acq_opt, rh2epm in combinations:
             X, y = rh2epm.transform(runhistory)
+
+            message += f"Current number of points: {len(X)}"
 
             # If all are not finite then we return nothing
             if np.all(~np.isfinite(y)):
