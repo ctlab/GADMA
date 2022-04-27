@@ -906,7 +906,7 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
         return run_info
 
     def load(self, save_file):
-        run_info = super(SMACBayesianOptimizer, self).load(save_file)
+        run_info = super(SMACBOKernelCombination, self).load(save_file)
         run_info.result.X_out = list(run_info.result.X)
         run_info.result.Y_out = list(run_info.result.Y)
         return run_info
