@@ -939,7 +939,7 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
         2) every 5th iteration for next 50 iterations
         3) every 10th iteration for the last iterations
         """
-	return True
+        return True
         # n_iter = self.run_info.result.n_iter + 1  # this is correct
         # if n_iter <= 100:
         #     return True
