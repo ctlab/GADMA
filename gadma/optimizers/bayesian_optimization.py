@@ -931,17 +931,21 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
 
     def do_gp_optimization(self):
         """
+        NOW: always
+
+        OLD OPTION:
         We optimize gp:
         1) every iteration for first 50 iterations
         2) every 5th iteration for next 50 iterations
         3) every 10th iteration for the last iterations
         """
-        n_iter = self.run_info.result.n_iter + 1  # this is correct
-        if n_iter <= 100:
-            return True
-        if n_iter <= 200:
-            return (n_iter % 5) == 0
-        return (n_iter % 10) == 0
+	return True
+        # n_iter = self.run_info.result.n_iter + 1  # this is correct
+        # if n_iter <= 100:
+        #     return True
+        # if n_iter <= 200:
+        #     return (n_iter % 5) == 0
+        # return (n_iter % 10) == 0
 
     def _optimize(self, f, variables, X_init, Y_init, maxiter, maxeval,
                   iter_callback):
@@ -1046,7 +1050,8 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
                 (maxiter is not None and
                  self.run_info.result.n_iter * 4 < maxiter):
             do_gp_optim = self.do_gp_optimization()
-            message = f"GP was optimized: {do_gp_optim}"
+            message = f"GP was optimized: {do_gp_optim}\n"
+            message += "Current number of points: {len(self.run_info.result.Y)}"
 
             total_t_start = time.time()
 
