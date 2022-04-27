@@ -969,7 +969,7 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
             kernel1_restored = True
         help_opt.kernel_name = self.run_info.kernel1
 
-	kernel2_restored = False
+        kernel2_restored = False
         if self.run_info.kernel2_log is None:
             kernel_name2, message2 = choose_kernel_if_needed(
                 optimizer=help_opt_log,
