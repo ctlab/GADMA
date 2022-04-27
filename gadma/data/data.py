@@ -47,7 +47,8 @@ class SFSDataHolder(DataHolder):
 
     """
     def __init__(self, sfs_file, projections=None, outgroup=None,
-                 population_labels=None, sequence_length=None):
+                 population_labels=None, sequence_length=None,
+                 non_ascertained_pops=None):
         super(SFSDataHolder, self).__init__(
             filename=sfs_file,
             projections=projections,
@@ -55,6 +56,8 @@ class SFSDataHolder(DataHolder):
             population_labels=population_labels,
             sequence_length=sequence_length
         )
+        # special attribute for momi engine
+        self.non_ascertained_pops = non_ascertained_pops
 
 
 class VCFDataHolder(DataHolder):

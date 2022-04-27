@@ -50,9 +50,9 @@ class MomiEngine(Engine):
     def _read_data(cls, data_holder):
         momi = cls.base_module
         if isinstance(data_holder, SFSDataHolder):
-            if data_holder.filename.endswith("fs"):
+            if data_holder.filename.endswith(".fs"):
                 data = momi.sfs_from_dadi(data_holder.filename)
-            else:
+            elif data_holder.filename.endswith(".txt"):
                 if not dadi_available and not moments_available:
                     raise ValueError(
                         "Dadi or moments engine is required for reading SFS "
@@ -71,6 +71,12 @@ class MomiEngine(Engine):
                         f"Failed to read given file {data_holder.filename} "
                         f"using {engine.id} engine."
                     ) from e
+            elif data_holder.filename.endswith(".gz"):
+                data = momi.Sfs.load(data_holder.filename)
+            else:
+                raise SyntaxError(
+                    "Input data filename extension is neither .fs (.sfs) or "
+                    ".txt or .gz.")
         elif isinstance(data_holder, VCFDataHolder):
             projections, populations = check_and_return_projections_and_labels(
                 data_holder=data_holder,
@@ -227,6 +233,9 @@ class MomiEngine(Engine):
         if (self.data_holder is not None and
                 self.data_holder.sequence_length is not None):
             kwargs['length'] = self.data_holder.sequence_length
+        if self.data_holder.non_ascertained_pops is not None:
+            pop_list = self.data_holder.non_ascertained_pops
+            kwargs['non_ascertained_pops'] = pop_list
         # else:
         #     assert self.inner_data.length is None, ("Please set data holder"
         #                                             " with sequence_length")

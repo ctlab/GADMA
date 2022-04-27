@@ -225,7 +225,7 @@ class SettingsStorage(object):
         data_holder_attrs = ['projections', 'outgroup',
                              'population_labels', 'sequence_length',
                              "preprocessed_data", "recombination_maps",
-                             'bed_files_dir']
+                             'bed_files_dir', 'non_ascertained_pops']
         bounds_attrs = ['min_n', 'max_n', 'min_t', 'max_t', 'min_m', 'max_m',
                         'dynamics']
         bounds_lists = ['lower_bound', 'upper_bound', 'parameter_identifiers']
@@ -501,7 +501,8 @@ class SettingsStorage(object):
                     projections=self.projections,
                     outgroup=self.outgroup,
                     population_labels=self.population_labels,
-                    sequence_length=self.sequence_length
+                    sequence_length=self.sequence_length,
+                    non_ascertained_pops=self.non_ascertained_pops,
                 )
             super(SettingsStorage, self).__setattr__('data_holder',
                                                      data_holder)

@@ -214,7 +214,12 @@ def print_main_part(engine, values, nanc):
     length = engine.data_holder.get_total_sequence_length()
     assert length is not None, "Sequence length is required"
 
-    ret_str += f"model.set_data(data, length={length})\n"
+    add_kwargs=""
+    if engine.data_holder.non_ascertained_pops is not None:
+        pop_list = ", ".join(engine.data_holder.non_ascertained_pops)
+        add_kwargs = ", non_ascertained_pops=[{pop_list}]"
+
+    ret_str += f"model.set_data(data, length={length}{add_kwargs})\n"
     ret_str += "ll_model = model.log_likelihood()\n"
     ret_str += "print(f'Value of log-likelihood: {ll_model}')"
     return ret_str

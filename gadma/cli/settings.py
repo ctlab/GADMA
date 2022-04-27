@@ -17,6 +17,7 @@ sequence_length = None
 linked_snp_s = True
 directory_with_bootstrap = None
 bed_files_dir = None
+non_ascertained_pops = None  # special for momi
 # boots = None
 
 # Pipeline
