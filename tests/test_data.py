@@ -304,7 +304,7 @@ class TestDataHolder(unittest.TestCase):
     @pytest.mark.timeout(0)
     def test_vcf_data_reading(self):
         for engine in all_engines():
-            if engine.id != "momentsLD":
+            if engine.id not in ("momentsLD", "fsc2"):
                 self._test_vcf_reading(engine.id)
 
     @unittest.skipIf(DADI_NOT_AVAILABLE, "Dadi module is not installed")
@@ -402,7 +402,7 @@ def test_fsc_reading():
                     continue
 
             fsc_data = engine.read_data(fsc_data_holder)
-            vcf_data = engine.read_data(vcf_data_holder)
+            vcf_data = engine.read_data(vcf_data_holder) if engine.id != "fsc2" else np.empty(1)
 
             debug = False
             if debug:
@@ -429,8 +429,9 @@ def test_fsc_reading():
                 delta = np.sum(np.abs(fsc_data - vcf_data))
                 assert delta <= 4, "difference between SFSs is larger than expected"
 
-            assert fsc_data.folded == vcf_data.folded, \
-                    test.file + ": folded did not match"
+            if engine.id != 'fsc2':
+                assert fsc_data.folded == vcf_data.folded, \
+                        test.file + ": folded did not match"
 
         # test the case with multiple observations per file
         multiple = SFSDataHolder(
