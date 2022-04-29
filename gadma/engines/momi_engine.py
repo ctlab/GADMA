@@ -230,12 +230,14 @@ class MomiEngine(Engine):
         momi_model = self.get_momi_model(values)
 
         kwargs = {}
-        if (self.data_holder is not None and
-                self.data_holder.sequence_length is not None):
-            kwargs['length'] = self.data_holder.sequence_length
-        if self.data_holder.non_ascertained_pops is not None:
-            pop_list = self.data_holder.non_ascertained_pops
-            kwargs['non_ascertained_pops'] = pop_list
+        data_holder_exists = self.data_holder is not None
+        if dataholder_exists:
+            if self.data_holder.sequence_length is not None):
+                kwargs['length'] = self.data_holder.sequence_length
+            sfs_data = isinstance(self.data_holder, SFSDataHolder)
+            if sfs_data and self.data_holder.non_ascertained_pops is not None:
+                pop_list = self.data_holder.non_ascertained_pops
+                kwargs['non_ascertained_pops'] = pop_list
         # else:
         #     assert self.inner_data.length is None, ("Please set data holder"
         #                                             " with sequence_length")

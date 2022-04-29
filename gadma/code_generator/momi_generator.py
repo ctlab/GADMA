@@ -214,7 +214,7 @@ def print_main_part(engine, values, nanc):
     length = engine.data_holder.get_total_sequence_length()
     assert length is not None, "Sequence length is required"
 
-    add_kwargs=""
+    add_kwargs = ""
     if engine.data_holder.non_ascertained_pops is not None:
         pop_list = ", ".join(engine.data_holder.non_ascertained_pops)
         add_kwargs = ", non_ascertained_pops=[{pop_list}]"
