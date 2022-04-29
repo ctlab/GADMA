@@ -792,12 +792,14 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             X, y = rh2epm.transform(runhistory)
 
             # If all are not finite then we return nothing
-            if np.all(~np.isfinite(y)):
+            if np.all(np.isinf(y)):
+                message = "All fitness function values are infinite."
+                self.run_info.result.message = message
                 return self.run_info.result
 
             # Safeguard, just in case...
-            if np.any(~np.isfinite(y)):
-                y[~np.isfinite(y)] = np.max(y[np.isfinite(y)])
+            if np.any(np.isinf(y)):
+                y[np.isinf(y)] = np.max(y[np.isfinite(y)])
 
             t_start = time.time()
             model.train(X, y)
@@ -1082,12 +1084,14 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
             message += f"Current number of points: {len(X)}"
 
             # If all are not finite then we return nothing
-            if np.all(~np.isfinite(y)):
+            if np.all(np.isinf(y)):
+                message = "All fitness function values are infinite."
+                self.run_info.result.message = message
                 return self.run_info.result
 
             # Safeguard, just in case...
-            if np.any(~np.isfinite(y)):
-                y[~np.isfinite(y)] = np.max(y[np.isfinite(y)])
+            if np.any(np.isinf(y)):
+                y[np.isinf(y)] = np.max(y[np.isfinite(y)])
 
             t_start = time.time()
             gp.train(X, y, optimize=do_gp_optim)
