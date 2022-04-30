@@ -799,7 +799,7 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
 
             # Safeguard, just in case...
             if np.any(np.isinf(y)):
-                y[np.isinf(y)] = np.max(y[np.isfinite(y)])
+                y[np.isinf(y)] = np.max(y[not _x for _x in np.isinf(y)])
 
             t_start = time.time()
             model.train(X, y)
@@ -1091,7 +1091,7 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
 
             # Safeguard, just in case...
             if np.any(np.isinf(y)):
-                y[np.isinf(y)] = np.max(y[np.isfinite(y)])
+                y[np.isinf(y)] = np.max(y[not _x for _x in np.isinf(y)])
 
             t_start = time.time()
             gp.train(X, y, optimize=do_gp_optim)
