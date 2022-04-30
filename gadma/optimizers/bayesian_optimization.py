@@ -722,6 +722,16 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         run_info.result.Y_out = list(run_info.result.Y)
         return run_info
 
+    def valid_restore_file(self, save_file):
+        try:
+            run_info = self.load(save_file)
+        except Exception:
+            return False
+        if (not isinstance(run_info.result.n_eval, int) or
+                not isinstance(run_info.result.n_iter, int)):
+            return False
+        return True
+
     def _optimize(self, f, variables, X_init, Y_init, maxiter, maxeval,
                   iter_callback):
         maxeval = get_maxeval_for_bo(maxeval, maxiter)
@@ -792,14 +802,15 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             X, y = rh2epm.transform(runhistory)
 
             # If all are not finite then we return nothing
-            if np.all(np.isinf(y)):
+            is_bad = np.array([not _x for _x in np.isfinite(y)])
+            if np.all(is_bad):
                 message = "All fitness function values are infinite."
                 self.run_info.result.message = message
                 return self.run_info.result
 
             # Safeguard, just in case...
-            if np.any(np.isinf(y)):
-                y[np.isinf(y)] = np.max(y[not _x for _x in np.isinf(y)])
+            if np.any(is_bad):
+                y[is_bad] = np.max(y[np.isfinite(y)])
 
             t_start = time.time()
             model.train(X, y)
@@ -912,6 +923,16 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
         run_info.result.X_out = list(run_info.result.X)
         run_info.result.Y_out = list(run_info.result.Y)
         return run_info
+
+    def valid_restore_file(self, save_file):
+        try:
+            run_info = self.load(save_file)
+        except Exception:
+            return False
+        if (not isinstance(run_info.result.n_eval, int) or
+                not isinstance(run_info.result.n_iter, int)):
+            return False
+        return True
 
     def _create_gp_model(self, config_space, kernel_name):
         opt = SMACBayesianOptimizer(kernel=kernel_name)
@@ -1084,14 +1105,15 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
             message += f"Current number of points: {len(X)}"
 
             # If all are not finite then we return nothing
-            if np.all(np.isinf(y)):
+            is_bad = np.array([not _x for _x in np.isfinite(y)])
+            if np.all(is_bad):
                 message = "All fitness function values are infinite."
                 self.run_info.result.message = message
                 return self.run_info.result
 
             # Safeguard, just in case...
-            if np.any(np.isinf(y)):
-                y[np.isinf(y)] = np.max(y[not _x for _x in np.isinf(y)])
+            if np.any(is_bad):
+                y[is_bad] = np.max(y[np.isfinite(y)])
 
             t_start = time.time()
             gp.train(X, y, optimize=do_gp_optim)

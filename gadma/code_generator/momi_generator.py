@@ -215,7 +215,8 @@ def print_main_part(engine, values, nanc):
     assert length is not None, "Sequence length is required"
 
     add_kwargs = ""
-    if engine.data_holder.non_ascertained_pops is not None:
+    sfs_data = isinstance(engine.data_holder, SFSDataHolder)
+    if sfs_data and engine.data_holder.non_ascertained_pops is not None:
         pop_list = ", ".join(engine.data_holder.non_ascertained_pops)
         add_kwargs = ", non_ascertained_pops=[{pop_list}]"
 

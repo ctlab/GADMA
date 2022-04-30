@@ -52,7 +52,8 @@ class MomiEngine(Engine):
         if isinstance(data_holder, SFSDataHolder):
             if data_holder.filename.endswith(".fs"):
                 data = momi.sfs_from_dadi(data_holder.filename)
-            elif data_holder.filename.endswith(".txt"):
+            elif (data_holder.filename.endswith(".txt") or
+                    data_holder.filename.endswith(".obs")):
                 if not dadi_available and not moments_available:
                     raise ValueError(
                         "Dadi or moments engine is required for reading SFS "
@@ -76,7 +77,7 @@ class MomiEngine(Engine):
             else:
                 raise SyntaxError(
                     "Input data filename extension is neither .fs (.sfs) or "
-                    ".txt or .gz.")
+                    ".txt or .obs or .gz.")
         elif isinstance(data_holder, VCFDataHolder):
             projections, populations = check_and_return_projections_and_labels(
                 data_holder=data_holder,
@@ -231,8 +232,8 @@ class MomiEngine(Engine):
 
         kwargs = {}
         data_holder_exists = self.data_holder is not None
-        if dataholder_exists:
-            if self.data_holder.sequence_length is not None):
+        if data_holder_exists:
+            if self.data_holder.sequence_length is not None:
                 kwargs['length'] = self.data_holder.sequence_length
             sfs_data = isinstance(self.data_holder, SFSDataHolder)
             if sfs_data and self.data_holder.non_ascertained_pops is not None:

@@ -88,10 +88,11 @@ class MomentsLdEngine(Engine):
     r_bins = np.array(
         [0, 1e-6, 2e-6, 5e-6, 1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3]
     )
+    bp_bins = np.array([ii for ii in range(0, 8275250, 1655050)])
     kwargs = {
-        "r_bins": r_bins,
+        "r_bins": None,
         "report": False,
-        "bp_bins": np.array([ii for ii in range(0, 8275250, 1655050)]),
+        "bp_bins": None,
         "use_genotypes": True,
         "cM": True
     }
@@ -156,6 +157,17 @@ class MomentsLdEngine(Engine):
                         f"{prefix}_{chrom}.{extension}"
                     )
                     parsing_kwargs["map_name"] = chrom
+                # Check for r_bins
+                if parsing_kwargs["r_bins"] is None:
+                    parsing_kwargs["r_bins"] = cls.r_bins
+                parsing_kwargs["bp_bins"] = None
+            else:
+                # We should check that bp_bins are set correctly
+                # bp stands for base pair
+                # For future if we find out the best way to set bp_bins
+                # that values were from Stas
+                parsing_kwargs["bp_bins"] = cls.bp_bins
+                parsing_kwargs["r_bins"] = None
             reg_num += 1
             all_kwargs.append([str(reg_num-1), parsing_kwargs])
 
@@ -236,8 +248,10 @@ class MomentsLdEngine(Engine):
         :type values: list or dict
         """
         var2value = self.model.var2value(values)
-
-        self.r_bins = self.get_kwargs()["r_bins"]
+        kwargs = self.get_kwargs()
+        r_bins = self.r_bins
+        if kwargs["r_bins"] is not None:
+            r_bins = kwargs["r_bins"]
         if isinstance(self.model, CustomDemographicModel):
             if self.model.fixed_anc_size:
                 Nref = self.model.fixed_anc_size
@@ -248,7 +262,7 @@ class MomentsLdEngine(Engine):
                     if value.name == "Nanc":
                         Nref = values_list[num]
                         values_list.pop(num)
-            rhos = 4 * Nref * np.array(self.r_bins)
+            rhos = 4 * Nref * np.array(r_bins)
             theta = 4 * Nref * self.model.mutation_rate
             ld_stats = self.model.function(values_list, rhos, theta)
             model = moments.LD.LDstats(
@@ -263,7 +277,7 @@ class MomentsLdEngine(Engine):
 
         Nref = self.model.get_value_from_var2value(
             var2value, self.model.Nanc_size)
-        rhos = 4 * Nref * np.array(self.r_bins)
+        rhos = 4 * Nref * np.array(r_bins)
         theta = 4 * Nref * self.model.mutation_rate
 
         ld = moments.LD.Numerics.steady_state(rho=rhos, theta=theta)

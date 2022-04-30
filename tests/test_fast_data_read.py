@@ -8,6 +8,7 @@ import unittest
 import moments.LD
 import numpy as np
 from os import listdir
+import copy
 from pathlib import Path
 import gadma
 from gadma.data.data import VCFDataHolder
@@ -40,7 +41,7 @@ BED_FILES_DIR = os.path.join(
 
 if gadma.moments_LD_available:
     engine = get_engine('momentsLD')
-    kwargs = engine.kwargs
+    kwargs = engine.get_kwargs()
 
     REG_NUM = 1
     PARSING_KWARGS = {
@@ -75,9 +76,15 @@ class TestFastDataRead(unittest.TestCase):
 
     @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_read_data_without_rec_map_function(self):
-        PARSING_KWARGS["rec_map_file"] = None
+        KWARGS = copy.deepcopy(PARSING_KWARGS)
+        KWARGS["rec_map_file"] = None
+        KWARGS["bp_bins"] = engine.bp_bins
+
+        ld_kwargs = copy.deepcopy(kwargs)
+        ld_kwargs["bp_bins"] = engine.bp_bins
+
         read_function_results = _read_data_one_job(
-            [REG_NUM, PARSING_KWARGS]
+            [REG_NUM, KWARGS]
         )['1']
 
         results = moments.LD.Parsing.compute_ld_statistics(
@@ -86,7 +93,7 @@ class TestFastDataRead(unittest.TestCase):
             bed_file=TEST_BED_FILE,
             pops=['deme0', 'deme1'],
             chromosome="1",
-            **kwargs
+            **ld_kwargs
         )
 
         self.assertEqual(
@@ -103,9 +110,14 @@ class TestFastDataRead(unittest.TestCase):
 
     @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_read_data_function(self):
-        PARSING_KWARGS["rec_map_file"] = REC_MAP
+        KWARGS = copy.deepcopy(PARSING_KWARGS)
+        KWARGS["rec_map_file"] = REC_MAP
+        KWARGS["r_bins"] = engine.r_bins
 
-        read_function_results = _read_data_one_job([REG_NUM, PARSING_KWARGS])['1']
+        ld_kwargs = copy.deepcopy(kwargs)
+        ld_kwargs["r_bins"] = engine.r_bins
+
+        read_function_results = _read_data_one_job([REG_NUM, KWARGS])['1']
 
         results = moments.LD.Parsing.compute_ld_statistics(
             vcf_file=VCF_DATA_LD,
@@ -114,7 +126,7 @@ class TestFastDataRead(unittest.TestCase):
             pops=['deme0', 'deme1'],
             rec_map_file=REC_MAP,
             chromosome="1",
-            **kwargs
+            **ld_kwargs
         )
         self.assertTrue(isinstance(results, dict))
         self.assertEqual(
@@ -131,10 +143,15 @@ class TestFastDataRead(unittest.TestCase):
 
     @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_read_data_rec_maps_in_one_file_function(self):
-        PARSING_KWARGS["rec_map_file"] = FEW_REC_MAPS
+        KWARGS = copy.copy(PARSING_KWARGS)
+        KWARGS["rec_map_file"] = FEW_REC_MAPS
+        KWARGS["r_bins"] = engine.r_bins
+
+        ld_kwargs = copy.copy(kwargs)
+        ld_kwargs["r_bins"] = engine.r_bins
 
         read_function_results = _read_data_one_job(
-            [REG_NUM, PARSING_KWARGS]
+            [REG_NUM, KWARGS]
         )['1']
 
         results = moments.LD.Parsing.compute_ld_statistics(
@@ -145,7 +162,7 @@ class TestFastDataRead(unittest.TestCase):
             pops=['deme0', 'deme1'],
             chromosome="1",
             map_name="1",
-            **kwargs
+            **ld_kwargs
         )
 
         self.assertEqual(

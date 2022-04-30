@@ -734,10 +734,6 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                 # we should be sure about our X_out and Y_out
                 run_info.result.X_out = list(run_info.result.X)
                 run_info.result.Y_out = list(run_info.result.Y)
-                # total_X_Y = list(zip(run_info.X, run_info.Y))
-                # total_X_Y = sorted(total_X_Y, key=lambda x: x[1])
-                # run_info.X_out = [x[0] for x in total_X_Y]
-                # run_info.Y_out = [x[1] for x in total_X_Y]
                 return run_info
         return super(GeneticAlgorithm, self).load(save_file)
 

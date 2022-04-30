@@ -188,6 +188,9 @@ def _print_momentsLD_load_data(engine, data_holder):
     rec_maps = data_holder.recombination_maps
     pops = data_holder.population_labels
     if rec_maps is not None:
+        if kwargs["r_bins"] is None:
+            kwargs["r_bins"] = engine.r_bins
+        kwargs["bp_bins"] = None
         if len(listdir(rec_maps)) == len(chromosomes):
             rec_map, extension = extract_rec_map_name_and_extension(
                 listdir(rec_maps)[0]
@@ -197,10 +200,17 @@ def _print_momentsLD_load_data(engine, data_holder):
         else:
             rec_map = listdir(rec_maps)[0]
             ret_str += f"rec_map = \"{rec_map}\"\n"
+    else:
+        if kwargs["bp_bins"] is None:
+            kwargs["r_bins"] = engine.bp_bins
+        kwargs["r_bins"] = None
+
     ret_str += "kwargs = {\n"
-    ret_str += f"    \"r_bins\": {[ii for ii in kwargs['r_bins']]},\n"
+    if kwargs["r_bins"] is not None:
+        ret_str += f"    \"r_bins\": {[ii for ii in kwargs['r_bins']]},\n"
     ret_str += f"    \"report\": {kwargs['report']},\n"
-    ret_str += f"    \"bp_bins\": {[ii for ii in kwargs['bp_bins']]},\n"
+    if kwargs["bp_bins"] is not None:
+        ret_str += f"    \"bp_bins\": {[ii for ii in kwargs['bp_bins']]},\n"
     ret_str += f"    \"use_genotypes\": {kwargs['use_genotypes']},\n"
     ret_str += f"    \"cM\": {kwargs['cM']},\n"
     ret_str += "}\n"
@@ -255,6 +265,8 @@ def _print_momentsLD_load_data(engine, data_holder):
 def _print_momentsLD_simulation(engine, nanc):
     ret_str = ""
     r_bins = engine.get_kwargs()['r_bins']
+    if r_bins is None:
+        r_bins = engine.r_bins
     if nanc is not None:
         ret_str += f"Nanc = {nanc}\n"
     ret_str += f"r_bins = {[ii for ii in r_bins]}\n"
@@ -275,6 +287,8 @@ def _print_momentsLD_simulation(engine, nanc):
 
 def _print_LdCurves(engine):
     r_bins = engine.get_kwargs()["r_bins"]
+    if r_bins is None:
+        r_bins = engine.r_bins
     ret_str = "stats_to_plot = [\n"
     ret_str += "    [name] for name in model.names()[:-1][0] " \
                "if name != 'pi2_0_0_0_0'\n"

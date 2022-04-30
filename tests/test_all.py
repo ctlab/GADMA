@@ -95,6 +95,7 @@ class TestRestore(unittest.TestCase):
 
     def test_ls_restore(self):
         for opt in all_local_optimizers():
+            print(opt.id)
             def f(x):
                 y = rosenbrock(x)
                 return y

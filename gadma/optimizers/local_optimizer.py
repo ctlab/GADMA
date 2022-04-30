@@ -229,6 +229,10 @@ class ScipyOptimizer(LocalOptimizer, ContinuousOptimizer):
         y = f(x0)
         iter_callback(x0, y, [x0], [y])
 
+        # in case of restore something can be already done
+        if self.run_info.result.success:
+            return self.run_info
+
         if maxiter == 0 or maxeval == 0:
             self.run_info.result.success = True
             self.run_info.result.status = 0
@@ -375,6 +379,9 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
 
     def _optimize(self, f, variables, x0, options,
                   maxiter, maxeval, iter_callback):
+        # in case of restore something can be already done
+        if self.run_info.result.success:
+            return self.run_info
         vars_in_opt = copy.deepcopy(variables)
         if isinstance(self.optimizer, UnconstrainedOptimizer):
             for i in range(len(vars_in_opt)):
