@@ -385,6 +385,46 @@ class TestGeneticAlg(unittest.TestCase):
             with open(output_file, 'wb') as f:
                 pickle.dump(run_info, f)
             self.assertEqual(ga.valid_restore_file(output_file), True)
+
+            # additional tests when GA is restored from BO
+            bo = get_global_optimizer("SMAC_BO_combination")
+            bo_run_info = bo._create_run_info()
+            bo_run_info.result.n_iter = 100
+
+            # if we save solid run_info ga should fail to restore it
+            with open(output_file, 'wb') as f:
+                pickle.dump(bo_run_info, f)
+            self.assertEqual(ga.valid_restore_file(output_file), False)
+
+            # if we make a dict with opt names it should work
+            dict_bo_run_info = {bo.id: bo_run_info}
+            with open(output_file, 'wb') as f:
+                pickle.dump(dict_bo_run_info, f)
+            self.assertEqual(ga.valid_restore_file(output_file), True)
+
+            # if we broke this run_info
+            bad_dict_bo_run_info = copy.deepcopy(dict_bo_run_info)
+            bad_dict_bo_run_info[bo.id].result.n_iter = "some"
+            with open(output_file, 'wb') as f:
+                pickle.dump(bad_dict_bo_run_info, f)
+            self.assertEqual(ga.valid_restore_file(output_file), False)
+
+            # but if there will be a run_info from GA it will be restored
+            dict_run_info = copy.deepcopy(dict_bo_run_info)
+            dict_run_info[ga.id] = run_info
+            with open(output_file, 'wb') as f:
+                pickle.dump(dict_run_info, f)
+            self.assertEqual(ga.valid_restore_file(output_file), True)
+
+            # and the last not obvious thing
+            # if there is valid BO run info and broken run info for GA
+            # the result will be FALSE
+            bad_dict_run_info = copy.deepcopy(dict_run_info)
+            bad_dict_run_info[ga.id].result.n_iter = "some"
+            with open(output_file, 'wb') as f:
+                pickle.dump(bad_dict_run_info, f)
+            self.assertEqual(ga.valid_restore_file(output_file), False)
+
         finally:
             os.remove(output_file)
 

@@ -5,7 +5,7 @@ from ..utils import sort_by_other_list, choose_by_weight
 from ..utils import trunc_normal_3_sigma_rule, DiscreteVariable,\
                     WeightedMetaArray, get_correct_dtype
 from ..utils import update_by_one_fifth_rule
-
+import pickle
 import numpy as np
 import copy
 import time
@@ -90,7 +90,6 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
     """
 
     ga_could_be_restored_after = [
-        "SMAC_BO_optimization",
         "SMAC_BO_combination"
     ]
 
@@ -706,15 +705,31 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
     def valid_restore_file(self, save_file):
         """
         Returns True if save_file contains valid run_info and False otherwise.
+        GA could be restured from Bayesian optimization if save file contains
+        specifications about BO name.
         """
         try:
             run_info = self.load(save_file)
         except Exception:
             return False
-        for opt_id in self.ga_could_be_restored_after:
-            opt = get_global_optimizer(opt_id)
-            if opt.valid_restore_file(save_file):
-                return True
+        # we check if there was BO before in save_file
+        with open(save_file, "rb") as fl:
+            restored = pickle.load(fl)
+        if isinstance(restored, dict):
+            # if there was GA then we should reconstruct it
+            if self.id not in restored:
+                # if not then try to find bo
+                for opt_id in restored:
+                    if opt_id in self.ga_could_be_restored_after:
+                        opt = get_global_optimizer(opt_id)
+                        if opt.valid_restore_file(save_file):
+                            return True
+        # otherwise usuall check
+        if (not hasattr(run_info, "n_impr_gen") or
+                not hasattr(run_info, "cur_mut_rate") or
+                not hasattr(run_info, "cur_mut_strength") or
+                not hasattr(run_info, "gen_times")):
+            return False
         if (not isinstance(run_info.result.n_eval, int) or
                 not isinstance(run_info.result.n_iter, int) or
                 not isinstance(run_info.n_impr_gen, int)):
@@ -727,14 +742,21 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         return True
 
     def load(self, save_file):
-        for opt_id in self.ga_could_be_restored_after:
-            opt = get_global_optimizer(opt_id)
-            if opt.valid_restore_file(save_file):
-                run_info = opt.load(save_file)
-                # we should be sure about our X_out and Y_out
-                run_info.result.X_out = list(run_info.result.X)
-                run_info.result.Y_out = list(run_info.result.Y)
-                return run_info
+        with open(save_file, "rb") as fl:
+            restored = pickle.load(fl)
+        if isinstance(restored, dict):
+            # if there was GA then we should reconstruct it
+            if self.id not in restored:
+                # if not then try to find bo
+                for opt_id in restored:
+                    if opt_id in self.ga_could_be_restored_after:
+                        opt = get_global_optimizer(opt_id)
+                        if opt.valid_restore_file(save_file):
+                            run_info = opt.load(save_file)
+                            # we should be sure about our X_out and Y_out
+                            run_info.result.X_out = list(run_info.result.X)
+                            run_info.result.Y_out = list(run_info.result.Y)
+                            return run_info
         return super(GeneticAlgorithm, self).load(save_file)
 
     def _optimize(self, f, variables, X_init, Y_init, maxiter, maxeval,
