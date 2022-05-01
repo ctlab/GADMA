@@ -387,7 +387,10 @@ class TestGeneticAlg(unittest.TestCase):
             self.assertEqual(ga.valid_restore_file(output_file), True)
 
             # additional tests when GA is restored from BO
-            bo = get_global_optimizer("SMAC_BO_combination")
+            try:
+                bo = get_global_optimizer("SMAC_BO_combination")
+            except ValueError:  # Smac is not available
+                return
             bo_run_info = bo._create_run_info()
             bo_run_info.result.n_iter = 100
 
