@@ -1167,6 +1167,8 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
                 y_best = cost
 
             for config, cost in iter_configs:
+                if not np.isfinite(cost):
+                    cost = np.max(y)
                 add_to_runhistory(config, cost)
 
             total_iter_time = time.time() - total_t_start
