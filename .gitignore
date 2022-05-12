@@ -45,3 +45,8 @@ gadma/version.py
 build/*
 gadma.egg-info/*
 dist/*
+/.idea/workspace.xml
+
+# GitEye files
+/.project
+/Test Results - pytest_for_tests.html
