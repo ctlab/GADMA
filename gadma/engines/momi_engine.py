@@ -234,7 +234,7 @@ class MomiEngine(Engine):
         data_holder_exists = self.data_holder is not None
         if data_holder_exists:
             if self.data_holder.sequence_length is not None:
-                kwargs['length'] = self.data_holder.sequence_length
+                kwargs['length'] = self.data_holder.get_total_sequence_length()
             sfs_data = isinstance(self.data_holder, SFSDataHolder)
             if sfs_data and self.data_holder.non_ascertained_pops is not None:
                 pop_list = self.data_holder.non_ascertained_pops
