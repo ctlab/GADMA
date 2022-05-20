@@ -18,6 +18,7 @@ class DadiEngine(DadiOrMomentsEngine):
     """
 
     id = 'dadi'  #:
+    extrapolation = "make_extrap_log_func"  #:
     if dadi_available:
         import dadi as base_module
         inner_data_type = base_module.Spectrum  #:
@@ -155,7 +156,8 @@ class DadiEngine(DadiOrMomentsEngine):
         :param ns: sample sizes of the simulated SFS.
         """
         dadi = self.base_module
-        func_ex = dadi.Numerics.make_extrap_log_func(self._inner_func)
+        extrap_func = getattr(dadi.Numerics, self.extrapolation)
+        func_ex = extrap_func(self._inner_func)
         # print(values, ns, pts)
         model = func_ex(values, ns, pts)
         if population_labels is not None:

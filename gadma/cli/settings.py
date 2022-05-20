@@ -26,6 +26,7 @@ time_for_generation = None
 # multinom = None
 only_sudden = False
 pts = None
+dadi_extrapolation = "make_extrap_log_func"
 if moments_available:
     engine = 'moments'
 elif dadi_available:

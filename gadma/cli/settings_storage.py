@@ -6,6 +6,7 @@ from .. import demes_available, momi_available
 from ..data import SFSDataHolder, \
     VCFDataHolder, check_and_return_projections_and_labels
 from ..engines import get_engine, MomentsEngine, MomentsLdEngine
+from ..engines import DadiEngine
 from ..engines import all_engines, all_drawing_engines
 from ..models import StructureDemographicModel, CustomDemographicModel
 from ..optimizers import get_local_optimizer, get_global_optimizer
@@ -236,7 +237,8 @@ class SettingsStorage(object):
                         'dadi_available', 'moments_available',
                         'model_plot_engine', 'demes_available',
                         'demesdraw_available',
-                        'kernel', 'acquisition_function', 'sequence_length']
+                        'kernel', 'acquisition_function', 'sequence_length',
+                        'dadi_extrapolation']
         dict_attrs = ['ld_kwargs']
 
         super_hasattr = True
@@ -536,6 +538,12 @@ class SettingsStorage(object):
                 warnings.warn(f"Engine {self.engine} does not need pts (for "
                               "dadi only). It will be used only for generated"
                               " code for dadi if any.")
+        elif name == 'dadi_extrapolation':
+            pos_values = ["make_extrap_log_func", "make_extrap_func"]
+            if value not in pos_values:
+                raise ValueError(f"Setting {name} could have one of the "
+                                 f"following values: {pos_values}.")
+            DadiEngine.extrapolation = value
         # 3.6 If we set number of populations, we can now check if length of
         # setted attributes are correct. We have already checked that they are
         # equal between each other
