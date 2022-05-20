@@ -148,7 +148,7 @@ class DadiOrMomentsEngine(Engine):
                 self.data_holder is not None and
                 self.data_holder.sequence_length is not None):
             theta0 = 4 * self.model.mutation_rate *\
-                     self.data_holder.sequence_length
+                     self.data_holder.get_total_sequence_length()
         else:
             return None
         return theta / theta0
