@@ -504,7 +504,7 @@ def get_claic_score(engine, x0, boots, eps=1e-5,
     """
     if log_likelihood is None:
         log_likelihood = engine.evaluate(x0, *args)
-    eps = max(eps, 1e-2)
+    eps = min(eps, 1e-2)
     claic_score = None
     while eps <= 1e-2:
         try:
