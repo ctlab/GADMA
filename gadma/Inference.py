@@ -104,8 +104,8 @@ def get_claic_score(func_ex, all_boot, p0, data, engine=None, args=(),
     engine_obj.model.variables = variables
     if pts is not None:
         settings.pts = pts
-    return utils.get_claic_score(engine_obj, p0, all_boot,
-                                 settings.get_engine_args())
+    return utils.get_claic_score(engine=engine_obj, x0=p0, boots=all_boot,
+                                 args=settings.get_engine_args(), eps=eps)
 
 
 def optimize_ga(data, model_func, engine, args=(),

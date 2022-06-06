@@ -490,7 +490,7 @@ def get_aic_score(n_params, log_likelihood):
     return 2 * n_params - 2 * log_likelihood
 
 
-def get_claic_score(engine, x0, boots,
+def get_claic_score(engine, x0, boots, eps=1e-5,
                     args=(), log_likelihood=None, return_eps=False):
     """
     Calculate CLAIC score for the model.
@@ -504,7 +504,7 @@ def get_claic_score(engine, x0, boots,
     """
     if log_likelihood is None:
         log_likelihood = engine.evaluate(x0, *args)
-    eps = 1e-5
+    eps = max(eps, 1e-2)
     claic_score = None
     while eps <= 1e-2:
         try:
