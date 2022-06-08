@@ -23,6 +23,9 @@ class StructureDemographicModel(EpochDemographicModel):
     :type has_migs: bool
     :param has_sels: If True then model will have selection coefficients.
     :type has_sels: bool
+    :param has_dom: If True then model will have dominance coefficients.
+                    It is valid only if model has selection.
+    :type has_dom: bool
     :param has_inbr: If True then model will have inbreeding.
     :type has_inbr: bool
     :param has_dyns: If True then model will create dynamics of size
@@ -54,7 +57,7 @@ class StructureDemographicModel(EpochDemographicModel):
     :type recombination_rate: float
     """
     def __init__(self, initial_structure, final_structure,
-                 has_migs, has_sels, has_dyns, sym_migs, frac_split,
+                 has_migs, has_sels, has_dom, has_dyns, sym_migs, frac_split,
                  migs_mask=None, has_anc_size=False,
                  gen_time=None, theta0=None, mutation_rate=None,
                  recombination_rate=None, Nref=None, has_inbr=None):
@@ -80,11 +83,18 @@ class StructureDemographicModel(EpochDemographicModel):
         self.final_structure = np.array(final_structure)
         self.has_migs = has_migs
         self.has_sels = has_sels
+        self.has_dom = has_dom
         self.has_dyns = has_dyns
         self.sym_migs = sym_migs
         self.frac_split = frac_split
         self.migs_mask = migs_mask
         self.has_inbr = has_inbr
+
+        # check that dominance coeffcients are set only if selection is on
+        if self.has_dom and not self.has_sels:
+            warnings.warn("There is no selection and option about "
+                          "dominance coefficients will be ignored")
+            self.has_dom = False
         # check that mask is correct
         if len(self.initial_structure) == 1 and self.migs_mask is not None:
             warnings.warn("Migration mask is used only when more than one "
@@ -204,6 +214,12 @@ class StructureDemographicModel(EpochDemographicModel):
                     for i in range(n_pop):
                         var = SelectionVariable('gamma%d%d' % (i_int, i+1))
                         sel_vars.append(var)
+                dom_vars = None
+                if self.has_dom:
+                    dom_vars = list()
+                    for i in range(n_pop):
+                        var = FractionVariable('h%d%d' % (i_int, i+1))
+                        dom_vars.append(var)
                 dyn_vars = None
                 if self.has_dyns:
                     dyn_vars = list()
@@ -213,7 +229,7 @@ class StructureDemographicModel(EpochDemographicModel):
                 assert not self.has_inbreeding
                 self.add_epoch(time_arg=time_var, size_args=size_vars,
                                mig_args=mig_vars, dyn_args=dyn_vars,
-                               sel_args=sel_vars)
+                               sel_args=sel_vars, dom_args=dom_args)
             if n_pop < len(structure):
                 if self.frac_split:
                     frac_var = FractionVariable(f"s{n_pop}")

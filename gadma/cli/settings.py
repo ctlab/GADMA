@@ -44,6 +44,7 @@ split_fractions = True
 migration_masks = None
 inbreeding = False
 selection = False
+dominance = False
 
 # LD params
 ld_kwargs = None

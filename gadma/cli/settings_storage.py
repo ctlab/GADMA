@@ -208,7 +208,7 @@ class SettingsStorage(object):
                       'symmetric_migrations', 'split_fractions',
                       'generate_x_transform', 'global_log_transform',
                       'local_log_transform', 'inbreeding', 'selection',
-                      'ancestral_size_as_parameter']
+                      'dominance', 'ancestral_size_as_parameter']
         int_list_attrs = ['pts', 'initial_structure', 'final_structure',
                           'projections']
         float_list_attrs = ['lower_bound', 'upper_bound']
@@ -1236,6 +1236,7 @@ class SettingsStorage(object):
                 self.final_structure is not None):
             create_migs = not self.no_migrations
             create_sels = self.selection
+            create_dom = self.dominance
             create_dyns = not self.only_sudden
             sym_migs = self.symmetric_migrations
             split_f = self.split_fractions
@@ -1247,6 +1248,7 @@ class SettingsStorage(object):
                 has_anc_size=self.ancestral_size_as_parameter,
                 has_migs=create_migs,
                 has_sels=create_sels,
+                has_dom=create_dom,
                 has_dyns=create_dyns,
                 sym_migs=sym_migs,
                 frac_split=split_f,
@@ -1362,6 +1364,14 @@ class SettingsStorage(object):
                 "Engines dadi and moments require mutation rate and sequence "
                 "length for unit translation"
             )
+
+        if self.dominance and not self.selection:
+            warnings.warn(
+                "Dominance coefficients are set to be inferred, however, "
+                "selection is not. Dominance is set to False. Please set "
+                "`Selection` option to True in params file."
+            )
+            self.dominance = False
 
         if self.inbreeding:
             if self.projections is not None:
