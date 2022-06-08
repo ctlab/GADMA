@@ -1375,9 +1375,9 @@ class SettingsStorage(object):
 
         if self.selection and self.engine not in ["dadi", "moments"]:
             raise ValueError(
-                f"Engine {self.engine} does not support inference of"
-                "selection coefficients. Please choose dadi or moments or"
-                "set `Selection` to False."
+                f"Engine {self.engine} does not support inference of "
+                "selection coefficients. Please choose dadi or moments or "
+                "set `Selection` option to False."
             )
 
         if self.inbreeding:
