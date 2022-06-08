@@ -74,17 +74,17 @@ global_optimizer = "Genetic_algorithm"
 num_init_const = None
 size_of_generation = 10
 
-fractions = [0.2, 0.3, 0.3]
-n_elitism = 2
-p_mutation = 0.3
+fractions = [0.3, 0.2, 0.3]
+n_elitism = 3
+p_mutation = 0.2
 p_crossover = 0.3
 p_random = 0.2
 
-mean_mutation_strength = 0.2
-const_for_mutation_strength = 1.01
+mean_mutation_strength = 0.775539
+const_for_mutation_strength = 1.302280
 
-mean_mutation_rate = 0.2
-const_for_mutation_rate = 1.02
+mean_mutation_rate = 0.273263
+const_for_mutation_rate = 1.475288
 
 stuck_generation_number = 100
 eps = 1e-2
