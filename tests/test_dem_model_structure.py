@@ -64,11 +64,12 @@ class TestModelStructure(unittest.TestCase):
 
     def test_initialization(self):
         for structure in TEST_STRUCTURES:
-            for create_migs, create_sels, create_dyns, sym_migs, fracs, inbr in\
-                    list(itertools.product([False, True],repeat=6)):
+            for create_migs, create_sels, create_dom, create_dyns, sym_migs, fracs, inbr in\
+                    list(itertools.product([False, True],repeat=7)):
                 dm = StructureDemographicModel(structure, structure,
                                                has_migs=create_migs,
                                                has_sels=create_sels,
+                                               has_dom=create_dom,
                                                has_dyns=create_dyns,
                                                sym_migs=sym_migs,
                                                frac_split=fracs,
@@ -182,6 +183,7 @@ class TestModelStructure(unittest.TestCase):
                                                      np.array(structure) + 1,
                                                      has_migs=create_migs,
                                                      has_sels=create_sels,
+                                                     has_dom=False,  # TODO
                                                      has_dyns=create_dyns,
                                                      sym_migs=sym_migs,
                                                      frac_split=fracs,

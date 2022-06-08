@@ -259,6 +259,8 @@ class CoreRun(object):
             )
             if isinstance(self.model, EpochDemographicModel):
                 for engine_id in os.listdir(self.code_dir):
+                    if engine_id.startswith("."):
+                        continue
                     engine = get_engine(engine_id)
                     save_file = os.path.join(self.code_dir, engine.id,
                                              filename)

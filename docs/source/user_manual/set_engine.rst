@@ -16,7 +16,7 @@ GADMA provides the following choice of engines for demographic inference:
 
     - ``dadi``
     - ``moments`` (by default)
-    - ``momi``
+    - ``momi2``
     - ``momentsLD``
 
 In order to choose engine:
@@ -37,7 +37,7 @@ Engine comparison
    * - Feature
      - ``dadi``
      - ``moments``
-     - ``momi``
+     - ``momi2``
      - ``momentsLD``
 
    * - VCF input data
@@ -113,6 +113,17 @@ When using the ``dadi`` engine, it is recommended to check the value of the ``Pt
     Pts: [40, 50, 60]
     ...
 
+Moreover, the type of extrapolation in ``dadi`` could be changed from logarithmic ('make_extrap_log_func') to linear if desired:
+
+.. code-block:: none
+
+    # param file
+    ...
+    Engine : dadi
+    Pts: [40, 50, 60]
+    Dadi extrapolation: make_extrap_func
+    ...
+
 .. note:: ``Pts`` option is also used for other engines as well: for generation of python code for ``dadi``. So if one wants to use ``dadi``'s code of final models after run then maybe the ``Pts`` argument must be set too.
 
 moments
@@ -129,34 +140,34 @@ moments
 
 ``moments`` engine is able to draw plots of demographic models. Be default ``demes`` engine is used as an engine for drawing but ``moments`` can be also chosen. For more information please see `Plotting model <plotting.rst>`__ section.
 
-momi
+momi2
 =====
 
-Another engine for demographic inference is ``momi`` ([Kamm2020]_). Although GADMA is limited to three populations with a demographic model with structure, ``momi`` and therefore the ``momi`` engine can be used for a lot of populations (e.g. 10) with a custom demographic model.
+Another engine for demographic inference is ``momi2`` ([Kamm2020]_). Although GADMA is limited to three populations with a demographic model with structure, ``momi2`` and therefore the ``momi2`` engine can be used for a lot of populations (e.g. 10) with a custom demographic model.
 
-Custom demographic model given to GADMA will be read in a different way than models for ``dadi`` and ``moments``. The units of parameters are assumed to be in physical units. To mark that some parameter is in genetic units please add `_gen` to its name (e.g. `nu_gen`). The example ``momi`` engine usage with custom demographic model can be found `here <https://gadma.readthedocs.io/en/latest/examples/custom_model_example_momi.html>`_.
+Custom demographic model given to GADMA will be read in a different way than models for ``dadi`` and ``moments``. The units of parameters are assumed to be in physical units. To mark that some parameter is in genetic units please add `_gen` to its name (e.g. `nu_gen`). The example ``momi2`` engine usage with custom demographic model can be found `here <https://gadma.readthedocs.io/en/latest/examples/custom_model_example_momi.html>`_.
 
-Engines ``dadi`` and ``moments`` have a special type of demographic inference that is called multinomial inference: it is possible to infer size of ancestral population implicitly from values of other parameters. However, ``momi`` engine is not able to perform such inference and option ``Ancestral size as parameter`` should be set to ``True``.
+Engines ``dadi`` and ``moments`` have a special type of demographic inference that is called multinomial inference: it is possible to infer size of ancestral population implicitly from values of other parameters. However, ``momi2`` engine is not able to perform such inference and option ``Ancestral size as parameter`` should be set to ``True``.
 
-Unfortunately, ``momi`` engine has some limitations on demographic parameters: it does not infer continuous migrations and linear size change. If an engine is chosen then GADMA informs about these limitations and disables migration and linear dynamic automatically.
+Unfortunately, ``momi2`` engine has some limitations on demographic parameters: it does not infer continuous migrations and linear size change. If an engine is chosen then GADMA informs about these limitations and disables migration and linear dynamic automatically.
 
 .. code-block:: none
 
     # param file
     ...
-    Engine : momi
+    Engine : momi2
     # Mutation rate and sequence length are required
     Sequence length: 1e9
     Mutation rate: 1.25e-8
 
-    # the following options are set automatically if momi engine is chosen
+    # the following options are set automatically if momi2 engine is chosen
     Ancestral size as parameter: True
     No migrations: True
     Dynamics: [Sud, Exp]
     ...
 
 
-``momi`` engine can be also used to draw demographic models, however, it fails to draw histories with linear size change and does not draw migrations. For more information please see `Plotting model <plotting.rst>`__ section.
+``momi2`` engine can be also used to draw demographic models, however, it fails to draw histories with linear size change and does not draw migrations. For more information please see `Plotting model <plotting.rst>`__ section.
 
 momentsLD
 =========

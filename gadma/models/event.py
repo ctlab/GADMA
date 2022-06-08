@@ -178,8 +178,9 @@ class Epoch(Event):
         if self.sel_args is not None:
             sels_repr = [help_f(arg) for arg in self.sel_args]
             if self.dom_args is not None:
-                together = [f'{x}({y})' for x, y in zip(self.sel_args,
-                                                        self.dom_args)]
+                dom_repr = [help_f(arg) for arg in self.dom_args]
+                together = [f'{x}({y})' for x, y in zip(sels_repr,
+                                                        dom_repr)]
                 sels_repr = f"[{', '.join(together)}]"
             else:
                 sels_repr = f"[{', '.join(sels_repr)}]"

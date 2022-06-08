@@ -24,7 +24,12 @@ max_M :
 
 #	Parameters for Genetic Algorithm.
 #
-#	Size of population of demographic models in GA:
+#	Constant for initial design. Number of solutions in initial
+#	design is equal to number of parameters multiplied by this constant.
+#	Default: 10
+Num init const :
+
+#	Size of one generation of solutions in GA:
 #	Default: 10
 Size of generation : 
 
@@ -32,14 +37,28 @@ Size of generation :
 #	to be taken to new population.
 #	Sum of fractions should be <= 1, the remaining fraction is 
 #	fraction of random models.
-#	Default: 0.2,0.3,0.3
+#	Default: 0.3,0.2,0.3
 Fractions : 
+
+#	The fractions could be set independently here.
+#	Number of best solutions taken from the previous generation.
+#	Default: 3
+N elitism :
+#	Fraction of mutated solutions in new generation.
+#	Default: 0.2
+P mutation :
+#	Fraction of crossed solutions in new generation.
+#	Default: 0.3
+P crossover :
+#	Fraction of randomly generated soluations in new generation.
+#	Default: 0.2
+P random :
 
 #	Mutation strength - fraction of parameters in model to mutate 
 #	during global mutation process of model.
 #	Number of parameters to mutate is sampled from binomial 
 #	distribution, so we need to set mean.
-#	Default: 0.2
+#	Default: 0.775539
 Mean mutation strength : 
 #
 #	Mutation strength can be adaptive: if mutation is good, 
@@ -47,18 +66,18 @@ Mean mutation strength :
 #	then mutation strength is increased multiplying by const 
 #	otherwise it decreases dividing by (1/4)^const.
 #	When const is 1.0 it is not adaptive.
-#	Default: 1.0
+#	Default: 1.302280
 Const for mutation strength : 
 
 #	Mutation rate - fraction of any parameter to change during
 #	its mutation.
 #	Mutation rate is sampled from truncated normal distribution, 
 #	so we need mean (std can be specified in extra params).
-#	Default 0.2
+#	Default 0.273263
 Mean mutation rate : 
 #
 #	Mutation rate also can be adaptive as mutation strength.
-#	Default: 1.02
+#	Default: 1.475288
 Const for mutation rate : 
 
 #	Genetic algorithm stops when it couldn't improve model by
@@ -100,3 +119,37 @@ Random N_A :
 #	Default: 1 (minute)
 Time to print summary : 
 
+
+
+#	Global parameters for optimizations (global and local).
+#
+#	Global optimizer name
+#	Default: Genetic_algorithm
+Global optimizer :
+
+#	If True then x will be transformed by logarithm.
+#	In our case that means that population sizes and times
+#	will be inferred in log-scale.
+#
+#	For global optimization
+#	Default: True
+Global log transform :
+#	For local optimization
+#	Default: True
+Local log transform :
+
+#	Maximum number of log-likelihood evalutions
+#	In global optimization
+#	Default: None
+Global maxeval :
+#	In local optimization
+#	Default: None
+Local maxeval :
+
+#	Maximum number of algorithm iterations
+#	In global optimization
+#	Default: None
+Global maxiter :
+#	In local optimization
+#	Default: None
+Local maxiter :

@@ -202,7 +202,6 @@ class TestCLI(unittest.TestCase):
         self.assertRaises(ValueError, settings.__setattr__,
                           'migration_masks', [[1]])
 
-
         # fractions
         settings.fractions = [0.5, 0.5, 0.5, 0.5]
         self.assertRaises(ValueError, settings.__setattr__,

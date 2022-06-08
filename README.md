@@ -13,7 +13,7 @@ GADMA provides choice of several engines of demographic inference (this list wil
 
 * [∂a∂i](https://bitbucket.org/gutenkunstlab/dadi/)
 * [*moments*](https://bitbucket.org/simongravel/moments/)
-* [*momi*](https://github.com/popgenmethods/momi2/)
+* [*momi2*](https://github.com/popgenmethods/momi2/)
 * [*momentsLD*](https://bitbucket.org/simongravel/moments/) - extenstion of *moments*
 
 GADMA is developed in Computer Technologies laboratory at ITMO University under the supervision of [Vladimir Ulyantsev](https://ulyantsev.com/) and Pavel Dobrynin. The principal maintainer is [Ekaterina Noskova](http://enoskova.me/) (ekaterina.e.noskova@gmail.com)

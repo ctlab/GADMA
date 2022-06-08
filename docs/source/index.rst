@@ -16,7 +16,7 @@ GADMA provides choice of several engines for the demographic inference:
 
 * `dadi <https://bitbucket.org/gutenkunstlab/dadi/>`_  developed by Ryan Gutenkunst [Gutenkunst2009]_
 * `moments <https://bitbucket.org/simongravel/moments/>`_  developed by Simon Gravel [Jouganous2017]_
-* `momi <https://github.com/popgenmethods/momi2/>`_ [Kamm2020]_
+* `momi2 <https://github.com/popgenmethods/momi2/>`_ [Kamm2020]_
 * `momentsLD <https://bitbucket.org/simongravel/moments/>`_ extension of ``moments`` for LD stats [Ragsdale2019]_ [Ragsdale2020]_
 
 Base usage of GADMA via command-line:

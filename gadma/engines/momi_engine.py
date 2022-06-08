@@ -17,7 +17,7 @@ if matplotlib_available:
 
 
 class MomiEngine(Engine):
-    id = 'momi'
+    id = 'momi2'
     if momi_available:
         import momi as base_module
         inner_data_type = base_module.Sfs
@@ -333,5 +333,11 @@ class MomiEngine(Engine):
                                      gen_time_units)
 
 
+if momi_available:
+    register_engine(MomiEngine)
+
+
+# Just to be sure
+MomiEngine.id = "momi"
 if momi_available:
     register_engine(MomiEngine)
