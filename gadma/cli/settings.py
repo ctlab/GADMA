@@ -72,7 +72,7 @@ upper_bound_of_second_split = None
 global_optimizer = "Genetic_algorithm"
 
 # GA options
-num_init_const = None
+num_init_const = 10
 size_of_generation = 10
 
 fractions = [0.3, 0.2, 0.3]
@@ -166,7 +166,7 @@ recombination_maps = None
 
 global_maxiter = None
 global_maxeval = None
-global_log_transform = False
+global_log_transform = True
 local_maxiter = None
 local_maxeval = None
 local_log_transform = True

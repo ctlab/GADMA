@@ -1373,6 +1373,13 @@ class SettingsStorage(object):
             )
             self.dominance = False
 
+        if self.selection and self.engine not in ["dadi", "moments"]:
+            raise ValueError(
+                f"Engine {self.engine} does not support inference of"
+                "selection coefficients. Please choose dadi or moments or"
+                "set `Selection` to False."
+            )
+
         if self.inbreeding:
             if self.projections is not None:
                 warnings.warn(

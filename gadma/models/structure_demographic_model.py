@@ -229,7 +229,7 @@ class StructureDemographicModel(EpochDemographicModel):
                 assert not self.has_inbreeding
                 self.add_epoch(time_arg=time_var, size_args=size_vars,
                                mig_args=mig_vars, dyn_args=dyn_vars,
-                               sel_args=sel_vars, dom_args=dom_args)
+                               sel_args=sel_vars, dom_args=dom_vars)
             if n_pop < len(structure):
                 if self.frac_split:
                     frac_var = FractionVariable(f"s{n_pop}")
