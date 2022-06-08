@@ -322,8 +322,14 @@ class CoreRun(object):
         elif self.claic_score:
             best_by = "CLAIC score"
             args = self.settings.get_engine_args()
-            value = get_claic_score(self.engine, x, self.boots,
-                                    args, y, return_eps=True)
+            value = get_claic_score(
+                engine=self.engine,
+                x0=x,
+                boots=self.boots,
+                args=args,
+                log_likelihood=y,
+                return_eps=True,
+            )
         else:
             return
 

@@ -490,8 +490,8 @@ def get_aic_score(n_params, log_likelihood):
     return 2 * n_params - 2 * log_likelihood
 
 
-def get_claic_score(engine, x0, boots, eps=1e-5,
-                    args=(), log_likelihood=None, return_eps=False):
+def get_claic_score(engine, x0, boots, args=(),
+                    eps=1e-5, log_likelihood=None, return_eps=False):
     """
     Calculate CLAIC score for the model.
 
