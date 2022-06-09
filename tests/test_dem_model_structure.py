@@ -422,7 +422,7 @@ class TestModelStructure(unittest.TestCase):
     def test_transform(self):
         for structure in BASE_TEST_STRUCTURES:
             for base_migs, base_sels, base_dom, base_dyns, base_symms, base_fracs, base_inbr in\
-                    list(itertools.product([False, True],repeat=6)):
+                    list(itertools.product([False, True],repeat=7)):
                 base_mig_masks = [None, self._generate_mig_mask(structure,
                                                                 base_symms)]
                 if len(structure) == 1 or not base_migs:
@@ -438,7 +438,7 @@ class TestModelStructure(unittest.TestCase):
                                                    frac_split=base_fracs,
                                                    has_inbr=base_inbr)
                     for new_migs, new_sels, new_dom, new_dyns, new_symms, new_fracs, new_inbr in\
-                            list(itertools.product([False, True],repeat=6)):
+                            list(itertools.product([False, True],repeat=7)):
                         new_mig_masks = [None, self._generate_mig_mask(
                             structure, new_symms)]
                         if len(structure) == 1 or not new_migs:

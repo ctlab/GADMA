@@ -165,7 +165,7 @@ def print_data_reading(engine):
             ret_str = f"import gadma\n"
             ret_str += "data_holder = gadma.SFSDataHolder("
             ret_str += f"'{engine.data_holder.filename}')\n"
-            ret_str += "data = gadma.get_engine('momi')"\
+            ret_str += "data = gadma.get_engine('momi2')"\
                        ".read_data(data_holder)\n"
 
     if isinstance(engine.data_holder, VCFDataHolder):

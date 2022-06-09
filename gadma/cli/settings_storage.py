@@ -70,8 +70,8 @@ def _get_variable(cls, par_label, domain, engine="dadi"):
     """
     Returns correct variable from its label.
     If engine is `dadi` or `moments` then variable will be in `genetic` units
-    by default if othervise is not stated. If engine is something else (`momi2`)
-    then units are `physical` by default.
+    by default if othervise is not stated. If engine is something else
+    (`momi2`) then units are `physical` by default.
 
     If parameter label has `_phys` or `_gen` at the end then it is mark about
     the units. For example, engine is `dadi` but label is `nu_phys` that
