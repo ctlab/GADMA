@@ -114,7 +114,7 @@ class CoreRun(object):
                     for engine in all_available_engines():
                         if engine.id == "demes" and not Nanc_will_be:
                             continue
-                        if (engine.id == "momi" and
+                        if (engine.id == "momi2" and
                                 (not Nanc_will_be or L_is_None) and
                                 not is_custom):
                             continue

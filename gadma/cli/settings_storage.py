@@ -70,7 +70,7 @@ def _get_variable(cls, par_label, domain, engine="dadi"):
     """
     Returns correct variable from its label.
     If engine is `dadi` or `moments` then variable will be in `genetic` units
-    by default if othervise is not stated. If engine is something else (`momi`)
+    by default if othervise is not stated. If engine is something else (`momi2`)
     then units are `physical` by default.
 
     If parameter label has `_phys` or `_gen` at the end then it is mark about
@@ -1417,7 +1417,7 @@ class SettingsStorage(object):
                         "of model will be generated."
                     )
 
-        if self.engine == "momi":
+        if self.engine == "momi2":
             if "Lin" in self.dynamics:
                 warnings.warn("Momi engine does not support Linear size "
                               "function. It is removed from possible dynamics")
@@ -1435,7 +1435,7 @@ class SettingsStorage(object):
                 )
                 self.no_migrations = True
 
-        if self.model_plot_engine == "momi":
+        if self.model_plot_engine == "momi2":
             if not self.no_migrations or "Lin" in self.dynamics:
                 warnings.warn(
                     "Momi was chosen to draw models. Mind the fact that it "
@@ -1445,14 +1445,14 @@ class SettingsStorage(object):
             if self.units_of_time_in_drawing.lower() not in ["generations",
                                                              "years"]:
                 warnings.warn(
-                    "Model plot engine momi does not draw time in "
+                    "Model plot engine momi2 does not draw time in "
                     f"{self.units_of_time_in_drawing}, units are switched "
                     "to `years`"
                 )
                 self.units_of_time_in_drawing = "years"
 
         if self.sequence_length is None and momi_available:
-            warnings.warn("Code for momi will not be generated as `Sequence "
+            warnings.warn("Code for momi2 will not be generated as `Sequence "
                           "length` is missed.")
 
         # Check for sequence length if we have several chrom lengths
@@ -1492,7 +1492,7 @@ class SettingsStorage(object):
                 raise ValueError("MomentsLD requirements are not satisfied: "
                                  f"{reason}")
 
-        for engine, is_available in zip(["demes", "momi"],
+        for engine, is_available in zip(["demes", "momi2"],
                                         [demes_available, momi_available]):
             if is_available:
                 if not self.Nanc_will_be_available():

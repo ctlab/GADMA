@@ -129,6 +129,7 @@ class TestModelStructure(unittest.TestCase):
                             ValueError, StructureDemographicModel, structure, 
                             structure, has_migs=create_migs,
                             has_sels=create_sels, has_dom=create_dom,
+                            has_dyns=create_dyns,
                             sym_migs=sym_migs, migs_mask=masks,
                             frac_split=fracs, has_inbr=inbr)
                 dm.events.append(1.0)
