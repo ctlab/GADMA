@@ -636,6 +636,7 @@ class TestModels(unittest.TestCase):
             final_structure=[2, 1, 1],
             has_migs=True,
             has_sels=False,
+            has_dom=False,
             has_dyns=True,
             sym_migs=True,
             frac_split=True,
@@ -646,6 +647,7 @@ class TestModels(unittest.TestCase):
             has_anc_size=True,
             has_migs=True,
             has_sels=False,
+            has_dom=False,
             has_dyns=True,
             sym_migs=True,
             frac_split=True,
@@ -703,7 +705,7 @@ class TestModels(unittest.TestCase):
                     msg = f"for model {ind + 1} and {description} data and " \
                           f"{engine.id} engine"
                     #print(msg)
-                    if engine.id == "momi" and isinstance(model, StructureDemographicModel):
+                    if engine.id == "momi2" and isinstance(model, StructureDemographicModel):
                         if not model.has_anc_size:
                             continue
                     if engine.id == 'dadi':
@@ -721,7 +723,7 @@ class TestModels(unittest.TestCase):
                     else:
                         input_values = copy.copy(values)
 
-                    if engine.id in ["momi", "momentsLD"]:
+                    if engine.id in ["momi2", "momentsLD"]:
                         # there is an error in momi for that case
                         # data for moments was simulated with msprime, which can't work with Lin DynVar
                         if description == "fs without pop labels":

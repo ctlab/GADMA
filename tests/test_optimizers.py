@@ -81,7 +81,7 @@ def get_1pop_sim_example_2(engine_id, args=(), data_size=4):
     Nanc_size = None
     if engine_id not in ["dadi", "moments"]:
         Nanc_size = Nanc
-    if engine_id in ["momi"]:
+    if engine_id in ["momi2"]:
         Dyn.domain = ["Sud", "Exp"]
 
     dm = EpochDemographicModel(Nanc_size=Nanc_size, mutation_rate=1e-8)
@@ -571,10 +571,10 @@ class TestCoreRun(unittest.TestCase):
                         shutil.rmtree("Some_out_dir")
 
             # best place to check
-            if engine.id == "momi":
+            if engine.id == "momi2":
                 try:
                     # prints warning that units will be years
-                    settings.model_plot_engine = "momi"
+                    settings.model_plot_engine = "momi2"
                     settings.time_for_generation = 1
                     settings.units_of_time_in_drawing = "kya"
                     settings.selection = True

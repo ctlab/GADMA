@@ -66,6 +66,8 @@ class TestModelStructure(unittest.TestCase):
         for structure in TEST_STRUCTURES:
             for create_migs, create_sels, create_dom, create_dyns, sym_migs, fracs, inbr in\
                     list(itertools.product([False, True],repeat=7)):
+                if not create_sels and create_dom:
+                    create_dom = False
                 dm = StructureDemographicModel(structure, structure,
                                                has_migs=create_migs,
                                                has_sels=create_sels,
@@ -90,7 +92,7 @@ class TestModelStructure(unittest.TestCase):
                         # for each interval (except first) there is time,
                         # size of population, selection and dynamic
                         n_par += (str_val - 1) * (2 + int(create_sels)\
-                                 + int(create_dyns))
+                                 + int(create_dom) + int(create_dyns))
                     else:
                         # for other intervals there are also migrations
                         n_pop = i + 1
@@ -98,11 +100,12 @@ class TestModelStructure(unittest.TestCase):
                         if sym_migs:
                             n_migs /= 2
                         n_par += str_val * (n_pop * (1 + int(create_dyns)\
-                                 + int(create_sels)) + n_migs + 1)
+                                 + int(create_sels) + int(create_dom)) + n_migs + 1)
                 n_par += int(inbr) * len(structure)
                 msg = f"Parameters are not equal for dem model with structure "\
                       f"{structure} and create_migs ({create_migs}), "\
-                      f"create_sels ({create_sels}), create_dyns ({create_dyns}), "\
+                      f"create_sels ({create_sels}), create_dom ({create_dom}), "\
+                      f"create_dyns ({create_dyns}), "\
                       f"sym_migs ({sym_migs}), fracs ({fracs}) {dm.variables}," \
                       f"inbr ({inbr})"
                 self.assertEqual(len(dm.variables), n_par, msg=msg)
@@ -112,6 +115,7 @@ class TestModelStructure(unittest.TestCase):
                     dm = StructureDemographicModel(structure, structure,
                                                    has_migs=create_migs,
                                                    has_sels=create_sels,
+                                                   has_dom=create_dom,
                                                    has_dyns=create_dyns,
                                                    sym_migs=sym_migs,
                                                    migs_mask=masks,
@@ -124,7 +128,7 @@ class TestModelStructure(unittest.TestCase):
                         self.assertRaises(
                             ValueError, StructureDemographicModel, structure, 
                             structure, has_migs=create_migs,
-                            has_sels=create_sels, has_dyns=create_dyns,
+                            has_sels=create_sels, has_dom=create_dom,
                             sym_migs=sym_migs, migs_mask=masks,
                             frac_split=fracs, has_inbr=inbr)
                 dm.events.append(1.0)
@@ -137,6 +141,7 @@ class TestModelStructure(unittest.TestCase):
                 dm = StructureDemographicModel(structure, structure,
                                                has_migs=True,
                                                has_sels=True,
+                                               has_dom=False,
                                                has_dyns=True,
                                                sym_migs=False,
                                                migs_mask=[],
@@ -151,7 +156,7 @@ class TestModelStructure(unittest.TestCase):
             self.assertRaises(
                 ValueError, StructureDemographicModel,
                 structure, final_structure, has_migs=True,
-                has_sels=True, has_dyns=True, sym_migs=False,
+                has_sels=True, has_dom=False, has_dyns=True, sym_migs=False,
                 migs_mask=masks, frac_split=True, has_inbr=False)
 
             masks = self._generate_mig_mask(structure, False)
@@ -159,7 +164,7 @@ class TestModelStructure(unittest.TestCase):
             self.assertRaises(
                 ValueError, StructureDemographicModel,
                 structure, structure, has_migs=True,
-                has_sels=True, has_dyns=True, sym_migs=False,
+                has_sels=True, has_dom=False, has_dyns=True, sym_migs=False,
                 migs_mask=masks, frac_split=True, has_inbr=False)
 
             masks = self._generate_mig_mask(structure, False)
@@ -167,7 +172,7 @@ class TestModelStructure(unittest.TestCase):
             self.assertRaises(
                 ValueError, StructureDemographicModel,
                 structure, structure, has_migs=True,
-                has_sels=True, has_dyns=True, sym_migs=False,
+                has_sels=True, has_dom=False, has_dyns=True, sym_migs=False,
                 migs_mask=masks, frac_split=True, has_inbr=False)
 
     @pytest.mark.timeout(0)
@@ -222,13 +227,13 @@ class TestModelStructure(unittest.TestCase):
                         kwargs = {}
 
                     # check that our x is valid for the engine
-                    if engine.id == "momi":
+                    if engine.id == "momi2":
                         x_cor = [el if el != "Lin" else "Exp" for el in x]
                     else:
                         x_cor = x
 
                     # simulate data
-                    try:  # momi fails sometimes
+                    try:  # momi2 fails sometimes
                         data = engine.simulate(
                             values=x_cor,
                             ns=sizes,
@@ -325,6 +330,7 @@ class TestModelStructure(unittest.TestCase):
                                                      np.array(structure) + 1,
                                                      has_migs=create_migs,
                                                      has_sels=create_sels,
+                                                     has_dom=False,
                                                      has_dyns=create_dyns,
                                                      sym_migs=sym_migs,
                                                      frac_split=fracs,
@@ -379,6 +385,7 @@ class TestModelStructure(unittest.TestCase):
                 return StructureDemographicModel(init_struct, final_struct,
                                                  has_migs=create_migs,
                                                  has_sels=create_sels,
+                                                 has_dom=False,
                                                  has_dyns=create_dyns,
                                                  sym_migs=sym_migs,
                                                  frac_split=fracs,
@@ -413,7 +420,7 @@ class TestModelStructure(unittest.TestCase):
 
     def test_transform(self):
         for structure in BASE_TEST_STRUCTURES:
-            for base_migs, base_sels, base_dyns, base_symms, base_fracs, base_inbr in\
+            for base_migs, base_sels, base_dom, base_dyns, base_symms, base_fracs, base_inbr in\
                     list(itertools.product([False, True],repeat=6)):
                 base_mig_masks = [None, self._generate_mig_mask(structure,
                                                                 base_symms)]
@@ -423,13 +430,14 @@ class TestModelStructure(unittest.TestCase):
                     dm = StructureDemographicModel(structure, structure,
                                                    has_migs=base_migs,
                                                    has_sels=base_sels,
+                                                   has_dom=base_dom,
                                                    has_dyns=base_dyns,
                                                    sym_migs=base_symms,
                                                    migs_mask=mask,
                                                    frac_split=base_fracs,
                                                    has_inbr=base_inbr)
-                    for new_migs, new_sels, new_dyns, new_symms, new_fracs, new_inbr in\
-                        list(itertools.product([False, True],repeat=6)):
+                    for new_migs, new_sels, new_dom, new_dyns, new_symms, new_fracs, new_inbr in\
+                            list(itertools.product([False, True],repeat=6)):
                         new_mig_masks = [None, self._generate_mig_mask(
                             structure, new_symms)]
                         if len(structure) == 1 or not new_migs:
@@ -439,6 +447,7 @@ class TestModelStructure(unittest.TestCase):
                                                             structure,
                                                             has_migs=new_migs,
                                                             has_sels=new_sels,
+                                                            has_dom=new_dom,
                                                             has_dyns=new_dyns,
                                                             sym_migs=new_symms,
                                                             migs_mask=new_mask,

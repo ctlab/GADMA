@@ -127,6 +127,7 @@ class TestUtils(unittest.TestCase):
             final_structure=[2, 1],
             has_migs=True,
             has_sels=False,
+            has_dom=False,
             has_dyns=False,
             sym_migs=True,
             frac_split=True,

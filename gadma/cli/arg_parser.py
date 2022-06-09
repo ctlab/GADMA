@@ -199,7 +199,7 @@ def get_settings():
                                'upper_bound_of_second_split']
             if_true_settings = ['no_migrations', 'only_sudden',
                                 'symmetric_migrations', 'split_fractions',
-                                'inbreeding']
+                                'inbreeding', 'selection', 'dominance']
             forbiden_settings = ['custom_filename', 'initial_structure']
             special_settings = ['migration_masks']
 

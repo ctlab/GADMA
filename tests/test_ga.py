@@ -453,7 +453,7 @@ class TestInference(unittest.TestCase):
 
                 if engine.id in ["dadi", "moments"]:
                     data = engine.base_module.Spectrum.from_file(EXAMPLE_DATA)
-                elif engine.id == 'momi':
+                elif engine.id == 'momi2':
                     data = engine.base_module.sfs_from_dadi(EXAMPLE_DATA)
                 elif engine.id == "momentsLD":
                     data = engine.read_data(EXAMPLE_DATA_LD)
@@ -480,7 +480,7 @@ class TestInference(unittest.TestCase):
                             get_model_func = func
                             func_args = (data.sample_sizes, *args)
                             get_ll_func = engine.base_module.Inference.ll_multinom
-                        elif engine.id == 'momi':
+                        elif engine.id == 'momi2':
                             get_model_func = func
                             func_args = ()
                             def get_ll_func(data, model):

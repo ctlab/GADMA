@@ -388,6 +388,7 @@ class TestEngines(unittest.TestCase):
             has_anc_size=True,
             has_migs=False,
             has_sels=False,
+            has_dom=False,
             has_dyns=True,
             sym_migs=False,
             frac_split=False,

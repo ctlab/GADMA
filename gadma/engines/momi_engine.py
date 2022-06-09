@@ -335,9 +335,3 @@ class MomiEngine(Engine):
 
 if momi_available:
     register_engine(MomiEngine)
-
-
-# Just to be sure
-MomiEngine.id = "momi"
-if momi_available:
-    register_engine(MomiEngine)

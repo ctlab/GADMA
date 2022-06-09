@@ -515,6 +515,9 @@ class SettingsStorage(object):
                 setattr(self.data_holder, name, value)
         # 3.3 For engine we need check it exists
         elif name == 'engine':
+            # If user set momi we just fix it to momi2
+            if value.strip() == "momi":
+                value = "momi2"
             engine = get_engine(value)
             if not engine.can_evaluate:
                 raise ValueError(f"Engine {value} cannot evaluate "
@@ -1374,11 +1377,11 @@ class SettingsStorage(object):
             self.dominance = False
 
         if self.selection and self.engine not in ["dadi", "moments"]:
-            raise ValueError(
-                f"Engine {self.engine} does not support inference of "
-                "selection coefficients. Please choose dadi or moments or "
-                "set `Selection` option to False."
+            warnings.warn(
+                f"Engine {self.engine} does not support inference of selection "
+                "coefficients. The option `Selection` is set to `False`"
             )
+            self.selection = False
 
         if self.inbreeding:
             if self.projections is not None:
@@ -1432,13 +1435,6 @@ class SettingsStorage(object):
                     "option `No migrations` is set to `True`"
                 )
                 self.no_migrations = True
-
-            if self.selection:
-                warnings.warn(
-                    "Momi engine does not support inference of selection "
-                    "coefficients. The option `Selection` is set to `False`"
-                )
-                self.selection = False
 
         if self.model_plot_engine == "momi":
             if not self.no_migrations or "Lin" in self.dynamics:

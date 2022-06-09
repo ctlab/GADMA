@@ -486,6 +486,9 @@ class StructureDemographicModel(EpochDemographicModel):
                 if self.has_inbr == model.has_inbr \
                         and var.name.startswith('F'):
                     var2value[var] = other_varname2value[var.name]
+                if self.has_dom == model.has_dom \
+                        and var.name.startswith("h"):
+                    var2value[var] = other_varname2value[var.name]
             elif var.name in other_varname2value:
                 var2value[var] = other_varname2value[var.name]
         # do not forget about Nanc_size
@@ -514,6 +517,10 @@ class StructureDemographicModel(EpochDemographicModel):
                         varname2value[sym_mig_name] = mji_value
             elif isinstance(var, SelectionVariable):
                 assert self.has_sels and not model.has_sels
+                var2value[var] = 0
+            elif isinstance(var, FractionVariable) \
+                    and var.name.startswith('h'):
+                assert self.has_dom and not model.has_dom
                 var2value[var] = 0
             elif isinstance(var, DynamicVariable):
                 assert self.has_dyns and not model.has_dyns

@@ -140,13 +140,13 @@ class TestDataHolder(unittest.TestCase):
 
     def _test_sfs_reading(self, id):
         sizes = [None, (20,20), (10, 10), (10, 5), (5,), (10,)]
-        if id == "momi":
+        if id == "momi2":
             sizes = sizes[:2]
         outgroup = [None, True, False]
         labels = [None, ["YRI", "CEU"], ["CEU", "YRI"], ["CEU"]]
         seq_lens = [None, 1e6]
         data = [YRI_CEU_DATA, SNP_DATA, NO_OUT_SNP_DATA]
-        if id != "momi":
+        if id != "momi2":
             data.append(YRI_CEU_NO_LABELS_DATA)
         for dat, siz, lab, seq, out in itertools.product(data, sizes, labels,
                                                          seq_lens, outgroup):
@@ -221,8 +221,8 @@ class TestDataHolder(unittest.TestCase):
                                   get_engine(id).read_data, data_holder)
                 continue
 
-            # momi cannot downsize SFS
-            if (id == "momi" and siz is not None and
+            # momi2 cannot downsize SFS
+            if (id == "momi2" and siz is not None and
                    (list(siz) == [4, 2] or list(siz) == [4])):
                 continue
 
@@ -242,9 +242,9 @@ class TestDataHolder(unittest.TestCase):
                 out = True
             self._check_data(engine.data_holder, lab, out, siz)
 
-        if engine.id == "momi":
+        if engine.id == "momi2":
             return
-        # for some reason there is a problem for momi to read this file
+        # for some reason there is a problem for momi2 to read this file
         data_holder = VCFDataHolder(
             vcf_file=VCF_DATA,
             popmap_file=POPMAP,
