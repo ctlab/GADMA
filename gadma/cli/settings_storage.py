@@ -851,7 +851,6 @@ class SettingsStorage(object):
         we_have_rec_maps = (self.recombination_maps is not None and
                             os.path.isdir(self.recombination_maps))
         we_have_rec = we_have_rec_rate or we_have_rec_maps
-        print(we_have_rec)
         if isinstance(self.data_holder, VCFDataHolder):
             if self.bed_files_dir is None:
                 try:
@@ -1378,8 +1377,8 @@ class SettingsStorage(object):
 
         if self.selection and self.engine not in ["dadi", "moments"]:
             warnings.warn(
-                f"Engine {self.engine} does not support inference of selection "
-                "coefficients. The option `Selection` is set to `False`"
+                f"Engine {self.engine} does not support inference of selection"
+                " coefficients. The option `Selection` is set to `False`"
             )
             self.selection = False
 
