@@ -189,7 +189,7 @@ class TestRestore(unittest.TestCase):
             fl.write("Linked SNP's: False\n"
                      "Silence: True\n"
                      "global_maxiter: 2\n"
-                     "local_maxiter: 1\n")
+                     "local_maxeval: 10\n")
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file,
                     '--output', outdir]
         try:
@@ -212,7 +212,7 @@ class TestRestore(unittest.TestCase):
                      "Relative parameters: True\n"
                      "Silence: True\n"
                      "global_maxiter: 2\n"
-                     "local_maxiter: 1\n")
+                     "local_maxeval: 10\n")
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file,
                     '--only_models']
         try:
@@ -238,7 +238,7 @@ class TestRestore(unittest.TestCase):
                      "Projections: 4,4\n"
                      "Silence: True\n"
                      "global_maxiter: 2\n"
-                     "local_maxiter: 1\n")
+                     "local_maxeval: 10\n")
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
         try:
             core.main()
@@ -264,7 +264,7 @@ class TestRestore(unittest.TestCase):
                      "Projections: 4,4\n"
                      "Silence: True\n"
                      "global_maxiter: 2\n"
-                     "local_maxiter: 1\n")
+                     "local_maxeval: 10\n")
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
         try:
             gadma.PIL_available = False
@@ -286,7 +286,7 @@ class TestRestore(unittest.TestCase):
                      "Initial structure: 1, 1\n"
                      "Silence: True\n"
                      "global_maxiter: 2\n"
-                     "local_maxiter: 1\n")
+                     "local_maxeval: 10\n")
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
         try:
             gadma.PIL_available = False
@@ -310,7 +310,7 @@ class TestRestore(unittest.TestCase):
                      "Migration masks: [[0, 1], [0, 0]]\n"
                      "Silence: True\n"
                      "global_maxiter: 2\n"
-                     "local_maxiter: 1\n")
+                     "local_maxeval: 10\n")
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
 
         try:
@@ -374,7 +374,7 @@ class TestRestore(unittest.TestCase):
                      "Migration masks: [[0, 1], [0, 0]]\n"
                      "Silence: True\n"
                      "global_maxiter: 2\n"
-                     "local_maxiter: 1\n")
+                     "local_maxeval: 10\n")
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
         try:
             gadma.PIL_available = False

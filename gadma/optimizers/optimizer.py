@@ -515,8 +515,9 @@ class Optimizer(object):
 
         # We beleave that optimizer will understand that the run was finished
         # Otherwise there are problems when we want to run additional x iters
-        # if self.run_info.result.success:
-        #     return self.run_info.result
+        # This block could be commented out but it could cause problems
+        if self.run_info.result.success:
+            return self.run_info.result
 
         optimize_kwargs = self.process_optimize_kwargs(f=f_in_opt,
                                                        variables=vars_in_opt,
