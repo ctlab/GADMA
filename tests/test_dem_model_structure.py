@@ -423,6 +423,8 @@ class TestModelStructure(unittest.TestCase):
         for structure in BASE_TEST_STRUCTURES:
             for base_migs, base_sels, base_dom, base_dyns, base_symms, base_fracs, base_inbr in\
                     list(itertools.product([False, True],repeat=7)):
+                if not base_sels and base_dom:
+                    continue
                 base_mig_masks = [None, self._generate_mig_mask(structure,
                                                                 base_symms)]
                 if len(structure) == 1 or not base_migs:
@@ -439,6 +441,8 @@ class TestModelStructure(unittest.TestCase):
                                                    has_inbr=base_inbr)
                     for new_migs, new_sels, new_dom, new_dyns, new_symms, new_fracs, new_inbr in\
                             list(itertools.product([False, True],repeat=7)):
+                        if not new_sels and new_dom:
+                            continue
                         new_mig_masks = [None, self._generate_mig_mask(
                             structure, new_symms)]
                         if len(structure) == 1 or not new_migs:
