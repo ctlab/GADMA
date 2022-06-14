@@ -2,10 +2,7 @@ import io
 import os
 import re
 import shutil
-import subprocess
-import sys
 import tempfile
-from contextlib import redirect_stdout
 from io import StringIO
 from math import log
 from pathlib import Path
@@ -15,14 +12,13 @@ import numpy as np
 from numpy import ndarray
 
 from . import Engine, register_engine
-from ..models import EpochDemographicModel, TreeDemographicModel, Epoch, Split, \
-    PopulationSizeChange, Leaf, LineageMovement
-
-from ..utils.variables import PopulationSizeVariable, TimeVariable, DynamicVariable
-from ..data import SFSDataHolder
-from ..models import CustomDemographicModel
-from ..models.variables_combinations import Addition, Division
 from ..code_generator.fsc2_generator import EstimationFile, TemplateFile, DefinitionFile
+from ..data import SFSDataHolder
+from ..models import CustomDemographicModel, EpochDemographicModel, TreeDemographicModel, Epoch, \
+    Split, \
+    PopulationSizeChange, Leaf, LineageMovement
+from ..models.variables_combinations import Addition, Division
+from ..utils.variables import PopulationSizeVariable, TimeVariable, DynamicVariable
 
 LINE = ("\n" + "-" * 80 + "\n")
 
