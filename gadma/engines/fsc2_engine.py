@@ -38,6 +38,14 @@ def fsc2_available() -> bool:
     return True
 
 
+def is_msfs(data_holder: SFSDataHolder):
+    filename = Path(data_holder.filename).name
+    if 'DSFS' in filename or 'MSFS' in filename:
+        return True
+    else:
+        return False
+
+
 class FastSimCoal2Engine(Engine):
     """Class representing the fastsimcoal2 engine"""
     id: Final[str] = 'fsc2'
@@ -97,6 +105,9 @@ class FastSimCoal2Engine(Engine):
                     '-M',                 # estimation by composite max likelihood
                     '-n', n_simulations,  # number of simulations
                     '-L', n_loops]        # number of ECM cycles
+
+            if is_msfs(self.data_holder):
+                args.append('--multiSFS')
 
             fsc2_stdout: StringIO = io.StringIO()
 
