@@ -552,7 +552,7 @@ class TestCoreRun(unittest.TestCase):
 
         for engine in all_engines():
             print(engine.id)
-            if engine.id != "momentsLD":
+            if engine.id not in ("momentsLD", "fsc2"):
                 try:
                     settings = SettingsStorage()
                     settings.engine = engine.id
@@ -617,6 +617,23 @@ class TestCoreRun(unittest.TestCase):
                         "vcf_ld", "small",
                         "preprocessed_data.bp"
                     )
+                    settings.is_valid()
+                    gadma.core.core.job(0, shared_dict, settings)
+                finally:
+                    if check_dir_existence("Some_out_dir"):
+                        shutil.rmtree("Some_out_dir")
+            elif engine.id == "fsc2":
+                try:
+                    # TODO: Choose the best settings for fsc2
+                    settings = SettingsStorage()
+                    settings.engine = engine.id
+                    settings.output_directory = "Some_out_dir"
+                    settings.num_init_const = 2
+                    settings.global_maxiter = 4
+                    settings.local_maxiter = 1
+                    settings.model_plot_engine = "demes"
+                    sfs_file = os.path.join(DATA_PATH, "DATA", "fsc", 'jointDAFpop1_0.obs')
+                    settings.input_data = f"{sfs_file}"
                     settings.is_valid()
                     gadma.core.core.job(0, shared_dict, settings)
                 finally:
