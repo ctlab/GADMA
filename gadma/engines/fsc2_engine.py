@@ -193,33 +193,23 @@ class FastSimCoal2Engine(Engine):
 
         :return: Number of populations.
         """
-        obs_sfs_filename = Path(self.inner_data).stem
-        if obs_sfs_filename.endswith(("DAFpop0", "MAFpop0")):
-            n_of_pops = 1
-        elif obs_sfs_filename.endswith(("jointDAFpop1_0", "jointMAFpop1_0")):
-            n_of_pops = 2
-        elif obs_sfs_filename.endswith("DSFS"):
-            raise ValueError("FastSimCoal2Engine doesn't support SFSs"
-                             "that have >2 dimensions")
-            # TODO: Make it support multiSFS
-        else:
-            raise ValueError("Invalid SFS name or not a supported SFS type")
-        return n_of_pops
+        return self.sfs_data.Npop
 
     def _infer_sample_sizes(self) -> Tuple[int, ...]:
         """
         Infer sample sizes from the observed SFS file.
         :return: Sample sizes.
         """
-        with open(self.inner_data, encoding="utf-8") as sfs_file:
-            sfs_file_data = sfs_file.read()
-        sfs_file_data = sfs_file_data.expandtabs(1)
-        sfs_file_data = StringIO(sfs_file_data)
-        sfs: ndarray = np.genfromtxt(sfs_file_data, dtype=int, skip_header=2)
-        sfs = sfs[:, 1:]  # FIXME
-        sample_sizes: List[int] = list(sfs.shape)
-        sample_sizes.reverse()
-        return tuple(sample_sizes)
+        return tuple(self.sfs_data.sample_sizes.tolist())
+
+    @property
+    def sfs_data(self):
+        from gadma.engines.dadi_moments_common import read_sfs_data
+        import dadi
+        data_holder = self.data_holder if self.data_holder is not None else SFSDataHolder(self.inner_data)
+        sfs = read_sfs_data(dadi, data_holder)
+        assert isinstance(sfs, dadi.Spectrum_mod.Spectrum)
+        return sfs
 
     def _get_initial_growth_rates(self) -> Tuple[Union[int, str], ...]:
         leaves = self._leaves()
