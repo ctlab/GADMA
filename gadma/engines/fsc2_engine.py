@@ -9,7 +9,7 @@ from contextlib import redirect_stdout
 from io import StringIO
 from math import log
 from pathlib import Path
-from typing import Final, Union, List, Dict, NoReturn, Tuple, Callable, Optional, ClassVar
+from typing import Final, Union, List, Dict, NoReturn, Tuple, Callable, Optional, ClassVar, NamedTuple
 
 import numpy as np
 from numpy import ndarray
@@ -44,6 +44,12 @@ def is_msfs(data_holder: SFSDataHolder):
         return True
     else:
         return False
+
+
+class FastSimCoal2InputFiles(NamedTuple):
+    template_file: str
+    estimation_file: str
+    definition_file: str
 
 
 class FastSimCoal2Engine(Engine):
@@ -83,7 +89,7 @@ class FastSimCoal2Engine(Engine):
         self.set_model(fsc2_model)
 
         if isinstance(self.model, CustomDemographicModel):
-            assert (isinstance(self.model.function, tuple)
+            assert (isinstance(self.model.function, FastSimCoal2InputFiles)
                     and all(isinstance(elem, (str, os.PathLike)) for elem in self.model.function))
             tpl_file, est_file, def_file = self.model.function
 
