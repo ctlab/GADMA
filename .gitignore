@@ -50,3 +50,5 @@ dist/*
 # GitEye files
 /.project
 /Test Results - pytest_for_tests.html
+/model_from_GADMA.png
+/tests/test_data/DATA/vcf_ld/vcf_data_few_chr.h5
