@@ -96,7 +96,8 @@ class FastSimCoal2Engine(Engine):
         with tempfile.TemporaryDirectory(prefix=f'{self.PREFIX}_') as workdir:
             sfs_name = Path(self.data).name
             new_sfs_name = self._new_sfs_name(sfs_name, self.PREFIX)
-            shutil.copy(self.data, Path(workdir, new_sfs_name))
+            new_sfs_path = Path(workdir, new_sfs_name)
+            shutil.copy(self.data, new_sfs_path)
 
             if isinstance(self.model, TreeDemographicModel):
                 tpl_file, est_file, def_file = self.generate_code(var2value)
