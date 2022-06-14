@@ -24,6 +24,8 @@ from ..models import CustomDemographicModel
 from ..models.variables_combinations import Addition, Division
 from ..code_generator.fsc2_generator import EstimationFile, TemplateFile, DefinitionFile
 
+LINE = ("\n" + "-" * 80 + "\n")
+
 EpochModelEvent = Union[Epoch, Split]
 TreeModelEvent = Union[Leaf, LineageMovement, PopulationSizeChange]
 Model = Union[EpochDemographicModel, TreeDemographicModel]
@@ -91,6 +93,7 @@ class FastSimCoal2Engine(Engine):
         with tempfile.TemporaryDirectory(prefix=f'{self.PREFIX}_') as workdir:
             sfs_name = Path(self.data).name
             new_sfs_name = self._new_sfs_name(sfs_name, self.PREFIX)
+            print(f'{sfs_name} -> {new_sfs_name}', end=LINE)
             new_sfs_path = Path(workdir, new_sfs_name)
             shutil.copy(self.data, new_sfs_path)
 
