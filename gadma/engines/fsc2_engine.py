@@ -558,15 +558,37 @@ class FastSimCoal2Engine(Engine):
         return max_obs_lhood
 
     @staticmethod
-    def _new_sfs_name(sfs_name: str, prefix: str) -> str:
-        pattern = re.compile(r'(.*)((?:_DAFpop0|_jointDAFpop1_0)\.obs)')
-        match = re.search(pattern, sfs_name)
-        if match:
-            new_name = f'{prefix}{match.group(2)}'
+    def _new_sfs_name(sfs_file_name: str, base_name: str) -> str:
+        """
+        Replaces the base name (or adds one if absent) of an fsc2 SFS file.
+
+        Accepted input file name formats:
+
+        * ``*DAFpop0.obs``, ``*_DAFpop0.obs``
+        * ``*jointDAFpop1_0.obs``, ``*_jointDAFpop1_0.obs``
+        * ``*DSFS.obs``, ``*_DSFS.obs``
+
+        :param sfs_file_name: Name of the file to be renamed. For expected formats see the list.
+        :param base_name: New base name of the file (usually something like "gadma_fsc2")
+
+        :return: New file name.
+
+        :raise ValueError: if *sfs_file_name* doesn't conform to expected file name formats.
+        """
+        pattern_ = re.compile(r'(.*)(_(?:DAFpop0|jointDAFpop1_0|DSFS)\.obs)')
+        pattern = re.compile(r'(.*)((?:DAFpop0|jointDAFpop1_0|DSFS)\.obs)')
+        match_ = re.search(pattern_, sfs_file_name)
+        match = re.search(pattern, sfs_file_name)
+        if match is not None:
+            # '*jointDAFpop1_0.obs' -> '{base_name}_jointDAFpop1_0.obs
+            suffix = match.group(2)
+            new_name = f'{base_name}_{suffix}'
+        elif match_ is not None:
+            # '*_jointDAFpop1_0.obs' -> '{base_name}_jointDAFpop1_0.obs
+            suffix = match_.group(2)
+            new_name = f'{base_name}{suffix}'
         else:
-            pattern = re.compile(r'(.*)((?:DAFpop0|jointDAFpop1_0)\.obs)')
-            match = re.search(pattern, sfs_name)
-            new_name = f'{prefix}_{match.group(2)}'
+            raise ValueError(f"File name {sfs_file_name} does not conform to expected format")
         return new_name
 
 
