@@ -80,11 +80,6 @@ class FastSimCoal2Engine(Engine):
 
         var2value = self._process_values(values)
 
-        # [x] TODO: Implement a check for a CustomDemographicModel
-        # The CustomDemographicModel instance should have a tuple with paths to fsc2 input files.
-        # If self.model is CustomDemographicModel, skip fsc2 input file generation
-        # and pass them straight to the fsc2 call.
-
         fsc2_model, values = self._get_fsc2_model(values)
         self.model = fsc2_model
 
@@ -108,13 +103,16 @@ class FastSimCoal2Engine(Engine):
             n_simulations: int = options['n_sims'] if 'n_sims' in options else 1000
             n_loops: int = options['n_loops'] if 'n_loops' in options else 20
 
+            # See fastsimcoal2 manual (http://cmpg.unibe.ch/software/fastsimcoal2/man/fastsimcoal27.pdf)
+            # for full command line options descriptions.
             args = ['-t', Path(tpl_file.path).name,  # template parameter file
                     '-e', Path(est_file.path).name,  # parameter estimation file
                     '-F', Path(def_file.path).name,  # definition file (for the fixed variables)
-                    '-d',                 # simulate SFS
-                    '-M',                 # estimation by composite max likelihood
+                    '-d',  # simulate *derived* SFS
+                    # fsc2 will accept only *derived* (not minor allele) SFS as input in this case!
+                    '-M',  # estimation by composite max likelihood
                     '-n', n_simulations,  # number of simulations
-                    '-L', n_loops]        # number of ECM cycles
+                    '-L', n_loops]  # number of ECM cycles
 
             if is_msfs(self.data_holder):
                 args.append('--multiSFS')
@@ -353,6 +351,7 @@ class FastSimCoal2Engine(Engine):
             event_mapping[tree_event] = matching_event
         return event_mapping
 
+    # Used in FastSimCoal2Engine._map_model_events, therefore unused in general
     @staticmethod
     def _find_matching_event(tree_event: TreeModelEvent,
                              epoch_events: List[EpochModelEvent]) -> Optional[EpochModelEvent]:
@@ -364,12 +363,12 @@ class FastSimCoal2Engine(Engine):
         :param epoch_events: A list of ``EpochDemographicModel`` events that should be
             searched for matching events
         """
-        # TreeDemographicModel doesn't have an event for migration matrix switch.
-        # Therefore, this algorithm will not find a matching Epoch/Split,
-        # if there's an Epoch that has migration matrix switch as its only change
-        # compared to the Epoch after it.
-        # Which means that this change will not be recorded in the estimation file.
-        # TODO: Make a fix for this edge case
+        # TODO: Make a fix for this edge case.
+        #  TreeDemographicModel doesn't have an event for migration matrix switch.
+        #  Therefore, this algorithm will not find a matching Epoch/Split,
+        #  if there's an Epoch that has migration matrix switch as its only change
+        #  compared to the Epoch after it.
+        #  Which means that this change will not be recorded in the estimation file.
         time: TimeVariable = tree_event.t.variables[-1]
 
         def next_epoch_time(split: Split) -> Union[TimeVariable, int]:
@@ -433,6 +432,7 @@ class FastSimCoal2Engine(Engine):
     def _read_data(cls, data_holder: SFSDataHolder) -> inner_data_type:
         return data_holder.filename
 
+    # Unused
     def _get_growth_rate_for_population(self,
                                         values: ParameterValues,
                                         pop: int,
@@ -441,6 +441,7 @@ class FastSimCoal2Engine(Engine):
         growth_rates = self._get_growth_rate(values, epoch)
         return growth_rates[pop]
 
+    # Used in FastSimCoal2Engine._get_growth_rate_for_population, so unused in general
     def _get_growth_rate(self,
                          values: ParameterValues,
                          event: TreeModelEvent) -> float:
