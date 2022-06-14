@@ -86,7 +86,7 @@ class FastSimCoal2Engine(Engine):
         # and pass them straight to the fsc2 call.
 
         fsc2_model, values = self._get_fsc2_model(values)
-        self.set_model(fsc2_model)
+        self.model = fsc2_model
 
         if isinstance(self.model, CustomDemographicModel):
             assert (isinstance(self.model.function, FastSimCoal2InputFiles)
