@@ -121,7 +121,8 @@ class FastSimCoal2Engine(Engine):
 
             fsc2_stdout: StringIO = io.StringIO()
 
-            self.run_fsc2(FSC2_PATH, args, cwd=workdir, stdout=fsc2_stdout)
+            print([f.name for f in Path(workdir).iterdir()])
+            self.run_fsc2(FSC2_PATH, args, workdir=workdir, stdout=fsc2_stdout)
             print('-' * 80)
 
             likelihood = self._find_max_obs_lhood(workdir, self.PREFIX)
@@ -403,24 +404,24 @@ class FastSimCoal2Engine(Engine):
     @staticmethod
     def run_fsc2(fsc2_path: str,
                  args: List[str],
-                 cwd: Union[str, os.PathLike],
+                 workdir: Union[str, os.PathLike],
                  stdout: StringIO = None) -> NoReturn:
         """
         Run fastsimcoal2 with specified arguments. Also captures standard output.
 
         :param fsc2_path: Path to fastsimcoal2 binary file.
         :param args: Arguments to pass to fastsimcoal2.
-        :param cwd: Working directory for calculations.
+        :param workdir: Working directory for calculations.
         :param stdout: IO stream for writing standard output.
         """
         # TODO: Come up with a way to use the `subprocess` library
         assert Path(fsc2_path).exists(), "Can't find fsc2 binary"
         args: str = " ".join([str(e) for e in args])
-        command = f"cd {cwd}; {fsc2_path} {args}"
+        command = f"cd {workdir}; {fsc2_path} {args}"
         print(command)
         os.system(command)
         # with redirect_stdout(stdout):
-        #     retcode = subprocess.call([fsc2_path, args], shell=True, cwd=cwd)
+        #     retcode = subprocess.call([fsc2_path, args], shell=True, cwd=workdir)
 
     def update_data_holder_with_inner_data(self):
         # TODO: Code for processing inner data goes here
