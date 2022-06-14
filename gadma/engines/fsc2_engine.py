@@ -421,9 +421,8 @@ class FastSimCoal2Engine(Engine):
         self.data_holder.outgroup = None
 
     @classmethod
-    def _read_data(cls, data_holder: SFSDataHolder) -> Any:
-        data = data_holder.filename
-        return data
+    def _read_data(cls, data_holder: SFSDataHolder) -> inner_data_type:
+        return data_holder.filename
 
     def _get_growth_rate_for_population(self,
                                         values: ParameterValues,
