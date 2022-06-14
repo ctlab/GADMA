@@ -9,7 +9,7 @@ from contextlib import redirect_stdout
 from io import StringIO
 from math import log
 from pathlib import Path
-from typing import Final, Union, List, Dict, NoReturn, Tuple, Any, Callable, Optional
+from typing import Final, Union, List, Dict, NoReturn, Tuple, Callable, Optional, ClassVar
 
 import numpy as np
 from numpy import ndarray
@@ -48,15 +48,18 @@ def is_msfs(data_holder: SFSDataHolder):
 
 class FastSimCoal2Engine(Engine):
     """Class representing the fastsimcoal2 engine"""
-    id: Final[str] = 'fsc2'
-    supported_models: Final[list] = [CustomDemographicModel,
-                                     EpochDemographicModel,
-                                     TreeDemographicModel]
+    id: ClassVar = 'fsc2'
+    supported_models: Final = [CustomDemographicModel,
+                               EpochDemographicModel,
+                               TreeDemographicModel]
     # TODO: Edit the failed tests to skip the VCFDataHolder check
-    supported_data: Final[list] = [SFSDataHolder]
-    inner_data_type = str
+    supported_data: Final = [SFSDataHolder]
+    inner_data_type: Final = str
 
-    can_evaluate = True
+    can_evaluate: Final = True
+
+    data: inner_data_type
+    data_holder: SFSDataHolder
 
     PREFIX: Final[str] = 'gadma_fsc2'
 
