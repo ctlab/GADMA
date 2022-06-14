@@ -417,9 +417,10 @@ class FastSimCoal2Engine(Engine):
         assert Path(fsc2_path).exists(), "Can't find fsc2 binary"
         args: str = " ".join([str(e) for e in args])
         command = f"cd {cwd}; {fsc2_path} {args}"
-        # os.system(command)
-        with redirect_stdout(stdout):
-            retcode = subprocess.call([fsc2_path, args], shell=True, cwd=cwd)
+        print(command)
+        os.system(command)
+        # with redirect_stdout(stdout):
+        #     retcode = subprocess.call([fsc2_path, args], shell=True, cwd=cwd)
 
     def update_data_holder_with_inner_data(self):
         # TODO: Code for processing inner data goes here
