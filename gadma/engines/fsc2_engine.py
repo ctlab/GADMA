@@ -93,7 +93,7 @@ class FastSimCoal2Engine(Engine):
                     and all(isinstance(elem, (str, os.PathLike)) for elem in self.model.function))
             tpl_file, est_file, def_file = self.model.function
 
-        with tempfile.TemporaryDirectory(prefix=self.PREFIX) as workdir:
+        with tempfile.TemporaryDirectory(prefix=f'{self.PREFIX}_') as workdir:
             sfs_name = Path(self.data).name
             new_sfs_name = self._new_sfs_name(sfs_name, self.PREFIX)
             shutil.copy(self.data, Path(workdir, new_sfs_name))
