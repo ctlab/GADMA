@@ -234,8 +234,12 @@ class FastSimCoal2Engine(Engine):
         return tuple(growth_rates)
 
     def _leaves(self):
-        return [event for event in self.model.events
-                if isinstance(event, Leaf)]
+        leaves = []
+        for event in self.model.events:
+            if isinstance(event, Leaf):
+                leaves.append(event)
+        leaves.sort(key=lambda leaf: leaf.pop)
+        return leaves
 
     # Unused
     @property
