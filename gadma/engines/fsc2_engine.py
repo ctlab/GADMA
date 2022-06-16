@@ -587,9 +587,9 @@ class FastSimCoal2Engine(Engine):
         return est_params
 
     def _complex_parameters(self) -> List[Dict[str, Union[int, str]]]:
-        compl_params = []
-        fsc2_compl_params = self._fsc2_complex_parameters
-        for name, value in fsc2_compl_params.items():
+        complex_params = []
+        fsc2_complex_params = self._fsc2_complex_parameters
+        for name, value in fsc2_complex_params.items():
             param = {'is_int': 1,
                      'name': name,
                      'definition': value,
@@ -598,8 +598,8 @@ class FastSimCoal2Engine(Engine):
                 param['is_int'] = 0
             if not param['name'].endswith('$'):
                 param['name'] += '$'
-            compl_params.append(param)
-        return compl_params
+            complex_params.append(param)
+        return complex_params
 
     def _generate_definitions_file(self, values: ParameterValues) -> DefinitionFile:
         names = tuple(var.name for var in self.model.variables
