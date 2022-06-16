@@ -491,12 +491,13 @@ class FastSimCoal2Engine(Engine):
         :param args: Arguments to pass to fastsimcoal2.
         :param workdir: Working directory for calculations.
         """
-        # TODO: Come up with a way to use the `subprocess` library
         assert Path(fsc2_path).exists(), "Can't find fsc2 binary"
         args: str = " ".join([str(e) for e in args])
         command = f"cd {workdir}; {fsc2_path} {args}"
         print(command)
         os.system(command)
+        # TODO: Come up with a way to use the `subprocess` library
+        # stdout = io.StringIO()
         # with redirect_stdout(stdout):
         #     retcode = subprocess.call([fsc2_path, args], shell=True, cwd=workdir)
 
