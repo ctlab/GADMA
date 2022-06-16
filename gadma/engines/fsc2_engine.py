@@ -519,17 +519,27 @@ class FastSimCoal2Engine(Engine):
         """
         n_t = g.variables[0].name
         n_0 = g.variables[1].name
-        n_div = f'{n_t}_{n_0}div$'
-        n_div_complex_param = f'{n_t}$/{n_0}$'
-        self._update_fsc2_complex_params(n_div, n_div_complex_param)
-        if isinstance(g.variables[2], Addition):
-            t = self._time_to_complex_param(g.variables[2])
+        n_div_name = f'{n_t}_{n_0}div$'
+        n_div_parameter = f'{n_t}$/{n_0}$'
+
+        complex_parameters = self._fsc2_complex_parameters
+        if n_div_name not in complex_parameters:
+            complex_parameters.update({n_div_name: n_div_parameter})
+        self._fsc2_complex_parameters = complex_parameters
+
+        time = g.variables[2]
+        if isinstance(time, Addition):
+            time_name = self._time_to_complex_param(time)
         else:
-            t = g.variables[2].name + '$'
-        name = dyn.name + '$'
-        complex_param = f'log({n_div})/{t}'
-        self._update_fsc2_complex_params(name, complex_param)
-        return name
+            time_name = time.name + '$'
+
+        dyn_name = dyn.name + '$'
+        dyn_parameter = f'log({n_div_name})/{time_name}'
+
+        if dyn_name not in complex_parameters:
+            complex_parameters.update({dyn_name: dyn_parameter})
+        self._fsc2_complex_parameters = complex_parameters
+        return dyn_name
 
     def _time_to_complex_param(self, time_var: Addition) -> str:
         """
