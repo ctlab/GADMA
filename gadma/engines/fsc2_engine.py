@@ -329,10 +329,8 @@ class FastSimCoal2Engine(Engine):
             if is_msfs(self.data_holder):
                 args.append('--multiSFS')
 
-            fsc2_stdout: StringIO = io.StringIO()
-
             print([f.name for f in Path(workdir).iterdir()])
-            self.run_fsc2(FSC2_PATH, args, workdir=workdir, stdout=fsc2_stdout)
+            self.run_fsc2(FSC2_PATH, args, workdir=workdir)
             print('-' * 80)
 
             likelihood = _find_max_obs_lhood(workdir, self.PREFIX)
@@ -485,15 +483,13 @@ class FastSimCoal2Engine(Engine):
     @staticmethod
     def run_fsc2(fsc2_path: str,
                  args: List[str],
-                 workdir: Union[str, os.PathLike],
-                 stdout: StringIO = None) -> NoReturn:
+                 workdir: Union[str, os.PathLike]) -> NoReturn:
         """
-        Run fastsimcoal2 with specified arguments. Also captures standard output.
+        Run fastsimcoal2 with specified arguments.
 
         :param fsc2_path: Path to fastsimcoal2 binary file.
         :param args: Arguments to pass to fastsimcoal2.
         :param workdir: Working directory for calculations.
-        :param stdout: IO stream for writing standard output.
         """
         # TODO: Come up with a way to use the `subprocess` library
         assert Path(fsc2_path).exists(), "Can't find fsc2 binary"
