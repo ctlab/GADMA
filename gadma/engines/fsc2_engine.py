@@ -291,13 +291,13 @@ class FastSimCoal2Engine(Engine):
 
         var2value = self._process_values(values)
 
-        fsc2_model, values = self._get_fsc2_model(values)
-        self.model = fsc2_model
-
         if isinstance(self.model, CustomDemographicModel):
             assert (isinstance(self.model.function, FastSimCoal2InputFiles)
                     and all(isinstance(elem, (str, os.PathLike)) for elem in self.model.function))
             tpl_file, est_file, def_file = self.model.function
+        else:
+            fsc2_model, values = _get_fsc2_model(self.model, values)
+            self.model = fsc2_model
 
         with tempfile.TemporaryDirectory(prefix=f'{self.PREFIX}_') as workdir:
             sfs_name = Path(self.data).name
