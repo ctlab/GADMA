@@ -6,7 +6,8 @@ import tempfile
 from io import StringIO
 from math import log
 from pathlib import Path
-from typing import Final, Union, List, Dict, NoReturn, Tuple, Callable, Optional, ClassVar, NamedTuple
+from typing import Final, Union, List, Dict, NoReturn, Tuple, Callable, Optional, ClassVar, NamedTuple, Sequence, \
+    Mapping
 
 import numpy as np
 from dadi import Spectrum
@@ -498,7 +499,7 @@ class FastSimCoal2Engine(Engine):
 
     @staticmethod
     def run_fsc2(fsc2_path: str,
-                 args: List[str],
+                 args: Sequence[str],
                  workdir: Union[str, os.PathLike]) -> NoReturn:
         """
         Run fastsimcoal2 with specified arguments.
@@ -613,7 +614,7 @@ class FastSimCoal2Engine(Engine):
             est_params.append(param)
         return est_params
 
-    def _complex_parameters(self) -> List[Dict[str, Union[int, str]]]:
+    def _complex_parameters(self) -> Sequence[Mapping[str, Union[int, str]]]:
         complex_params = []
         fsc2_complex_params = self._fsc2_complex_parameters
         for name, value in fsc2_complex_params.items():
