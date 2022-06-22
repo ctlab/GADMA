@@ -217,7 +217,9 @@ def _find_max_obs_lhood(workdir, prefix) -> float:
 
 def _new_sfs_name(sfs_file_name: str, base_name: str) -> str:
     """
-    Replaces the base name (or adds one if absent) of an fsc2 SFS file.
+    Replaces the base name (or adds one if absent) of an fsc2 SFS file
+    with another base name. Mainly used to conform all input files for
+    fastsimcoal2 to a single format, so that it actually recognises them.
 
     Accepted input file name formats:
 
@@ -267,7 +269,13 @@ class FastSimCoal2InputFiles(NamedTuple):
 
 
 class FastSimCoal2Engine(Engine):
-    """Class representing the fastsimcoal2 engine"""
+    """
+    Class representing the fastsimcoal2 engine
+
+    **Note:** when passing SFS data to the engine,
+    files with more than two observed samples should be multidimensional SFS
+    (refer to `fastsimcoal2 manual <http://cmpg.unibe.ch/software/fastsimcoal2/man/fastsimcoal27.pdf>`_ for details).
+    """
     id: ClassVar = 'fsc2'
     supported_models: Final = [CustomDemographicModel,
                                EpochDemographicModel,
