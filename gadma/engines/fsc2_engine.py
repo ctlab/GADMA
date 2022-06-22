@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Final, Union, List, Dict, NoReturn, Tuple, Callable, Optional, ClassVar, NamedTuple
 
 import numpy as np
+from dadi import Spectrum
 from numpy import ndarray
 
 from . import Engine, register_engine
@@ -254,7 +255,7 @@ def _new_sfs_name(sfs_file_name: str, base_name: str) -> str:
     return new_name
 
 
-def _infer_sample_sizes(sfs_data) -> Tuple[int, ...]:
+def _infer_sample_sizes(sfs_data: Spectrum) -> Tuple[int, ...]:
     """
     Infer sample sizes from the observed SFS file.
     :return: Sample sizes.
@@ -432,7 +433,7 @@ class FastSimCoal2Engine(Engine):
         return file
 
     @property
-    def sfs_data(self):
+    def sfs_data(self) -> Spectrum:
         from gadma.engines.dadi_moments_common import read_sfs_data
         import dadi
         data_holder = self.data_holder if self.data_holder is not None else SFSDataHolder(self.inner_data)
