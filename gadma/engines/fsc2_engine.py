@@ -36,7 +36,7 @@ def fsc2_available() -> bool:
     return True
 
 
-def is_msfs(data_holder: SFSDataHolder):
+def is_multi_sfs(data_holder: SFSDataHolder):
     filename = Path(data_holder.filename).name
     if 'DSFS' in filename or 'MSFS' in filename:
         return True
@@ -326,7 +326,7 @@ class FastSimCoal2Engine(Engine):
                     '-n', n_simulations,  # number of simulations
                     '-L', n_loops]  # number of ECM cycles
 
-            if is_msfs(self.data_holder):
+            if is_multi_sfs(self.data_holder):
                 args.append('--multiSFS')
 
             print([f.name for f in Path(workdir).iterdir()])
