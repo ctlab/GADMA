@@ -222,8 +222,11 @@ def _new_sfs_name(sfs_file_name: str, base_name: str) -> str:
     Accepted input file name formats:
 
     * ``*DAFpop0.obs``, ``*_DAFpop0.obs``
+    * ``*MAFpop0.obs``, ``*_MAFpop0.obs``
     * ``*jointDAFpop1_0.obs``, ``*_jointDAFpop1_0.obs``
+    * ``*jointMAFpop1_0.obs``, ``*_jointMAFpop1_0.obs``
     * ``*DSFS.obs``, ``*_DSFS.obs``
+    * ``*MSFS.obs``, ``*_MSFS.obs``
 
     :param sfs_file_name: Name of the file to be renamed. For expected formats see the list.
     :param base_name: New base name of the file (usually something like "gadma_fsc2")
@@ -232,8 +235,8 @@ def _new_sfs_name(sfs_file_name: str, base_name: str) -> str:
 
     :raise ValueError: if *sfs_file_name* doesn't conform to expected file name formats.
     """
-    pattern_ = re.compile(r'(.*)(_(?:DAFpop0|jointDAFpop1_0|DSFS)\.obs)')
-    pattern = re.compile(r'(.*)((?:DAFpop0|jointDAFpop1_0|DSFS)\.obs)')
+    pattern_ = re.compile(r'(.*)(_(?:DAFpop0|MAFpop0|jointDAFpop1_0|jointMAFpop1_0|DSFS|MSFS)\.obs)')
+    pattern = re.compile(r'(.*)((?:DAFpop0|MAFpop0|jointDAFpop1_0|jointMAFpop1_0|DSFS|MSFS)\.obs)')
     match_ = re.search(pattern_, sfs_file_name)
     match = re.search(pattern, sfs_file_name)
     if match is not None:
@@ -320,11 +323,15 @@ class FastSimCoal2Engine(Engine):
             args = ['-t', Path(tpl_file.path).name,  # template parameter file
                     '-e', Path(est_file.path).name,  # parameter estimation file
                     '-F', Path(def_file.path).name,  # definition file (for the fixed variables)
-                    '-d',  # simulate *derived* SFS
-                    # fsc2 will accept only *derived* (not minor allele) SFS as input in this case!
                     '-M',  # estimation by composite max likelihood
                     '-n', n_simulations,  # number of simulations
                     '-L', n_loops]  # number of ECM cycles
+
+            if self.data_holder.outgroup is True:
+                # If 'outgroup' is True, then the spectrum is not folded (i.e. *not* minor allele)
+                args.append('-d')
+            else:
+                args.append('-m')
 
             if is_multi_sfs(self.data_holder):
                 args.append('--multiSFS')
@@ -508,6 +515,16 @@ class FastSimCoal2Engine(Engine):
 
     @classmethod
     def _read_data(cls, data_holder: SFSDataHolder) -> inner_data_type:
+        sfs_path = Path(data_holder.filename)
+        if data_holder.outgroup is None:
+            raise RuntimeError("Parameter 'outgroup' of the data holder is not set")
+        is_folded = not data_holder.outgroup
+        if is_folded != ('MSFS' in sfs_path.name or 'MAF' in sfs_path.name):
+            raise RuntimeError(f'Site frequency spectrum {sfs_path}'
+                               f'is expected to be {"not" if not is_folded else ""} folded, '
+                               f'but the file name does not conform to that; '
+                               'check if the file name is correct.')
+
         return data_holder.filename
 
     def _g_to_complex_param(self, g: Division, dyn: DynamicVariable) -> str:
