@@ -449,6 +449,9 @@ class TestEngines(unittest.TestCase):
 
     def test_evaluating_engines(self):
         data_holder = self.get_data_holder()
+        sfs_data_holder = SFSDataHolder(
+            str(Path(DATA_PATH, "DATA", "fsc", "DSFS.obs"))
+        )
         dm = self.get_model()
 
         values = [var.resample() for var in dm.variables]
@@ -463,7 +466,7 @@ class TestEngines(unittest.TestCase):
                 kwargs["pts"] = [5, 10, 15]  # pts
 
             if engine.can_evaluate:
-                engine.data = data_holder
+                engine.data = data_holder if engine.id != "fsc2" else sfs_data_holder
                 engine.model = dm
                 engine.evaluate(values, **kwargs)
 

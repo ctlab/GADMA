@@ -22,6 +22,8 @@ class CustomDemographicModel(DemographicModel):
                  gen_time=None, theta0=None,
                  mutation_rate=None, recombination_rate=None,
                  fixed_anc_size=None, has_anc_size=False):
+        # TODO: @EkaterinaNoskova: `self.filepath` might be a better name, since FastSimCoal2Engine uses
+        #  native fastsimcoal2 input files to define a model instead of a Python function
         self.function = function
         self.fixed_anc_size = fixed_anc_size
         super(CustomDemographicModel, self).__init__(

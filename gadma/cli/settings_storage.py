@@ -8,6 +8,7 @@ from ..data import SFSDataHolder, \
 from ..engines import get_engine, MomentsEngine, MomentsLdEngine
 from ..engines import DadiEngine
 from ..engines import all_engines, all_drawing_engines
+from ..engines.fsc2_engine import FastSimCoal2InputFiles
 from ..models import StructureDemographicModel, CustomDemographicModel
 from ..optimizers import get_local_optimizer, get_global_optimizer
 from ..optimizers import LinearConstrain
@@ -219,7 +220,9 @@ class SettingsStorage(object):
                          'const_for_mutation_rate', 'vmin',
                          'parameter_identifiers', 'migration_masks']
         exist_file_attrs = ['input_data', 'custom_filename',
-                            'bed_file', "preprocessed_data"]
+                            'bed_file', "preprocessed_data",
+                            'fsc2_template_file', 'fsc2_estimation_file',
+                            'fsc2_definition_file']
         exist_dir_attrs = ['directory_with_bootstrap',
                            'resume_from', 'recombination_maps']
         empty_dir_attrs = ['output_directory']
@@ -1325,6 +1328,18 @@ class SettingsStorage(object):
                 recombination_rate=rec_rate,
                 fixed_anc_size=self.fixed_ancestral_size,
                 has_anc_size=self.ancestral_size_as_parameter
+            )
+        elif all([self.engine == 'fsc2',
+                  self.fsc2_template_file is not None,
+                  self.fsc2_estimation_file is not None,
+                  self.fsc2_definition_file is not None]):
+            return CustomDemographicModel(
+                function=FastSimCoal2InputFiles(self.template_file,
+                                                self.estimation_file,
+                                                self.definition_file),
+                # FastSimCoal2Engine doesn't use `variables` explicitly,
+                # but I don't know if it's used elsewhere during the execution in this engine's case
+                variables=None
             )
         else:
             raise ValueError("Some settings are missed so no model is "
