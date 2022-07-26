@@ -4,7 +4,7 @@ import shutil
 import tempfile
 from math import log
 from pathlib import Path
-from typing import Final, Union, List, Dict, NoReturn, Tuple, Callable, Optional, ClassVar, NamedTuple, Sequence, \
+from typing import Final, Union, List, Dict, Tuple, Callable, Optional, ClassVar, NamedTuple, Sequence, \
     Mapping
 
 import numpy as np
@@ -498,7 +498,7 @@ class FastSimCoal2Engine(Engine):
     @staticmethod
     def run_fsc2(fsc2_path: str,
                  args: Sequence[str],
-                 workdir: Union[str, os.PathLike]) -> NoReturn:
+                 workdir: Union[str, os.PathLike]) -> None:
         """
         Run fastsimcoal2 with specified arguments.
 
