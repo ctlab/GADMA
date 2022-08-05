@@ -2,7 +2,7 @@ import io
 from io import StringIO
 from os import PathLike
 from pathlib import Path
-from typing import NoReturn, Union, Any, Optional, Tuple, List, Callable, Final, Literal
+from typing import Union, Optional, Tuple, List, Literal
 
 import numpy as np
 from numpy import ndarray
@@ -49,18 +49,18 @@ class FSC2InputFile(object):
         self._path: Optional[Path] = None
         self.file: StringIO = io.StringIO()
 
-    def write(self, line: str) -> NoReturn:
+    def write(self, line: str) -> None:
         self.file.write(f'{line}\n')
 
     @property
     def path(self) -> str:
         return str(self._path)
 
-    def write_comment(self, comment: str) -> NoReturn:
+    def write_comment(self, comment: str) -> None:
         """Write a comment to the file."""
         self.write(f'// {comment}')
 
-    def save_to_file(self, path: Union[str, PathLike]) -> NoReturn:
+    def save_to_file(self, path: Union[str, PathLike]) -> None:
         """Save in-memory representation of the input file in filesystem"""
         self._path = Path(path)
         self._path.write_text(self.file.getvalue(), encoding='utf-8')
@@ -68,29 +68,29 @@ class FSC2InputFile(object):
 
 class TemplateFile(FSC2InputFile):
     """Class for fastsimcoal2 template files."""
-    def write_number_of_population_samples(self, samples: int) -> NoReturn:
+    def write_number_of_population_samples(self, samples: int) -> None:
         """Write the number of population samples to the file.
 
         :param samples: Number of population samples"""
         self.write_comment('Number of population samples (demes)')
         self.write(f'{samples}')
 
-    def write_initial_effective_population_sizes(self, sizes: tuple) -> NoReturn:
+    def write_initial_effective_population_sizes(self, sizes: tuple) -> None:
         """Write effective population sizes to the file.
 
         :param sizes: Effective population sizes"""
         self.write_comment('Population effective sizes (number of genes)')
         self._write_multiline_data(sizes)
 
-    def write_sample_sizes(self, sizes: tuple) -> NoReturn:
+    def write_sample_sizes(self, sizes: tuple) -> None:
         self.write_comment('Sample sizes')
         self._write_multiline_data(sizes)
 
-    def write_initial_growth_rates(self, rates: Tuple[Union[str, int, float], ...]) -> NoReturn:
+    def write_initial_growth_rates(self, rates: Tuple[Union[str, int, float], ...]) -> None:
         self.write_comment('Growth rates (negative growth implies population expansion)')
         self._write_multiline_data(rates)
 
-    def _write_multiline_data(self, data: Tuple[Union[str, int, float], ...]) -> NoReturn:
+    def _write_multiline_data(self, data: Tuple[Union[str, int, float], ...]) -> None:
         """Write data that spans multiple lines.
 
         :param data: data to write"""
@@ -100,7 +100,7 @@ class TemplateFile(FSC2InputFile):
             else:
                 self.write(f'{_format_as_fsc2_keyword(str(point))}')
 
-    def write_migration_matrices(self, matrices: Tuple[ndarray, ...]) -> NoReturn:
+    def write_migration_matrices(self, matrices: Tuple[ndarray, ...]) -> None:
         self.write_comment('Number of migration matrices. 0 implies no migration between demes')
         self.write(f'{len(matrices)}')
         for array, n in zip(matrices, range(0, len(matrices))):
@@ -111,7 +111,7 @@ class TemplateFile(FSC2InputFile):
             matrix = _ndarray_to_multiline_str(array, formatter)
             self.write(f'{matrix}')
 
-    def write_multiple_events(self, events: Tuple[dict, ...]) -> NoReturn:
+    def write_multiple_events(self, events: Tuple[dict, ...]) -> None:
         """
         Write historical events to the template file.
 
@@ -146,7 +146,7 @@ class TemplateFile(FSC2InputFile):
                      new_sink_growth_rate: Union[float, str] = 'keep',
                      new_migration_matrix: Union[int, str] = 'keep',
                      no_migrations: bool = False,
-                     absolute_resize: bool = True) -> NoReturn:
+                     absolute_resize: bool = True) -> None:
         """
         Write a line containing event details.
 
@@ -193,7 +193,7 @@ class TemplateFile(FSC2InputFile):
 
     def write_chromosomes(self,
                           number_of_chromosomes: int,
-                          different_structure: bool = False) -> NoReturn:
+                          different_structure: bool = False) -> None:
         """
         Write chromome data to the file.
 
@@ -207,7 +207,7 @@ class TemplateFile(FSC2InputFile):
         self.write_comment('Number of independent loci/chromosome')
         self.write(f'{number_of_chromosomes} {different_structure}')
 
-    def write_chromosome_blocks(self, blocks: int) -> NoReturn:
+    def write_chromosome_blocks(self, blocks: int) -> None:
         """
         Write number of chromosome blocks to the template file.
 
@@ -220,7 +220,7 @@ class TemplateFile(FSC2InputFile):
                                data_type: DataType,
                                markers: Union[int, str],
                                recombination_rate: Union[float, str],
-                               **kwargs) -> NoReturn:
+                               **kwargs) -> None:
         """
         Write properties of a single chromosome block.
 
@@ -292,7 +292,7 @@ class EstimationFile(FSC2InputFile):
         self.write_comment('*********************')
 
     # TODO: Implement the `padding`
-    def write_parameters(self, parameters: List[dict], padded: bool = False) -> NoReturn:
+    def write_parameters(self, parameters: List[dict], padded: bool = False) -> None:
         """
         Write parameters.
 
@@ -313,7 +313,7 @@ class EstimationFile(FSC2InputFile):
                                 minimum: Union[float, int],
                                 maximum: Union[float, int],
                                 output: bool,
-                                bounded: bool) -> NoReturn:
+                                bounded: bool) -> None:
         """
         Write a single parameter to the file.
 
@@ -348,7 +348,7 @@ class EstimationFile(FSC2InputFile):
             bounded = ''
         return is_int, name, output, bounded
 
-    def write_complex_parameters(self, parameters: List[dict]) -> NoReturn:
+    def write_complex_parameters(self, parameters: List[dict]) -> None:
         """
         Write complex parameters.
 
@@ -363,7 +363,7 @@ class EstimationFile(FSC2InputFile):
                                         is_int: bool,
                                         name: str,
                                         definition: str,
-                                        output: bool) -> NoReturn:
+                                        output: bool) -> None:
         is_int, name, output, _ = self._process_arguments(is_int, name, output)
         self.write(f'{is_int} {name} = {definition} {output}')
 
