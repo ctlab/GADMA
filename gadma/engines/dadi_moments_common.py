@@ -247,6 +247,12 @@ class DadiOrMomentsEngine(Engine):
             # theta.
             theta = self._get_theta_from_sfs(values_gen, model_sfs)
         ll_model = self.base_module.Inference.ll(theta * model_sfs, self.data)
+        # Additional check for ll - it could not be better than ll(data, dara)
+        # If it is so then just engine was not stable
+        max_ll = self.base_module.Inference.ll(self.data, self.data)
+        if ll_model > max_ll:
+            ll_model = None  # we remove that value
+            theta = None
         # Save simulated data
         key = self._get_key(values, grid_sizes)
         self.saved_add_info[key] = theta
