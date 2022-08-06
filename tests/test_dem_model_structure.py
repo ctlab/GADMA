@@ -253,8 +253,8 @@ class TestModelStructure(unittest.TestCase):
                         # get ll of data
                         try:
                             ll_true = engine.evaluate(x_cor, **kwargs)
-                        except AttributeError:
-                            assert engine.id == "dadi"
+                        except AttributeError as e:
+                            assert engine.id == "dadi", str(e)
                         random_int = np.random.choice(range(len(structure)))
                     # increase structure
                     for i in range(len(structure)):
@@ -284,14 +284,17 @@ class TestModelStructure(unittest.TestCase):
                                 if has_anc and engine.id in ["dadi", "moments"]:
                                     continue
                                 else:
-                                    is_equal = np.allclose(ll_true, new_ll)
+                                    if ll_true is None:
+                                        is_equal = new_ll is None
+                                    else:
+                                        is_equal = np.allclose(ll_true, new_ll)
                                 self.assertTrue(is_equal,
                                                 msg=f"{ll_true} != {new_ll} : {msg}")
-                            except AttributeError:
-                                assert engine.id in ["dadi"]
+                            except AttributeError as e:
+                                assert engine.id in ["dadi"], str(e)
                                 failed += 1
-                            except TypeError:
-                                assert engine.id in ["dadi"]
+                            except TypeError as e:
+                                assert engine.id in ["dadi"], str(e)
                                 failed += 1
 
                 dm.final_structure = dm.get_structure()

@@ -758,8 +758,15 @@ class TestModels(unittest.TestCase):
                         exec(cmd, d)
 
                         msg += f": {true_ll} != {d['ll_model']}"
-                        self.assertTrue(np.allclose(true_ll, d['ll_model']),
-                                        msg=msg)
+                        if true_ll is None:  # if we have None
+                            assert engine.id in ['dadi', 'moments']
+                            max_ll = engine.base_module.Inference.ll(
+                                engine.data, engine.data
+                            )
+                            self.assertTrue(d['ll_model'] > max_ll)
+                        else:  # if everything is okay
+                            self.assertTrue(np.allclose(true_ll, d['ll_model']),
+                                            msg=msg)
                         if (description == "dadi snp file" and
                                 engine.id in ["dadi", "moments"]):
                             engine.data_holder.population_labels = None
