@@ -284,8 +284,9 @@ class TestModelStructure(unittest.TestCase):
                                 if has_anc and engine.id in ["dadi", "moments"]:
                                     continue
                                 else:
-                                    if ll_true is None:
-                                        is_equal = new_ll is None
+                                    if ll_true is None or new_ll is None:
+                                        assert engine.id in ['dadi', 'moments']
+                                        is_equal = ll_true is None and new_ll is None
                                     else:
                                         is_equal = np.allclose(ll_true, new_ll)
                                 self.assertTrue(is_equal,
