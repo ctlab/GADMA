@@ -241,7 +241,11 @@ def print_runs_summary(start_time, shared_dict, settings):
                 # but we want to print theta
                 theta = engine.get_theta(x, *settings.get_engine_args())
                 Nanc = engine.get_N_ancestral_from_theta(theta)
-                addit_str += f"(theta = {theta: .2f})"
+                if theta is None:
+                    theta_str = "None"
+                else:
+                    theta_str = f"{theta: .2f}"
+                addit_str += f"(theta = {theta_str})"
             elif not is_custom:
                 Nanc = engine.get_N_ancestral(x, *settings.get_engine_args())
             elif all([
