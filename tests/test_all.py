@@ -398,7 +398,7 @@ class TestRestore(unittest.TestCase):
                      "Silence: True\n"
                      "global_maxiter: 2\n"
                      "local_maxeval: 0\n")
-        sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
+        sys.argv = ['gadma', '-p', params_file]
         try:
             self.assertRaises(ValueError, core.main)
         finally:
