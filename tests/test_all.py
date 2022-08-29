@@ -390,17 +390,21 @@ class TestRestore(unittest.TestCase):
     def test_ga_with_ml_models(self):
         output_dir = os.path.join(DATA_PATH,
                                   'ga_with_ml_models')
+        input_data = os.path.join("examples", "changing_theta", "YRI_CEU.fs")
         params_file = 'params'
         with open(params_file, 'w') as fl:
-            fl.write("Stuck generation number: 2\n"
-                     "Projections: 4,4\n"
+            fl.write(f"Input data: {input_data}\n"
+                     f"Output directory: {output_dir}\n"
+                     "Stuck generation number: 2\n"
+                     "Projections: 5,5\n"
+                     "Initial structure: 1,1\n"
                      "Used ML models: [RandomForestIndependent, RandomForestDependent, RandomForestMultiOutput, CNN]\n"
                      "Silence: True\n"
                      "global_maxiter: 2\n"
                      "local_maxeval: 0\n")
         sys.argv = ['gadma', '-p', params_file]
         try:
-            self.assertRaises(ValueError, core.main)
+            core.main()
         finally:
             if check_dir_existence(output_dir):
                 shutil.rmtree(output_dir)
