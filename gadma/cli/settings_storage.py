@@ -16,6 +16,7 @@ from ..utils import check_dir_existence, check_file_existence, abspath,\
 from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable,\
     ContinuousVariable, DynamicVariable, GrowthRateVariable,\
     SelectionVariable, FractionVariable, DemographicVariable
+from ..utils import ml_models
 from ..data import extract_chromosomes_from_vcf
 from ..data import create_recombination_maps_from_rate
 from ..data import create_bed_files_and_extract_chromosomes
@@ -238,7 +239,7 @@ class SettingsStorage(object):
                         'model_plot_engine', 'demes_available',
                         'demesdraw_available',
                         'kernel', 'acquisition_function', 'sequence_length',
-                        'dadi_extrapolation']
+                        'dadi_extrapolation', 'used_ml_models']
         dict_attrs = ['ld_kwargs']
 
         super_hasattr = True
@@ -747,6 +748,17 @@ class SettingsStorage(object):
         if name == 'number_of_processes':
             MomentsLdEngine.n_processes = value
 
+        # 3.14 ML models
+        if name == "used_ml_models":
+            if isinstance(value, str):
+                value = [value]
+            for ml_model_id in value:
+                if ml_model_id not in ml_models.id2class:
+                    raise ValueError(
+                        f"Unknown ML model to use: {ml_model_id}.\n"
+                        f"Available ML models: {ml_models.id2class.keys()}"
+                    )
+
         if setattr_at_the_end:
             super(SettingsStorage, self).__setattr__(name, value)
             # assert(self.__getattr__(name) == value)
@@ -1189,6 +1201,19 @@ class SettingsStorage(object):
         """
         Returns kwargs for first run of optimization. (`X_init` and `Y_init`).
         """
+        if len(self.used_ml_models) > 0:
+            if self._inner_data is None:
+                raise ValueError("Read data first to use ML models.")
+            if self.X_init is None:
+                self.X_init = []
+            for ml_model_id in self.used_ml_models:
+                ml_mod = ml_models.id2class[ml_model_id]()
+                self.X_init.append(
+                    ml_mod.predict_for_structure_model(
+                        dem_model=self.get_model(),
+                        data=self._inner_data,
+                    )
+                )
         return {'X_init': self.X_init, 'Y_init': self.Y_init}
 
     def get_engine_args(self, engine_id=None):
@@ -1555,3 +1580,19 @@ class SettingsStorage(object):
                     (self.data_holder.projections,
                      labels) = check_and_return_projections_and_labels(
                         self.data_holder)
+
+        if len(self.used_ml_models) > 0:
+            if self.custom_filename is not None:
+                raise ValueError(
+                    "ML models could be used only for demographicd inference "
+                    "with structure. "
+                )
+            if len(self.initial_structure) != 2:
+                raise ValueError(
+                    "ML models could be used only for demographicd inference "
+                    "of two populations. "
+                )
+            if self.engine not in ["dadi", "moments"]:
+                raise ValueError(
+                    "ML models could be used only for dadi or moments engines."
+                )
