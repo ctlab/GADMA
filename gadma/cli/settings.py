@@ -172,12 +172,7 @@ local_maxeval = None
 local_log_transform = True
 
 # ML models
-used_ml_models = [
-    "RandomForestIndependent",
-    "RandomForestDependent",
-    "RandomForestMultiOutput",
-    "CNN"
-]
+used_ml_models = []
 
 # Additional constants
 P_IDS = {'n': PopulationSizeVariable, 't': TimeVariable,

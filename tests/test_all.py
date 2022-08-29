@@ -386,3 +386,22 @@ class TestRestore(unittest.TestCase):
             os.remove(params_file)
             gadma.PIL_available = True
             gadma.moments_available = True
+
+    def test_ga_with_ml_models(self):
+        output_dir = os.path.join(DATA_PATH,
+                                  'ga_with_ml_models')
+        params_file = 'params'
+        with open(params_file, 'w') as fl:
+            fl.write("Stuck generation number: 2\n"
+                     "Projections: 4,4\n"
+                     "Used ML models: [RandomForestIndependent, RandomForestDependent, RandomForestMultiOutput, CNN]\n"
+                     "Silence: True\n"
+                     "global_maxiter: 2\n"
+                     "local_maxeval: 0\n")
+        sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
+        try:
+            self.assertRaises(ValueError, core.main)
+        finally:
+            if check_dir_existence(output_dir):
+                shutil.rmtree(output_dir)
+            os.remove(params_file)
