@@ -1,0 +1,13 @@
+Input file: fs_data.fs
+Output directory: gadma_with_ml_models_results
+Initial structure: 2,1
+
+# We want to use all available ML models
+Used ML models: [RandomForestIndependent, RandomForestDependent, RandomForestMultiOutput, CNN]
+
+# For example inference we restrict number of evaluations
+global maxeval: 2000
+local optimizer: None
+
+Number of repeats: 32
+Number of processes: 4

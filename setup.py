@@ -33,7 +33,20 @@ with open('README.md') as f:
 
 requirements = ['numpy', 'scipy', 'matplotlib',
                 'Pillow', 'Cython', 'mpmath', 'nlopt', 'ruamel.yaml',
-                'dadi', 'scikit-allel']
+                'dadi', 'scikit-allel', "tensorflow", "keras", "sklearn"]
+
+saved_ml_models = []
+ml_models_path = os.path.join("gadma", "utils", "saved_ml_models")
+for filename in os.listdir(ml_models_path):
+    path = os.path.join(ml_models_path, filename)
+    write_path = os.path.join("saved_ml_models", filename)
+    if os.path.isdir(path):
+        for subfilename in os.listdir(path):
+            saved_ml_models.append(os.path.join(write_path, subfilename))
+    else:
+        saved_ml_models.append(write_path)
+
+print(saved_ml_models)
 
 setup(
     name=NAME,
@@ -55,7 +68,8 @@ setup(
     packages=find_packages(exclude=['examples', 'tests']),
     include_package_data=True,
     package_data={
-        'gadma.cli': ['*.py', 'params_template', 'extra_params_template', 'test_settings']
+        'gadma.cli': ['*.py', 'params_template', 'extra_params_template', 'test_settings'],
+        'gadma.utils': ["*.py", *saved_ml_models]
     },
     data_files=[["gadma", ["gadma/test.fs"]], ("", ["LICENSE"])],
     install_requires=requirements,

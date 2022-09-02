@@ -1,0 +1,11 @@
+Input file: data_and_model/fs_data.fs
+Output directory: bo_combination
+Custom filename: data_and_model/demographic_model.py
+
+Num init const: 2
+Global optimizer: SMAC_BO_combination
+Global maxeval: 200
+ 
+Number of repeats: 64
+Number of processes: 8
+

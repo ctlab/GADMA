@@ -1,0 +1,9 @@
+Input file: fs_data.fs
+Output directory: usual_gadma_results
+Initial structure: 2,1
+
+# For example inference we restrict number of evaluations
+global maxeval: 2000
+
+Number of repeats: 32
+Number of processes: 4

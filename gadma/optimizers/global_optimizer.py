@@ -109,7 +109,7 @@ class GlobalOptimizer(Optimizer):
                 Y = [self.sign * y for y in Y_init]
             else:
                 Y = list()
-            for x in X_init[len(Y):]:
+            for x in X[len(Y):]:
                 X.append(x)
                 Y.append(f(x))
         for _ in range(num_init - len(X)):
