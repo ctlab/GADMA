@@ -11,3 +11,4 @@ Examples
    changing_theta_example
    structure_model_moments_ld_example
    inference_for_four_and_five_populations
+   using_ml_models
