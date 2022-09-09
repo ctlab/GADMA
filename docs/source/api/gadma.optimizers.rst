@@ -39,6 +39,9 @@ The following optimizers are registered:
 +---------------------------------+------------------------------------------------------------------------------------------+---------------------------------------------------+
 | "SMAC_BO_optimization"          | Bayesian optimization (`SMAC <https://github.com/automl/SMAC3>`_)                        | :class:`gadma.optimizers.SMACBayesianOptimizer`   |
 +---------------------------------+------------------------------------------------------------------------------------------+---------------------------------------------------+
+| "SMAC_BO_combination"           | Bayesian optimization ensemble                                                           | :class:`gadma.optimizers.SMACBOKernelCombination` |
++---------------------------------+------------------------------------------------------------------------------------------+---------------------------------------------------+
+
 
 
 .. automodule:: gadma.optimizers.global_optimizer

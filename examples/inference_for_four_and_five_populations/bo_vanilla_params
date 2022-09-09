@@ -1,0 +1,19 @@
+Input file: data_and_model/fs_data.fs
+Output directory: bo_combination
+Custom filename: data_and_model/demographic_model.py
+
+Num init const: 2
+
+Global optimizer: SMAC_BO_optimization
+# Choice of prior for Gaussian process
+# Could be: exponential, Matern32, Matern52, RBF
+Kernel: matern52
+# Choice of acquisition function for BO
+# Could be: EI, PI, logEI
+Acquisition function: PI
+
+Global maxeval: 200
+ 
+Number of repeats: 64
+Number of processes: 8
+

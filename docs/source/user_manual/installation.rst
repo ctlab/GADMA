@@ -6,7 +6,13 @@ Dependencies
 
 **The current version of GADMA (greater than 2.0.0) supports Python3 only**. `Older versions <https://github.com/ctlab/GADMA/releases/tag/1.0.2>`_ supported Python 2 as well but not any more.
 
-GADMA requires the following dependencies:
+Below we hightlight GADMA dependencies. All of them could be easily installed using requirements files which are specified in the brackets before lists. To install dependencies from requerement file run:
+
+.. code-block:: console
+
+    $ pip -r requirements_file
+
+GADMA requires the following dependencies (`requirements/minimal.txt`):
 
 * Python3
 * NumPy (>= 1.2.0)
@@ -20,15 +26,26 @@ GADMA requires the following dependencies:
 * Cython (for ``moments``)
 * mpmath (for ``moments``)
 
-To draw demographic models one should also install the following packages:
+To draw demographic models one should also install the following packages (`requirements/minimal.txt`):
 
 * matplotlib (>= 0.98.1)
 * Pillow (>= 4.2.1) - optional
 * ``moments`` (>= 1.0.0)
 
-To calculate confidence intervals one should install:
+To use ``demes`` engine to draw models (`requirements/engines.txt`):
+
+* demes
+* demesdraw
+
+To calculate confidence intervals one should install (`requirements/minimal.txt`):
 
 * pandas
+
+To run Bayesian optimization `smac` of specified version is requered (`requirements/bayes_opt.txt`):
+
+* scikit-optimize
+* configspace
+* smac (**==0.13.1**)
 
 .. note::
     ``momi`` package sometimes is not installed correctly for Windows and MacOS. If ``momi`` is not available please install it manually following the installation instructions in `momi's manual <https://momi2.readthedocs.io/en/latest/installation.html#>`_.
@@ -176,7 +193,7 @@ Install dependencies manually:
 3) Install GADMA
     .. code-block:: console
 
-        $ python3 setup.py install
+        $ pip install .
 
 Verifying installation
 -------------------------

@@ -8,6 +8,13 @@ If you use GADMA in your research please cite:
 
 .. [Noskova2020] Ekaterina Noskova, Vladimir Ulyantsev, Klaus-Peter Koepfli, Stephen J O’Brien, Pavel Dobrynin, GADMA: Genetic algorithm for inferring demographic history of multiple populations from allele frequency spectrum data, *GigaScience*, Volume 9, Issue 3, March 2020, giaa005, `<https://doi.org/10.1093/gigascience/giaa005>`_
 
+If you use GADMA2 please cite:
+
+.. [Noskova2022GADMA2] Ekaterina Noskova, Nikita Abramov, Stanislav Iliutkin, Anton Sidorin, Pavel Dobrynin, and Vladimir Ulyantsev, GADMA2: more efficient and flexible demographic inference from genetic data, *bioRxiv*, 2022, `<https://doi.org/10.1101/2022.06.14.496083>`_
+
+If you use Bayesian optimization implemented GADMA please cite:
+
+.. [Noskova2022BO] Ekaterina Noskova and Viacheslav Borovitskiy, Bayesian optimization for demographic inference, *bioRxiv*, 2022, `<https://doi.org/10.1101/2022.09.06.506809>`_
 
 Engine citations
 ----------------

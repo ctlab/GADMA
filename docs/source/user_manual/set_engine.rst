@@ -40,6 +40,18 @@ Engine comparison
      - ``momi2``
      - ``momentsLD``
 
+   * - Max pop. num. custom model
+     - 5
+     - 5
+     - ∞
+     - 5
+
+   * - Max pop. num. structure model
+     - 3
+     - 3
+     - 3
+     - 3
+
    * - VCF input data
      - ✅
      - ✅

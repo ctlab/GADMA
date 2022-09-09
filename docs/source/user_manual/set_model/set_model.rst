@@ -23,7 +23,7 @@ Types of demographic models
 
 GADMA could infer two base types of demographic models:
 
-* `Demographic model with structire <set_model_struct.rst>`__. It is a more flexible model type as dynamics of population size change could be inferred and it has a lot of options for parameters.
+* `Demographic model with structire <set_model_struct.rst>`__ (up to 3 populations). It is a more flexible model type as dynamics of population size change could be inferred and it has a lot of options for parameters.
 
 .. admonition:: Related options
 
@@ -45,7 +45,7 @@ GADMA could infer two base types of demographic models:
       * ``Upper bound of first split`` limits upper bound of the most ancient split.
       * ``Upper bound of second split`` limits upper bounds of next to the most ancient split.
 
-* `Custom demographic model <set_model_custom.rst>`__ as usual in ``dadi`` and ``moments``. Using such a model will give more control over parameters but is less flexible.
+* `Custom demographic model <set_model_custom.rst>`__. It is a usual user-specified model like in ``dadi``, ``moments`` and other tools for demographic inference. Using such a model will give more control over parameters and could be used for inference of more than 3 populations but is less flexible.
 
 .. admonition:: Related options
 
