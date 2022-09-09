@@ -339,7 +339,8 @@ def check_required_settings(settings_storage):
                                  " masks are set.")
 
         # if we have more than three populations we cannot use structure models
-        if settings_storage.number_of_populations > 3:
+        if (hasattr(settings_storage, "number_of_populations") and
+                settings_storage.number_of_populations > 3):
             raise ValueError(
                 "GADMA cannot infer structure demographic model for more than "
                 "three populations. Got number of populations: "
@@ -348,7 +349,8 @@ def check_required_settings(settings_storage):
 
     # Checks for Bayesian optimization
     if settings_storage.global_optimizer == "SMAC_BO_combination":
-        if settings_storage.number_of_populations <= 3:
+        if (hasattr(settings_storage, "number_of_populations") and
+                settings_storage.number_of_populations <= 3):
             warnings.warn(
                 "CAREFUL Bayesian optimization was set as a global search "
                 "algorithm. It is not effective when population number "
