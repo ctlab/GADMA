@@ -83,6 +83,7 @@ jobs:
         run: |
           bash install
           pip3 install -r requirements/bayes_opt.txt
+          pip3 install -r requirements/bayes_opt_addit.txt
 
       - name: Uninstall SMAC (Windows).
         if: runner.os == 'Windows'
