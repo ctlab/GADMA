@@ -337,3 +337,38 @@ def check_required_settings(settings_storage):
                                  "should be equal to the setting Initial "
                                  f"structure ({init_struct}) because migration"
                                  " masks are set.")
+
+        # if we have more than three populations we cannot use structure models
+        if settings_storage.number_of_populations > 3:
+            raise ValueError(
+                "GADMA cannot infer structure demographic model for more than "
+                "three populations. Got number of populations: "
+                f"{settings_storage.number_of_populations}"
+            )
+
+    # Checks for Bayesian optimization
+    if settings_storage.global_optimizer == "SMAC_BO_combination":
+        if settings_storage.number_of_populations <= 3:
+            warnings.warn(
+                "CAREFUL Bayesian optimization was set as a global search "
+                "algorithm. It is not effective when population number "
+                "is less than four. Got the number of populations: "
+                f"{settings_storage.number_of_populations}."
+            )
+        if settings_storage.engine == "momi2":
+            warnings.warn(
+                "CAREFUL Bayesian optimization was set as a global search "
+                "algorithm. It is not effective for momi2 engine!"
+            )
+        if settings_storage.engine == "momentsLD":
+            warnings.warn(
+                "CAREFUL Bayesian optimization was set as a global search "
+                "algorithm. The efficiency for momentsLD engine is not known."
+            )
+        if settings_storage.num_init_const != 2:
+            warnings.warn(
+                "CAREFUL Bayesian optimization was set as a global search "
+                "algorithm. The `Num init const` is not equal to 2. "
+                "If you have not done it on perpose, please specify it "
+                "manually in your params_file."
+            )
