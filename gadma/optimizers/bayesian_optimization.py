@@ -445,7 +445,7 @@ class SMACSquirrelOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         return self.run_info.result
 
 
-if smac_available:
+if smac_available and bayesmark_available:
     register_global_optimizer(
         'SMAC_squirrel_optimization',
         SMACSquirrelOptimizer
