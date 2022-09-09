@@ -372,6 +372,34 @@ class TestCLI(unittest.TestCase):
         settings.number_of_populations = 2
         self.assertTrue(settings.initial_structure == [1, 1])
 
+        # check that we cannot infer structure model when pop num is >3
+        settings = SettingsStorage()
+        settings.number_of_populations = 4
+        self.assertRaises(ValueError, check_required_settings, settings)
+
+        # Bayesian optimization
+        settings = SettingsStorage()
+        settings.custom_filename =  os.path.join(
+            DATA_PATH, "MODELS", "demographic_model_dadi_3pops.py")
+        settings.global_optimizer = "SMAC_BO_combination"
+        if dadi_available:
+            settings.engine = "dadi"
+            settings.number_of_populations = 2
+            check_required_settings(settings)
+        if momi_available:
+            settings.engine = "momi"
+            settings.number_of_populations = 5
+            check_required_settings(settings)
+        if moments_LD_available:
+            settings.engine = "momentsLD"
+            settings.number_of_populations = 5
+            check_required_settings(settings)
+        if moments_available:
+            settings.engine = "moments"
+            settings.number_of_populations = 5
+            settings.num_init_const = 10
+            check_required_settings(settings)
+
     def test_old_param_file(self):
         # ignore warnings about deprecation and renaming
         warnings.filterwarnings(action='ignore', category=UserWarning,
