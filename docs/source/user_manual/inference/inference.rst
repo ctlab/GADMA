@@ -1,6 +1,12 @@
 Inference
 ===========
 
+.. toctree::
+   :hidden:
+
+   set_optimizer
+   bayes_opt
+
 .. admonition:: Related options
 
     * **Base options**:
@@ -20,8 +26,13 @@ Inference
 
 GADMA could be customized to use different to default optimization algorithms:
 
-* :ref:`List of available global optimizers.<Global optimizers list>`
-* :ref:`List of available local optimizers.<Local optimizers list>`
+* :ref:`List of all available global optimizers.<Global optimizers list>`
+* :ref:`List of all available local optimizers.<Local optimizers list>`
+
+More specific information:
+
+- `How to choose optimizer <set_optimizer.rst>`__
+- `Demographic inference for more than three populations <bayes_opt.rst>`__
 
 GADMA's inference could be run both from command-line and from Python directly.
 
@@ -51,6 +62,7 @@ Usage of GADMA:
         	--test			run test case.
 
         In case of any questions or problems, please contact: ekaterina.e.noskova@gmail.com
+
 
 Resume launch
 -----------------

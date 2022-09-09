@@ -6,15 +6,25 @@ Welcome to GADMA v2!
 
 GADMA implements methods for automatic inference of the joint demographic history of multiple populations from the genetic data.
 
-**GADMA is a command-line tool**. Basic pipeline presents a series of launches of the genetic algorithm folowed by local search optimization and infers demographic history from the Allele Frequency Spectrum of multiple populations (up to three).<br/>
+**GADMA is a command-line tool**. Basic pipeline presents a series of launches of the global search algorithm folowed by the local search optimization.
+
+GADMA provides two types of demograpic inference: 1) for user-specified model of demographic history or a custom model, 2) automatic inference for the model with specified structure (up to three populations, see more [here](https://gadma.readthedocs.io/en/latest/user_manual/set_model/set_model_struct.html)).
+
+GADMA provides choice of several engines of demographic inference. This list will be extended in the future. Available engines and maximum number of supported populations for custom model:
+
+* [∂a∂i](https://bitbucket.org/gutenkunstlab/dadi/) (up to 5 populations)
+* [*moments*](https://bitbucket.org/simongravel/moments/) (up to 5 populations)
+* [*momi2*](https://github.com/popgenmethods/momi2/) (up to ∞ populations)
+* [*momentsLD*](https://bitbucket.org/simongravel/moments/) - extenstion of *moments* (up to 5 populations)
+
+More information about engines see [here](https://gadma.readthedocs.io/en/latest/user_manual/set_engine.html).
+
 GADMA features variuos optimization methods ([global](https://gadma.readthedocs.io/en/latest/api/gadma.optimizers.html#global-optimizers-list) and [local](https://gadma.readthedocs.io/en/latest/api/gadma.optimizers.html#local-optimizers-list) search algorithms) which may be used for [any general optimization problem](https://gadma.readthedocs.io/en/latest/api_examples/optimization_example.html).
 
-GADMA provides choice of several engines of demographic inference (this list will be extended in the future):
+Two global search algorithms are supported in GADMA:
 
-* [∂a∂i](https://bitbucket.org/gutenkunstlab/dadi/)
-* [*moments*](https://bitbucket.org/simongravel/moments/)
-* [*momi2*](https://github.com/popgenmethods/momi2/)
-* [*momentsLD*](https://bitbucket.org/simongravel/moments/) - extenstion of *moments*
+* Genetic algorithm — the most common choice of optimization,
+* Bayesian optimization — for demographic inference with time-consuming evaluations, e.g. for four and five populations using *moments* or ∂a∂i.
 
 GADMA is developed in Computer Technologies laboratory at ITMO University under the supervision of [Vladimir Ulyantsev](https://ulyantsev.com/) and Pavel Dobrynin. The principal maintainer is [Ekaterina Noskova](http://enoskova.me/) (ekaterina.e.noskova@gmail.com)
 
@@ -39,3 +49,11 @@ Please see full list of citations in [documentation](https://gadma.readthedocs.i
 If you use GADMA in your research please cite:
 
 Ekaterina Noskova, Vladimir Ulyantsev, Klaus-Peter Koepfli, Stephen J O’Brien, Pavel Dobrynin, GADMA: Genetic algorithm for inferring demographic history of multiple populations from allele frequency spectrum data, *GigaScience*, Volume 9, Issue 3, March 2020, giaa005, <https://doi.org/10.1093/gigascience/giaa005>
+
+If you use GADMA2 in your research please cite:
+
+Ekaterina Noskova, Nikita Abramov, Stanislav Iliutkin, Anton Sidorin, Pavel Dobrynin, and Vladimir Ulyantsev, GADMA2: more efficient and flexible demographic inference from genetic data, *bioRxiv*, 2022, <https://doi.org/10.1101/2022.06.14.496083>
+
+If you use Bayesian optimization please cite:
+
+Ekaterina Noskova and Viacheslav Borovitskiy, Bayesian optimization for demographic inference, *bioRxiv*, 2022, <https://doi.org/10.1101/2022.09.06.506809>

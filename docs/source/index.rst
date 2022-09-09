@@ -8,9 +8,7 @@ Welcome to GADMA's documentation!
 
 GADMA [Noskova2020]_ implements methods for automatic inference of the joint demographic history of multiple populations from genetic data.
 
-**GADMA is a command-line tool**. It presents a series of launches of the genetic algorithm and infers demographic history from the Allele Frequency Spectrum of multiple populations (up to three).
-
-GADMA features variuos optimization methods (`global <https://gadma.readthedocs.io/en/latest/api/gadma.optimizers.html#global-optimizers-list>`_ and `local <https://gadma.readthedocs.io/en/latest/api/gadma.optimizers.html#local-optimizers-list>`_ search algorithms) which may be used for `any general optimization problem <https://gadma.readthedocs.io/en/latest/api_examples/optimization_example.html>`_.
+**GADMA is a command-line tool**. It presents a series of launches of the global and local search algorithms and infers demographic history of multiple populations. The automatic inference handles up to three populations.
 
 GADMA provides choice of several engines for the demographic inference:
 
@@ -18,6 +16,15 @@ GADMA provides choice of several engines for the demographic inference:
 * `moments <https://bitbucket.org/simongravel/moments/>`_  developed by Simon Gravel [Jouganous2017]_
 * `momi2 <https://github.com/popgenmethods/momi2/>`_ [Kamm2020]_
 * `momentsLD <https://bitbucket.org/simongravel/moments/>`_ extension of ``moments`` for LD stats [Ragsdale2019]_ [Ragsdale2020]_
+
+GADMA implements two base global search algorithms:
+
+* Genetic algorithm — the most common choice of optimization,
+* Bayesian optimization — for demographic inference with time-consuming evaluations, e.g. for four and five populations using *moments* or ∂a∂i.
+
+
+GADMA features variuos optimization methods (`global <https://gadma.readthedocs.io/en/latest/api/gadma.optimizers.html#global-optimizers-list>`_ and `local <https://gadma.readthedocs.io/en/latest/api/gadma.optimizers.html#local-optimizers-list>`_ search algorithms) which may be used for `any general optimization problem <https://gadma.readthedocs.io/en/latest/api_examples/optimization_example.html>`_.
+
 
 Base usage of GADMA via command-line:
 
@@ -73,7 +80,7 @@ A parameter file is a simple text file (created in a text editor, such as Notepa
    user_manual/input_data/input_data
    user_manual/set_engine
    user_manual/set_model/set_model
-   user_manual/inference
+   user_manual/inference/inference
    user_manual/run_parallel
    user_manual/output
    user_manual/plotting

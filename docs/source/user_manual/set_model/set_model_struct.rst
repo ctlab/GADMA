@@ -5,7 +5,10 @@ Specifying demographic model with structure
 
 GADMA infers a demographic model from an AFS with nothing required from the user, except for simple information that determines how much the detailed model is required - **the structure of the model**.
 
-Assume a division of one population into two new subpopulations and a fixed temporal order of the populations: from the most anciently to the most recently formed population. 
+.. warning::
+    This feature is available only up to three populations. If there is more than three populations then unfortunately only custom model could be used alongside with Bayesian optimization instead of genetic algorithm. More information about demographic inference for four and five populations please see :ref:`here<Dem inference for more than three pops>`.
+
+Assume a division of one population into two new subpopulations and a fixed temporal order of the populations: from the most anciently to the most recently formed population.
 
 We can divide time of our model into split events and time intervals, during which a certain dynamics of change of effective size is maintained for each population and migration rates are constant. The number of split events is one less than the number of populations under consideration. Now we can define the concept of the structure of the demographic model:
 
@@ -161,7 +164,7 @@ For example, if there is model structure equal to (2, 1, 1) and one want to have
     When option ``Migration masks`` is used together with ``Symmetric migration`` masks should be symmetrical. There is no such option to make some migrations symmetrical and other not.
 
 Selection and dominance coefficients
-_______________________
+_____________________________________
 
 To enable inference of selection coefficients in demographic history set option ``Selection`` to ``True``:
 
