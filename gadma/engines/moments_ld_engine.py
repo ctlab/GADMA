@@ -455,7 +455,7 @@ class MomentsLdEngine(Engine):
                 var2value, self.model.Nanc_size
             )
         else:
-            assert isinstance(self.model, CustomeDemographicModel)
+            assert isinstance(self.model, CustomDemographicModel)
             for variable in var2value:
                 if variable.name == "Nanc":
                     Nref = var2value[variable]
