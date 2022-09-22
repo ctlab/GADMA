@@ -450,8 +450,16 @@ class MomentsLdEngine(Engine):
 
     def get_N_ancestral(self, values):
         var2value = self.model.var2value(values)
-        Nref = self.model.get_value_from_var2value(
-            var2value, self.model.Nanc_size)
+        if isinstance(self.model, StructureDemographicModel):
+            Nref = self.model.get_value_from_var2value(
+                var2value, self.model.Nanc_size
+            )
+        else:
+            assert isinstance(self.model, CustomeDemographicModel)
+            for variable in var2value:
+                if variable.name == "Nanc":
+                    Nref = var2value[variable]
+                    break
         return Nref
 
     def get_theta(self, values):
