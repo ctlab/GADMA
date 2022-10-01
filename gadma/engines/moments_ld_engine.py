@@ -25,6 +25,7 @@ def _read_data_one_job(args):
     Function for reading data using multiprocessing
     """
     reg_num, kwargs = args
+    print(reg_num)
     results = {
         str(reg_num):
             moments.LD.Parsing.compute_ld_statistics(
@@ -172,6 +173,7 @@ class MomentsLdEngine(Engine):
             all_kwargs.append([str(reg_num-1), parsing_kwargs])
 
         create_h5_file(data_holder.filename)
+        print(len(all_kwargs))
         n_processes = cls.n_processes
         if n_processes == 1:
             result = []
@@ -239,48 +241,17 @@ class MomentsLdEngine(Engine):
                     ret_dict['m'][i, j] = event.mig_args[i][j]
         return ret_dict
 
-    def simulate(self, values):
+    def _model_func(self, params, rho, theta):
         """
-        Simulates expected LD statistics for proposed values of variables.
-
-        :param values: Values of the model parameters, it could be list of
-        values or dictionary {variable name: value}.
-        :type values: list or dict
+        Function that could be used like usual model_func.
         """
-        var2value = self.model.var2value(values)
-        kwargs = self.get_kwargs()
-        r_bins = self.r_bins
-        if kwargs["r_bins"] is not None:
-            r_bins = kwargs["r_bins"]
         if isinstance(self.model, CustomDemographicModel):
-            if self.model.fixed_anc_size:
-                Nref = self.model.fixed_anc_size
-                values_list = [var2value[var] for var in self.model.variables]
-            elif (not self.model.fixed_anc_size) and self.model.has_anc_size:
-                values_list = [var2value[var] for var in self.model.variables]
-                for num, value in enumerate(self.model.variables):
-                    if value.name == "Nanc":
-                        Nref = values_list[num]
-                        values_list.pop(num)
-            rhos = 4 * Nref * np.array(r_bins)
-            theta = 4 * Nref * self.model.mutation_rate
-            ld_stats = self.model.function(values_list, rhos, theta)
-            model = moments.LD.LDstats(
-                [(y_l + y_r) / 2 for y_l, y_r in zip(
-                    ld_stats[:-2], ld_stats[1:-1])]
-                + [ld_stats[-1]],
-                num_pops=ld_stats.num_pops,
-                pop_ids=ld_stats.pop_ids,
-            )
-            model = moments.LD.Inference.sigmaD2(model)
-            return model
+            return self.model.function(params, rho, theta)
 
-        Nref = self.model.get_value_from_var2value(
-            var2value, self.model.Nanc_size)
-        rhos = 4 * Nref * np.array(r_bins)
-        theta = 4 * Nref * self.model.mutation_rate
+        assert isinstance(self.model, DemographicModel)
+        var2value = self.model.var2value(params)
 
-        ld = moments.LD.Numerics.steady_state(rho=rhos, theta=theta)
+        ld = moments.LD.Numerics.steady_state(rho=rho, theta=theta)
         ld_stats = moments.LD.LDstats(ld, num_pops=1)
 
         addit_values = {}
@@ -334,16 +305,60 @@ class MomentsLdEngine(Engine):
                     else:
                         kwargs[x] = self.get_value_from_var2value(var2value, y)
                         kwargs[x] = addit_values.get(kwargs[x], kwargs[x])
-                ld_stats.integrate(**kwargs, rho=rhos, theta=theta)
+                ld_stats.integrate(**kwargs, rho=rho, theta=theta)
 
             elif isinstance(event, Split):
                 ld_stats = ld_stats.split(event.pop_to_div)
-        model = moments.LD.LDstats(
-            [(y_l + y_r) / 2 for y_l, y_r in zip(
-                ld_stats[:-2], ld_stats[1:-1])]
-            + [ld_stats[-1]],
-            num_pops=ld_stats.num_pops,
-            pop_ids=ld_stats.pop_ids,
+        return ld_stats
+
+    def simulate(self, values):
+        """
+        Simulates expected LD statistics for proposed values of variables.
+
+        :param values: Values of the model parameters, it could be list of
+        values or dictionary {variable name: value}.
+        :type values: list or dict
+        """
+        var2value = self.model.var2value(values)
+
+        # get r_bins
+        kwargs = self.get_kwargs()
+        r_bins = self.r_bins
+        if kwargs["r_bins"] is not None:
+            r_bins = kwargs["r_bins"]
+
+        # get Nanc and corresponding values_list for model_func function
+        if isinstance(self.model, CustomDemographicModel):
+            if self.model.fixed_anc_size:
+                Nref = self.model.fixed_anc_size
+                values_list = [var2value[var] for var in self.model.variables]
+            elif (not self.model.fixed_anc_size) and self.model.has_anc_size:
+                values_list = [var2value[var] for var in self.model.variables]
+                for num, value in enumerate(self.model.variables):
+                    if value.name == "Nanc":
+                        Nref = values_list[num]
+                        values_list.pop(num)
+        else:
+            assert isinstance(self.model, DemographicModel), type(self.model)
+            Nref = self.model.get_value_from_var2value(
+                var2value, self.model.Nanc_size
+            )
+            # we will translate values, Nanc will be transformed to 1.0
+            # but it will not be used in model_func function so we are safe
+            values_list = self.model.translate_values(
+                units="genetic",
+                values=values,
+                time_in_generations=False
+            )
+
+        rhos = 4 * Nref * np.array(r_bins)
+        theta = 4 * Nref * self.model.mutation_rate
+
+        model = moments.LD.Inference.bin_stats(
+            model_func=self._model_func,
+            params=values_list,
+            rho=rhos,
+            theta=theta
         )
         model = moments.LD.Inference.sigmaD2(model)
         return model

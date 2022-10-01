@@ -13,6 +13,9 @@ try:
 except ImportError:
     pass
 
+import os
+os.environ["OMP_NUM_THREADS"] = "1"
+
 try:
     import PIL
     from PIL import Image
