@@ -13,7 +13,7 @@ try:
 except ImportError:
     pass
 
-import os
+import os  # NOQA
 os.environ["OMP_NUM_THREADS"] = "1"
 
 try:

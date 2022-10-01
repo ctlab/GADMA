@@ -273,7 +273,12 @@ def _print_momentsLD_simulation(engine, nanc):
     ret_str += f"mu = {engine.model.mutation_rate}\n"
     ret_str += "rhos = 4 * Nanc * np.array(r_bins)\n"
     ret_str += "theta = 4 * Nanc * mu\n\n"
-    ret_str += f"model = moments.LD.Inference.bin_stats({FUNCTION_NAME}, p0, rho=rhos, theta=theta)\n"
+    ret_str += "model = moments.LD.Inference.bin_stats(\n"
+    ret_str += f"\tmodel_func={FUNCTION_NAME},\n"
+    ret_str += "\tparams=p0,\n"
+    ret_str += "\trho=rhos,\n"
+    ret_str += "\ttheta=theta,\n"
+    ret_str += ")\n"
     ret_str += "model = moments.LD.Inference.sigmaD2(model)\n"
     ret_str += "model_for_plot = copy.deepcopy(model)\n"
     return ret_str

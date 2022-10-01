@@ -494,12 +494,11 @@ class TestModelSimulation(unittest.TestCase):
         values = {'nu': nu.resample(),
                   'tf': tf.resample()}
 
-        data = moments_one_pop_func([values[x] for x in values], rhos, theta)
-        data = moments.LD.LDstats(
-            [(y_l + y_r) / 2 for y_l, y_r in zip(data[:-2], data[1:-1])]
-            + [data[-1]],
-            num_pops=data.num_pops,
-            pop_ids=data.pop_ids,
+        data = moments.LD.Inference.bin_stats(
+            model_func=moments_one_pop_func,
+            params=[values[x] for x in values],
+            rho=rhos,
+            theta=theta
         )
         data = moments.LD.Inference.sigmaD2(data)
 
@@ -555,12 +554,11 @@ class TestModelSimulation(unittest.TestCase):
         list_for_moments_ld = ['nu1', 'nu2', 't']
         rhos = 4 * 10000 * R_BINS
         theta = 4 * 10000 * 6.0e-5
-        data = moments_two_pops_func([values[x] for x in list_for_moments_ld], rhos, theta)
-        data = moments.LD.LDstats(
-            [(y_l + y_r) / 2 for y_l, y_r in zip(data[:-2], data[1:-1])]
-            + [data[-1]],
-            num_pops=data.num_pops,
-            pop_ids=data.pop_ids,
+        data = moments.LD.Inference.bin_stats(
+            model_func=moments_two_pops_func,
+            params=[values[x] for x in list_for_moments_ld],
+            rho=rhos,
+            theta=theta
         )
         data = moments.LD.Inference.sigmaD2(data)
 
@@ -632,12 +630,11 @@ class TestModelSimulation(unittest.TestCase):
         rhos = 4 * 10000 * R_BINS
         theta = 4 * 10000 * 6.0e-5
 
-        simulated = moments_ld_func([values[x] for x in list_for_moments_ld], rhos, theta)
-        simulated = moments.LD.LDstats(
-            [(y_l + y_r) / 2 for y_l, y_r in zip(simulated[:-2], simulated[1:-1])]
-            + [simulated[-1]],
-            num_pops=simulated.num_pops,
-            pop_ids=simulated.pop_ids,
+        simulated = moments.LD.Inference.bin_stats(
+            model_func=moments_ld_func,
+            params=[values[x] for x in list_for_moments_ld],
+            rho=rhos,
+            theta=theta
         )
         simulated = moments.LD.Inference.sigmaD2(simulated)
 
@@ -734,13 +731,11 @@ class TestModelEvaluation(unittest.TestCase):
         rhos = 4 * 10000 * R_BINS
         theta = 4 * 10000 * 6.0e-5
 
-        simulated = model_moments_ld([values[x] for x in list_for_moments_ld], rhos, theta)
-        simulated = moments.LD.LDstats(
-            [(y_l + y_r) / 2 for y_l, y_r in zip(
-                simulated[:-2],
-                simulated[1:-1])] + [simulated[-1]],
-            num_pops=simulated.num_pops,
-            pop_ids=simulated.pop_ids,
+        simulated = moments.LD.Inference.bin_stats(
+            model_func=model_moments_ld,
+            params=[values[x] for x in list_for_moments_ld],
+            rho=rhos,
+            theta=theta
         )
         simulated = moments.LD.Inference.sigmaD2(simulated)
 
