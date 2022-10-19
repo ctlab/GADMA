@@ -94,7 +94,7 @@ jobs:
       - name: Install momentsLD engine.
         run: |
           pip3 install Cython==0.29.18  # the last version cause erros on Windows and MacOS
-          git clone https://bitbucket.org/simongravel/moments.git
+          git clone --depth 1 --branch 1.1.12 https://bitbucket.org/simongravel/moments.git
           cd moments
           pip install -r requirements.txt
           python3 setup.py build_ext --inplace
