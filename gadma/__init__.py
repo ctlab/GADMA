@@ -13,6 +13,8 @@ try:
 except ImportError:
     pass
 
+import warnings
+
 import os  # NOQA
 os.environ["OMP_NUM_THREADS"] = "1"
 
@@ -74,8 +76,6 @@ try:
     import bayesmark
 except ImportError:
     bayesmark = None
-
-import warnings
 
 PIL_available = PIL is not None
 matplotlib_available = matplotlib is not None
