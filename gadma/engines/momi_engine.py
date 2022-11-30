@@ -52,7 +52,7 @@ class MomiEngine(Engine):
         if isinstance(data_holder, SFSDataHolder):
             sfs_file = data_holder.filename
             if sfs_file.endswith(".fs") or sfs_file.endswith(".sfs"):
-                data = momi.sfs_from_dadi(sfs_filee)
+                data = momi.sfs_from_dadi(sfs_file)
             elif (sfs_file.endswith(".txt") or sfs_file.endswith(".obs")):
                 if not dadi_available and not moments_available:
                     raise ValueError(

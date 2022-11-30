@@ -162,7 +162,7 @@ def get_par_labels_from_file(filename):
                 if len(line.split(",")) == 1 or params_name.isidentifier():
                     params_name = None
         try:
-            assert len(line.split("=")) != 2
+            assert len(line.split("=")) == 2
             if params_name is not None:
                 assert line.strip().split("=")[1].strip() == params_name
             p_ids = line.strip().split("=")[0].split(",")

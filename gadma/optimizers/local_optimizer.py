@@ -316,7 +316,7 @@ class ScipyOptimizer(LocalOptimizer, ContinuousOptimizer):
                     "nit": n_iter,
                 }
             )
-            
+
         # Call callback after the last iteration
         callback(res_obj.x)
         # Construct OptimizerResult object to return

@@ -327,26 +327,30 @@ class StructureDemographicModel(EpochDemographicModel):
         # after it.
         if event_index == -1:
             new_event = self.events[0]
-            new_values = []
-            for var in new_event.variables:
-                if var not in new_event.get_vars_not_in_init_args():
-                    continue
-                # We put as time some random value
-                if isinstance(var, TimeVariable):
-                    new_values.append(new_event.time_arg.resample())
-                # We put size of population as 1.0
-                elif isinstance(var, PopulationSizeVariable):
-                    new_values.append(1.0)
-                # Dynamic as Sud
-                elif isinstance(var, DynamicVariable):
-                    new_values.append("Sud")
-                elif isinstance(var, SelectionVariable):
-                    new_values.append(0)
-                else:
-                    raise ValueError(f"Unknown type of variable: "
-                                     f"{var.__class__}")
+            new_values_list = []
+            for i in range(len(X)):
+                new_values = []
+                for var in new_event.variables:
+                    if var not in new_event.get_vars_not_in_init_args():
+                        continue
+                    # We put as time some random value
+                    if isinstance(var, TimeVariable):
+                        new_values.append(new_event.time_arg.resample())
+                    # We put size of population as 1.0
+                    elif isinstance(var, PopulationSizeVariable):
+                        new_values.append(1.0)
+                    # Dynamic as Sud
+                    elif isinstance(var, DynamicVariable):
+                        new_values.append("Sud")
+                    elif isinstance(var, SelectionVariable):
+                        new_values.append(0)
+                    else:
+                        raise ValueError(f"Unknown type of variable: "
+                                         f"{var.__class__}")
+                new_values_list.append(new_values)
+
             new_X = []
-            for x in X:
+            for x, new_values in zip(X, new_values_list):
                 new_X.append([])
                 # if we have anc size then we should put after first variable
                 if self.has_anc_size:
