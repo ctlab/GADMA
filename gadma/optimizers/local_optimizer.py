@@ -240,8 +240,6 @@ class ScipyOptimizer(LocalOptimizer, ContinuousOptimizer):
             return self.run_info
 
         options = copy.copy(options)
-        options["maxeval"] = None
-        options["maxiter"] = None
         if maxiter is not None:
             options['maxiter'] = int(maxiter)
         if maxeval is not None and maxeval > 0:
@@ -290,11 +288,11 @@ class ScipyOptimizer(LocalOptimizer, ContinuousOptimizer):
                                               options=options,
                                               callback=callback, **addit_kw)
         else:
-            # we ignore options here
+            maxiter = options.get("maxiter", None)
             ret_val = scipy.optimize.fmin(f_in_scipy, x0, args=(),
                                           callback=callback,
-                                          maxiter=options["maxiter"],
-                                          maxfun=options["maxeval"],
+                                          maxiter=options.get("maxiter", None),
+                                          maxfun=options.get("maxeval", None),
                                           full_output=True,
                                           disp=False)
             # Unfortunately we need to transform output
