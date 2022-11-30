@@ -512,8 +512,10 @@ class Optimizer(object):
                 self.run_info.result.Y_out = restored_run_info.result.Y_out
             self.run_info.result.message = str(self.run_info.result.message)
             self.run_info.result.message += "(RESTORED)"
+            # We should save
+            self.save(self.run_info, save_file)
 
-        # We beleave that optimizer will understand that the run was finished
+        # We believe that optimizer will understand that the run was finished
         # Otherwise there are problems when we want to run additional x iters
         # This block could be commented out but it could cause problems
         if self.run_info.result.success:
