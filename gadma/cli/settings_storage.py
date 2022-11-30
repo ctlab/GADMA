@@ -26,6 +26,7 @@ import copy
 import numbers
 import inspect
 from keyword import iskeyword
+from inspect import signature
 
 HOME_DIR = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 PARAM_TEMPLATE = os.path.join(HOME_DIR, "params_template")
@@ -133,7 +134,7 @@ def get_par_labels_from_file(filename):
         big_comment_str = ""
         found_func = False
         for line in f:
-            if line.startswith("#") or len(line.strip()) == 0:
+            if line.strip().startswith("#") or len(line.strip()) == 0:
                 continue
             if found_func and line.strip().startswith("'''"):
                 if big_comment and big_comment_str == "'''":
@@ -155,7 +156,15 @@ def get_par_labels_from_file(filename):
                 break
             if line.startswith("def model_func"):
                 found_func = True
+                # we want to get first argument name
+                params_name = line.split("(")[1].split(",")[0].strip()
+                # But if there are multiline we cannot do it
+                if len(line.split(",")) == 1 or params_name.isidentifier():
+                    params_name = None
         try:
+            assert len(line.split("=")) != 2
+            if params_name is not None:
+                assert line.strip().split("=")[1].strip() == params_name
             p_ids = line.strip().split("=")[0].split(",")
             p_ids = [x.strip() for x in p_ids]
             for x in p_ids:
@@ -166,6 +175,8 @@ def get_par_labels_from_file(filename):
         except IndexError:  # two commas will create x = "" (x[0])
             pass
         except ValueError:  # not in P_IDS
+            pass
+        except AssertionError:  # not good first string
             pass
 
 
@@ -682,6 +693,9 @@ class SettingsStorage(object):
             model_func_value = getattr(module, func_name)
             if not callable(model_func_value):
                 raise ValueError(f"Function {func_name} should be callable.")
+            # if the function does not have arguments we call it to check
+            if len(signature(model_func_value).parameters) == 0:
+                model_func_value()
 
 #        if name in bounds_attrs and self.custom_filename is None:
 #            msg = f"Setting {name} is set before custom_filename is set."
@@ -1289,6 +1303,14 @@ class SettingsStorage(object):
                                                            units="physical"))
 
             if self.model_func is not None:
+                # We check if our model is set using gadma
+                try:
+                    model = self.model_func()
+                    assert isinstance(model, DemographicModel)
+                    return model
+                except Exception as e:
+                    pass
+                # If not then we cteate Custom model
                 return CustomDemographicModel(
                     function=self.model_func,
                     variables=variables,
@@ -1304,6 +1326,16 @@ class SettingsStorage(object):
                                                           self.custom_filename)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
+            # We check if our model is set using gadm
+            try:
+                model = module.model_func()
+                assert isinstance(model, DemographicModel)
+                model.mutation_rate = mut_rate
+                model.recombination_rate = rec_rate
+                return model
+            except Exception as e:
+                pass
+            # If not then we cteate Custom model
             return CustomDemographicModel(
                 function=module.model_func,
                 variables=variables,
@@ -1316,6 +1348,13 @@ class SettingsStorage(object):
             )
 
         elif self.custom_filename is None and self.model_func is not None:
+            try:
+                model = self.model_func()
+                assert isinstance(model, DemographicModel)
+                return model
+            except Exception as e:
+                pass
+
             return CustomDemographicModel(
                 function=self.model_func,
                 variables=None,

@@ -240,6 +240,8 @@ class ScipyOptimizer(LocalOptimizer, ContinuousOptimizer):
             return self.run_info
 
         options = copy.copy(options)
+        options["maxeval"] = None
+        options["maxiter"] = None
         if maxiter is not None:
             options['maxiter'] = int(maxiter)
         if maxeval is not None and maxeval > 0:
@@ -247,7 +249,7 @@ class ScipyOptimizer(LocalOptimizer, ContinuousOptimizer):
                 warnings.warn(f"Local optimization {self.method} do not have"
                               "  an option of max number of evaluations. It "
                               "will be used for maxiter.")
-                if maxiter:
+                if maxiter is not None:
                     options['maxiter'] = min(maxeval, maxiter)
                 else:
                     options['maxiter'] = maxeval
@@ -281,9 +283,40 @@ class ScipyOptimizer(LocalOptimizer, ContinuousOptimizer):
 
         # Run optimization of SciPy
         addit_kw = self.get_addit_scipy_kwargs(variables)
-        res_obj = scipy.optimize.minimize(f_in_scipy, x0, args=(),
-                                          method=self.method, options=options,
-                                          callback=callback, **addit_kw)
+        # We run specialized function for Nelder-Mead alg. as it works better
+        if self.method != "Nelder-Mead":
+            res_obj = scipy.optimize.minimize(f_in_scipy, x0, args=(),
+                                              method=self.method,
+                                              options=options,
+                                              callback=callback, **addit_kw)
+        else:
+            # we ignore options here
+            ret_val = scipy.optimize.fmin(f_in_scipy, x0, args=(),
+                                          callback=callback,
+                                          maxiter=options["maxiter"],
+                                          maxfun=options["maxeval"],
+                                          full_output=True,
+                                          disp=False)
+            # Unfortunately we need to transform output
+            # to Scipy minimize output
+            xopt, fopt, n_iter, funcalls, warnflag = ret_val
+            message = ""
+            if warnflag == 1:
+                message = "Maximum number of function evaluations made"
+            elif warnflag == 2:
+                message = "Maximum number of iterations reached"
+            res_obj = scipy.optimize.OptimizeResult(
+                {
+                    "x": xopt,
+                    "success": 1,
+                    "status": warnflag,
+                    "message": message,
+                    "fun": fopt,
+                    "nfev": funcalls,
+                    "nit": n_iter,
+                }
+            )
+            
         # Call callback after the last iteration
         callback(res_obj.x)
         # Construct OptimizerResult object to return
