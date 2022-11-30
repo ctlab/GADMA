@@ -146,9 +146,9 @@ class GlobalOptimizer(Optimizer):
             new_X_init = copy.copy(X_init)
             new_Y_init = copy.copy(Y_init)
             if X_out is not None:
-                X_init.extend(X_out)
+                new_X_init.extend(X_out)
                 if Y_out is not None:
-                    Y_init.extend(Y_out)
+                    new_Y_init.extend(Y_out)
         # 4. X_init and Y_inits exists but have different length
         else:
             assert len(X_init) > len(Y_init)
