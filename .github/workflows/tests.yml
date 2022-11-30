@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-18.04, windows-2019, macos-10.15]
+        os: [ubuntu-20.04, windows-2019, macos-10.15]
         python-version: [3.6, 3.8]
         include:
           - os: windows-2019
@@ -93,6 +93,7 @@ jobs:
 
       - name: Install momentsLD engine.
         run: |
+          pip3 uninstall -y moments
           pip3 install Cython==0.29.18  # the last version cause erros on Windows and MacOS
           git clone --depth 1 --branch moments-1.1.11 https://bitbucket.org/simongravel/moments.git
           cd moments
@@ -113,6 +114,9 @@ jobs:
           python3 -c "import dadi"
           python3 -c "import moments"
           python3 -c "import gadma"
+
+      - name: Show versions of all installed packages.
+        run: python3 -m pip freeze
 
       - name: Show available engines and optimizations in gadma.
         run: |

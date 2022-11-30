@@ -745,11 +745,12 @@ class TestModels(unittest.TestCase):
                         else:
                             new_model.Nanc_size = Nanc
                         new_model.mutation_rate = 1.25e-8
+                        new_model.recombination_rate = 1.5e-8
                         engine.model = new_model
                         moments.LD.Inference._varcov_inv_cache = {}
 
                     cmd = engine.generate_code(input_values, None, *args, nanc=Nanc)
-                    #print(cmd)
+                    print(cmd)
                     if engine.can_evaluate:
                         # read data
                         engine.data = data
@@ -758,6 +759,7 @@ class TestModels(unittest.TestCase):
                         exec(cmd, d)
 
                         msg += f": {true_ll} != {d['ll_model']}"
+                        print(true_ll, d["ll_model"])
                         if true_ll is None:  # if we have None
                             assert engine.id in ['dadi', 'moments']
                             max_ll = engine.base_module.Inference.ll(
