@@ -314,7 +314,8 @@ def print_runs_summary(start_time, shared_dict, settings):
             if np.isclose(val, var.domain[1]):
                 hit_upper_bound.append(var.name)
         if len(hit_lower_bound) > 0 or len(hit_upper_bound) > 0:
-            msg = "\nINFO: Some parameters of the best model hit their bounds: "
+            msg = "\nINFO: Some parameters of the best"\
+                  " model hit their bounds: "
             if len(hit_lower_bound) > 0:
                 msg += ", ".join(hit_lower_bound) + " hit lower bounds"
             if len(hit_lower_bound) > 0 and len(hit_upper_bound) > 0:
