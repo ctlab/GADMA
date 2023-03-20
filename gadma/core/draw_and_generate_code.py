@@ -358,4 +358,3 @@ def print_runs_summary(start_time, shared_dict, settings):
         elif gener:
             print("\nYou can find the Python code of the best model in the "
                   "output directory.\n")
-
