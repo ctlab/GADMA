@@ -1,6 +1,7 @@
 from .. import matplotlib, Image
 from .. import matplotlib_available, PIL_available, moments_available
 from ..models import EpochDemographicModel, CustomDemographicModel
+from ..utils import DiscreteVariable
 from ..engines import all_available_engines, Engine, get_engine
 from ..utils import bcolors
 
@@ -9,6 +10,7 @@ import os
 import io
 from datetime import datetime
 import copy
+import numpy as np
 
 
 def get_Nanc_gen_time_and_units(x, engine, settings):
@@ -298,6 +300,29 @@ def print_runs_summary(start_time, shared_dict, settings):
                 val_str = metric_vals[ind]
                 ind += 1
                 fig_titles[-1] += f"{metr}: {val_str}"
+
+        # Check bounds for the best model
+        index, (engine, x, y_vals) = sorted_models[0]
+        variables = engine.model.variables
+        hit_lower_bound = []
+        hit_upper_bound = []
+        for val, var in zip(x, variables):
+            if isinstance(var, DiscreteVariable):
+                continue
+            if np.isclose(val, var.domain[0]):
+                hit_lower_bound.append(var.name)
+            if np.isclose(val, var.domain[1]):
+                hit_upper_bound.append(var.name)
+        if len(hit_lower_bound) > 0 or len(hit_upper_bound) > 0:
+            msg = "\nINFO: Some parameters of the best model hit their bounds: "
+            if len(hit_lower_bound) > 0:
+                msg += ", ".join(hit_lower_bound) + " hit lower bounds"
+            if len(hit_lower_bound) > 0 and len(hit_upper_bound) > 0:
+                msg += "; "
+            if len(hit_upper_bound) > 0:
+                msg += ", ".join(hit_upper_bound) + " hit upper bounds"
+            print(msg)
+
         # Draw and generate code for best model
         index, (engine, x, y_vals) = sorted_models[0]
         fig_title = fig_titles[0]
@@ -332,3 +357,4 @@ def print_runs_summary(start_time, shared_dict, settings):
         elif gener:
             print("\nYou can find the Python code of the best model in the "
                   "output directory.\n")
+
