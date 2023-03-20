@@ -152,9 +152,10 @@ def main():
         print('\n--Finish pipeline--\n')
         if args.test:
             print('--Test passed correctly--')
-        if settings_storage.theta0 is None:
-            h = "https://gadma.readthedocs.io/en/latest/user_manual/theta.html"
-            print("\nYou didn't specify theta at the beginning. If you want "
+        if not settings_storage.Nanc_will_be_available():
+            h = "https://gadma.readthedocs.io/en/latest/examples/"\
+                "changing_theta_example.html"
+            print("\nYou didn't specify theta0 at the beginning. If you want "
                   "to change it and rescale parameters, please see the "
                   f"tutorial:\n{h}\n")
 
