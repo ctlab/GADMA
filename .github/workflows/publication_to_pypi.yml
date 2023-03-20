@@ -30,8 +30,10 @@ jobs:
 
     - name: Install GADMA and its dependencies and create dist.
       run: |
+        pip install setuptools --upgrade
         pip install numpy
         pip install Cython
+        pip install dadi
         python3 setup.py install
         python3 -m pip install --user --upgrade setuptools wheel
         python3 setup.py sdist bdist_wheel
