@@ -276,10 +276,20 @@ class DadiOrMomentsEngine(Engine):
             p0 = x0[is_not_discrete].astype(float)
         else:
             p0 = x0.astype(float)
-        if self.multinom:  # Remove last value for _Nanc_size
-            p0 = p0[:-1]
-            x0 = x0[:-1]
-            is_not_discrete = is_not_discrete[:-1]
+
+        if (self.multinom and hasattr(self.model, "Nanc_size")
+                and self.model.Nanc_size in var2val):
+            # Remove value for _Nanc_size as it is just 1
+            new_x0, new_is_not_discrete = [], []
+            for i, var in enumerate(var2val):
+                if var.name != self.model.Nanc_size.name:
+                    new_x0.append(x0[i])
+                    new_is_not_discrete.append(is_not_discrete[i])
+            x0, is_not_discrete = new_x0, new_is_not_discrete
+            x0 = np.array(x0, dtype=object)
+            is_not_discrete = np.array(is_not_discrete)
+            if len(x0) > 0:
+                p0 = x0[is_not_discrete].astype(float)
 
         @wraps(self.simulate)
         def simul_func(x):
