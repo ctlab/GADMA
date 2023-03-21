@@ -276,6 +276,10 @@ class DadiOrMomentsEngine(Engine):
             p0 = x0[is_not_discrete].astype(float)
         else:
             p0 = x0.astype(float)
+        if self.multinom:  # Remove last value for _Nanc_size
+            p0 = p0[:-1]
+            x0 = x0[:-1]
+            is_not_discrete = is_not_discrete[:-1]
 
         @wraps(self.simulate)
         def simul_func(x):
