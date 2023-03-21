@@ -106,7 +106,7 @@ local_optimizer = 'BFGS_log'
 print_models_code_every_n_iteration = 0
 silence = False
 draw_models_every_n_iteration = 0
-units_of_time_in_drawing = 'generations'
+units_of_time_in_drawing = 'years'
 const_of_time_in_drawing = 1.0
 vmin = 1
 

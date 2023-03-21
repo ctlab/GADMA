@@ -1384,6 +1384,14 @@ class SettingsStorage(object):
         """
         Checks that settings are fine. Rises errors if something is not right.
         """
+        # we change time units on pictures if time for generation is not set
+        if self.time_for_generation = None:
+            if self.units_of_time_in_drawing != "generations":
+                warnings.warn(
+                    "Time for generation is not set. All times will be in"
+                    "generations (output and pictures)."
+                )
+                self.units_of_time_in_drawing != "generations"
         if (self.input_data is None and
                 self.resume_from is None):
             raise AttributeError("Input file is required. It could be set by "
