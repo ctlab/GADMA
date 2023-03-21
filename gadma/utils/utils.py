@@ -518,6 +518,8 @@ def get_claic_score(engine, x0, boots, args=(),
             else:
                 print(e)
                 raise e
+        except Exception as e:
+            raise e
     if return_eps:
         return claic_score, eps
     else:

@@ -2,7 +2,7 @@ from ..models import CustomDemographicModel, EpochDemographicModel,\
     Epoch, Split, BinaryOperation
 from ..utils import DiscreteVariable, DynamicVariable, Variable
 from .dadi_generator import FUNCTION_NAME, _print_p0, _print_main,\
-                            _print_load_data
+                            _print_load_data, _print_bounds
 import numpy as np
 import copy
 import sys
@@ -210,6 +210,7 @@ def _print_model_plotting(engine, nanc, gen_time, gen_time_units):
 
 def _print_moments_main(engine, values, nanc, gen_time, gen_time_units):
     ret_str = _print_p0(engine, values)
+    ret_str += _print_bounds(engine)
     ret_str += _print_moments_simulation()
     ret_str += _print_main(engine, values, mode='moments', nanc=nanc)
     ret_str += _print_model_plotting(engine, nanc, gen_time, gen_time_units)

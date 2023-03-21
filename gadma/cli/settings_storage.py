@@ -1385,7 +1385,7 @@ class SettingsStorage(object):
         Checks that settings are fine. Rises errors if something is not right.
         """
         # we change time units on pictures if time for generation is not set
-        if self.time_for_generation = None:
+        if self.time_for_generation is None:
             if self.units_of_time_in_drawing != "generations":
                 warnings.warn(
                     "Time for generation is not set. All times will be in"

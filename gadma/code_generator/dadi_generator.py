@@ -207,6 +207,19 @@ def _print_p0(engine, values):
     return "p0 = [%s]\n" % ", ".join([str(x) for x in p0])
 
 
+def _print_bounds(engine):
+    lower_bound = []
+    upper_bound = []
+    for var in engine.model.variables:
+        if isinstance(var, DiscreteVariable):
+            continue
+        lower_bound.append(str(var.domain[0]))
+        upper_bound.append(str(var.domain[1]))
+    lower_bound = ", ".join(lower_bound)
+    upper_bound = ", ".join(upper_bound)
+    return f"lower_bound = [{lower_bound}]\nupper_bound = [{upper_bound}]\n"
+
+
 def _print_dadi_simulation():
     """
     Returns string of code about simulation with dadi.
@@ -278,6 +291,7 @@ def _print_main(engine, values, mode='dadi', nanc=None):
 
 def _print_dadi_main(engine, values, nanc=None):
     ret_str = _print_p0(engine, values)
+    ret_str += _print_bounds(engine)
     ret_str += _print_dadi_simulation()
     ret_str += _print_main(engine, values, mode='dadi', nanc=nanc)
     return ret_str
