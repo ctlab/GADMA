@@ -57,6 +57,9 @@ class DemesEngine(Engine):
             Nanc_size = get_value(self.model.Nanc_size)
         else:
             Nanc_size = nanc
+        if (hasattr(self.model, "Nanc_size") and
+                self.model.Nanc_size in var2value):
+            var2value[self.model.Nanc_size] = Nanc_size
         # We will use labels of final populations to name their ancestors
         if (self.data_holder is not None and
                 self.data_holder.population_labels is not None):
