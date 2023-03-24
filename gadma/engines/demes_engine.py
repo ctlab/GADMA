@@ -45,7 +45,7 @@ class DemesEngine(Engine):
             units="physical",
             values=values,
             Nanc=nanc,
-            time_in_generations=False,
+            time_in_generations=True,
             rescale_back=False
         )
         var2value = self.model.var2value(phys_values)

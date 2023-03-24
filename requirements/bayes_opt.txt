@@ -1,5 +1,6 @@
 scikit-optimize
 configspace
+scikit-learn<=1.1.2; python_version>='3.8'
 smac==0.13.1
 
 # Below are requirements for special implementations of Bayesian optimization
