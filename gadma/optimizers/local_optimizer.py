@@ -225,7 +225,7 @@ class ScipyOptimizer(LocalOptimizer, ContinuousOptimizer):
         """
         Run Scipy optimization.
         """
-        x0 = np.array(x0, dtype=np.float)
+        x0 = np.array(x0, dtype=np.float64)
         y = f(x0)
         iter_callback(x0, y, [x0], [y])
 

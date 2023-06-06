@@ -200,7 +200,11 @@ class DadiOrMomentsEngine(Engine):
             )
         # Draw
         if n_pop == 1:
-            self.base_module.Plotting.plot_1d_comp_Poisson(model, self.data)
+            self.base_module.Plotting.plot_1d_comp_Poisson(
+                model,
+                self.data,
+                show=show
+            )
             if show:
                 plt.show()
         else:

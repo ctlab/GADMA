@@ -22,8 +22,8 @@ class LinearConstrain(object):
     :param ub: Upper bound.
     """
     def __init__(self, A, lb, ub):
-        lb = np.nan_to_num(np.array(lb, dtype=np.float), nan=-np.inf)
-        ub = np.nan_to_num(np.array(ub, dtype=np.float), nan=np.inf)
+        lb = np.nan_to_num(np.array(lb, dtype=np.float64), nan=-np.inf)
+        ub = np.nan_to_num(np.array(ub, dtype=np.float64), nan=np.inf)
         self.constrain = scipy.optimize.LinearConstraint(np.array(A), lb, ub)
 
     def _get_value(self, x):
@@ -87,13 +87,13 @@ class LinearConstrain(object):
 
     @lb.setter
     def lb(self, new_value):
-        new_value = np.nan_to_num(np.array(new_value, dtype=np.float),
+        new_value = np.nan_to_num(np.array(new_value, dtype=np.float64),
                                   nan=-np.inf)
         self.constrain.lb = new_value
 
     @ub.setter
     def ub(self, new_value):
-        new_value = np.nan_to_num(np.array(new_value, dtype=np.float),
+        new_value = np.nan_to_num(np.array(new_value, dtype=np.float64),
                                   nan=np.inf)
         self.constrain.ub = new_value
 

@@ -95,6 +95,8 @@ class CoreRun(object):
             self.optimize_kwargs['global_maxeval'] = settings.global_maxeval
             self.optimize_kwargs['local_maxiter'] = settings.local_maxiter
             self.optimize_kwargs['local_maxeval'] = settings.local_maxeval
+            # Check input settings and get what engines will be available
+            self.available_engines = self.settings.get_available_engines()
             # Create directory for pictures if needed
             if self.settings.draw_models_every_n_iteration != 0:
                 self.pictures_dir = os.path.join(self.output_dir, 'pictures')
@@ -103,36 +105,9 @@ class CoreRun(object):
             if self.settings.print_models_code_every_n_iteration != 0:
                 self.code_dir = os.path.join(self.output_dir, 'code')
                 ensure_dir_existence(self.code_dir)
-                # If our model is built via gadma then we can write code for
-                # all engines.
-                if isinstance(self.model, EpochDemographicModel):
-                    Nanc_will_be = self.settings.Nanc_will_be_available()
-                    L = self.settings.data_holder.get_total_sequence_length()
-                    L_is_None = L is None
-                    is_custom = isinstance(self.engine.model,
-                                           CustomDemographicModel)
-                    for engine in all_available_engines():
-                        if engine.id == "demes" and not Nanc_will_be:
-                            continue
-                        if (engine.id == "momi2" and
-                                (not Nanc_will_be or L_is_None) and
-                                not is_custom):
-                            continue
-                        if is_custom and self.engine.id != engine.id:
-                            continue
-                        # conditions for momentsLD
-                        if engine.id == "momentsLD":
-                            have_vcf = isinstance(engine.data_holder,
-                                                  VCFDataHolder)
-                            if not have_vcf:
-                                continue
-                            bed_dir = engine.data_holder.bed_files_dir
-                            have_bed = bed_dir is not None
-                            preproc = engine.preprocessed_data is not None
-                            if not have_bed and not preproc:
-                                continue
-                        engine_dir = os.path.join(self.code_dir, engine.id)
-                        ensure_dir_existence(engine_dir)
+                for engine_id in self.available_engines:
+                    engine_dir = os.path.join(self.code_dir, engine.id)
+                    ensure_dir_existence(engine_dir)
         # Set counters to zero for callbacks to count number of their calls
         self.draw_iter_callback_counter = 0
         self.code_iter_callback_counter = 0
@@ -211,8 +186,13 @@ class CoreRun(object):
             save_code_file = os.path.join(self.output_dir,
                                           prefix + "_model")
             try:
-                generate_code_to_file(x, self.engine,
-                                      self.settings, save_code_file)
+                generate_code_to_file(
+                    x,
+                    self.engine,
+                    self.settings,
+                    save_code_file,
+                    self.available_engines,
+                )
             except Exception:
                 pass
 
@@ -370,8 +350,13 @@ class CoreRun(object):
             print(f"{bcolors.WARNING}Run {self.index}: failed to draw model "
                   f"due to the following exception: {e}{bcolors.ENDC}")
         try:
-            generate_code_to_file(x, self.engine,
-                                  self.settings, save_code_file)
+            generate_code_to_file(
+                x,
+                self.engine,
+                self.settings,
+                save_code_file,
+                self.available_engines,
+            )
         except Exception as e:
             print(f"{bcolors.WARNING}Run {self.index}: failed to generate code"
                   f" due to the following exception: {e}{bcolors.ENDC}")
@@ -398,8 +383,13 @@ class CoreRun(object):
         save_plot_file = os.path.join(self.output_dir, prefix + "_model.png")
         save_code_file = os.path.join(self.output_dir, prefix + "_model")
         try:
-            generate_code_to_file(x, self.engine,
-                                  self.settings, save_code_file)
+            generate_code_to_file(
+                x,
+                self.engine,
+                self.settings,
+                save_code_file,
+                self.available_engines,
+            )
         except Exception:
             pass
         try:

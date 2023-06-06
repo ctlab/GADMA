@@ -7,8 +7,9 @@ from ..data import SFSDataHolder, \
     VCFDataHolder, check_and_return_projections_and_labels
 from ..engines import get_engine, MomentsEngine, MomentsLdEngine
 from ..engines import DadiEngine
-from ..engines import all_engines, all_drawing_engines
-from ..models import StructureDemographicModel, CustomDemographicModel
+from ..engines import all_engines, all_drawing_engines, all_available_engines
+from ..models import StructureDemographicModel, CustomDemographicModel,\
+    EpochDemographicModel
 from ..optimizers import get_local_optimizer, get_global_optimizer
 from ..optimizers import LinearConstrain
 from ..utils import check_dir_existence, check_file_existence, abspath,\
@@ -1379,6 +1380,70 @@ class SettingsStorage(object):
         if self.theta0 is not None:
             return True
         return False
+
+    def get_available_engines(self, print_warnings=False):
+        """
+        Returns ids of engines that are available for current settings.
+        For examples if no sequence length or mutation rate is given
+        then momi2 engine will be unavailable for code generation.
+        """
+        available_engines = []
+        model = self.get_model()
+        if (isinstance(model, EpochDemographicModel) or
+                isinstance(model, TreeDemographicModel)):
+            Nanc_will_be = self.Nanc_will_be_available()
+            L = self.data_holder.get_total_sequence_length()
+            L_is_None = L is None
+            mu_is_None = self.mutation_rate is None
+            if L_is_None and mu_is_None:
+                msg = "`Sequence length` and `Mutation rate` are required"
+            elif L_is_None:
+                msg = "`Sequence length` is reqiered"
+            elif mu_is_None:
+                msg = "`Mutation rate` is required"
+            for engine in all_available_engines():
+                if engine.id == "demes" and not Nanc_will_be:
+                    if print_warnings:
+                        warnings.warn(
+                            f"Code for demes will not be generated as {msg}"
+                        )
+                    continue
+                if (engine.id == "momi2" and
+                        (not Nanc_will_be or L_is_None)):
+                    if print_warnings:
+                        warnings.warn(
+                            f"Code for momi2 will not be generated as {msg}"
+                        )
+                    continue
+                # conditions for momentsLD
+                if (engine.id == "momentsLD" and
+                        self.engine != "momentsLD"):
+                    # The following lines are already checked before
+                    # have_vcf = isinstance(self.engine.data_holder,
+                    #                       VCFDataHolder)
+                    # if not have_vcf:
+                    #     warnings.warn(
+                    #         "Code for momentsLD will not be generated"
+                    #         " as VCF file is required as `Input data`"
+                    #     )
+                    #     continue
+                    # bed_dir = engine.data_holder.bed_files_dir
+                    # have_bed = bed_dir is not None
+                    preproc = self.preprocessed_data is not None
+                    if not preproc:
+                        if print_warnings:
+                            warnings.warn(
+                                "Code for momentsLD will not be generated"
+                                " as data was not preprocessed for it (run"
+                                " gadma-precompute_ld_data script on the VCF"
+                                " file first)"
+                            )
+                        continue
+                available_engines.append(engine.id)
+        else:
+            assert isinstance(self.model, CustomDemographicModel)
+            available_engines.append(self.engine.id)
+        return available_engines
 
     def is_valid(self):
         """

@@ -22,7 +22,7 @@ def logarithm_transform(x):
     """
     Transforms ``x`` by applying ``numpy.log`` on it.
     """
-    if isinstance(x, (int, float, np.integer, np.float)):
+    if isinstance(x, (int, float, np.integer, np.float64)):
         x = [x]
     if not isinstance(x, (list, np.ndarray)):
         return x
@@ -68,7 +68,7 @@ def exponent_transform(x):
     """
     Transforms ``x`` by applying ``numpy.exp`` on it.
     """
-    if isinstance(x, (int, float, np.integer, np.float)):
+    if isinstance(x, (int, float, np.integer, np.float64)):
         x = [x]
     if not isinstance(x, (list, np.ndarray)):
         return x

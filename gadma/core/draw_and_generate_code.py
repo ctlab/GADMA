@@ -143,7 +143,9 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
         new_img.save(filename)
 
 
-def generate_code_to_file(x, engine, settings, filename):
+def generate_code_to_file(
+    x, engine, settings, filename, available_engines=None,
+):
     """
     Generates code of demographic model to file. Settings are required to get
     ``engine`` arguments in :func:`evaluation` function.
@@ -156,7 +158,12 @@ def generate_code_to_file(x, engine, settings, filename):
     :type settings: :class:`gadma.cli.settings_storage.SettingsStorage`
     :param filename: File name to save picture.
     :type filename: str
+    :param available_engines: list of engines to generate code for.
+                              If None then for all available engines.
     """
+    if available_engines is None:
+        available_engines = [eng.id for eng in all_available_engines()]
+
     pos = filename.rfind('.')
     if pos == -1 or filename[pos:] != '.py':
         pos = len(filename)
@@ -169,7 +176,7 @@ def generate_code_to_file(x, engine, settings, filename):
     )
     # Generate code
     if isinstance(engine.model, EpochDemographicModel):
-        engines_ids = [eng.id for eng in all_available_engines()]
+        engines_ids = available_engines
         if not settings.Nanc_will_be_available():
             if "demes" in engines_ids:
                 engines_ids.remove("demes")
@@ -342,7 +349,13 @@ def print_runs_summary(start_time, shared_dict, settings):
             print(f"{bcolors.WARNING}Run {index} warning: failed to draw model"
                   f" due to the following exception: {e}{bcolors.ENDC}.")
         try:
-            generate_code_to_file(x, engine, settings, save_code_file)
+            generate_code_to_file(
+                x,
+                engine,
+                settings,
+                save_code_file,
+                settings.get_available_engines(),
+            )
         except Exception as e:
             gener = False
             print(
