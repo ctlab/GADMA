@@ -9,7 +9,7 @@ from ..engines import get_engine, MomentsEngine, MomentsLdEngine
 from ..engines import DadiEngine
 from ..engines import all_engines, all_drawing_engines, all_available_engines
 from ..models import StructureDemographicModel, CustomDemographicModel,\
-    EpochDemographicModel
+    EpochDemographicModel, TreeDemographicModel
 from ..optimizers import get_local_optimizer, get_global_optimizer
 from ..optimizers import LinearConstrain
 from ..utils import check_dir_existence, check_file_existence, abspath,\
@@ -1269,7 +1269,7 @@ class SettingsStorage(object):
                 has_dyns=create_dyns,
                 sym_migs=sym_migs,
                 frac_split=split_f,
-                migs_mask=migs_mask,
+                migs_mask=copy.deepcopy(migs_mask),
                 gen_time=gen_time,
                 theta0=theta0,
                 mutation_rate=mut_rate,
@@ -1441,8 +1441,8 @@ class SettingsStorage(object):
                         continue
                 available_engines.append(engine.id)
         else:
-            assert isinstance(self.model, CustomDemographicModel)
-            available_engines.append(self.engine.id)
+            assert isinstance(model, CustomDemographicModel)
+            available_engines.append(self.engine)
         return available_engines
 
     def is_valid(self):
@@ -1454,7 +1454,7 @@ class SettingsStorage(object):
             if self.units_of_time_in_drawing != "generations":
                 warnings.warn(
                     "Time for generation is not set. All times will be in"
-                    "generations (output and pictures)."
+                    " generations (output and pictures)."
                 )
                 self.units_of_time_in_drawing != "generations"
         if (self.input_data is None and
@@ -1563,9 +1563,9 @@ class SettingsStorage(object):
                 )
                 self.units_of_time_in_drawing = "years"
 
-        if self.sequence_length is None and momi_available:
-            warnings.warn("Code for momi2 will not be generated as `Sequence "
-                          "length` is missed.")
+        # if self.sequence_length is None and momi_available:
+        #     warnings.warn("Code for momi2 will not be generated as `Sequence"
+        #                   " length` is missed.")
 
         # Check for sequence length if we have several chrom lengths
         if isinstance(self.sequence_length, dict):
@@ -1598,25 +1598,26 @@ class SettingsStorage(object):
                          "specify length for chromosomes separately via dict"
         if not moments_ld_ok:
             if self.engine != "momentsLD":
-                warnings.warn("Code for momentsLD will not be generated as: "
-                              f"{reason}")
+                pass
+                # warnings.warn("Code for momentsLD will not be generated as: "
+                #               f"{reason}")
             else:
                 raise ValueError("MomentsLD requirements are not satisfied: "
                                  f"{reason}")
 
-        for engine, is_available in zip(["demes", "momi2"],
-                                        [demes_available, momi_available]):
-            if is_available:
-                if not self.Nanc_will_be_available():
-                    warnings.warn(
-                        f"Code for {engine} engine will not be generated as "
-                        "ancestral size will be missed in the dem. model. "
-                        "The following options should be set to enable it:\n"
-                        f"`Ancestral size as parameter`: True "
-                        f"(got `self.ancestral_size_as_parameter`)\nor\n"
-                        f"`Mutation rate` (got {self.mutation_rate})\n"
-                        f"`Sequence length` (got {self.sequence_length})\nor\n"
-                        f"`Theta0` (got {self.theta0})")
+        # for engine, is_available in zip(["demes", "momi2"],
+        #                                 [demes_available, momi_available]):
+        #     if is_available:
+        #         if not self.Nanc_will_be_available():
+        #             warnings.warn(
+        #                 f"Code for {engine} engine will not be generated as "
+        #                 "ancestral size will be missed in the dem. model. "
+        #                 "The following options should be set to enable it:\n"
+        #                 f"`Ancestral size as parameter`: True "
+        #                 f"(got `self.ancestral_size_as_parameter`)\nor\n"
+        #                 f"`Mutation rate` (got {self.mutation_rate})\n"
+        #                 f"`Sequence length` (got {self.sequence_length})\nor"
+        #                 f"\n`Theta0` (got {self.theta0})")
 
         if self.ld_kwargs is not None:
             if self.engine != "momentsLD":

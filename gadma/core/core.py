@@ -63,9 +63,6 @@ def main():
     sys.stdout = StdAndFileLogger(log_file, settings_storage.silence)
     sys.stderr = StdAndFileLogger(log_file, stderr=True)
 
-    # Check what engines will be available and print warnings
-    settings_storage.get_available_engines(print_warnings=True)
-
     try:
         # Data reading
         print("Data reading")
@@ -89,6 +86,9 @@ def main():
                   f"{len(settings_storage.bootstrap_data)}")
             print(f"{bcolors.OKGREEN}--Successful bootstrap data reading--"
                   f"{bcolors.ENDC}\n")
+
+        # Check what engines will be available and print warnings
+        settings_storage.get_available_engines(print_warnings=True)
 
         # Save parameters
         settings_storage.to_files(params_file, extra_params_file)

@@ -106,7 +106,7 @@ class CoreRun(object):
                 self.code_dir = os.path.join(self.output_dir, 'code')
                 ensure_dir_existence(self.code_dir)
                 for engine_id in self.available_engines:
-                    engine_dir = os.path.join(self.code_dir, engine.id)
+                    engine_dir = os.path.join(self.code_dir, engine_id)
                     ensure_dir_existence(engine_dir)
         # Set counters to zero for callbacks to count number of their calls
         self.draw_iter_callback_counter = 0
