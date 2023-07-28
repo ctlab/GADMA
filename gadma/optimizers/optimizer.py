@@ -3,7 +3,7 @@ import numpy as np
 import sys
 import os
 
-from ..utils import Variable, ContinuousVariable
+from ..utils import Variable, ContinuousVariable, DiscreteVariable
 from ..utils import fix_args, cache_func
 from ..utils import ensure_file_existence, check_file_existence,\
                     variables_values_repr, eval_wrapper
@@ -622,4 +622,5 @@ class ConstrainedOptimizer(Optimizer):
         """
         super(ConstrainedOptimizer, self).check_variables(variables)
         for var in variables:
-            assert np.all(var.domain != np.array([-np.inf, np.inf]))
+            assert (isinstance(var, DiscreteVariable)
+                    or np.all(var.domain != np.array([-np.inf, np.inf])))
