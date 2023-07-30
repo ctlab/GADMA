@@ -622,5 +622,11 @@ class ConstrainedOptimizer(Optimizer):
         """
         super(ConstrainedOptimizer, self).check_variables(variables)
         for var in variables:
+            if not (isinstance(var, DiscreteVariable)
+                    or np.all(var.domain != np.array([-np.inf, np.inf]))):
+                print(var)
+                print(variables)
+                print(var.domain)
             assert (isinstance(var, DiscreteVariable)
                     or np.all(var.domain != np.array([-np.inf, np.inf])))
+
