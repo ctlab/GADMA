@@ -176,6 +176,8 @@ def _print_moments_load_data(data_holder):
 
 def _print_moments_simulation():
     ret_str = f"model = {FUNCTION_NAME}(p0, ns)\n"
+    # check if some entries are negative - mask them out
+    ret_str += f"model.mask[np.where(model < 0)] = True\n"
     return ret_str
 
 

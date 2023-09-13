@@ -236,6 +236,12 @@ class DadiOrMomentsEngine(Engine):
             raise ValueError(f"{self.id} engine could not process constrains "
                              "on demographic model parameters (bounds of time "
                              "splits) in not-multinom mode.")
+        # Check if masks intersection gives any values to work with
+        if np.all(np.logical_or(self.data.mask, model_sfs.mask)):
+            key = self._get_key(values, grid_sizes)
+            self.saved_add_info[key] = None
+            return None
+
         if not self.multinom:
             theta0_inv = self.get_N_ancestral_from_theta(1)
             if theta0_inv is None:

@@ -231,6 +231,8 @@ class MomentsEngine(DadiOrMomentsEngine):
         model = self._inner_func(values, ns, dt_fac)
         if population_labels is not None:
             model.pop_ids = population_labels
+        # check if some entries are negative - mask them out
+        model.mask[np.where(model < 0)] = True
         return model
 
     def get_N_ancestral(self, values, dt_fac=default_dt_fac):

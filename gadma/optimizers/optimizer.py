@@ -629,4 +629,3 @@ class ConstrainedOptimizer(Optimizer):
                 print(var.domain)
             assert (isinstance(var, DiscreteVariable)
                     or np.all(var.domain != np.array([-np.inf, np.inf])))
-
