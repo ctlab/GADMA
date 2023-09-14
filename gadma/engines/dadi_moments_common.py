@@ -151,6 +151,8 @@ class DadiOrMomentsEngine(Engine):
                      self.data_holder.get_total_sequence_length()
         else:
             return None
+        if theta is None:  # SFS generation for model failed
+            return None
         return theta / theta0
 
     def get_N_ancestral(self, values, grid_sizes):
