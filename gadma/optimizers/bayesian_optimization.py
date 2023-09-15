@@ -341,10 +341,15 @@ class SMACSquirrelOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                 api_config[var.name] = {'type': 'real',
                                         'space': 'linear',
                                         'range': var.domain}
-                hp_list.append(UniformFloatHyperparameter(name=var.name,
-                                                          lower=var.domain[0],
-                                                          upper=var.domain[1],
-                                                          log=False))
+                hp_list.append(
+                    UniformFloatHyperparameter(
+                        name=var.name,
+                        lower=float(var.domain[0]),
+                        upper=float(var.domain[1]),
+                        default_value=None,
+                        log=False
+                    )
+                )
             else:
                 api_config[var.name] = {'type': 'cat',
                                         'values': var.domain}
@@ -634,10 +639,15 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         hp_list = []
         for var in variables:
             if isinstance(var, ContinuousVariable):
-                hp_list.append(UniformFloatHyperparameter(name=var.name,
-                                                          lower=var.domain[0],
-                                                          upper=var.domain[1],
-                                                          log=False))
+                hp_list.append(
+                    UniformFloatHyperparameter(
+                        name=var.name,
+                        lower=float(var.domain[0]),
+                        upper=float(var.domain[1]),
+                        default_value=None,
+                        log=False
+                    )
+                )
             else:
                 hp_list.append(CategoricalHyperparameter(name=var.name,
                                                          choices=var.domain))

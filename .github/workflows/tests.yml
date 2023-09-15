@@ -82,6 +82,8 @@ jobs:
       - name: Install GADMA and its dependencies.
         run: |
           bash install
+          pip3 install Cython==0.29.18  # otherwise ConfigsSpace cause error for macOS
+          # TypeError: Expected float, got numpy.float64 when using Float
           pip3 install -r requirements/bayes_opt.txt
           pip3 install -r requirements/bayes_opt_addit.txt
 
@@ -95,16 +97,17 @@ jobs:
         run: |
           pip3 uninstall -y moments
           pip3 install Cython==0.29.18  # the last version cause erros on Windows and MacOS
+          pip3 install setuptools==58.2.0  # to install with setup.py
           git clone --depth 1 --branch moments-1.1.11 https://bitbucket.org/simongravel/moments.git
           cd moments
           pip install -r requirements.txt
           python3 setup.py build_ext --inplace
-          python3 setup.py install
+          pip3 install .
           cd ..
 
       # For some reason the last version of wheel cause an error for momi and dadi installation
       # The error is the following: ModuleNotFoundError: No module named 'numpy'
-      - name: Use specific version of wheel for momi installation (Linux)
+      - name: Use specific version of wheel for momi and dadi installation (Linux)
         if: matrix.python-version == '3.8'
         run: |
           python3 -m pip install wheel==0.38.4
