@@ -233,6 +233,7 @@ class DadiOrMomentsEngine(Engine):
                                   None,
                                   None,
                                   grid_sizes)
+
         # TODO: process it
         if not self.multinom and self.model.linear_constrain is not None:
             raise ValueError(f"{self.id} engine could not process constrains "

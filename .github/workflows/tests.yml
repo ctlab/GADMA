@@ -102,11 +102,17 @@ jobs:
           python3 setup.py install
           cd ..
 
-      # For some reason the last version of wheel cause an error for momi installation
+      # For some reason the last version of wheel cause an error for momi and dadi installation
+      # The error is the following: ModuleNotFoundError: No module named 'numpy'
       - name: Use specific version of wheel for momi installation (Linux)
-        if: runner.os == 'Linux' &&  matrix.python-version == '3.8'
+        if: matrix.python-version == '3.8'
         run: |
           python3 -m pip install wheel==0.38.4
+
+      - name: Install dadi==2.2.0 for Python3.8
+        if: matrix.python-version == '3.8'
+        run: |
+          pip3 install dadi==2.2.0
 
       - name: Install momi engine (Linux).
         if: runner.os == 'Linux'

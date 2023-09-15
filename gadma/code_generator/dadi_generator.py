@@ -228,7 +228,7 @@ def _print_dadi_simulation():
               f"({FUNCTION_NAME})\n"
     ret_str += "model = func_ex(p0, ns, pts)\n"
     # check if some entries are negative - mask them out
-    ret_str += f"model.mask[np.where(model < 0)] = True\n"
+    ret_str += f"model.mask[np.where(model <= 0)] = True\n"
     return ret_str
 
 
