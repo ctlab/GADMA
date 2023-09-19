@@ -341,12 +341,13 @@ class SMACSquirrelOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                 api_config[var.name] = {'type': 'real',
                                         'space': 'linear',
                                         'range': var.domain}
+                middle_point = (var.domain[0] + var.domain[1]) / 2
                 hp_list.append(
                     UniformFloatHyperparameter(
                         name=var.name,
                         lower=float(var.domain[0]),
                         upper=float(var.domain[1]),
-                        default_value=None,
+                        default_value=float(middle_point),
                         log=False
                     )
                 )
@@ -639,12 +640,13 @@ class SMACBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         hp_list = []
         for var in variables:
             if isinstance(var, ContinuousVariable):
+                middle_point = (var.domain[0] + var.domain[1]) / 2
                 hp_list.append(
                     UniformFloatHyperparameter(
                         name=var.name,
                         lower=float(var.domain[0]),
                         upper=float(var.domain[1]),
-                        default_value=None,
+                        default_value=float(middle_point),
                         log=False
                     )
                 )

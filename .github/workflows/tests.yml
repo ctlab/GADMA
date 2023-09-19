@@ -93,6 +93,10 @@ jobs:
         run: |
           pip3 uninstall -y smac
 
+      - name: Uninstall SMAC (MacOS py3.6)
+        if: runner.os == 'MacOS' && matrix.python-version == '3.6'
+        run: pip3 uninstall -y smac
+
       - name: Install momentsLD engine.
         run: |
           pip3 uninstall -y moments

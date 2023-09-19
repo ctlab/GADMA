@@ -8,46 +8,77 @@ on:
     types: [published]
 
 jobs:
-  build-n-publish:
+  build:
     name: Build and publish Python distributions to PyPI and TestPyPI
     runs-on: ubuntu-20.04
 
     steps:
     - uses: actions/checkout@master
     - name: Set up Python 3.8
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: 3.8
       if: github.repository_owner == 'ctlab'
 
     - name: Check out src from Git
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Get history and tags for SCM versioning to work
       run: |
         git fetch --prune --unshallow
         git fetch --depth=1 origin +refs/tags/*:refs/tags/*
       if: github.repository_owner == 'ctlab'
 
-    - name: Install GADMA and its dependencies and create dist.
+    - name: Install GADMA and its dependencies.
       run: |
-        pip install setuptools --upgrade
-        pip install numpy
-        pip install Cython
-        pip install dadi
-        python3 setup.py install
+        python3 -m pip install setuptools --upgrade
+        python3 -m pip install numpy
+        python3 -m pip install Cython
+        python3 -m pip install dadi
+        #python3 setup.py install
         python3 -m pip install --user --upgrade setuptools wheel
-        python3 setup.py sdist bdist_wheel
+        #python3 setup.py sdist bdist_wheel
       if: github.repository_owner == 'ctlab'
 
-    - name: Publish distribution 📦 to Test PyPI
-      uses: pypa/gh-action-pypi-publish@master
+    - name: Install pypa/build
+      run: python3 -m pip install build --user
+
+    - name: Build a binary wheel and a source tarball
+      run: python3 -m build
+    - name: Store the distribution packages
+      uses: actions/upload-artifact@v3
       with:
-        password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-        repository_url: https://test.pypi.org/legacy/
+        name: python-package-distributions
+        path: dist/
+
+  publish-to-testpypi:
+    name: Publish Python 🐍 distribution 📦 to TestPyPI
+    needs:
+    - build
+    runs-on: ubuntu-20.04
+
+    environment:
+      name: publish-testpypi
+      url: https://test.pypi.org/p/gadma
+
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v3
+      with:
+        name: python-package-distributions
+        path: dist/
+
+    - name: Publish distribution 📦 to Test PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
       if: github.repository_owner == 'ctlab'
 
     - name: Publish distribution 📦 to PyPI
       if: github.repository_owner == 'ctlab' && github.event.release
-      uses: pypa/gh-action-pypi-publish@master
+      uses: pypa/gh-action-pypi-publish@release/v1
       with:
         password: ${{ secrets.PYPI_API_TOKEN }}
+        verbose: true
