@@ -52,6 +52,7 @@ jobs:
 
   publish-to-testpypi:
     name: Publish Python 🐍 distribution 📦 to TestPyPI
+    if: github.repository_owner == 'ctlab'
     needs:
     - build
     runs-on: ubuntu-20.04
@@ -74,11 +75,30 @@ jobs:
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         repository-url: https://test.pypi.org/legacy/
-      if: github.repository_owner == 'ctlab'
+
+  publish-to-pypi:
+    name: Publish Python 🐍 distribution 📦 to PyPI
+    if: github.repository_owner == 'ctlab' && github.event.release
+    needs:
+    - build
+    runs-on: ubuntu-20.04
+
+    environment:
+      name: publish-pypi
+      url: https://pypi.org/p/gadma
+
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v3
+      with:
+        name: python-package-distributions
+        path: dist/
 
     - name: Publish distribution 📦 to PyPI
-      if: github.repository_owner == 'ctlab' && github.event.release
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
-        password: ${{ secrets.PYPI_API_TOKEN }}
-        verbose: true
+        repository-url: https://pypi.org/legacy/
+
