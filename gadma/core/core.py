@@ -65,6 +65,7 @@ def main():
 
     try:
         # Data reading
+        start_time = time.time()
         print("Data reading")
         settings_storage.read_data()
         print(f"Number of populations: "
@@ -72,7 +73,8 @@ def main():
         print(f"Projections: {settings_storage.projections}")
         print(f"Population labels: {settings_storage.population_labels}")
         print(f"Outgroup: {settings_storage.outgroup}")
-        print(f"{bcolors.OKGREEN}--Successful data reading--{bcolors.ENDC}\n")
+        print(f"{bcolors.OKGREEN}--Successful data reading "
+              f"({time.time() - start_time:.2f} s)--{bcolors.ENDC}\n")
 
         arg_parser.check_required_settings(settings_storage)
 
@@ -80,12 +82,13 @@ def main():
               f"{bcolors.ENDC}\n")
 
         if settings_storage.directory_with_bootstrap is not None:
+            start_time = time.time()
             print("Bootstrap data reading")
             settings_storage.read_bootstrap_data()
             print(f"Number of files found: "
                   f"{len(settings_storage.bootstrap_data)}")
-            print(f"{bcolors.OKGREEN}--Successful bootstrap data reading--"
-                  f"{bcolors.ENDC}\n")
+            print(f"{bcolors.OKGREEN}--Successful bootstrap data reading "
+                    f"({time.time() - start_time:.2f} s)--{bcolors.ENDC}\n")
 
         # Check what engines will be available and print warnings
         settings_storage.get_available_engines(print_warnings=True)

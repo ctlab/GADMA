@@ -138,7 +138,7 @@ class DadiOrMomentsEngine(Engine):
             warnings.warn("Additional evaluation for theta. Nothing to worry "
                           "if this warning is seldom.")
             self.evaluate(values, grid_sizes)
-        theta = self.saved_add_info[key]
+        theta = self.saved_add_info[key]["theta"]
         return theta
 
     def get_N_ancestral_from_theta(self, theta):
@@ -234,16 +234,24 @@ class DadiOrMomentsEngine(Engine):
                                   None,
                                   grid_sizes)
 
+        # We can start checking our model SFS
+        # Some entries can be negative if numerics failed
+        if self.data.folded:
+            model_sfs = model_sfs.fold()
+        model_sfs, data = self.base_module.Numerics.intersect_masks(model_sfs, self.data)
+        not_posit_vals = model_sfs <= 0
+        failed_f = data[np.where(not_posit_vals)].sum() / data.sum()
+        if model_sfs.sum() < 0:  # the worst case
+            key = self._get_key(values, grid_sizes)
+            self.saved_add_info[key] = {"theta": None, "failed_f": failed_f}
+            return None
+        # Otherwise we continue and write failed results at the end
+
         # TODO: process it
         if not self.multinom and self.model.linear_constrain is not None:
             raise ValueError(f"{self.id} engine could not process constrains "
                              "on demographic model parameters (bounds of time "
                              "splits) in not-multinom mode.")
-        # Check if masks intersection gives any values to work with
-        if np.all(np.logical_or(self.data.mask, model_sfs.mask)):
-            key = self._get_key(values, grid_sizes)
-            self.saved_add_info[key] = None
-            return None
 
         if not self.multinom:
             theta0_inv = self.get_N_ancestral_from_theta(1)
@@ -252,13 +260,15 @@ class DadiOrMomentsEngine(Engine):
                               "variable with theta0=1 could be wrong.")
                 theta0_inv = 1.0
             theta0 = 1 / theta0_inv
-            # just got value of Nanc from values
+            # just get value of Nanc from values
             theta = theta0 * self.get_N_ancestral(values, grid_sizes)
         else:
-            # The next two lines usually works like ll_multinom, but when we
-            # have some constrains it could turn out to be ll with some other
-            # theta.
+            # If we have some constrains theta is chosen so that they are
+            # satisfied, otherwise it is optimal_sfs_scaling
             theta = self._get_theta_from_sfs(values_gen, model_sfs)
+
+        # The next line usually works like ll_multinom, but with theta
+        # evaluated sometimes in a different way
         ll_model = self.base_module.Inference.ll(theta * model_sfs, self.data)
         # Additional check for ll - it could not be better than ll(data, dara)
         # If it is so then just engine was not stable
@@ -268,7 +278,7 @@ class DadiOrMomentsEngine(Engine):
             theta = None
         # Save simulated data
         key = self._get_key(values, grid_sizes)
-        self.saved_add_info[key] = theta
+        self.saved_add_info[key] = {"theta": theta, "failed_f": failed_f}
         return ll_model
 
     def get_claic_component(self, x0, all_boots, grid_sizes, eps):

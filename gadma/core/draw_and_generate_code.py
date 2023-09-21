@@ -275,9 +275,16 @@ def print_runs_summary(start_time, shared_dict, settings):
             else:
                 if not engine.model.has_anc_size and Nanc is not None:
                     model_str += f" [Nanc = {int(Nanc)}] "
-                x_translated = engine.model.translate_values(
-                    units="physical", values=x, Nanc=Nanc
-                )
+                # In some cases dadi and moments fail to generate SFS
+                # and Nanc size become <0. In that case we ignore such
+                # solutions (ll is None) and do not translate values
+                if engine.id in ['dadi', 'moments'] and Nanc is None:
+                    model_str += "[WARNING Nanc < 0!]"
+                    x_translated = x
+                else:
+                    x_translated = engine.model.translate_values(
+                        units="physical", values=x, Nanc=Nanc
+                    )
             model_str += engine.model.as_custom_string(x_translated)
 
             if hasattr(x, "metadata"):
@@ -330,6 +337,24 @@ def print_runs_summary(start_time, shared_dict, settings):
             if len(hit_upper_bound) > 0:
                 msg += ", ".join(hit_upper_bound) + " hit upper bounds"
             print(msg)
+
+        # Check if the best model has numerics failings in case of
+        # dadi and moments
+        if engine.id in ["dadi", "moments"]:
+            key = engine._get_key(
+                x,
+                *settings.get_engine_args(engine_id=engine.id)
+            )
+            failed_f = engine.saved_add_info[key]["failed_f"] * 100
+            if failed_f != 0:
+                print(
+                    f"\nINFO: Some numerics ({failed_f:.2f}%) for the best"
+                    " model were failed. If this is the end of GADMA run then"
+                    " it is better to run more repeats"
+                )
+            if engine.id == "dadi":
+                print(" or increase Pts option")
+            print(".")
 
         # Draw and generate code for best model
         index, (engine, x, y_vals) = sorted_models[0]
