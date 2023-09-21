@@ -77,9 +77,16 @@ def _print_momentsLD_func(engine, values):
         ret_str += "    Nanc"
 
     ret_str += " = 1.0  # This value can be used in splits with fractions\n"
+    moments_version = moments.__version__.split(".")
     ret_str += "    Y = moments.LD.Numerics.steady_state" \
-               "(rho=rho, theta=theta)\n" \
-               f"    Y = moments.LD.LDstats(Y, num_pops=1, pop_ids={pops})\n"
+    # starting from 1.1.16 there is additional argument in steady_state
+    if (int(moments_version[0]) > 1 or int(moments_version[1]) > 1 or
+            int(moments_version[2]) > 15):
+        ret_str += "(nus=[1], rho=rho, theta=theta)\n"
+    else:
+        ret_str += "(rho=rho, theta=theta)\n"
+
+    ret_str += f"    Y = moments.LD.LDstats(Y, num_pops=1, pop_ids={pops})\n"
     n_split = 0
 
     for ind, event in enumerate(model.events):

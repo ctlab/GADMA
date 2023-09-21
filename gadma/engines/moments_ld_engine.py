@@ -251,7 +251,13 @@ class MomentsLdEngine(Engine):
         assert isinstance(self.model, DemographicModel)
         var2value = self.model.var2value(params)
 
-        ld = moments.LD.Numerics.steady_state(rho=rho, theta=theta)
+        # starting from 1.1.16 there is additional argument in steady_state
+        try:
+            ld = moments.LD.Numerics.steady_state(rho=rho, theta=theta)
+        except TypeError as e:
+            if str(e) != "steady_state() missing 1 required positional argument: 'nus'":
+                raise e
+            ld = moments.LD.Numerics.steady_state(nus=[1], rho=rho, theta=theta)
         ld_stats = moments.LD.LDstats(ld, num_pops=1)
 
         addit_values = {}
