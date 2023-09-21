@@ -177,6 +177,11 @@ class CoreRun(object):
         if (self.x_best is None or
                 sign * self.y_best > sign * y or
                 (self.y_best == y and not equal_x)):
+            # Sometimes when we restore results we loose additional info
+            # that is stored in engine, we want to get it for the best model
+            if self.x_best is None:
+                args = self.settings.get_engine_args(engine_id=self.engine.id)
+                self.engine.evaluate(x, *args)  # generates additional info
             self.x_best = x
             self.y_best = y
             self.shared_dict._put_new_model_for_process(
