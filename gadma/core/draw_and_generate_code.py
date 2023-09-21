@@ -350,11 +350,11 @@ def print_runs_summary(start_time, shared_dict, settings):
                 print(
                     f"\nINFO: Some numerics ({failed_f:.2f}%) for the best"
                     " model were failed. If this is the end of GADMA run then"
-                    " it is better to run more repeats"
+                    " it is better to run more repeats", end=""
                 )
-            if engine.id == "dadi":
-                print(" or increase Pts option")
-            print(".")
+                if engine.id == "dadi":
+                    print(" or increase Pts option", end="")
+                print(".")
 
         # Draw and generate code for best model
         index, (engine, x, y_vals) = sorted_models[0]

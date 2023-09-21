@@ -163,8 +163,6 @@ class DadiEngine(DadiOrMomentsEngine):
         model = func_ex(values, ns, pts)
         if population_labels is not None:
             model.pop_ids = population_labels
-        # check if some entries are negative - mask them out
-        model.mask[np.where(model <= 0)] = True
         # TODO: Nref
         return model
 

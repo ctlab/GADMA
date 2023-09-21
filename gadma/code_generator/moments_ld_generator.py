@@ -77,11 +77,12 @@ def _print_momentsLD_func(engine, values):
         ret_str += "    Nanc"
 
     ret_str += " = 1.0  # This value can be used in splits with fractions\n"
+    import moments
     moments_version = moments.__version__.split(".")
     ret_str += "    Y = moments.LD.Numerics.steady_state" \
     # starting from 1.1.16 there is additional argument in steady_state
-    if (int(moments_version[0]) > 1 or int(moments_version[1]) > 1 or
-            int(moments_version[2]) > 15):
+    if (len(moments_version) != 3 or int(moments_version[0]) > 1 or
+            int(moments_version[1]) > 1 or int(moments_version[2]) > 15):
         ret_str += "(nus=[1], rho=rho, theta=theta)\n"
     else:
         ret_str += "(rho=rho, theta=theta)\n"

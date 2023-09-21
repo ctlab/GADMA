@@ -238,13 +238,20 @@ class DadiOrMomentsEngine(Engine):
         # Some entries can be negative if numerics failed
         if self.data.folded:
             model_sfs = model_sfs.fold()
-        model_sfs, data = self.base_module.Numerics.intersect_masks(model_sfs, self.data)
-        if np.all(model_sfs.mask):
+        model_sfs_intersect, data = self.base_module.Numerics.intersect_masks(
+            model_sfs,
+            self.data
+        )
+        if np.all(model_sfs_intersect.mask):
             key = self._get_key(values, grid_sizes)
             self.saved_add_info[key] = {"theta": None, "failed_f": 1.}
             return None
-        not_posit_vals = model_sfs <= 0
-        failed_f = data[np.where(not_posit_vals)].sum() / data.sum()
+        incor_masked = np.logical_and(
+            model_sfs.mask,
+            np.logical_not(self.data.mask)
+        )
+        invalid_vals = np.logical_or(model_sfs <= 0, incor_masked)
+        failed_f = self.data.data[np.where(invalid_vals)].sum() / self.data.sum()
         if model_sfs.sum() < 0:  # the worst case
             key = self._get_key(values, grid_sizes)
             self.saved_add_info[key] = {"theta": None, "failed_f": failed_f}
