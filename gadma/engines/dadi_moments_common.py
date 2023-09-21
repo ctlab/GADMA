@@ -239,6 +239,10 @@ class DadiOrMomentsEngine(Engine):
         if self.data.folded:
             model_sfs = model_sfs.fold()
         model_sfs, data = self.base_module.Numerics.intersect_masks(model_sfs, self.data)
+        if np.all(model_sfs.mask):
+            key = self._get_key(values, grid_sizes)
+            self.saved_add_info[key] = {"theta": None, "failed_f": 1.}
+            return None
         not_posit_vals = model_sfs <= 0
         failed_f = data[np.where(not_posit_vals)].sum() / data.sum()
         if model_sfs.sum() < 0:  # the worst case
