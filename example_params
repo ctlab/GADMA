@@ -211,7 +211,7 @@ Dominance: True
 #   Estimate fraction of ancestral population as parameter of split.
 #   If False then population splits and each of new populations
 #   has its own size as parameter of the model.
-#   Default: True
+#   Default: False
 Split fractions: True
 
 #   Estimate inbreeding coefficients as model parameters.
