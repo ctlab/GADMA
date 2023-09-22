@@ -1722,4 +1722,7 @@ class SettingsStorage(object):
             print(f"[{reason}]")
             for citation in cit:
                 print(citation)
-        print("\nMore information about citations: https://gadma.readthedocs.io/en/latest/citations.html\n")
+        print(
+            "\nMore information about citations: "
+            "https://gadma.readthedocs.io/en/latest/citations.html\n"
+        )
