@@ -106,7 +106,7 @@ or
 
     .. code-block:: console
 
-        $ pip install git+https://bitbucket.org/simongravel/moments.git
+        $ pip install git+https://github.com/MomentsLD/moments.git
 
     or
 
@@ -168,7 +168,7 @@ Install dependencies manually:
 
             $ pip install --upgrade Cython
             $ pip install mpmath
-            $ pip install git+https://bitbucket.org/simongravel/moments.git@moments
+            $ pip install git+https://github.com/MomentsLD/moments.git
 
     * ``momi``
         .. code-block:: console

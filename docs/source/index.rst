@@ -6,21 +6,21 @@
 Welcome to GADMA's documentation!
 =================================
 
-GADMA [Noskova2020]_ implements methods for automatic inference of the joint demographic history of multiple populations from genetic data.
+GADMA [Noskova2020]_ [Noskova2023GADMA2]_ implements methods for automatic inference of the joint demographic history of multiple populations from genetic data.
 
 **GADMA is a command-line tool**. It presents a series of launches of the global and local search algorithms and infers demographic history of multiple populations. The automatic inference handles up to three populations.
 
 GADMA provides choice of several engines for the demographic inference:
 
 * `dadi <https://bitbucket.org/gutenkunstlab/dadi/>`_  developed by Ryan Gutenkunst [Gutenkunst2009]_
-* `moments <https://bitbucket.org/simongravel/moments/>`_  developed by Simon Gravel [Jouganous2017]_
+* `moments <https://github.com/MomentsLD/moments>`_  developed by Simon Gravel [Jouganous2017]_
 * `momi2 <https://github.com/popgenmethods/momi2/>`_ [Kamm2020]_
-* `momentsLD <https://bitbucket.org/simongravel/moments/>`_ extension of ``moments`` for LD stats [Ragsdale2019]_ [Ragsdale2020]_
+* `momentsLD <https://github.com/MomentsLD/moments>`_ extension of ``moments`` for LD stats [Ragsdale2019]_ [Ragsdale2020]_
 
 GADMA implements two base global search algorithms:
 
 * Genetic algorithm — the most common choice of optimization,
-* Bayesian optimization — for demographic inference with time-consuming evaluations, e.g. for four and five populations using *moments* or ∂a∂i.
+* Bayesian optimization [Noskova2023BO]_ — for demographic inference with time-consuming evaluations, e.g. for four and five populations using *moments* or ∂a∂i.
 
 
 GADMA features variuos optimization methods (`global <https://gadma.readthedocs.io/en/latest/api/gadma.optimizers.html#global-optimizers-list>`_ and `local <https://gadma.readthedocs.io/en/latest/api/gadma.optimizers.html#local-optimizers-list>`_ search algorithms) which may be used for `any general optimization problem <https://gadma.readthedocs.io/en/latest/api_examples/optimization_example.html>`_.
@@ -33,7 +33,7 @@ Base usage of GADMA via command-line:
     $ gadma --help
     
     GADMA version 2.0.0	by Ekaterina Noskova (ekaterina.e.noskova@gmail.com)
-    Usage: 
+    Usage:
         gadma	-p/--params	<params_file>
                 -e/--extra	<extra_params_file>
 

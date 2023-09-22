@@ -10,11 +10,11 @@ If you use GADMA in your research please cite:
 
 If you use GADMA2 please cite:
 
-.. [Noskova2022GADMA2] Ekaterina Noskova, Nikita Abramov, Stanislav Iliutkin, Anton Sidorin, Pavel Dobrynin, and Vladimir Ulyantsev, GADMA2: more efficient and flexible demographic inference from genetic data, *bioRxiv*, 2022, `<https://doi.org/10.1101/2022.06.14.496083>`_
+.. [Noskova2023GADMA2] Ekaterina Noskova, Nikita Abramov, Stanislav Iliutkin, Anton Sidorin, Pavel Dobrynin, and Vladimir Ulyantsev, GADMA2: more efficient and flexible demographic inference from genetic data, *GigaScience*, Volume 12, August 2023, giad059, `<https://doi.org/10.1093/gigascience/giad059>`_
 
 If you use Bayesian optimization implemented GADMA please cite:
 
-.. [Noskova2022BO] Ekaterina Noskova and Viacheslav Borovitskiy, Bayesian optimization for demographic inference, *bioRxiv*, 2022, `<https://doi.org/10.1101/2022.09.06.506809>`_
+.. [Noskova2023BO] Ekaterina Noskova and Viacheslav Borovitskiy, Bayesian optimization for demographic inference, *G3 Genes|Genomes|Genetics*, Volume 13, Issue 7, July 2023, jkad080, `<https://doi.org/10.1093/g3journal/jkad080>`_
 
 Engine citations
 ----------------
