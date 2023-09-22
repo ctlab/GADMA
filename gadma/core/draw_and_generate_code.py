@@ -227,7 +227,7 @@ def print_runs_summary(start_time, shared_dict, settings):
         metrics = local_metrics
 
         print(f"All best by {best_by} models")
-        print("Number", *metrics, "Model", sep='\t')
+        print("Number", *metrics, "Model", "Units", sep='\t')
         # save fig titles to use in drawing of best model at the end
         fig_titles = []
         for model in sorted_models:
@@ -266,12 +266,14 @@ def print_runs_summary(start_time, shared_dict, settings):
             # Nanc can be None if we have custom demographic model and
             # we cannot get Nanc size from theta
             model_str = ""
+            units = "genetic"  # default units
             if settings.relative_parameters:
                 x_translated = engine.model.translate_values(
                     units="genetic", values=x, Nanc=Nanc
                 )
                 if Nanc is not None:
                     addit_str += f" (Nanc = {int(Nanc)})"
+                units = "genetic"
             else:
                 if not engine.model.has_anc_size and Nanc is not None:
                     model_str += f" [Nanc = {int(Nanc)}] "
@@ -281,14 +283,31 @@ def print_runs_summary(start_time, shared_dict, settings):
                 if engine.id in ['dadi', 'moments'] and Nanc is None:
                     model_str += "[WARNING Nanc < 0!]"
                     x_translated = x
+                    units = "genetic"
                 else:
                     x_translated = engine.model.translate_values(
-                        units="physical", values=x, Nanc=Nanc
+                        units="physical",
+                        values=x,
+                        Nanc=Nanc,
+                        time_in_generations=False
                     )
-            model_str += engine.model.as_custom_string(x_translated)
+                    units = "physical"
 
+            model_str += engine.model.as_custom_string(x_translated)
             if hasattr(x, "metadata"):
                 model_str += f"\t{x.metadata}"
+            if len(addit_str) > 0:
+                model_str += f"\t{addit_str}"
+
+            if units == "physical":
+                if engine.model.gen_time is not None:
+                    time_units = "years"
+                else:
+                    time_units = "generations"
+                units_str = f"{units}, time in {time_units}"
+            else:
+                units_str = units
+
             # Begin to print
             metric_vals = []
             for metr in metrics:
@@ -305,7 +324,7 @@ def print_runs_summary(start_time, shared_dict, settings):
                         val_str = f"{y_vals[metr]:.2f}"
                     metric_vals.append(val_str)
             print(f"Run {index}", *metric_vals, model_str,
-                  addit_str, sep='\t')
+                  units_str, sep='\t')
             fig_titles.append(f"Best by {best_by} model. ")
             ind = 0
             for metr in metrics:
@@ -384,7 +403,7 @@ def print_runs_summary(start_time, shared_dict, settings):
         except Exception as e:
             gener = False
             print(
-                f"{bcolors.WARNING}Run {index} warning: failed to generate "
+                f"{bcolors.WARNING}Run {index} warning: failed to generate"
                 f" some code due to the following exception: {e}{bcolors.ENDC}"
             )
         if drawn and gener:
