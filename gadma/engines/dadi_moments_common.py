@@ -251,7 +251,8 @@ class DadiOrMomentsEngine(Engine):
             np.logical_not(self.data.mask)
         )
         invalid_vals = np.logical_or(model_sfs <= 0, incor_masked)
-        failed_f = self.data.data[np.where(invalid_vals)].sum() / self.data.sum()
+        invalid_data_sum = self.data.data[np.where(invalid_vals)].sum()
+        failed_f = invalid_data_sum / self.data.sum()
         if model_sfs.sum() < 0:  # the worst case
             key = self._get_key(values, grid_sizes)
             self.saved_add_info[key] = {"theta": None, "failed_f": failed_f}

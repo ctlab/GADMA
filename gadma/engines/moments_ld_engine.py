@@ -252,12 +252,15 @@ class MomentsLdEngine(Engine):
         var2value = self.model.var2value(params)
 
         # starting from 1.1.16 there is additional argument in steady_state
+        msg = "steady_state() missing 1 required positional argument: 'nus'"
         try:
             ld = moments.LD.Numerics.steady_state(rho=rho, theta=theta)
         except TypeError as e:
-            if str(e) != "steady_state() missing 1 required positional argument: 'nus'":
+            if str(e) != msg:
                 raise e
-            ld = moments.LD.Numerics.steady_state(nus=[1], rho=rho, theta=theta)
+            ld = moments.LD.Numerics.steady_state(
+                nus=[1], rho=rho, theta=theta
+            )
         ld_stats = moments.LD.LDstats(ld, num_pops=1)
 
         addit_values = {}

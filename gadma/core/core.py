@@ -88,7 +88,7 @@ def main():
             print(f"Number of files found: "
                   f"{len(settings_storage.bootstrap_data)}")
             print(f"{bcolors.OKGREEN}--Successful bootstrap data reading "
-                    f"({time.time() - start_time:.2f} s)--{bcolors.ENDC}\n")
+                  f"({time.time() - start_time:.2f} s)--{bcolors.ENDC}\n")
 
         # Check what engines will be available and print warnings
         settings_storage.get_available_engines(print_warnings=True)
