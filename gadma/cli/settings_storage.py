@@ -2,6 +2,7 @@ import os
 import ruamel.yaml
 import numpy as np
 from . import settings
+from . import citations
 from .. import demes_available, momi_available
 from ..data import SFSDataHolder, \
     VCFDataHolder, check_and_return_projections_and_labels
@@ -1668,3 +1669,57 @@ class SettingsStorage(object):
                     (self.data_holder.projections,
                      labels) = check_and_return_projections_and_labels(
                         self.data_holder)
+
+    def print_citations(self):
+        """
+        Prints neccessary citations according to current settings.
+        """
+        cites = []
+
+        # GADMA citation
+        reason = f"GADMA"
+        cites.append([
+            reason,
+            [citations.gadma_citation, citations.gadma2_citation]
+        ])
+
+        # bayesian optimization
+        reason = "Bayesian optimization"
+        if self.global_optimizer.lower().startswith("smac_bo"):
+            cites.append([reason, [citations.bo_citation]])
+
+        # Engine citations
+        reason = f"Engine {self.engine}"
+        if self.engine == "dadi":
+            cites.append([reason, [citations.dadi_citation]])
+        elif self.engine == "moments":
+            cites.append([reason, [citations.moments_citation]])
+        elif self.engine == "momentsLD":
+            momentsLD_cites = [
+                citations.momentsLD_citation_1,
+                citations.momentsLD_citation_2
+            ]
+            cites.append([reason, momentsLD_cites])
+        elif self.engine == "momi2":
+            cites.append([reason, [citations.momi_citation]])
+        else:
+            raise AssertionError("Unknown engine")
+
+        # Inbreeding
+        if self.inbreeding:
+            assert self.engine == "dadi"
+            reason = "Inbreeding inference with dadi"
+            cites.append([reason, [citations.inbr_citation]])
+
+        # CLAIC
+        if self.linked_snp_s and self.directory_with_bootstrap is not None:
+            reason = "CLAIC evaluation"
+            cites.append([reason, [citations.claic_citation]])
+
+        # print citations
+        print("\nIf you use GADMA in your research please cite:")
+        for reason, cit in cites:
+            print(f"[{reason}]")
+            for citation in cit:
+                print(citation)
+        print("\nMore information about citations: https://gadma.readthedocs.io/en/latest/citations.html\n")

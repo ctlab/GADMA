@@ -1,0 +1,10 @@
+gadma_citation = "Noskova et al., 2020: https://doi.org/10.1093/gigascience/giaa005"  # NOQA
+gadma2_citation = "Noskova et al., 2023: https://doi.org/10.1093/gigascience/giad059"  #NOQA
+bo_citation = "Noskova and Borovitskiy, 2023: https://doi.org/10.1093/g3journal/jkad080"  #NOQA
+dadi_citation = "Gutenkunst et al., 2009: https://doi.org/10.1371/journal.pgen.1000695"  #NOQA
+inbr_citation = "Blischak et al., 2020: https://doi.org/10.1093/molbev/msaa042"  #NOQA
+moments_citation = "Jouganous et al., 2017: https://doi.org/10.1534/genetics.117.200493"  #NOQA
+momentsLD_citation_1 = "Ragsdale and Gravel, 2019: https://doi.org/10.1371/journal.pgen.1008204"  #NOQA
+momentsLD_citation_2 = "Ragsdale and Gravel, 2020: https://doi.org/10.1093/molbev/msz265"  #NOQA
+momi_citation = "Kamm et al., 2020: https://doi.org/10.1080/01621459.2019.1635482"  #NOQA
+claic_citation = "Coffman et al., 2016: https://doi.org/10.1093/molbev/msv255"  #NOQA

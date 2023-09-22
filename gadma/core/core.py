@@ -123,7 +123,7 @@ def main():
         pool.close()
 
         check_time = time.time()
-        time_diff = 2 * settings_storage.time_to_print_summary
+        time_diff = 60 * settings_storage.time_to_print_summary
         time_bias = 0
         get_time = min(5, time_diff)
         while True:
@@ -165,7 +165,10 @@ def main():
                   "to change it and rescale parameters, please see the "
                   f"tutorial:\n{h}\n")
 
-        print('Thank you for using GADMA!')
+        if not args.test:
+            settings_storage.print_citations()
+
+        print('\nThank you for using GADMA!')
         print(SUPPORT_STRING)
     finally:
         sys.stdout = saved_stdout
