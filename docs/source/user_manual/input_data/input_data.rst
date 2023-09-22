@@ -100,6 +100,33 @@ GADMA can be launched with a parameter file in the following way:
 
    $ gadma -p params_file -o out_dir
 
+Sequence length
+*****************
+
+``Sequence length`` corresponds to the sequence length that was used to build data.
+If some data was filtered out then this option should be changed according to the percent of the sequence that was left.
+More information is available `here <https://gadma.readthedocs.io/en/latest/faq.html#how-can-i-get-effective-length-of-sequence-l>`_.
+
+It is possiblt to cpecify ``Sequence length`` as list with lengths for each chromosome. That can be required for ``momentsLD`` engine.
+To specify length per each chromosome:
+
+.. code-block:: none
+
+   # Length of each chromosome
+   Sequence length: {"1": 248956422, "2": 242193529}
+
+Sometimes, when data is read from VCF file, one can see the following warning:
+
+.. code-block:: console
+
+    UserWarning: More than 10% of SNPs (59.62%) were not used during SFS building due
+    to missed genotypes in the VCF file. Please check whether the `Sequence length`
+    option was changed accordingly. You can account for SNPs with missed genotypes by
+    using alternative projections (refer to the easySFS software for guidance).
+
+In that case it means that 59.62% of data was filtered out and Sequence length should be corrected by \*(1 - 0.5962).
+
+
 Unlinked SNPs, AIC and CLAIC
 -----------------------------
 

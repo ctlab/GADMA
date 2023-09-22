@@ -823,4 +823,16 @@ def read_vcf_data(module, data_holder):
         polarized=outgroup,
     )
     assert data.S() > 0, "Result SFS built from VCF file is zero matrix."
+    # check how many SNPs had missed data
+    n_missed_snps = snp_num - np.sum(data.data)
+    frac = float(n_missed_snps) / snp_num
+    if frac >= 0.1:
+        warnings.warn(
+            f"More than 10% of SNPs ({frac*100:.2f}%) were not used during "
+            "SFS building due to missed genotypes in the VCF file. Please "
+            "check whether the `Sequence length` option was changed "
+            "accordingly. You can account for SNPs with missed genotypes "
+            "by using alternative projections (refer to the easySFS software "
+            "for guidance)."
+        )
     return data
