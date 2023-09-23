@@ -1,6 +1,69 @@
 Changelogs
 ==============
 
+[2.0.0] - 2023-09-23
+--------------------
+
+**Major release**
+Official release of GADMA2.0.0, it includes all pre-releases 2.0.0rc1 - 2.0.0rc26
+
+Changelog since 2.0.0rc26:
+1. Catch cases when theta and ancestral population size are negative for moments and dadi engines (issue #84). Fix optimization routine to ignore such parameters.
+2. Fix GitHub Action tests and PyPi publishing.
+3. Add documentation (regarding issues #60, #75, #85)
+4. Add note when SFS is build from less than 90% of given SNPs.
+5. Option `Split fraction` is set to be False by default.
+6. Update code according with new version of moments.LD that has nus in steady_state.
+
+[2.0.0rc26] - 2023-06-29
+------------------------
+
+1. Fix float problem with new versions of numpy.
+
+[2.0.0rc25] - 2023-04-24
+------------------------
+
+1. Fix bug with demes: it multiplied time twice by the generation time.
+
+[2.0.0rc24] - 2023-04-21
+------------------------
+
+1. Fix CLAIC bug
+
+[2.0.0rc23] - 2022-12-01
+------------------------
+
+1. Fix bug with momentsLD engine for models with exponential or linear change (incorrect likelihood).
+2. Restrict momi2 to use only one core.
+3. Use another scipy function for Nelder_mead algorithm (local)
+4. Make all histories with different parameters when structure is changed (e.g. from 1,1 to 2,1)
+5. Allow usage of models specified using gadma API, but no documentation on that.
+
+[2.0.0rc22] - 2022-09-10
+------------------------
+
+1. Fix bug when failed model is reported as the best.
+2. Add additional checks for Bayesian optimization
+3. Add documentation about BO
+
+[2.0.0rc21] - 2022-06-09
+------------------------
+
+1. Linear extrapolation for dadi was integrated through ``Dadi extrapolation`` option.
+2. Engine momi is renamed in momi2.
+3. Inference of dominance rates was added in GADMA interface.
+4. Fix bug with CLAIC evaluation (for any eps it was taken as 1e-2).
+5. Hyperparameters of genetic algorithm were updated.
+6. Fix minor bugs.
+7. Fix documentation
+
+[2.0.0rc20] - 2022-05-01
+------------------------
+
+1. Genetic algorithm is allowed to be run after Bayesian optimization with --resume option.
+2. Momi engine can read .gz files.
+3. Minor bug fixes.
+
 [2.0.0rc19] - 2022-03-18
 ------------------------
 
@@ -41,7 +104,7 @@ Changelogs
 
 2. ``Input file`` setting changed to ``Input data`` option.
 
-2.0.0rc15] - 2021-06-13
+[2.0.0rc15] - 2021-06-13
 ------------------------
 
 1. Add Bayesian optimizations to GADMA. There are three versions of it:
