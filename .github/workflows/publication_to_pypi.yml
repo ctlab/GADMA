@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    name: Build and publish Python distributions to PyPI and TestPyPI
+    name: Build Python distributions
     runs-on: ubuntu-20.04
 
     steps:
@@ -51,7 +51,7 @@ jobs:
         path: dist/
 
   publish-to-testpypi:
-    name: Publish Python 🐍 distribution 📦 to TestPyPI
+    name: Publish distribution 📦 to TestPyPI
     if: github.repository_owner == 'ctlab'
     needs:
     - build
@@ -77,7 +77,7 @@ jobs:
         repository-url: https://test.pypi.org/legacy/
 
   publish-to-pypi:
-    name: Publish Python 🐍 distribution 📦 to PyPI
+    name: Publish distribution 📦 to PyPI
     if: github.repository_owner == 'ctlab' && github.event.release
     needs:
     - build
