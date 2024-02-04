@@ -189,60 +189,60 @@ class SettingsStorage(object):
     """
 
     _int_attrs = ['stuck_generation_number', 'verbose',
-                 'print_models_code_every_n_iteration', 'n_elitism',
-                 'draw_models_every_n_iteration', 'size_of_generation',
-                 'number_of_repeats', 'number_of_processes',
-                 'number_of_populations', 'global_maxiter',
-                 'global_maxeval', 'local_maxiter', 'local_maxeval',
-                 'num_init_const', "region_len", 'fixed_ancestral_size']
+                  'print_models_code_every_n_iteration', 'n_elitism',
+                  'draw_models_every_n_iteration', 'size_of_generation',
+                  'number_of_repeats', 'number_of_processes',
+                  'number_of_populations', 'global_maxiter',
+                  'global_maxeval', 'local_maxiter', 'local_maxeval',
+                  'num_init_const', "region_len", 'fixed_ancestral_size']
     _float_attrs = ['theta0', 'time_for_generation', 'eps',
-                       'const_of_time_in_drawing', 'vmin', 'min_n', 'max_n',
-                       'min_t', 'max_t', 'min_m', 'max_m',
-                       'upper_bound_of_first_split',
-                       'upper_bound_of_second_split',
-                       'const_for_mutation_strength',
-                       'const_for_mutation_rate',
-                       'mutation_rate', 'recombination_rate',
-                       'time_to_print_summary']
+                    'const_of_time_in_drawing', 'vmin', 'min_n', 'max_n',
+                    'min_t', 'max_t', 'min_m', 'max_m',
+                    'upper_bound_of_first_split',
+                    'upper_bound_of_second_split',
+                    'const_for_mutation_strength',
+                    'const_for_mutation_rate',
+                    'mutation_rate', 'recombination_rate',
+                    'time_to_print_summary']
     _probs_attrs = ['mean_mutation_strength', 'mean_mutation_rate',
-                       'p_mutation', 'p_crossover', 'p_random']
+                    'p_mutation', 'p_crossover', 'p_random']
     _bool_attrs = ['outgroup', 'linked_snp_s', 'only_sudden',
-                      'no_migrations', 'silence', 'test', 'random_n_a',
-                      'relative_parameters', 'only_models',
-                      'symmetric_migrations', 'split_fractions',
-                      'generate_x_transform', 'global_log_transform',
-                      'local_log_transform', 'inbreeding', 'selection',
-                      'dominance', 'ancestral_size_as_parameter']
+                   'no_migrations', 'silence', 'test', 'random_n_a',
+                   'relative_parameters', 'only_models',
+                   'symmetric_migrations', 'split_fractions',
+                   'generate_x_transform', 'global_log_transform',
+                   'local_log_transform', 'inbreeding', 'selection',
+                   'dominance', 'ancestral_size_as_parameter']
     _int_list_attrs = ['pts', 'initial_structure', 'final_structure',
-                          'projections']
+                       'projections']
     _float_list_attrs = ['lower_bound', 'upper_bound']
     _probs_list_attrs = ['fractions']
     _attrs_with_equal_len = ['initial_structure', 'final_structure',
-                                'population_labels', 'projections']
+                             'population_labels', 'projections']
     _special_attrs = ['const_for_mutation_strength',
-                         'const_for_mutation_rate', 'vmin',
-                         'parameter_identifiers', 'migration_masks']
+                      'const_for_mutation_rate', 'vmin',
+                      'parameter_identifiers', 'migration_masks']
     _exist_file_attrs = ['input_data', 'custom_filename',
-                            'bed_file', "preprocessed_data"]
+                         'bed_file', "preprocessed_data"]
     _exist_dir_attrs = ['directory_with_bootstrap',
-                           'resume_from', 'recombination_maps']
+                        'resume_from', 'recombination_maps']
     _empty_dir_attrs = ['output_directory']
     _data_holder_attrs = ['projections', 'outgroup',
-                             'population_labels', 'sequence_length',
-                             "preprocessed_data", "recombination_maps",
-                             'bed_files_dir', 'non_ascertained_pops']
+                          'population_labels', 'sequence_length',
+                          "preprocessed_data", "recombination_maps",
+                          'bed_files_dir', 'non_ascertained_pops']
     _bounds_attrs = ['min_n', 'max_n', 'min_t', 'max_t', 'min_m', 'max_m',
-                        'dynamics']
+                     'dynamics']
     _bounds_lists = ['lower_bound', 'upper_bound', 'parameter_identifiers']
     _missed_attrs = ['engine', 'global_optimizer', 'local_optimizer',
-                        '_inner_data', '_bootstrap_data', 'X_init', 'Y_init',
-                        'model_func', 'get_engine_args', 'data_holder',
-                        'units_of_time_in_drawing', 'resume_from_settings',
-                        'dadi_available', 'moments_available',
-                        'model_plot_engine', 'demes_available',
-                        'demesdraw_available',
-                        'kernel', 'acquisition_function', 'sequence_length',
-                        'dadi_extrapolation']
+                     '_inner_data', '_bootstrap_data', 'X_init', 'Y_init',
+                     'model_func', 'get_engine_args', 'data_holder',
+                     'units_of_time_in_drawing', 'resume_from_settings',
+                     'dadi_available', 'moments_available',
+                     'model_plot_engine', 'demes_available',
+                     'demesdraw_available',
+                     'kernel', 'acquisition_function', 'sequence_length',
+                     'dadi_extrapolation']
     _dict_attrs = ['ld_kwargs']
 
     def __setattr__(self, name, value):
@@ -262,15 +262,18 @@ class SettingsStorage(object):
         except AttributeError:
             super_hasattr = False
         if (name not in self._int_attrs and name not in self._float_attrs and
-                name not in self._probs_attrs and name not in self._bool_attrs and
+                name not in self._probs_attrs and
+                name not in self._bool_attrs and
                 name not in self._attrs_with_equal_len and
                 name not in self._int_list_attrs and
-                name not in self._probs_list_attrs and name not in self._special_attrs and
+                name not in self._probs_list_attrs and
+                name not in self._special_attrs and
                 name not in self._exist_file_attrs and
                 name not in self._exist_dir_attrs and
                 name not in self._empty_dir_attrs and
                 name not in self._data_holder_attrs and
-                name not in self._bounds_attrs and name not in self._missed_attrs and
+                name not in self._bounds_attrs and
+                name not in self._missed_attrs and
                 name not in self._bounds_lists and not super_hasattr and
                 name not in self._dict_attrs):
             raise ValueError(f"Setting {name} should be checked.")
@@ -328,7 +331,8 @@ class SettingsStorage(object):
             if value < 0:
                 raise ValueError(f"Setting {name} ({value}) must be positive.")
         # 1.2 Check is float and probability
-        if (name in self._float_attrs or name in self._probs_attrs) and we_check:
+        if (name in self._float_attrs or name in self._probs_attrs) and
+                we_check:
             if (not isinstance(value, numbers.Real) or
                     isinstance(value, bool)):
                 raise ValueError(f"Setting {name} ({value}) must be float.")
@@ -357,8 +361,8 @@ class SettingsStorage(object):
                     raise ValueError(f"Setting {name} ({value}) have positive"
                                      " elements.")
         # 1.5 Check is the list of floats and probabilities
-        if ((name in self._probs_list_attrs or name in self._float_list_attrs) and
-                we_check):
+        if ((name in self._probs_list_attrs or
+                name in self._float_list_attrs) and we_check):
             if name in self._probs_list_attrs:
                 error = ValueError(f"Setting {name} ({value}) must be list of"
                                    " probabilities.")
@@ -387,8 +391,8 @@ class SettingsStorage(object):
             attrs_list = self._attrs_with_equal_len
         elif name in self._bounds_lists:
             attrs_list = self._bounds_lists
-        if ((name in self._attrs_with_equal_len or name in self._bounds_lists) and
-                we_check):
+        if ((name in self._attrs_with_equal_len or
+                name in self._bounds_lists) and we_check):
             if (name not in self._bounds_lists and
                     hasattr(self, 'number_of_populations') and
                     len(value) != self.number_of_populations):
@@ -435,7 +439,8 @@ class SettingsStorage(object):
         # 1.8.0 expand path of files:
         if (value is not None and
                 (name in self._empty_dir_attrs or
-                 name in self._exist_file_attrs or name in self._exist_dir_attrs)):
+                 name in self._exist_file_attrs or 
+                 name in self._exist_dir_attrs)):
             abspath_value = []
             for val in value.split(","):
                 abspath_value.append(abspath(val.strip()))
