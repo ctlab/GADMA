@@ -33,6 +33,7 @@ def job(index, shared_dict, settings):
     :type settings: :class:`gadma.cli.settings_storage.SettingsStorage`
     """
     try:
+        settings.ensure_global_bounds()
         obj = CoreRun(index, shared_dict, settings)
         obj.run(settings.get_optimizers_init_kwargs())
     except Exception as e:

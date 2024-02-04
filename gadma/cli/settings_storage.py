@@ -771,6 +771,14 @@ class SettingsStorage(object):
                 warnings.warn(f"Domain of DynamicVariable changed to "
                               f"{cls.default_domain}")
 
+    def ensure_global_bounds(self):
+        for attr_name in self._bounds_attrs:
+            self.change_variable_domain(
+                name=attr_name,
+                value=self.__getattr__(attr_name),
+                print_warnings=False,
+            )
+
     def __getattr__(self, name):
         try:
             return object.__getattribute__(self, name)
