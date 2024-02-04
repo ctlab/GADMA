@@ -187,6 +187,64 @@ class SettingsStorage(object):
     Class to hold all settings of GADMA run. All default values of settings
     are defined in :mod:`gadma.cli.settings`.
     """
+
+    _int_attrs = ['stuck_generation_number', 'verbose',
+                 'print_models_code_every_n_iteration', 'n_elitism',
+                 'draw_models_every_n_iteration', 'size_of_generation',
+                 'number_of_repeats', 'number_of_processes',
+                 'number_of_populations', 'global_maxiter',
+                 'global_maxeval', 'local_maxiter', 'local_maxeval',
+                 'num_init_const', "region_len", 'fixed_ancestral_size']
+    _float_attrs = ['theta0', 'time_for_generation', 'eps',
+                       'const_of_time_in_drawing', 'vmin', 'min_n', 'max_n',
+                       'min_t', 'max_t', 'min_m', 'max_m',
+                       'upper_bound_of_first_split',
+                       'upper_bound_of_second_split',
+                       'const_for_mutation_strength',
+                       'const_for_mutation_rate',
+                       'mutation_rate', 'recombination_rate',
+                       'time_to_print_summary']
+    _probs_attrs = ['mean_mutation_strength', 'mean_mutation_rate',
+                       'p_mutation', 'p_crossover', 'p_random']
+    _bool_attrs = ['outgroup', 'linked_snp_s', 'only_sudden',
+                      'no_migrations', 'silence', 'test', 'random_n_a',
+                      'relative_parameters', 'only_models',
+                      'symmetric_migrations', 'split_fractions',
+                      'generate_x_transform', 'global_log_transform',
+                      'local_log_transform', 'inbreeding', 'selection',
+                      'dominance', 'ancestral_size_as_parameter']
+    _int_list_attrs = ['pts', 'initial_structure', 'final_structure',
+                          'projections']
+    _float_list_attrs = ['lower_bound', 'upper_bound']
+    _probs_list_attrs = ['fractions']
+    _attrs_with_equal_len = ['initial_structure', 'final_structure',
+                                'population_labels', 'projections']
+    _special_attrs = ['const_for_mutation_strength',
+                         'const_for_mutation_rate', 'vmin',
+                         'parameter_identifiers', 'migration_masks']
+    _exist_file_attrs = ['input_data', 'custom_filename',
+                            'bed_file', "preprocessed_data"]
+    _exist_dir_attrs = ['directory_with_bootstrap',
+                           'resume_from', 'recombination_maps']
+    _empty_dir_attrs = ['output_directory']
+    _data_holder_attrs = ['projections', 'outgroup',
+                             'population_labels', 'sequence_length',
+                             "preprocessed_data", "recombination_maps",
+                             'bed_files_dir', 'non_ascertained_pops']
+    _bounds_attrs = ['min_n', 'max_n', 'min_t', 'max_t', 'min_m', 'max_m',
+                        'dynamics']
+    _bounds_lists = ['lower_bound', 'upper_bound', 'parameter_identifiers']
+    _missed_attrs = ['engine', 'global_optimizer', 'local_optimizer',
+                        '_inner_data', '_bootstrap_data', 'X_init', 'Y_init',
+                        'model_func', 'get_engine_args', 'data_holder',
+                        'units_of_time_in_drawing', 'resume_from_settings',
+                        'dadi_available', 'moments_available',
+                        'model_plot_engine', 'demes_available',
+                        'demesdraw_available',
+                        'kernel', 'acquisition_function', 'sequence_length',
+                        'dadi_extrapolation']
+    _dict_attrs = ['ld_kwargs']
+
     def __setattr__(self, name, value):
         """
         Sets attribute. The default values of all attributes are in
@@ -197,86 +255,29 @@ class SettingsStorage(object):
         :param name: Name of attribute.
         :param value: Value of the attribute.
         """
-        int_attrs = ['stuck_generation_number', 'verbose',
-                     'print_models_code_every_n_iteration', 'n_elitism',
-                     'draw_models_every_n_iteration', 'size_of_generation',
-                     'number_of_repeats', 'number_of_processes',
-                     'number_of_populations', 'global_maxiter',
-                     'global_maxeval', 'local_maxiter', 'local_maxeval',
-                     'num_init_const', "region_len", 'fixed_ancestral_size']
-        float_attrs = ['theta0', 'time_for_generation', 'eps',
-                       'const_of_time_in_drawing', 'vmin', 'min_n', 'max_n',
-                       'min_t', 'max_t', 'min_m', 'max_m',
-                       'upper_bound_of_first_split',
-                       'upper_bound_of_second_split',
-                       'const_for_mutation_strength',
-                       'const_for_mutation_rate',
-                       'mutation_rate', 'recombination_rate',
-                       'time_to_print_summary']
-        probs_attrs = ['mean_mutation_strength', 'mean_mutation_rate',
-                       'p_mutation', 'p_crossover', 'p_random']
-        bool_attrs = ['outgroup', 'linked_snp_s', 'only_sudden',
-                      'no_migrations', 'silence', 'test', 'random_n_a',
-                      'relative_parameters', 'only_models',
-                      'symmetric_migrations', 'split_fractions',
-                      'generate_x_transform', 'global_log_transform',
-                      'local_log_transform', 'inbreeding', 'selection',
-                      'dominance', 'ancestral_size_as_parameter']
-        int_list_attrs = ['pts', 'initial_structure', 'final_structure',
-                          'projections']
-        float_list_attrs = ['lower_bound', 'upper_bound']
-        probs_list_attrs = ['fractions']
-        attrs_with_equal_len = ['initial_structure', 'final_structure',
-                                'population_labels', 'projections']
-        special_attrs = ['const_for_mutation_strength',
-                         'const_for_mutation_rate', 'vmin',
-                         'parameter_identifiers', 'migration_masks']
-        exist_file_attrs = ['input_data', 'custom_filename',
-                            'bed_file', "preprocessed_data"]
-        exist_dir_attrs = ['directory_with_bootstrap',
-                           'resume_from', 'recombination_maps']
-        empty_dir_attrs = ['output_directory']
-        data_holder_attrs = ['projections', 'outgroup',
-                             'population_labels', 'sequence_length',
-                             "preprocessed_data", "recombination_maps",
-                             'bed_files_dir', 'non_ascertained_pops']
-        bounds_attrs = ['min_n', 'max_n', 'min_t', 'max_t', 'min_m', 'max_m',
-                        'dynamics']
-        bounds_lists = ['lower_bound', 'upper_bound', 'parameter_identifiers']
-        missed_attrs = ['engine', 'global_optimizer', 'local_optimizer',
-                        '_inner_data', '_bootstrap_data', 'X_init', 'Y_init',
-                        'model_func', 'get_engine_args', 'data_holder',
-                        'units_of_time_in_drawing', 'resume_from_settings',
-                        'dadi_available', 'moments_available',
-                        'model_plot_engine', 'demes_available',
-                        'demesdraw_available',
-                        'kernel', 'acquisition_function', 'sequence_length',
-                        'dadi_extrapolation']
-        dict_attrs = ['ld_kwargs']
-
         super_hasattr = True
         setattr_at_the_end = True
         try:
             super(SettingsStorage, self).__getattr__(name)
         except AttributeError:
             super_hasattr = False
-        if (name not in int_attrs and name not in float_attrs and
-                name not in probs_attrs and name not in bool_attrs and
-                name not in attrs_with_equal_len and
-                name not in int_list_attrs and
-                name not in probs_list_attrs and name not in special_attrs and
-                name not in exist_file_attrs and
-                name not in exist_dir_attrs and
-                name not in empty_dir_attrs and
-                name not in data_holder_attrs and
-                name not in bounds_attrs and name not in missed_attrs and
-                name not in bounds_lists and not super_hasattr and
-                name not in dict_attrs):
+        if (name not in self._int_attrs and name not in self._float_attrs and
+                name not in self._probs_attrs and name not in self._bool_attrs and
+                name not in self._attrs_with_equal_len and
+                name not in self._int_list_attrs and
+                name not in self._probs_list_attrs and name not in self._special_attrs and
+                name not in self._exist_file_attrs and
+                name not in self._exist_dir_attrs and
+                name not in self._empty_dir_attrs and
+                name not in self._data_holder_attrs and
+                name not in self._bounds_attrs and name not in self._missed_attrs and
+                name not in self._bounds_lists and not super_hasattr and
+                name not in self._dict_attrs):
             raise ValueError(f"Setting {name} should be checked.")
 
         # -1. For structures it could be one number. We need to transfrom
         # it in list
-        if name in int_list_attrs or name in float_list_attrs:
+        if name in self._int_list_attrs or name in self._float_list_attrs:
             if isinstance(value, numbers.Real):
                 value = [value]
                 self.__setattr__(name, value)
@@ -318,7 +319,7 @@ class SettingsStorage(object):
 
         # 1. Base checks
         # 1.1 Check is int (positive)
-        if name in int_attrs and we_check:
+        if name in self._int_attrs and we_check:
             if isinstance(value, float) and value.is_integer():
                 value = int(value)
             if (not isinstance(value, numbers.Integral) or
@@ -327,19 +328,19 @@ class SettingsStorage(object):
             if value < 0:
                 raise ValueError(f"Setting {name} ({value}) must be positive.")
         # 1.2 Check is float and probability
-        if (name in float_attrs or name in probs_attrs) and we_check:
+        if (name in self._float_attrs or name in self._probs_attrs) and we_check:
             if (not isinstance(value, numbers.Real) or
                     isinstance(value, bool)):
                 raise ValueError(f"Setting {name} ({value}) must be float.")
-            if name in probs_attrs and (value < 0 or value > 1):
+            if name in self._probs_attrs and (value < 0 or value > 1):
                 raise ValueError(f"Setting {name} ({value}) must be between 0 "
                                  "and 1.")
         # 1.3 Check is bool
-        if name in bool_attrs and we_check:
+        if name in self._bool_attrs and we_check:
             if not isinstance(value, bool):
                 raise ValueError(f"Setting {name} ({value}) must be boolean.")
         # 1.4 Check is list of ints
-        if name in int_list_attrs and we_check:
+        if name in self._int_list_attrs and we_check:
             error = ValueError(f"Setting {name} ({value}) must be list of "
                                "integers.")
             if isinstance(value, str):
@@ -356,9 +357,9 @@ class SettingsStorage(object):
                     raise ValueError(f"Setting {name} ({value}) have positive"
                                      " elements.")
         # 1.5 Check is the list of floats and probabilities
-        if ((name in probs_list_attrs or name in float_list_attrs) and
+        if ((name in self._probs_list_attrs or name in self._float_list_attrs) and
                 we_check):
-            if name in probs_list_attrs:
+            if name in self._probs_list_attrs:
                 error = ValueError(f"Setting {name} ({value}) must be list of"
                                    " probabilities.")
             else:
@@ -376,19 +377,19 @@ class SettingsStorage(object):
                 value = [float(x) for x in value]
             except:  # NOQA
                 raise error
-            if name in probs_list_attrs:
+            if name in self._probs_list_attrs:
                 for val in value:
                     if val < 0 or val > 1:
                         raise error
         # 1.6 Check that lengths of arrays are equal between lists
         # and equal to the number of populations
-        if name in attrs_with_equal_len:
-            attrs_list = attrs_with_equal_len
-        elif name in bounds_lists:
-            attrs_list = bounds_lists
-        if ((name in attrs_with_equal_len or name in bounds_lists) and
+        if name in self._attrs_with_equal_len:
+            attrs_list = self._attrs_with_equal_len
+        elif name in self._bounds_lists:
+            attrs_list = self._bounds_lists
+        if ((name in self._attrs_with_equal_len or name in self._bounds_lists) and
                 we_check):
-            if (name not in bounds_lists and
+            if (name not in self._bounds_lists and
                     hasattr(self, 'number_of_populations') and
                     len(value) != self.number_of_populations):
                 raise ValueError(f"Length of {name} should be equal to "
@@ -433,8 +434,8 @@ class SettingsStorage(object):
 
         # 1.8.0 expand path of files:
         if (value is not None and
-                (name in empty_dir_attrs or
-                 name in exist_file_attrs or name in exist_dir_attrs)):
+                (name in self._empty_dir_attrs or
+                 name in self._exist_file_attrs or name in self._exist_dir_attrs)):
             abspath_value = []
             for val in value.split(","):
                 abspath_value.append(abspath(val.strip()))
@@ -443,13 +444,13 @@ class SettingsStorage(object):
         # if name in empty_dir_attrs and value is not None:
         #     value = ensure_dir_existence(value, check_emptiness=True)
         # 1.9 Check file and dir exist
-        if name in exist_file_attrs and value is not None:
+        if name in self._exist_file_attrs and value is not None:
             for val in value.split(","):
                 val = val.strip()
                 if not check_file_existence(val):
                     raise ValueError(f"Setting {name} should be set to existed"
                                      f" file. File {val} does not exist.")
-        if name in exist_dir_attrs and value is not None:
+        if name in self._exist_dir_attrs and value is not None:
             if not check_dir_existence(value):
                 raise ValueError(f"Setting {name} should be set to existed "
                                  f"directory. Dir {value} does not exist.")
@@ -523,7 +524,7 @@ class SettingsStorage(object):
                                                      data_holder)
 
         # 3.2 If we change some attributes of data_holder we need update it
-        elif name in data_holder_attrs:
+        elif name in self._data_holder_attrs:
             if hasattr(self, 'data_holder'):
                 setattr(self.data_holder, name, value)
         # 3.3 For engine we need check it exists
@@ -564,7 +565,7 @@ class SettingsStorage(object):
         # setted attributes are correct. We have already checked that they are
         # equal between each other
         elif name == 'number_of_populations':
-            for attr_name in attrs_with_equal_len:
+            for attr_name in self._attrs_with_equal_len:
                 if getattr(self, attr_name) is None:
                     continue
                 if len(getattr(self, attr_name)) != value:
@@ -636,48 +637,11 @@ class SettingsStorage(object):
                         return
 
         # 3.9 Domain of variables
-        elif name in bounds_attrs:
+        elif name in self._bounds_attrs:
             if name in ['min_n', 'min_t'] and value <= 0:
                 raise ValueError(f"Lower bound {name} should be greater "
                                  "than 0.")
-            domain_changed = True
-            cls = get_variable_class(name.split("_")[-1])
-            if cls == DynamicVariable:
-                if isinstance(value, str):
-                    value = [x.strip() for x in value.split(",")]
-                    for i in range(len(value)):
-                        if value[i].isdigit():
-                            value[i] = int(value[i])
-
-            old_domain = np.array(cls.default_domain)
-            if name.startswith('min'):
-                cls.default_domain = [value, cls.default_domain[1]]
-            elif name.startswith('max'):
-                cls.default_domain = [cls.default_domain[0], value]
-            else:
-                assert name == "dynamics"
-                for dyn in value:
-                    if dyn not in cls._help_dict:
-                        raise ValueError(f"Unknown dynamic {value}. Available "
-                                         "dynamics are: "
-                                         f"{list(cls._help_dict.keys())}")
-                cls.default_domain = value
-
-            domain_changed = len(old_domain) != len(cls.default_domain) or\
-                np.any(old_domain != np.array(cls.default_domain))
-            if domain_changed:
-                if name.endswith('n'):
-                    warnings.warn(f"Domain of PopulationSizeVariable changed "
-                                  f"to {cls.default_domain}")
-                if name.endswith('t'):
-                    warnings.warn(f"Domain of TimeVariable changed to "
-                                  f"{cls.default_domain}")
-                if name.endswith('m'):
-                    warnings.warn(f"Domain of MigrationVariable changed to "
-                                  f"{cls.default_domain}")
-                if name == "dynamics":
-                    warnings.warn(f"Domain of DynamicVariable changed to "
-                                  f"{cls.default_domain}")
+            self.change_variable_domain(name, value, print_warnings=True)
 
         # 3.10 If we set custom filename with model we should check it is
         # valid python code
@@ -766,6 +730,46 @@ class SettingsStorage(object):
         if setattr_at_the_end:
             super(SettingsStorage, self).__setattr__(name, value)
             # assert(self.__getattr__(name) == value)
+
+    def change_variable_domain(self, name, value, print_warnings):
+        domain_changed = True
+        cls = get_variable_class(name.split("_")[-1])
+        if cls == DynamicVariable:
+            if isinstance(value, str):
+                value = [x.strip() for x in value.split(",")]
+                for i in range(len(value)):
+                    if value[i].isdigit():
+                        value[i] = int(value[i])
+
+        old_domain = np.array(cls.default_domain)
+        if name.startswith('min'):
+            cls.default_domain = [value, cls.default_domain[1]]
+        elif name.startswith('max'):
+            cls.default_domain = [cls.default_domain[0], value]
+        else:
+            assert name == "dynamics"
+            for dyn in value:
+                if dyn not in cls._help_dict:
+                    raise ValueError(f"Unknown dynamic {value}. Available "
+                                     "dynamics are: "
+                                     f"{list(cls._help_dict.keys())}")
+            cls.default_domain = value
+
+        domain_changed = len(old_domain) != len(cls.default_domain) or\
+            np.any(old_domain != np.array(cls.default_domain))
+        if domain_changed and print_warnings:
+            if name.endswith('n'):
+                warnings.warn(f"Domain of PopulationSizeVariable changed "
+                              f"to {cls.default_domain}")
+            if name.endswith('t'):
+                warnings.warn(f"Domain of TimeVariable changed to "
+                              f"{cls.default_domain}")
+            if name.endswith('m'):
+                warnings.warn(f"Domain of MigrationVariable changed to "
+                              f"{cls.default_domain}")
+            if name == "dynamics":
+                warnings.warn(f"Domain of DynamicVariable changed to "
+                              f"{cls.default_domain}")
 
     def __getattr__(self, name):
         try:
