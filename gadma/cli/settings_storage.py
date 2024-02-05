@@ -331,8 +331,8 @@ class SettingsStorage(object):
             if value < 0:
                 raise ValueError(f"Setting {name} ({value}) must be positive.")
         # 1.2 Check is float and probability
-        if (name in self._float_attrs or name in self._probs_attrs) and
-                we_check:
+        if ((name in self._float_attrs or name in self._probs_attrs) and
+                we_check):
             if (not isinstance(value, numbers.Real) or
                     isinstance(value, bool)):
                 raise ValueError(f"Setting {name} ({value}) must be float.")
