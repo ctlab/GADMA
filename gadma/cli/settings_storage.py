@@ -439,7 +439,7 @@ class SettingsStorage(object):
         # 1.8.0 expand path of files:
         if (value is not None and
                 (name in self._empty_dir_attrs or
-                 name in self._exist_file_attrs or 
+                 name in self._exist_file_attrs or
                  name in self._exist_dir_attrs)):
             abspath_value = []
             for val in value.split(","):
