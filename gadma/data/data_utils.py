@@ -1,6 +1,5 @@
 import re
 import warnings
-import allel
 import os
 from .data import VCFDataHolder
 from ..utils import ensure_dir_existence
@@ -195,11 +194,13 @@ def extract_chromosomes_from_vcf(vcf_filename):
     """
     We read VCF and extract chromosomes presented there.
     """
+    import allel
     read_vcf = allel.read_vcf(vcf_filename)
     return sorted(list(set(read_vcf['variants/CHROM'])))
 
 
 def get_chrom2len(data_holder):
+    import allel
     vcf_file = data_holder.filename
 
     min_region_num = 15

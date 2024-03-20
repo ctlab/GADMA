@@ -16,7 +16,6 @@ from os import listdir
 import moments.LD
 import multiprocessing
 from collections import ChainMap
-import allel
 import os
 
 
@@ -43,6 +42,7 @@ def extract_rec_map_name_and_extension(rec_map):
 
 
 def create_h5_file(vcf_file):
+    import allel
     h5_file_path = vcf_file.split(".vcf")[0] + ".h5"
     if not check_file_existence(h5_file_path):
         allel.vcf_to_hdf5(
