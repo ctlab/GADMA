@@ -9,7 +9,6 @@ from multiprocessing import Process, Queue, queues
 import warnings
 import copy
 import math
-import allel
 import pandas
 from .. import smac_available
 from pathlib import Path
