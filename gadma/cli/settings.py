@@ -66,7 +66,10 @@ final_structure = None
 
 # Time bounds
 upper_bound_of_first_split = None
+lower_bound_of_first_split = None
 upper_bound_of_second_split = None
+lower_bound_of_second_split = None
+
 
 # Glocal optimizer
 global_optimizer = "Genetic_algorithm"

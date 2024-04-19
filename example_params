@@ -12,7 +12,7 @@
 #    If it is resumed from other directory and output directory 
 #    isn't set, GADMA will add '_resumed' for previous output 
 #    directory.
-Output directory: my_example_run
+Output directory: my_example_run_2
 
 
 #!!!
@@ -224,19 +224,28 @@ Inbreeding: False
 #   Default: False
 Ancestral size as parameter: False
 
-#    It is possible to limit the time of splits.
+#    It is possible to limit the time of splits by bounds' specification.
 #    Split 1 is the most ancient split.
-#    !Note that time is in genetic units (2 * time for 1 generation):
+#    !Note that time is in generations:
 #    e.g. we want to limit by 150 kya, time for one generation is 
-#    25 years, then bound will be 150000 / (2*25) = 3000.
+#    25 years, then bound will be 150000 / 25 = 6000.
+#
+#    Lower bound for split 1 (in case of 2 or 3 populations).
+#    Default: None
+Lower bound of first split: Null
 #
 #    Upper bound for split 1 (in case of 2 or 3 populations).
 #    Default: None
 Upper bound of first split: Null
 
+#    Lower bound for split 2 (in case of 3 populations).
+#    Default: None
+Lower bound of second split: Null
+#
 #    Upper bound for split 2 (in case of 3 populations).
 #    Default: None
 Upper bound of second split: Null
+
 
 
 

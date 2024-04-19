@@ -230,9 +230,15 @@ def _print_dadi_simulation():
     return ret_str
 
 
-def _print_ll(engine, mode='dadi'):
+def _print_ll(engine, fixed_theta=None, mode='dadi'):
     if engine.multinom:
-        ret_str = f"ll_model = {mode}.Inference.ll_multinom(model, data)\n"
+        if fixed_theta is not None:
+            ret_str = "# we use fixed theta as we want to satisfy model "\
+                      "limitations (e.g. bounds on time splits)\n"
+            ret_str += f"theta = {fixed_theta}\n"
+            ret_str += f"ll_model = {mode}.Inference.ll(theta * model, data)\n"
+        else:
+            ret_str = f"ll_model = {mode}.Inference.ll_multinom(model, data)\n"
     else:
         ret_str = f"ll_model = {mode}.Inference.ll(theta * model, data)\n"
     ret_str += "print('Model log likelihood (LL(model, data)): "\
@@ -252,22 +258,37 @@ def _print_main(engine, values, mode='dadi', nanc=None):
                  different to optimal.
     """
     ret_str = ""
-    if engine.multinom:
-        ret_str += _print_ll(engine, mode)
-        ret_str += f"\ntheta = {mode}.Inference.optimal_sfs_scaling"\
-                   "(model, data)\n"
-        ret_str += "print('Optimal value of theta: {0}'.format(theta))\n\n"
-
-    if nanc is not None:
-        ret_str += f"Nanc = {nanc}\n"
 
     mu_is_val = engine.model.mutation_rate is not None
     data_holder_is_val = engine.data_holder is not None
     seq_len_is_val = engine.data_holder.get_total_sequence_length() is not None
 
+    have_theta0 = engine.model.theta0 is not None
     mu_and_L = mu_is_val and data_holder_is_val and seq_len_is_val
 
-    if engine.model.theta0 is not None or mu_and_L:
+    if engine.multinom:
+        fixed_theta = None
+        if nanc is not None and engine.model.linear_constrain is not None:
+            if have_theta0:
+                fixed_theta = nanc * engine.model.theta0
+            else:
+                assert mu_and_L
+                L = engine.data_holder.get_total_sequence_length()
+                fixed_theta = nanc * 4 * engine.model.mutation_rate * L
+        ret_str += _print_ll(engine, fixed_theta, mode)
+        th_str = f"theta = {mode}.Inference.optimal_sfs_scaling"\
+                 "(model, data)\n"
+        if fixed_theta is not None:
+            ret_str += "\n#Uncomment the next line to obtain the true optimal"\
+                       f" value of theta\n#{th_str}"
+        else:
+            ret_str += f"\n{th_str}"
+        ret_str += "print('Optimal value of theta: {0}'.format(theta))\n\n"
+
+    if nanc is not None:
+        ret_str += f"Nanc = {nanc}\n"
+
+    if have_theta0 or mu_and_L:
         if engine.model.theta0 is not None:
             ret_str += f"theta0 = {engine.model.theta0}\n"
             ret_str += "Nanc = int(theta / theta0)\n"
@@ -285,7 +306,7 @@ def _print_main(engine, values, mode='dadi', nanc=None):
 
     ret_str += "print('Size of ancestral population: {0}'.format(Nanc))\n"
     if not engine.multinom:
-        ret_str += _print_ll(engine, mode)
+        ret_str += _print_ll(engine, None, mode)
     return ret_str
 
 

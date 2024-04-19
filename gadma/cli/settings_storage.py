@@ -198,7 +198,9 @@ class SettingsStorage(object):
     _float_attrs = ['theta0', 'time_for_generation', 'eps',
                     'const_of_time_in_drawing', 'vmin', 'min_n', 'max_n',
                     'min_t', 'max_t', 'min_m', 'max_m',
+                    'lower_bound_of_first_split',
                     'upper_bound_of_first_split',
+                    'lower_bound_of_second_split',
                     'upper_bound_of_second_split',
                     'const_for_mutation_strength',
                     'const_for_mutation_rate',
@@ -575,7 +577,30 @@ class SettingsStorage(object):
                     continue
                 if len(getattr(self, attr_name)) != value:
                     raise ValueError(f"Length of {attr_name} should be equal "
-                                     f"to {self.number_of_populations}.")
+                                     f"to {value}.")
+            if value < 2:
+                if self.lower_bound_of_first_split is not None:
+                    raise ValueError(
+                        "Do not specify `Lower bound of first split` as there"
+                        f" is no split for 1 population"
+                    )
+                if self.upper_bound_of_first_split is not None:
+                    raise ValueError(
+                        "Do not specify `Upper bound of first split` as there"
+                        f" is no split for 1 population"
+                    )
+            if value < 3:
+                if self.lower_bound_of_second_split is not None:
+                    raise ValueError(
+                        "Do not specify `Lower bound of second split` as there"
+                        f" is no second split for {value} populations"
+                    )
+                if self.upper_bound_of_second_split is not None:
+                    raise ValueError(
+                        "Do not specify `Upper bound of second split` as there"
+                        f" is no second split for {value} populations"
+                    )
+
         # 3.7 If we set fractions or size of generation then we create/update
         # GA options that depend on these values.
         elif name == 'fractions' or name == 'size_of_generation':
@@ -1240,24 +1265,45 @@ class SettingsStorage(object):
 
     def get_linear_constrain_for_model(self, model):
         """
-        Returns linear constrain for model based of setted upper bound of
-        splits. NOT WORKING.
+        Returns linear constrain for model based of setted upper and lower
+        bounds of splits.
         """
         if (self.upper_bound_of_first_split is None and
-                self.upper_bound_of_second_split is None):
+                self.lower_bound_of_first_split is None and
+                self.upper_bound_of_second_split is None and
+                self.lower_bound_of_second_split is None):
             return None
         A = list()
         ub = list()
-        if (self.upper_bound_of_first_split is not None):
+        lb = list()
+        # check for the first split
+        if (self.upper_bound_of_first_split is not None or
+                self.lower_bound_of_first_split is not None):
             A1, b1 = model.get_involved_for_split_time_vars(1)
             A.append(A1)
-            ub.append(self.upper_bound_of_first_split / 2 - b1)
-        if (self.upper_bound_of_second_split is not None):
+            if self.upper_bound_of_first_split is not None:
+                # we divide by 2 as time is in 2N units and we aware of this 2
+                ub.append(self.upper_bound_of_first_split / 2 - b1)
+            else:
+                ub.append(np.inf)
+            if self.lower_bound_of_first_split is not None:
+                lb.append(self.lower_bound_of_first_split / 2 - b1)
+            else:
+                lb.append(-np.inf)
+        # check for the first split
+        if (self.upper_bound_of_second_split is not None or
+                self.lower_bound_of_second_split is not None):
             A2, b2 = model.get_involved_for_split_time_vars(2)
             A.append(A2)
-            ub.append(self.upper_bound_of_second_split / 2 - b2)
-        lb = - np.inf * np.ones(len(ub))
-        return LinearConstrain(np.array(A), np.array(lb), np.array(ub))
+            if self.upper_bound_of_second_split is not None:
+                ub.append(self.upper_bound_of_second_split / 2 - b2)
+            else:
+                ub.append(np.inf)
+            if self.lower_bound_of_second_split is not None:
+                lb.append(self.lower_bound_of_second_split / 2 - b2)
+            else:
+                lb.append(-np.inf)
+        return LinearConstrain(A, lb, ub)
 
     def get_model(self):
         """
@@ -1686,6 +1732,61 @@ class SettingsStorage(object):
                     (self.data_holder.projections,
                      labels) = check_and_return_projections_and_labels(
                         self.data_holder)
+
+        # check for lower and upper bounds of population splits
+        # Check that bounds are specified when they are allowed
+        if (hasattr(self, "number_of_populations") and
+                self.number_of_populations < 2):
+            if self.lower_bound_of_first_split is not None:
+                raise ValueError(
+                    "Do not specify `Lower bound of first split` as there is"
+                    f" no split for 1 population"
+                )
+            if self.upper_bound_of_first_split is not None:
+                raise ValueError(
+                    "Do not specify `Upper bound of first split` as there is"
+                    f" no split for 1 population"
+                )
+
+        if (hasattr(self, "number_of_populations") and
+                self.number_of_populations < 3):
+            if self.lower_bound_of_second_split is not None:
+                raise ValueError(
+                    "Do not specify `Lower bound of second split` as there"
+                    f" is no second split for {self.number_of_populations}"
+                    " populations"
+                )
+            if self.upper_bound_of_second_split is not None:
+                raise ValueError(
+                    "Do not specify `Upper bound of second split` as there"
+                    f" is no second split for {self.number_of_populations}"
+                    " populations"
+                )
+        # Check that values are not contraversal
+        if (self.lower_bound_of_first_split is not None and
+                self.upper_bound_of_first_split is not None):
+            if (self.lower_bound_of_first_split >
+                    self.upper_bound_of_first_split):
+                raise ValueError(
+                    "`Lower bound of first split` should be less than `Upper"
+                    " bound of first split`"
+                )
+        if (self.lower_bound_of_second_split is not None and
+                self.upper_bound_of_second_split is not None):
+            if (self.lower_bound_of_second_split >
+                    self.upper_bound_of_second_split):
+                raise ValueError(
+                    "`Lower bound of second split` should be less than `Upper"
+                    " bound of second split`"
+                )
+        if (self.upper_bound_of_first_split is not None and
+                self.lower_bound_of_second_split is not None):
+            if (self.upper_bound_of_first_split <
+                    self.lower_bound_of_second_split):
+                raise ValueError(
+                    "`Lower bound of second split` should be less than `Upper"
+                    " bound of first split`"
+                )
 
     def print_citations(self):
         """
