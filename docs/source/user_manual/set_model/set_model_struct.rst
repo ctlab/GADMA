@@ -200,16 +200,28 @@ Split could be set in two ways:
     # param file
     Split fractions: True  # for 1) point
 
-Upper bound of split
-_____________________
+Upper and lower bounds of splits
+________________________________
 
-To limit time of some split one should specify an option in the parameter file. Splits are numbered from the most ancient. So split 1 is split that occurred with the ancient population and split 2 is the next division of the second population (exist only for three populations). There are two appropriate options: ``Upper bound of first split`` and ``Upper bound of second split``.
+It is possible to limit time of split events in the demographic model with structure. In order to do that one should specify one or multiple options in the parameter file that refer to lower and upper bounds of split events. Splits are numbered from the most ancient, so split 1 is a split event that occurred with the ancient population and split 2 is the next division of the second population (exist only for three populations). There are three options corresponded to split times: ``Lower bound of first split``, ``Upper bound of first split``, ``Lower bound of second split``  and ``Upper bound of second split``.
 
-One should translate time from years into genetic units, therefore divide it by ``2 * T_g``, where ``T_g`` is time (in years) for one generation. For example, one wants to limit the last split to 2000 years. Time for one generation is estimated as 24 years, then one should specify in the parameter file:
+Bounds should be specified in GENERATIONS. In order to translate time from years to generations, divide it by ``T_g``, where ``T_g`` is time (in years) for one generation. For example, assume we want the last split to be between 1000 and 2000 years. Time for one generation is estimated to be 24 years. Therefore we construct the following parameter file:
 
 .. code-block:: none
 
     # param_file
     ...
-    Upper bound of second split : 41.666
+    Lower bound of second split : 41.666
+    Upper bound of second split : 83.333
+    ...
+
+ It is allowed to set any of those four options, just make sure they make sense. It is possible to set only one bound or one lower and one upper bounds for different splits:
+
+ .. code-block:: none
+
+    # param_file
+    ...
+    # In that particular case upper bound for the second split exists automatically
+    Upper bound of first split : 30
+    Lower bound of second split : 10
     ...

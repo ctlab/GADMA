@@ -89,54 +89,29 @@ class DadiOrMomentsEngine(Engine):
         theta_ub = theta0 * self.model.linear_constrain.ub / Ax
         if np.any(theta_lb > theta_ub):
             inds = np.where(theta_lb > theta_ub)
-            raise ValueError(f"Lower bounds for {inds} constrains in model"
-                             f" are greater than upper bounds."
-                             f"Please check linear constrain:\n"
-                             f"{self.model.linear_constrain}\n"
-                             f"and values:\n{values}.")
+            raise ValueError(
+                f"Lower bounds for {inds} constrains in model are greater "
+                f"than upper bounds. Please check linear constrain:\n"
+                f"{self.model.linear_constrain}\nand values:\n{values}."
+            )
         theta_upper_lb = max(theta_lb)
         theta_lower_ub = min(theta_ub)
         if theta_upper_lb > theta_lower_ub:
-            raise ValueError(f"Upper lower bound ({upper_lb}) in greater than"
-                             f" lower upper bound ({lower_ub}). Please check "
-                             f" linear constrain:\n"
-                             f"{self.model.linear_constrain}\n"
-                             f"and values:\n{values}.")
+            # this means that there is no theta that will satisfy linear
+            # constrain, we return None
+            return None
 
         optimal_theta = max(optimal_theta, theta_upper_lb)
         optimal_theta = min(optimal_theta, theta_lower_ub)
         return optimal_theta
-#        for i, (lb, ub, val) in enumerate(zip(self.model.linear_constrain.lb,
-#                                              self.model.linear_constrain.ub,
-#                                              Ax):
-#            if lb > ub:
-#                raise ValueError(f"Lower bound for {i} constrain in model for"
-#                                 f" values {values} is greater than upper "
-#                                 f"bound: {val}, [{low_bound}, {upp_bound}]."
-#                                 f"Please check linear constrain:\n"
-#                                 f"{self.model.linear_constrain}\n"
-#                                 f"and values:\n{values}.")
-#            if lb is not None:
-#                if upper_lb is None:
-#                    upper_lb = lb / val
-#                upper_lb = max(upper_lb, lb / val)
-#            if ub is not None:
-#                if lower_ub is None:
-#                    lower_ub = ub / val
-#                lower_ub = max(lower_ub, ub / val)
-#        if upper_lb > lower_ub:
-#            raise ValueError(f"Upper lower bound ({upper_lb}) in greater than"
-#                             f" lower upper bound ({lower_ub}). Please check "
-#                             f" linear constrain:\n"
-#                             f"{self.model.linear_constrain}\n"
-#                             f"and values:\n{values}.")
-#        optimal_theta = max(optimal_theta, lower_ub)
 
     def get_theta(self, values, grid_sizes):
         key = self._get_key(values, grid_sizes)
         if key not in self.saved_add_info:
-            warnings.warn("Additional evaluation for theta. Nothing to worry "
-                          "if this warning is seldom.")
+            warnings.warn(
+                "Additional evaluation for theta. "
+                "Nothing to worry if this warning is seldom."
+            )
             self.evaluate(values, grid_sizes)
         theta = self.saved_add_info[key]["theta"]
         return theta
@@ -278,6 +253,15 @@ class DadiOrMomentsEngine(Engine):
             # If we have some constrains theta is chosen so that they are
             # satisfied, otherwise it is optimal_sfs_scaling
             theta = self._get_theta_from_sfs(values_gen, model_sfs)
+            if theta is None:
+                # we can get None if we failed to satisfy model constrain
+                assert self.model.linear_constrain is not None
+                key = self._get_key(values, grid_sizes)
+                self.saved_add_info[key] = {
+                    "theta": None,
+                    "failed_f": failed_f
+                }
+                return None
 
         # The next line usually works like ll_multinom, but with theta
         # evaluated sometimes in a different way
