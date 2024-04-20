@@ -185,16 +185,33 @@ class TestModelStructure(unittest.TestCase):
                 if not create_migs:
                     sym_migs = False
                 def model_generator(structure):
-                    return StructureDemographicModel(structure,
-                                                     np.array(structure) + 1,
-                                                     has_migs=create_migs,
-                                                     has_sels=create_sels,
-                                                     has_dom=False,  # TODO
-                                                     has_dyns=create_dyns,
-                                                     sym_migs=sym_migs,
-                                                     frac_split=fracs,
-                                                     has_anc_size=has_anc,
-                                                     has_inbr=inbr)
+                    model = StructureDemographicModel(
+                        structure,
+                        np.array(structure) + 1,
+                        has_migs=create_migs,
+                        has_sels=create_sels,
+                        has_dom=False,  # TODO
+                        has_dyns=create_dyns,
+                        sym_migs=sym_migs,
+                        frac_split=fracs,
+                        has_anc_size=has_anc,
+                        has_inbr=inbr
+                    )
+                    # we will narrow domains so that test will be faster
+                    for i in range(len(model.variables)):
+                        var = model.variables[i]
+                        if isinstance(var, PopulationSizeVariable):
+                            if var.name == "Nanc":
+                                model.variables[i].domain = [1000, 2000]
+                            else:
+                                model.variables[i].domain = [1e-1, 5.]
+                        elif isinstance(var, TimeVariable):
+                            model.variables[i].domain = [0.1, 1.]
+                        elif isinstance(var, MigrationVariable):
+                            model.variables[i].domain = [0, 2.]
+                        elif isinstance(var, SelectionVariable):
+                            model.variables[i].domain = [0, 2.]
+                    return model
  
                 dm = model_generator(structure)
                 dm.mutation_rate = 1e-8
@@ -222,7 +239,7 @@ class TestModelStructure(unittest.TestCase):
                         sizes = [8 for _ in range(len(structure))]
                         if len(structure) == 1:
                             sizes = [20]
-                        kwargs = {"pts": [4, 6, 8]}  # pts
+                        kwargs = {"pts": [8, 10, 12]}  # pts
                     else:
                         sizes = [4 for _ in range(len(structure))]
                         kwargs = {}
@@ -292,15 +309,17 @@ class TestModelStructure(unittest.TestCase):
                                 self.assertTrue(is_equal,
                                                 msg=f"{ll_true} != {new_ll} : {msg}")
                             except AttributeError as e:
-                                assert engine.id in ["dadi"], str(e)
+                                print(e)
+                                assert engine.id in ["dadi"]
                                 failed += 1
                             except TypeError as e:
-                                assert engine.id in ["dadi"], str(e)
+                                print(e)
+                                assert engine.id in ["dadi"]
                                 failed += 1
 
                 dm.final_structure = dm.get_structure()
                 self.assertRaises(ValueError, dm.increase_structure)
-        self.assertTrue(failed <= 5, "Dadi failed more that 5 times")
+        self.assertTrue(failed <= 5, "Dadi and momi2 failed more that 5 times")
 
     def _data_for_ll_ld_test(self, ii):
         return VCFDataHolder(
