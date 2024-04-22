@@ -6,9 +6,9 @@ Welcome to GADMA v2!
 
 GADMA implements methods for automatic inference of the joint demographic history of multiple populations from the genetic data.
 
-**GADMA is a command-line tool**. Basic pipeline presents a series of launches of the global search algorithm folowed by the local search optimization.
+**GADMA is a command-line tool**. Basic pipeline presents a series of launches of the global search algorithm followed by the local search optimization.
 
-GADMA provides two types of demograpic inference: 1) for user-specified model of demographic history or a custom model, 2) automatic inference for the model with specified structure (up to three populations, see more [here](https://gadma.readthedocs.io/en/latest/user_manual/set_model/set_model_struct.html)).
+GADMA provides two types of demographic inference: 1) for user-specified model of demographic history or a custom model, 2) automatic inference for the model with specified structure (up to three populations, see more [here](https://gadma.readthedocs.io/en/latest/user_manual/set_model/set_model_struct.html)).
 
 GADMA provides choice of several engines of demographic inference. This list will be extended in the future. Available engines and maximum number of supported populations for custom model:
 
@@ -19,7 +19,7 @@ GADMA provides choice of several engines of demographic inference. This list wil
 
 More information about engines see [here](https://gadma.readthedocs.io/en/latest/user_manual/set_engine.html).
 
-GADMA features variuos optimization methods ([global](https://gadma.readthedocs.io/en/latest/api/gadma.optimizers.html#global-optimizers-list) and [local](https://gadma.readthedocs.io/en/latest/api/gadma.optimizers.html#local-optimizers-list) search algorithms) which may be used for [any general optimization problem](https://gadma.readthedocs.io/en/latest/api_examples/optimization_example.html).
+GADMA features various optimization methods ([global](https://gadma.readthedocs.io/en/latest/api/gadma.optimizers.html#global-optimizers-list) and [local](https://gadma.readthedocs.io/en/latest/api/gadma.optimizers.html#local-optimizers-list) search algorithms) which may be used for [any general optimization problem](https://gadma.readthedocs.io/en/latest/api_examples/optimization_example.html).
 
 Two global search algorithms are supported in GADMA:
 
