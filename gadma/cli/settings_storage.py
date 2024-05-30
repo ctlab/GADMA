@@ -1342,6 +1342,14 @@ class SettingsStorage(object):
             )
             constrain = self.get_linear_constrain_for_model(model)
             model.linear_constrain = constrain
+            if self.fixed_ancestral_size:
+                if self.ancestral_size_as_parameter is not None:
+                    ValueError(
+                        "Option `Fixed ancestral size` is set, please set "
+                        "`Ancestral size as parameter` to True"
+                    )
+                model.fix_variable(model.Nanc_size, self.fixed_ancestral_size)
+                model.Nanc_size = self.fixed_ancestral_size
             return model
         elif ((self.custom_filename is not None or
                 self.model_func is not None) and
@@ -1786,6 +1794,24 @@ class SettingsStorage(object):
                 raise ValueError(
                     "`Lower bound of second split` should be less than `Upper"
                     " bound of first split`"
+                )
+        if self.fixed_ancestral_size is not None:
+            # check that mu and L are given
+            if self.sequence_length is None:
+                raise ValueError(
+                    "`Sequence length` should be specified in order to use "
+                    "fixed ancestral size."
+                )
+            if self.mutation_rate is None:
+                raise ValueError(
+                    "`Mutation rate` should be specified in order to use "
+                    "fixed ancestral size."
+                )
+            if not self.ancestral_size_as_parameter:
+                self.ancestral_size_as_parameter = True
+                warnings.warn(
+                    "Option `Ancestral sizea as parameter` is set to True, "
+                    "as fixed ancestral population size is used."
                 )
 
     def print_citations(self):

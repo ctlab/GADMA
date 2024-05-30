@@ -327,6 +327,10 @@ class EpochDemographicModel(DemographicModel):
         :param variable: Variable to fix.
         :param value: Value of the variable to fix.
         """
+        # check for ancestral population size
+        if variable == self.Nanc_size:
+            super(DemographicModel, self).fix_variable(variable, value)
+            return
         for event in self.events:
             if variable in event.variables:
                 event.fix_variable(variable, value)
