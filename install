@@ -1,5 +1,2 @@
 #!/usr/bin/env bash
-pip3 install -r requirements/minimal.txt
-pip3 install git+https://bitbucket.org/simongravel/moments.git
-pip3 install -r requirements/engines.txt
 pip3 install .

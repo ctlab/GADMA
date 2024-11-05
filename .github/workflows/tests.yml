@@ -15,12 +15,15 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-20.04, windows-2019, macos-latest]
-        python-version: [3.6, 3.8]
+        python-version: ["3.8", "3.10"]
         include:
           - os: windows-2019
             triplet: x64-windows
     env:
       CONDA_ENV_NAME: gadma_env
+    defaults:
+      run:
+        shell: bash -el {0}
 
     steps:
       - name: Cancel previous runs.
@@ -31,120 +34,54 @@ jobs:
       - name: Checkout.
         uses: actions/checkout@v2
 
-      - name: Set up Python 3.
-        uses: actions/setup-python@v2
+      - name: Set up Conda environment.
+        uses: conda-incubator/setup-miniconda@v3
+        continue-on-error: true
         with:
+          auto-update-conda: true
           python-version: ${{ matrix.python-version }}
-
-      - name: Install minimal requirements before everything else
+          channels: conda-forge,bioconda
+          activate-environment: ${{ env.CONDA_ENV_NAME }}
+          
+      - name: Install dadi and scikit-allel using conda.
         run: |
-          pip3 install -r requirements/minimal.txt
-
-#      - name: Install conda (Windows)
-#        if: runner.os == 'Windows' &&  matrix.python-version == '3.8'
-#        uses: conda-incubator/setup-miniconda@v2
-#        with:
-#          python-version: ${{ matrix.python }}
-#          channels: conda-forge, r, bioconda
-#          #channel-priority: strict
-#          auto-update-conda: true
-#          use-only-tar-bz2: true
-#
-#      # For future, to check msprime versions: conda search msprime --info
-#      - name: Install msprime via conda (Windows python3.8)
-#        if: runner.os == 'Windows' &&  matrix.python-version == '3.8'
-#        shell: bash -l {0} #We need a login shell to get conda
-#        run: |
-#          # We install msprime from conda to avoid GSL-related build issues
-#          # when pip installing without binary wheels (on Windows).
-#          # We install a special version of msprime 0.7.4=py36
-#          #conda activate ${{ env.CONDA_ENV_NAME }}
-#          conda create -n ${{ env.CONDA_ENV_NAME }} msprime python=${{ matrix.python-version }}
-
-      - name: Install hdf5, msprime and momi2 (MacOS).
+          conda install dadi scikit-allel
+          
+      - name: Install dependencies for installation of moments and ignore numpy version in pyproject.toml for MacOS (python3.8).
         run: |
-          brew install gsl homebrew/core/hdf5
-          pip3 install msprime
-          brew install libomp llvm
-          export LDFLAGS="-L/usr/local/opt/llvm/lib"
-          export CPPFLAGS="-I/usr/local/opt/llvm/include"
-          CC=$(brew --prefix llvm)/bin/clang pip install momi
-        if: matrix.os == 'macos-10.15'
-
-#      - name: Install GADMA and its dependencies (Windows python3.8).
-#        if: runner.os == 'Windows' &&  matrix.python-version == '3.8'
-#        shell: bash -l {0}
-#        run: |
-#          conda activate ${{ env.CONDA_ENV_NAME }}
-#          bash install
-#          pip3 install -r requirements/bayes_opt.txt
+          pip install Cython
+          pip install "setuptools_scm>=8"
+          pip install --no-build-isolation moments-popgen
+        if: runner.os == 'MacOS' && matrix.python-version == '3.8'
 
       - name: Install GADMA and its dependencies.
         run: |
-          bash install
-          pip3 install Cython==0.29.18  # otherwise ConfigsSpace cause error for macOS
-          # TypeError: Expected float, got numpy.float64 when using Float
-          pip3 install -r requirements/bayes_opt.txt
-          pip3 install -r requirements/bayes_opt_addit.txt
-
-      - name: Uninstall SMAC (Windows).
-        if: runner.os == 'Windows'
-        shell: bash -l {0}
+          pip install .
+          
+      - name: Use old matplotlib for tests to enable moments pictures.
         run: |
-          pip3 uninstall -y smac
-
-      - name: Uninstall SMAC (MacOS py3.6)
-        if: runner.os == 'MacOS' && matrix.python-version == '3.6'
-        run: pip3 uninstall -y smac
-
-      - name: Install momentsLD engine.
-        run: |
-          pip3 uninstall -y moments
-          pip3 install Cython==0.29.18  # the last version cause erros on Windows and MacOS
-          pip3 install setuptools==58.2.0  # to install with setup.py
-          git clone --depth 1 --branch moments-1.1.11 https://bitbucket.org/simongravel/moments.git
-          cd moments
-          pip install -r requirements.txt
-          python3 setup.py build_ext --inplace
-          pip3 install .
-          cd ..
-
-      # For some reason the last version of wheel cause an error for momi and dadi installation
-      # The error is the following: ModuleNotFoundError: No module named 'numpy'
-      - name: Use specific version of wheel for momi and dadi installation (Linux)
-        if: matrix.python-version == '3.8'
-        run: |
-          python3 -m pip install wheel==0.38.4
-
-      - name: Install dadi==2.2.0 for Python3.8
-        if: matrix.python-version == '3.8'
-        run: |
-          pip3 install dadi==2.2.0
-
-      - name: Install momi engine (Linux).
-        if: runner.os == 'Linux'
-        run: |
-          python3 -m pip install momi
+          conda install "matplotlib<3.5"
 
       - name: Check installations of packages.
         run: |
-          python3 -c "import numpy"
-          python3 -c "import scipy"
-          python3 -c "import dadi"
-          python3 -c "import moments"
-          python3 -c "import gadma"
+          python -c "import numpy"
+          python -c "import scipy"
+          python -c "import dadi"
+          python -c "import moments"
+          python -c "import gadma"
 
       - name: Show versions of all installed packages.
-        run: python3 -m pip freeze
+        run: |
+          conda list
 
       - name: Show available engines and optimizations in gadma.
         run: |
-          python3 -c "import gadma;print(gadma.engines.engine._registered_engines.keys())"
-          python3 -c "import gadma;print(gadma.optimizers.global_optimizer._registered_global_optimizers.keys())"
+          python -c "import gadma;print(gadma.engines.engine._registered_engines.keys())"
+          python -c "import gadma;print(gadma.optimizers.global_optimizer._registered_global_optimizers.keys())"
 
       - name: Install dependencies for tests.
         run: |
-          pip3 install -r requirements/tests.txt
+          pip install -r requirements/tests.txt
 
       - name: Run tests and codecov.
         run: |
@@ -156,5 +93,5 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
           flags: unittests
-        if: runner.os == 'Linux' && matrix.python-version == '3.6'
+        if: runner.os == 'Linux' && matrix.python-version == '3.8'
 

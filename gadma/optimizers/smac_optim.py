@@ -130,7 +130,7 @@ class SMAC4EPMOpimizer(AbstractOptimizer):
             prior=LognormalPrior(mean=0.0, sigma=1.0, rng=rng),
         )
 
-        cont_dims = np.array(np.where(np.array(types) == 0)[0], dtype=np.int)
+        cont_dims = np.array(np.where(np.array(types) == 0)[0], dtype=int)
         cat_dims = np.where(np.array(types) != 0)[0]
 
         if len(cont_dims) > 0:

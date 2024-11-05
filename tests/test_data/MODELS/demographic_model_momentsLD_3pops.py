@@ -6,7 +6,7 @@ import moments.LD
 def model_func(params, rho, theta):
     nu1F, nu2B, nu2F, m, Tp, T = params
     # f for the equilibrium ancestral population
-    Y = moments.LD.Numerics.steady_state(rho=rho, theta=theta)
+    Y = moments.LD.Numerics.steady_state(nus=[1], rho=rho, theta=theta)
     Y = moments.LD.LDstats(Y, num_pops=1)
 
     # Now do the population growth event.

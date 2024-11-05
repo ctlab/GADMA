@@ -490,10 +490,9 @@ class TestModels(unittest.TestCase):
             os.mkdir(data_holder.recombination_maps)
         for ii in range(20):
             with open(f"{data_holder.recombination_maps}/flat_map_{ii + 1}.txt", "w+") as fout:
-                fout.write("pos\tMap(cM)\n")
+                fout.write(f"pos\t{ii+1}\n")
                 fout.write("0\t0\n")
                 fout.write("1000000\t1.5\n")
-
         yield (
             "model2",
             data_holder)
@@ -704,7 +703,6 @@ class TestModels(unittest.TestCase):
                 for description, data in dataset:
                     msg = f"for model {ind + 1} and {description} data and " \
                           f"{engine.id} engine"
-                    #print(msg)
                     if engine.id == "momi2" and isinstance(model, StructureDemographicModel):
                         if not model.has_anc_size:
                             continue
@@ -750,7 +748,7 @@ class TestModels(unittest.TestCase):
                         moments.LD.Inference._varcov_inv_cache = {}
 
                     cmd = engine.generate_code(input_values, None, *args, nanc=Nanc)
-                    print(cmd)
+                    #print(cmd)
                     if engine.can_evaluate:
                         # read data
                         engine.data = data
@@ -759,7 +757,7 @@ class TestModels(unittest.TestCase):
                         exec(cmd, d)
 
                         msg += f": {true_ll} != {d['ll_model']}"
-                        print(true_ll, d["ll_model"])
+                        #print(true_ll, d["ll_model"])
                         if true_ll is None:  # if we have None
                             assert engine.id in ['dadi', 'moments']
                             max_ll = engine.base_module.Inference.ll(

@@ -9,7 +9,7 @@ def model_func(params, rho, theta):
     Some model
     """
     nuB, nuF, TB, TF, Nanc_size = params
-    Y = moments.LD.Numerics.steady_state(rho=rho, theta=theta)
+    Y = moments.LD.Numerics.steady_state(nus=[1], rho=rho, theta=theta)
     Y = moments.LD.LDstats(Y, num_pops=1)
 
     Y.integrate(tf=TB, nu=[nuB], rho=rho, theta=theta)

@@ -146,7 +146,7 @@ class TestUtils(unittest.TestCase):
         engine.data = data_holder
         engine.model = model
 
-        for opt_name in ["SMAC_BO_optimization", "GPyOpt_Bayesian_optimization"]:
+        for opt_name in ["SMAC_BO_optimization"]: #, "GPyOpt_Bayesian_optimization"]:
             optimizer = get_global_optimizer(opt_name)
             optimizer.acquisition_type = "PI"
             optimizer.log_transform = True

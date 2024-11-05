@@ -480,7 +480,7 @@ class TestModelSimulation(unittest.TestCase):
         def moments_one_pop_func(params, rho, theta):
             nu, tf = params
 
-            ld = moments.LD.Numerics.steady_state(rho=rho, theta=theta)
+            ld = moments.LD.Numerics.steady_state(nus=[1], rho=rho, theta=theta)
             ld_stats = moments.LD.LDstats(ld, num_pops=1)
             ld_stats.integrate(tf=tf, nu=[nu], rho=rho, theta=theta)
 
@@ -532,7 +532,7 @@ class TestModelSimulation(unittest.TestCase):
         def moments_two_pops_func(params, rho, theta):
             nu1, nu2, tf = params
 
-            ld = moments.LD.Numerics.steady_state(rho=rho, theta=theta)
+            ld = moments.LD.Numerics.steady_state(nus=[1], rho=rho, theta=theta)
             ld_stats = moments.LD.LDstats(ld, num_pops=1)
             ld_stats.integrate(tf=tf, nu=[nu1], rho=rho, theta=theta)
             ld_stats = ld_stats.split(0)
@@ -592,7 +592,7 @@ class TestModelSimulation(unittest.TestCase):
         def moments_ld_func(params, rho, theta):
             nu1, nu2, nu3, nu4, tf, m12 = params
 
-            ld = moments.LD.Numerics.steady_state(rho=rho, theta=theta)
+            ld = moments.LD.Numerics.steady_state(nus=[1], rho=rho, theta=theta)
             ld_stats = moments.LD.LDstats(ld, num_pops=1)
 
             ld_stats.integrate(tf=tf, nu=[nu1], rho=rho, theta=theta)
@@ -687,7 +687,7 @@ class TestModelEvaluation(unittest.TestCase):
         def model_moments_ld(params, rho, theta):
             nu, nu1, nu2, tf, m12, m21 = params
 
-            ld = moments.LD.Numerics.steady_state(rho=rho, theta=theta)
+            ld = moments.LD.Numerics.steady_state(nus=[1], rho=rho, theta=theta)
             ld_stats = moments.LD.LDstats(ld, num_pops=1)
 
             ld_stats.integrate(tf=tf, nu=[nu], rho=rho, theta=theta)
@@ -749,7 +749,7 @@ class TestModelEvaluation(unittest.TestCase):
 
         preprocessed_test_data = os.path.join(
             DATA_PATH, 'DATA', 'vcf_ld',
-            'preprocessed_data.bp'
+            'preprocessed_data_test_engine.bp'
         )
         with open(preprocessed_test_data, 'rb') as file:
             region_stats_moments_ld = pickle.load(file)

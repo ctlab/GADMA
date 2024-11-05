@@ -195,7 +195,7 @@ class TestFastDataRead(unittest.TestCase):
                 main()
                 self.assertTrue(Path('./preprocessed_data.bp').exists())
                 with open('./preprocessed_data.bp', 'rb') as fin:
-                    region_stats = pickle.load(fin)
+                    region_stats_evaluated, data_evaluated = pickle.load(fin)
 
                 preprocessed_test_data = os.path.join(
                     DATA_PATH, 'DATA', 'vcf_ld',
@@ -203,18 +203,20 @@ class TestFastDataRead(unittest.TestCase):
                 )
 
                 with open(preprocessed_test_data, 'rb') as file:
-                    region_stats_moments_ld = pickle.load(file)
+                    region_stats_stored, data_stored = pickle.load(file)
 
                 self.assertEqual(
-                    len(region_stats['0']),
-                    len(region_stats_moments_ld['0'])
+                    len(region_stats_evaluated['0']),
+                    len(region_stats_stored['0'])
                 )
+                # Was evaluated for eld version of momentsLD - differ a little
                 for region in range(15):
-                    for ii in range(len(region_stats[f'{region}']['sums'])):
+                    for ii in range(len(region_stats_evaluated[f'{region}']['sums'])):
                         self.assertTrue(
                             np.allclose(
-                                region_stats[f'{region}']['sums'][ii],
-                                region_stats_moments_ld[f'{region}']['sums'][ii]
+                                region_stats_evaluated[f'{region}']['sums'][ii],
+                                region_stats_stored[f'{region}']['sums'][ii],
+                                rtol=1e-1
                             )
                         )
             finally:

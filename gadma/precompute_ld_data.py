@@ -36,9 +36,15 @@ def main():
         engine = get_engine(settings_storage.engine)
 
         regions = engine._get_region_stats(settings_storage.data_holder)
+        data = moments.LD.Parsing.bootstrap_data(regions)
+
+        # remove created h5 file
+        os.remove(
+            os.path.splitext(settings_storage.data_holder.filename)[0] + ".h5"
+        )
 
         with open("./preprocessed_data.bp", "wb+") as fout:
-            pickle.dump(regions, fout)
+            pickle.dump(tuple([regions, data]), fout)
 
         params_file = vars(args)["params"]
         with open(f"{params_file}", "a") as params:

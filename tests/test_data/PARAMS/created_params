@@ -17,4 +17,4 @@ Number of processes: 1
 global_maxiter: 2
 local_maxiter: 1
 num_init_const: 5
-Resume from: /home/stas/git/gadma_moments/devel_fork/GADMA/tests/test_data/DATA/sfs/YRI_CEU_test_boots
+Resume from: /Users/noskovae/Workspace/GADMA/tests/test_data/DATA/sfs/YRI_CEU_test_boots

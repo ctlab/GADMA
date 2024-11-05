@@ -236,7 +236,7 @@ def _print_momentsLD_load_data(engine, data_holder):
 
     ret_str += "if preprocessed_data is not None:\n"
     ret_str += "    with open(preprocessed_data, \"rb\") as fin:\n"
-    ret_str += "        region_stats = pickle.load(fin)\n"
+    ret_str += "        region_stats, data = pickle.load(fin)\n"
     ret_str += "else:\n"
     ret_str += f"    for bed_file in sorted(os.listdir(bed_files)):\n"
     ret_str += "        chrom = bed_file.split('_')[-2]\n"
@@ -266,7 +266,7 @@ def _print_momentsLD_load_data(engine, data_holder):
     ret_str += "                )\n"
     ret_str += "        })\n"
     ret_str += "        reg_num += 1\n"
-    ret_str += "data = moments.LD.Parsing.bootstrap_data(region_stats)\n\n"
+    ret_str += "    data = moments.LD.Parsing.bootstrap_data(region_stats)\n\n"
     return ret_str
 
 

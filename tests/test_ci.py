@@ -94,7 +94,7 @@ class TestConfidenceIntervals(unittest.TestCase):
                     sys.argv = ["gadma-get_confidence_intervals_for_ld", not_exist_data]
                     self.assertRaises(ValueError, gadma.get_confidence_intervals_for_ld.main)
 
-                    line_to_ignore = 'rep_data_file = ' \
+                    line_to_ignore = 'data_file = ' \
                                      'os.path.join(os.path.dirname(__file__), ' \
                                      '\"preprocessed_data.bp\")'
                     with open(data_for_ci_ld, 'r') as original_data:

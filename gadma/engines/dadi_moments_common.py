@@ -619,11 +619,15 @@ def _read_fsc_data(module, data_holder):
             if not data_holder.outgroup:
                 mask = np.arange(ndim)
                 mask = np.where(mask > ndim / 2, True, False)
-
     data = module.Spectrum(total / n_observations,
                            pop_ids=data_holder.population_labels,
                            data_folded=not data_holder.outgroup,
                            mask=mask)
+    # we should mask first and last elements in data
+    # moments is failing to do so
+    # equavalent to mask_corners() function
+    data.mask[tuple(np.array([0 for _ in data.mask.shape]))] = True
+    data.mask[tuple(np.array(data.mask.shape) - 1)] = True
     if data_holder.projections:
         data = data.project(data_holder.projections)
 

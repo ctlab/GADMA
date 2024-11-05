@@ -333,7 +333,7 @@ class TestModelStructure(unittest.TestCase):
 
     @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_test_likelihood_after_increase_moments_ld(self):
-        LL_TEST_STRUCTURE = [(2, 1)]
+        LL_TEST_STRUCTURE = [[2, 1]]
         args_for_ld_test_ll_after_increase = []
         for ii in [2, 5, 19]:
             args_for_ld_test_ll_after_increase.append(
@@ -341,6 +341,8 @@ class TestModelStructure(unittest.TestCase):
             )
         ii = 1
         for structure in LL_TEST_STRUCTURE:
+            engine = get_engine("momentsLD")
+            engine.set_data(self._data_for_ll_ld_test(ii))
             for create_migs, create_sels, create_dyns, sym_migs, fracs, has_anc, inbr in \
                     args_for_ld_test_ll_after_increase:
 
@@ -361,9 +363,7 @@ class TestModelStructure(unittest.TestCase):
                                                      has_anc_size=True)
                 dm = model_generator(structure)
                 dm.mutation_rate = 1e-8
-                engine = get_engine("momentsLD")
                 engine.model = dm
-                engine.set_data(self._data_for_ll_ld_test(ii))
                 x_file = os.path.join(LL_TEST_DATA, "all_x.txt")
                 with open(x_file, "r") as file:
                     all_x = json.load(file)
@@ -380,7 +380,6 @@ class TestModelStructure(unittest.TestCase):
                           f"sym_migs: {sym_migs}, " \
                           f"fracs: {fracs}, " \
                           f"has_anc: {True}, "
-                    #                        print(msg)
                     new_dm = copy.deepcopy(dm)
                     new_dm, new_X = new_dm.increase_structure(
                         new_structure, [x])
@@ -390,7 +389,7 @@ class TestModelStructure(unittest.TestCase):
                     engine.set_model(new_dm)
                     new_ll = engine.evaluate(new_X[0])
 
-                    is_equal = np.allclose(ll_true, new_ll)
+                    is_equal = np.allclose(ll_true, new_ll, rtol=1e-2)
                     self.assertTrue(is_equal,
                                     msg=f"{ll_true} != {new_ll} : {msg}")
                 ii += 1

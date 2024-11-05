@@ -300,6 +300,6 @@ def create_recombination_maps_from_rate(
     for chrom in chrom2len:
         rec_dist = chrom2len[chrom]*recombination_rate*100
         with open(os.path.join(output_dir, f"auto_map_{chrom}.txt"), 'w') as f:
-            f.write("Pos\tMap(cM)\n")
+            f.write(f"Pos\t{chrom}\n")
             f.write("0\t0\n")
             f.write(f"{chrom2len[chrom]}\t{rec_dist}\n")

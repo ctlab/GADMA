@@ -24,7 +24,6 @@ def _read_data_one_job(args):
     Function for reading data using multiprocessing
     """
     reg_num, kwargs = args
-    print(reg_num)
     results = {
         str(reg_num):
             moments.LD.Parsing.compute_ld_statistics(
@@ -157,7 +156,7 @@ class MomentsLdEngine(Engine):
                         data_holder.recombination_maps,
                         f"{prefix}_{chrom}.{extension}"
                     )
-                    parsing_kwargs["map_name"] = chrom
+                parsing_kwargs["map_name"] = chrom
                 # Check for r_bins
                 if parsing_kwargs["r_bins"] is None:
                     parsing_kwargs["r_bins"] = cls.r_bins
@@ -173,7 +172,6 @@ class MomentsLdEngine(Engine):
             all_kwargs.append([str(reg_num-1), parsing_kwargs])
 
         create_h5_file(data_holder.filename)
-        print(len(all_kwargs))
         n_processes = cls.n_processes
         if n_processes == 1:
             result = []
@@ -197,12 +195,13 @@ class MomentsLdEngine(Engine):
         # If we have no preprocessed data then we create it
         if data_holder.preprocessed_data is None:
             region_stats = cls._get_region_stats(data_holder)
+            data = moments.LD.Parsing.bootstrap_data(region_stats)
+            # remove created h5 file
+            os.remove(os.path.splitext(data_holder.filename)[0] + ".h5")
         else:
             print("Read preprocessed data")
             with open(data_holder.preprocessed_data, "rb") as fin:
-                region_stats = pickle.load(fin)
-
-        data = moments.LD.Parsing.bootstrap_data(region_stats)
+                _, data = pickle.load(fin)
         return data
 
     @staticmethod

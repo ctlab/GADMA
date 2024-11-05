@@ -38,20 +38,19 @@ def main():
         hasattr(module, "model_func"),
         hasattr(module, "rs"),
         hasattr(module, "opt_params"),
-        hasattr(module, "rep_data_file"),
+        hasattr(module, "data_file"),
         hasattr(module, "param_names")
     ]):
         model_func = getattr(module, "model_func")
         rs = getattr(module, "rs")
         opt_params = getattr(module, "opt_params")
-        rep_data_file = getattr(module, "rep_data_file")
+        data_file = getattr(module, "data_file")
         param_names = getattr(module, "param_names")
     else:
         raise ValueError("Data for CI evaluation is not valid! Check it!")
 
-    with open(rep_data_file, "rb") as file:
-        region_stats = pickle.load(file)
-    data = moments.LD.Parsing.bootstrap_data(region_stats)
+    with open(data_file, "rb") as file:
+        region_stats, data = pickle.load(file)
 
     uncerts_fim = moments.LD.Godambe.FIM_uncert(
         model_func,
@@ -65,40 +64,40 @@ def main():
     lower_fim = opt_params - 1.96 * uncerts_fim
     upper_fim = opt_params + 1.96 * uncerts_fim
 
-    num_boots = 100
-    norm_idx = 0
-    bootstrap_sets = moments.LD.Parsing.get_bootstrap_sets(
-        region_stats, num_bootstraps=num_boots, normalization=norm_idx)
-
-    uncerts_gim = moments.LD.Godambe.GIM_uncert(
-        model_func,
-        bootstrap_sets,
-        opt_params,
-        data["means"],
-        data["varcovs"],
-        r_edges=rs,
-    )
-
-    lower_gim = opt_params - 1.96 * uncerts_gim
-    upper_gim = opt_params + 1.96 * uncerts_gim
+#    num_boots = 100
+#    norm_idx = 0
+#    bootstrap_sets = moments.LD.Parsing.get_bootstrap_sets(
+#        region_stats, num_bootstraps=num_boots, normalization=norm_idx)
+#
+#    uncerts_gim = moments.LD.Godambe.GIM_uncert(
+#        model_func,
+#        bootstrap_sets,
+#        opt_params,
+#        data["means"],
+#        data["varcovs"],
+#        r_edges=rs,
+#    )
+#
+#    lower_gim = opt_params - 1.96 * uncerts_gim
+#    upper_gim = opt_params + 1.96 * uncerts_gim
 
     lower_fim_phys_units = copy.deepcopy(lower_fim)
     upper_fim_phys_units = copy.deepcopy(upper_fim)
-    lower_gim_phys_units = copy.deepcopy(lower_gim)
-    upper_gim_phys_units = copy.deepcopy(upper_gim)
+#    lower_gim_phys_units = copy.deepcopy(lower_gim)
+#    upper_gim_phys_units = copy.deepcopy(upper_gim)
 
     phys_units_boundaries_list = [
         lower_fim_phys_units,
         upper_fim_phys_units,
-        lower_gim_phys_units,
-        upper_gim_phys_units
+        # lower_gim_phys_units,
+        # upper_gim_phys_units
     ]
 
     gen_units_boundaries_list = [
         lower_fim,
         upper_fim,
-        lower_gim,
-        upper_gim
+        # lower_gim,
+        # upper_gim
     ]
 
     for bound in gen_units_boundaries_list:
@@ -122,26 +121,26 @@ def main():
         f"{lower_fim[num]} "
         f"- {upper_fim[num]}" for num in range(len(param_names))
     ]
-    gim_bounds_list = [
-        f"{lower_gim[num]} "
-        f"- {upper_gim[num]}" for num in range(len(param_names))
-    ]
+#    gim_bounds_list = [
+#        f"{lower_gim[num]} "
+#        f"- {upper_gim[num]}" for num in range(len(param_names))
+#    ]
     fim_bounds_list_phys_units = [
             f"{lower_fim_phys_units[num]} "
             f"- {upper_fim_phys_units[num]}" for num in range(len(param_names))
         ]
-    gim_bounds_list_phys_units = [
-            f"{lower_gim_phys_units[num]} "
-            f"- {upper_gim_phys_units[num]}" for num in range(len(param_names))
-        ]
+#    gim_bounds_list_phys_units = [
+#        f"{lower_gim_phys_units[num]} "
+#        f"- {upper_gim_phys_units[num]}" for num in range(len(param_names))
+#    ]
 
     all_ci_data = {
         "Param names": param_names,
         "Opt params": opt_params,
         "FIM": fim_bounds_list,
-        "GIM": gim_bounds_list,
+        # "GIM": gim_bounds_list,
         "FIM phys units": fim_bounds_list_phys_units,
-        "GIM phys units": gim_bounds_list_phys_units
+        # "GIM phys units": gim_bounds_list_phys_units
     }
     results = os.path.join(os.path.dirname(filename), "ci_results.xlsx")
     all_ci_dataframe = pd.DataFrame(data=all_ci_data)

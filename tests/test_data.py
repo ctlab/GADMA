@@ -528,6 +528,7 @@ class TestSettingStorageLDStats(unittest.TestCase):
     @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     @pytest.mark.timeout(0)
     def test_correct_LD_data_processing(self):
+        # The evaluation of LD stats changed in new version of moments LD (between 1.1.15 and 1.2.0)
         data_reading_case_list = ['without_rec_map', 'with_rec_map', 'with_rec_maps_in_one_file']
         for case in data_reading_case_list:
             param_file = os.path.join(
@@ -546,8 +547,7 @@ class TestSettingStorageLDStats(unittest.TestCase):
                 )
 
                 with open(preprocessed_test_data, 'rb') as file:
-                    region_stats_moments_ld = pickle.load(file)
-                    data_moments_ld = moments.LD.Parsing.bootstrap_data(region_stats_moments_ld)
+                    _, data_moments_ld = pickle.load(file)
 
                 self.assertEqual(
                     len(data_gadma['means']),
@@ -557,9 +557,10 @@ class TestSettingStorageLDStats(unittest.TestCase):
                     if not (any(np.isnan(
                             data_moments_ld["means"][arr]) |
                              np.isnan(data_gadma["means"][arr]))):
+                        # Because of bootstrap they differ
                         self.assertTrue(np.allclose(
                             data_moments_ld["means"][arr],
-                            data_gadma["means"][arr]))
+                            data_gadma["means"][arr], rtol=1e-2))
             finally:
                 if Path(f"{TEST_OUTPUT}/_bed_files/").exists():
                     shutil.rmtree(f"{TEST_OUTPUT}/_bed_files/")
