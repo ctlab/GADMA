@@ -1,187 +1,186 @@
-#    It is a parameters file for GADMA software.
+#    This is a parameters file for GADMA software.
 
-#    Lines started from # are ignored.
-#    Also comments at the end of a line are ignored too.
-#    Every line contains: Identificator of parameter : value.
+#    Lines that begin with # are ignored.
+#    Comments at the end of a line are also ignored.
+#    Each line contains: Parameter identifier : value.
 
-#!!!     means pay attention to this parameter, they are primary.
-
-#!!!
-#    Output directory to write all GADMA out.
-#    One need to set it to a missing or empty directory.
-#    If it is resumed from other directory and output directory 
-#    isn't set, GADMA will add '_resumed' for previous output 
-#    directory.
-Output directory: my_example_run_2
-
+#!!!     Indicates parameters that require special attention.
 
 #!!!
-#    Input data can be sfs file (should end with .fs) or 
-#    file of SNP's in dadi format (should end with .txt) or
-#   VCF file + popmap file (sample population map).
+#    Output directory for all GADMA outputs.
+#    This should be set to a missing or empty directory.
+#    If the process is resumed from another directory and the output 
+#    directory is not specified, GADMA will append '_resumed' to the 
+#    previous output directory.
+Output directory: my_example_run
+
+#!!!
+#    Input data can be in the form of an SFS file (should end with .fs), 
+#    a SNP file in Dadi format (should end with .txt), or a 
+#    VCF file along with a popmap file (sample population map).
 Input data: tests/test_data/DATA/sfs/YRI_CEU.fs
 
-#    'Population labels' is sequence of population names (the same
-#    names as in input file)
-#    If .fs file is in old format then it would rename population 
+#    'Population labels' consist of a sequence of population names 
+#    (these must match the names in the input file).
+#    If the .fs file is in an old format, it will rename population 
 #    labels that are absent.
-#    It is necessary to put them in order from most ancient to less. 
-#    (In case of more than two populations)
-#    It is important, because the last of formed populations take
-#    part in the next split.
-#    For example, if we have YRI - African population,
-#    CEU - European population and CHB - Chinese population,
-#    then we can write YRI, CEU, CHB or YRI, CHB, CEU 
-#    (YRI must be at the first place)
+#    They must be ordered from the most ancient to the least ancient 
+#    (if there are more than two populations).
+#    This is important because the last formed population will be 
+#    involved in the next split.
+#    For example, if we have YRI (African population), 
+#    CEU (European population), and CHB (Chinese population),
+#    we can write YRI, CEU, CHB or YRI, CHB, CEU 
+#    (YRI must be in the first position).
 #    Default: from input file
 Population labels: [YRI, CEU]
 
-#    Also one can project spectrum to less size.
-#    For example, we have 80 individuals in each of three 
-#    populations, then spectrum will be 81x81x81 and one can 
-#    project it to 21x21x21 by set 'Projections' parameter 
-#    to 20, 20, 20.
+#    SFS projections: number of chromosomes for each population.
+#    It is also possible to downproject the spectrum to a smaller size.
+#    For example, if we have 40 diploid samples in each of three 
+#    populations, then the full projections will be 80x80x80. We can 
+#    project it by setting the 'Projections' parameter to [20, 20, 20].
 #    Default: from input file
 Projections: [20, 20]
 
-#   To indicate if outgroup information is included in SFS data
-#   one can set Outgroup option.
-#   If outgroup is False then SFS will be folded.
+#   To indicate if outgroup information is included in the SFS data,
+#   set the Outgroup option.
+#   If outgroup is False, then the SFS will be folded.
 #   Default: from input file
 Outgroup: True
 
-#   Effective length of sequence that was used to build SFS data.
-#   Should be used together with Mutation rate and can be replaced
-#   be Thera0 setting.
+#   Effective length of the sequence used to build the SFS data.
+#   This should be used together with the Mutation rate and can be replaced
+#   by the Theta0 setting.
 #   Default: None
 Sequence length: 4040000
 
 #!!!
-#    Are SNP's linked or unlinked?
-#    If they are linked, then Composite Likelihood Akaike
+#    Are the SNPs linked or unlinked?
+#    If they are linked, then the Composite Likelihood Akaike
 #    Information Criterion (CLAIC) will be used to compare models.
-#    If they are unlinked, then usual Akaike Information Criterion 
+#    If they are unlinked, then the standard Akaike Information Criterion 
 #    (AIC) will be used.
 #    Default: True
 Linked SNP's: True
 
 #!!!
-#    If SNP's are linked in order to calculate CLAIC, please, set
-#    the directory with bootstrapped data. 
-#    Bootstrap should be done over the regions of the genome.
+#    If SNPs are linked, please set the directory containing 
+#    the  bootstrapped data for CLAIC calculation. 
+#    Bootstrapping should be done over regions of the genome.
 #    Default: None
 Directory with bootstrap: Null
 
-
 #!!!
-#    Now all main parameters:
+#    Now for the main parameters:
 #
-#    Engine for the demographic inference.
+#    Engine for demographic inference.
 #    Default: moments
 Engine: moments
 
-#    If you choose to use dadi, please set pts parameter - number
-#    of points in the grid. Otherwise this pts would be used in dadi's code.
+#    If you choose to use Dadi, please set the 'pts' parameter - the number
+#    of points in the grid. Otherwise, you can still specify it: it will be
+#    used in Dadi's code.
 #    Default: Let n = max number of individuals in one population, 
 #    then pts = n, n+10, n+20
 Pts: [20, 30, 40]
 
 #!!!
-#    Print parameters of model in units of N_ref = N_A.
-#    N_A will be placed in brackets at the end of string.
+#    Print parameters of the model in units of N_ref = N_A.
+#    N_A will be placed in brackets at the end of the string.
 #    Default: False
 Relative parameters: False
 
 #    Total mutation flux - theta.
 #    It is equal to:
 #    theta = 4 * μ * L
-#    where μ - mutation rate per site per generation and 
-#    L - effective sequenced length, which accounts for losses 
+#    where μ is the mutation rate per site per generation and 
+#    L is the effective sequenced length, which accounts for losses 
 #    in alignment and missed calls.
-#    Note: one should estimate μ based on generation time.
+#    Note: μ should be estimated based on generation time.
 #    Default: 1.0
 Theta0: Null
 
-#   Instead of Theta0 mutation rate can be set independently.
-#   Should be used together with Sequence length option.
+#   Instead of Theta0, the mutation rate can be set independently.
+#   This should be used together with the Sequence length option.
 #   Default: None
 Mutation rate: 2.35e-08
 
-#    Recombination rate
+#    Recombination rate. Required for momentsLD engine.
 #    Default: None
 Recombination rate: Null
 
-#    Time (years) for one generation. Can be float. 
-#    Is important for drawing models. If one don't want to draw, 
-#    one can pass it.
+#    Time (in years) for one generation. Can be a float. 
+#    This is important for drawing models. If you do not wish to draw, 
+#    you may skip this parameter.
 #    Default: 1.0
 Time for generation: Null
 
-
 #!!!
-#    One should choose the demographic history to infer.
-#    It can be custom or setted up with structure.
+#    You must choose the demographic history to infer.
+#    It can be custom or set up with structure.
 
 # 1. Using a custom demographic model.
-#    Please specify a file with a function named 'model_func' in it. 
-#    So file should contain:
-#    def model_func(params, ns, pts) in case of dadi
+#    Please specify a file containing a function named 'model_func'. 
+#    The file should contain:
+#    def model_func(params, ns, pts) for Dadi
 #    or
-#    def model_func(params, ns) in case of moments
+#    def model_func(params, ns) for moments
 #    Default: None
 Custom filename: Null
 
-#    Now one should specify either bounds or identifications 
-#    of custom model's parameters. All values are in Nref units.
-#    Lower and upper bounds - lists of numbers.
-#    List of usual bounds:
+#    You must now specify either bounds or identifiers for the
+#    parameters  of the custom model. All values are in genetic units.
+#    Lower and upper bounds are lists of numbers.
+#    Common bounds:
 #    N: 1e-2 - 100
 #    T: 0 - 5
 #    m: 0 - 10
 #    s: 0 - 1
-#    These bounds will be taken automatically if identifications are set.
+#    These bounds will be applied automatically if identifiers are set.
 #    Default: None
 Lower bound: Null
 Upper bound: Null
+
 #    An identifier list:
 #    T - time
 #    N - size of population
 #    m - migration
-#    s - split event,  proportion in which population size
-#    is divided to form two new populations.
+#    s - split event, representing the proportion of population size
+#    divided to form two new populations.
 #    Default: None
 Parameter identifiers: Null
 
-# 2. Structure is for not custom models!
-#    Structure of model for one population - number of time periods 
-#    (e.g. 5).
-#    Structure of model for two populations - number of time periods
-#    before the split of the ancestral population and after it (e.g. 2,2).
-#    Structure of model for three populations - number of time periods
-#    before first split, between first and second splits and after 
-#    second split (e.g. 2,1,2).
+# 2. Structure is for non-custom models!
+#    Structure of the model for one population - number of time periods 
+#    (e.g., 5).
+#    Structure of the model for two populations - number of time periods
+#    before the split of the ancestral population and after it (e.g., 2,2).
+#    Structure of the model for three populations - number of time periods
+#    before the first split, between the first and second splits, and after 
+#    the second split (e.g., 2,1,2).
 #
-#    Structure of initial model:
-#    Default: all is ones - 1 or 1,1 or 1,1,1
+#    Initial model structure:
+#    Default: all ones - 1 or 1,1 or 1,1,1
 Initial structure: [1, 1]
 
-#    Structure of final model:
-#    Default: equals to initial structure
+#    Final model structure:
+#    Default: equals the initial structure
 Final structure: [2, 1]
 
 #!!!
-#    Additional settings for demographic model with structure.
+#    Additional settings for demographic models with structure.
 #
-#    Use sudden changes of population sizes only. Decreases 
+#    Use sudden changes in population sizes only. This reduces 
 #    the number of parameters.
 #    Default: False
 Only sudden: False
 
-#    The set of available size dynamics could be set to any subset.
-#    Sud is for sudden size change (constant during the next time epoch),
-#    Lin - linear size change,
-#    Exp - exponential size change.
-#    If `Only sudden` is True then this setting will be [Sud].
+#    The set of available size dynamics can be any subset.
+#    'Sud' stands for sudden size change (constant during the next time epoch),
+#    'Lin' for linear size change,
+#    'Exp' for exponential size change.
+#    If 'Only sudden' is True, then this setting will be [Sud].
 #    Default: [Sud, Lin, Exp]
 Dynamics: [Sud, Lin, Exp]
 
@@ -189,51 +188,51 @@ Dynamics: [Sud, Lin, Exp]
 #    Default: False
 No migrations: False
 
-#   Makes all migrations symmetrical.
+#   Make all migrations symmetrical.
 #   Default: False
 Symmetric migrations: False
 
-#   Enable/disable migrations selectively.
+#   Enable or disable migrations selectively.
 #   Default: None
 Migration masks: Null
 
-#    Enable/disable inference of selection coefficients.
-#    Is supported by moments and dadi engines only.
+#    Enable or disable inference of selection coefficients.
+#    Supported only by moments and Dadi engines.
 #    Default: False
 Selection: False
 
-#    Enables/disables inference of dominance coefficient.
-#    If True then setting `Selection` must be aldo set to True.
-#    Is supported by moments and dadi engines only.
+#    Enable or disable inference of the dominance coefficient.
+#    If True, then the 'Selection' setting must also be True.
+#    Supported only by moments and Dadi engines.
 #    Default: False
-Dominance: True
+Dominance: False
 
-#   Estimate fraction of ancestral population as parameter of split.
-#   If False then population splits and each of new populations
-#   has its own size as parameter of the model.
+#   Estimate the fraction of the ancestral population as a parameter of the
+#   split. If False, then the population splits and each of the new
+#   populations has its own size as a parameter of the model.
 #   Default: False
 Split fractions: True
 
 #   Estimate inbreeding coefficients as model parameters.
-#   Can be used only for dadi engine.
+#   Can be used only with the Dadi engine.
 #   Default: False
 Inbreeding: False
 
-#   If False then multinomial approach is used in dadi and moments.
-#   In multinomial approach ancestral size is inferred implicitly.
+#   If False, then a multinomial approach is used in Dadi and moments.
+#   In the multinomial approach, the ancestral size is inferred implicitly.
 #   Default: False
 Ancestral size as parameter: False
 
-#    It is possible to limit the time of splits by bounds' specification.
+#    It is possible to limit the time of splits by specifying bounds.
 #    Split 1 is the most ancient split.
-#    !Note that time is in generations:
-#    e.g. we want to limit by 150 kya, time for one generation is 
-#    25 years, then bound will be 150000 / 25 = 6000.
+#    !Note that time is measured in generations:
+#    e.g., to limit by 150 kya, if time for one generation is 
+#    25 years, then the bound will be 150000 / 25 = 6000.
 #
-#    Lower bound for split 1 (in case of 2 or 3 populations).
+#    Lower bound for split 1 (for 2 or 3 populations).
 #    Default: None
 Lower bound of first split: Null
-#
+
 #    Upper bound for split 1 (in case of 2 or 3 populations).
 #    Default: None
 Upper bound of first split: Null
@@ -241,37 +240,34 @@ Upper bound of first split: Null
 #    Lower bound for split 2 (in case of 3 populations).
 #    Default: None
 Lower bound of second split: Null
-#
+
 #    Upper bound for split 2 (in case of 3 populations).
 #    Default: None
 Upper bound of second split: Null
 
-
-
-
 #!!!
 #    Local optimization.
 #
-#    Choice of local optimization, that is launched after 
+#    Choice of local optimization that is launched after 
 #    each genetic algorithm.
 #    Choices:
 #
 #    *    optimize (BFGS method)
 #    
-#    *    optimiza_log (BFGS method)
+#    *    optimize_log (BFGS method)
 #    
 #    *    optimize_powell (Powell’s conjugate direction method)
-#    (Note: is implemented in moments: one need to have moments 
+#    (Note: implemented in moments; one needs to have moments 
 #    installed.)
 #
-#    (If optimizations are often hitting the parameter bounds, 
+#    (If optimizations often hit the parameter bounds, 
 #    try using these methods:)
 #    *    optimize_lbfgsb
 #    *    optimize_log_lbfgsb 
-#    (Note that it is probably best to start with the vanilla BFGS 
-#    methods, because the L-BFGS-B methods will always try parameter
-#    values at the bounds during the search. 
-#    This can dramatically slow model fitting.)
+#    (Note that it is generally best to start with the vanilla BFGS 
+#    methods, as the L-BFGS-B methods will always test parameter
+#    values at the bounds during the search. This can dramatically 
+#    slow down model fitting.)
 #
 #    *    optimize_log_fmin (simplex (a.k.a. amoeba) method)
 #    
@@ -280,69 +276,64 @@ Upper bound of second split: Null
 #    Default: optimize_powell
 Local optimizer: BFGS_log
 
-
-
-#    Parameters of pipeline
+#    Parameters of the pipeline.
 #
 #    One can automatically generate dadi and moments code for models.
-#    If 0 then only current best model will be printed in GA's 
-#    working directory.
-#    Also the result model will be saved there. 
-#    If specified (not 0) then every N iteration model will be saved
-#    in python code folder.
+#    If set to 0, only the current best model will be printed in the GA's 
+#    working directory. The resulting model will also be saved there. 
+#    If specified (not 0), then every N iterations, the model will be saved
+#    in the Python code folder.
 #    Default: 0
 Print models' code every N iteration: 100
 
-#   Engine that will draw demographic model plots.
-#   Could be moments or demes.
-#   Default: moments
+#    Engine that will draw demographic model plots.
+#    Can be moments or demes.
+#    Default: moments
 Model plot engine: moments
 
-#    One can automatically draw models every N iteration. 
-#    If 0 then never.
-#    Pictures are saved in GA's directory in the picture folder.
+#    One can automatically draw models every N iterations. 
+#    If set to 0, models will never be drawn.
+#    Pictures are saved in the GA's directory in the picture folder.
 #    Default: 0
 Draw models every N iteration: 100
 
-#    One can choose time units in models' plots: years or thousand 
-#    years (kya, KYA). If time for one generation isn't specified 
-#    then time is in genetic units.
+#    One can choose time units in model plots: years or thousands 
+#    of years (kya, KYA). If time for one generation is not specified, 
+#    time will be represented in genetic units.
 #    Default: years
 Units of time in drawing: generations
 
-#   Minimum value that will be drawn in SFS plots.
-#   Default: 1
+#    Minimum value to be drawn in SFS plots.
+#    Default: 1
 Vmin: 1
 
-#    No std output.
+#    Suppresses standard output.
 #    Default: False
 Silence: False
 
-#   Verbosity of optimizations output.
-#   Default: 1
+#    Verbosity level for optimization output.
+#    Default: 1
 Verbose: 1
 
-#    How many times launch GADMA with this parameters.
+#    How many times to launch GADMA with these parameters.
 #    Default: 1
 Number of repeats: 3
 
-#    How many processes to use for this repeats.
-#    Note that one repeat isn't parallelized, so increasing number
+#    How many processes to use for these repeats.
+#    Note that one repeat is not parallelized, so increasing the number
 #    of processes will not affect the time of one repeat.
-#    It is desirable that the number of repeats is a multiple of 
+#    It is advisable that the number of repeats is a multiple of 
 #    the number of processes.
 #    Default: 1
 Number of processes: 3
 
-
-
-#    One can resume from some other launch of GADMA by setting
-#    output directory of it to 'Resume from' parameter.
-#    You can set again new parameters of resumed launch.
+#    One can resume from a previous GADMA run by setting
+#    the output directory of that run in the 'Resume from' parameter.
+#    New parameters for the resumed run can be set again.
 Resume from: Null
-#
-#    If you want to take only models from previous run set this 
-#    flag.  Then iterations of GA will start from 0 and values of
-#    mutation rate and strength will be initial.
+
+#    If you want to only take models from the previous run, set this 
+#    flag. Iterations of the GA will then start from 0, and values for
+#    the mutation rate and strength will be initial.
 #    Default: None
 Only models: False

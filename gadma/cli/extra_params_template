@@ -1,19 +1,15 @@
-#	It is extra parameters file for GADMA software.
+#    This is the extra parameters file for the GADMA software.
 
-#	Lines started from # are ignored.
-#	Also comments at the end of a line are ignored too.
-#	Every line contains: Identificator of parameter : value.
-#	If you want to change some default parameters, you need to 
-#	remove # at the begining of line and change corresponding 
-#	parameter.
+#    Lines that begin with # are ignored.
+#    Comments at the end of a line are also ignored.
+#    Each line contains: Parameter identifier : value.
 
-
-#	Lower and upper bounds on N - sizes of populations, 
-#	T - time of time periods, M - migration rates.
-#	All bounds are relative to N_A: N is in N_A units, 
-#	T in 2 * N_A units and M in 1 / (2 * N_A).
-#	Default:	min_N = 0.01, max_N = 100.0, min_T = 0.0, 
-#				max_T = 5.0, min_M = 0.0, max_M = 10.0
+#    Lower and upper bounds on N - population sizes, 
+#    T - time of time periods, M - migration rates.
+#    All bounds are relative to N_A: N is in N_A units, 
+#    T in 2 * N_A units, and M in 1 / (2 * N_A).
+#    Default: min_N = 0.01, max_N = 100.0, min_T = 0.0, 
+#             max_T = 5.0, min_M = 0.0, max_M = 10.0
 min_N : 
 max_N : 
 min_T : 
@@ -22,134 +18,134 @@ min_M :
 max_M : 
 
 
-#	Parameters for Genetic Algorithm.
+#    Parameters for the Genetic Algorithm.
 #
-#	Constant for initial design. Number of solutions in initial
-#	design is equal to number of parameters multiplied by this constant.
-#	Default: 10
+#    Constant for initial design. The number of solutions in the initial
+#    design is equal to the number of parameters multiplied by this constant.
+#    Default: 10
 Num init const :
 
-#	Size of one generation of solutions in GA:
-#	Default: 10
+#    Size of one generation of solutions in the GA:
+#    Default: 10
 Size of generation : 
 
-#	Fractions of current models, mutated models and crossed models 
-#	to be taken to new population.
-#	Sum of fractions should be <= 1, the remaining fraction is 
-#	fraction of random models.
-#	Default: 0.3,0.2,0.3
+#    Fractions of current models, mutated models, and crossed models 
+#    to be taken to the new population.
+#    The sum of the fractions should be <= 1, and the remaining fraction is 
+#    for random models.
+#    Default: 0.3, 0.2, 0.3
 Fractions : 
 
-#	The fractions could be set independently here.
-#	Number of best solutions taken from the previous generation.
-#	Default: 3
+#    The fractions can be set independently here.
+#    Number of the best solutions taken from the previous generation.
+#    Default: 3
 N elitism :
-#	Fraction of mutated solutions in new generation.
-#	Default: 0.2
+#    Fraction of mutated solutions in the new generation.
+#    Default: 0.2
 P mutation :
-#	Fraction of crossed solutions in new generation.
-#	Default: 0.3
+#    Fraction of crossed solutions in the new generation.
+#    Default: 0.3
 P crossover :
-#	Fraction of randomly generated soluations in new generation.
-#	Default: 0.2
+#    Fraction of randomly generated solutions in the new generation.
+#    Default: 0.2
 P random :
 
-#	Mutation strength - fraction of parameters in model to mutate 
-#	during global mutation process of model.
-#	Number of parameters to mutate is sampled from binomial 
-#	distribution, so we need to set mean.
-#	Default: 0.775539
+#    Mutation strength - the fraction of parameters in a model to mutate 
+#    during the global mutation process.
+#    The number of parameters to mutate is sampled from a binomial 
+#    distribution, so we need to set the mean.
+#    Default: 0.775539
 Mean mutation strength : 
 #
-#	Mutation strength can be adaptive: if mutation is good, 
-#	i.e. has the best fitness function (log likelihood),
-#	then mutation strength is increased multiplying by const 
-#	otherwise it decreases dividing by (1/4)^const.
-#	When const is 1.0 it is not adaptive.
-#	Default: 1.302280
+#    Mutation strength can be adaptive: if the mutation is successful (i.e., 
+#    it has the best fitness function, log likelihood), the mutation strength 
+#    increases by multiplying it by a constant; otherwise, it decreases by dividing 
+#    it by (1/4)^constant.
+#    When the constant is 1.0, it is not adaptive.
+#    Default: 1.302280
 Const for mutation strength : 
 
-#	Mutation rate - fraction of any parameter to change during
-#	its mutation.
-#	Mutation rate is sampled from truncated normal distribution, 
-#	so we need mean (std can be specified in extra params).
-#	Default 0.273263
+#    Mutation rate - the fraction of any parameter to change during
+#    its mutation.
+#    The mutation rate is sampled from a truncated normal distribution, 
+#    so we need the mean (standard deviation can be specified in extra params).
+#    Default: 0.273263
 Mean mutation rate : 
 #
-#	Mutation rate also can be adaptive as mutation strength.
-#	Default: 1.475288
+#    Mutation rate can also be adaptive, like mutation strength.
+#    Default: 1.475288
 Const for mutation rate : 
 
-#	Genetic algorithm stops when it couldn't improve model by
-#	more that epsilon in logLL
-#	Default: 1e-2
+#    The genetic algorithm stops when it is unable to improve the model 
+#    by more than epsilon in log likelihood.
+#    Default: 1e-2
 Eps : 
-#	
-#	and it happens during N iterations:
-#	Default: 100
+#    
+#    And this happens during N iterations:
+#    Default: 100
 Stuck generation number : 
 
 
 
-#	Parameters for output of optimizations algorithms
+#    Parameters for output from optimization algorithms.
 
-#	If > 0, print optimization status every <verbose> steps.
-#	Default: 1
+#    If > 0, print the optimization status every <verbose> steps.
+#    Default: 1
 Verbose : 
 
-#	Parameter for drawn sfs plots. vmin - minimum value plotted for sfs.
-#	Default: 1 or None if all values of fs are <= 1.0
+#    Parameter for drawn SFS plots. vmin - minimum value plotted for SFS.
+#    Default: 1 or None if all values of SFS are <= 1.0
 Vmin : 
 
 
-#	Options of mutation, crossing and random generating.
+#    Options for mutation, crossing, and random generation.
 
-#	To get random model we sample number between bounds (min_N, 
-#	max_N, min_T, etc.) and then scale them with 
-#	optimal_sfs_scaling. We can choose N_A random between min_N 
-#	and max_N or we can always take it as 1.0.
-#	Default: True
+#    To get a random model, we sample numbers between bounds (min_N, 
+#    max_N, min_T, etc.) and then scale them with optimal_sfs_scaling. 
+#    We can choose N_A randomly between min_N and max_N or always take 
+#    it as 1.0.
+#    Default: True
 Random N_A : 
 
 
 
-#	Options of printing summary information about repeats 
-#	in parent process.
-#	How often print all best by likelihood and by BIC models.
-#	Default: 1 (minute)
+#    Options for printing summary information about repeats 
+#    in the parent process.
+#    How often to print all the best models by likelihood and by BIC.
+#    Default: 1 (minute)
 Time to print summary : 
 
 
 
-#	Global parameters for optimizations (global and local).
+#    Global parameters for optimization (both global and local).
 #
-#	Global optimizer name
-#	Default: Genetic_algorithm
+#    Global optimizer name.
+#    Default: Genetic_algorithm
 Global optimizer :
 
-#	If True then x will be transformed by logarithm.
-#	In our case that means that population sizes and times
-#	will be inferred in log-scale.
+#    If True, x will be transformed by the logarithm.
+#    In our case, that means population sizes and times will be inferred 
+#    in log-scale.
 #
-#	For global optimization
-#	Default: True
+#    For global optimization:
+#    Default: True
 Global log transform :
-#	For local optimization
-#	Default: True
+#    For local optimization:
+#    Default: True
 Local log transform :
 
-#	Maximum number of log-likelihood evalutions
-#	In global optimization
-#	Default: None
+#    Maximum number of log-likelihood evaluations for 
+#    global optimization.
+#    Default: None
 Global maxeval :
-#	In local optimization
-#	Default: None
+#    For local optimization:
+#    Default: None
 Local maxeval :
 
-#	Maximum number of algorithm iterations
-#	In global optimization
-#	Default: None
+#    Maximum number of algorithm iterations for 
+#    global optimization.
+#    Default: None
 Global maxiter :
-#	In local optimization
-#	Default: None
+#    For local optimization:
+#    Default: None
 Local maxiter :
