@@ -34,9 +34,7 @@ jobs:
         python3 -m pip install numpy
         python3 -m pip install Cython
         python3 -m pip install dadi
-        #python3 setup.py install
         python3 -m pip install --user --upgrade setuptools wheel
-        #python3 setup.py sdist bdist_wheel
       if: github.repository_owner == 'ctlab'
 
     - name: Install pypa/build
