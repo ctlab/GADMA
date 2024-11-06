@@ -54,14 +54,14 @@ try:
 except ImportError:
     demesdraw = None
 
-try:
-    import GPy
-except ImportError:
-    GPy = None
-try:
-    import GPyOpt
-except ImportError:
-    GPyOpt = None
+#try:
+#    import GPy
+#except ImportError:
+#    GPy = None
+#try:
+#    import GPyOpt
+#except ImportError:
+#    GPyOpt = None
 try:
     import smac  # NOQA
     import ConfigSpace  # NOQA

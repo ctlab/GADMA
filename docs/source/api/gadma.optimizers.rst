@@ -32,8 +32,6 @@ The following optimizers are registered:
 +=================================+==========================================================================================+===================================================+
 | "Genetic_algorithm"             | Genetic algorithm optimization                                                           | :class:`gadma.optimizers.GeneticAlgorithm`        |
 +---------------------------------+------------------------------------------------------------------------------------------+---------------------------------------------------+
-| "GPyOpt_Bayesian_optimization"  | Bayesian optimization (`GPyOpt <https://github.com/SheffieldML/GPyOpt>`_)                | :class:`gadma.optimizers.GPyOptBayesianOptimizer` |
-+---------------------------------+------------------------------------------------------------------------------------------+---------------------------------------------------+
 | "SMAC_squirrel_optimization"    | Bayesian optimization                                                                    |                                                   |
 |                                 | (`SMAC squirrel <https://github.com/automl/Squirrel-Optimizer-BBO-NeurIPS20-automlorg>`_)| :class:`gadma.optimizers.SMACSquirellOptimizer`   |
 +---------------------------------+------------------------------------------------------------------------------------------+---------------------------------------------------+
