@@ -11,7 +11,7 @@ Changelog since 2.0.0:
 2. Create pyproject.toml and setup.cfg
 3. Add dependencies including `moments-popgen`, `demes` and `demesdraw` to setup - they will be automatically installed.
 4. Change code to work with last version of `moments`. 
-5. Drop support for Gpy and GPyOpt bayesian optimization - class will be removed in the next releases
+5. Drop support for Gpy and GPyOpt bayesian optimization
 6. Tests for SMAC bayesian optimization does not run on GitHub Actions - need to upgrade code for the last `smac` version (TODO).
 7. Update params_file template
 8. Update docs
