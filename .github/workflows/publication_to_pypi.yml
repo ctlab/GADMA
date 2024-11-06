@@ -48,7 +48,7 @@ jobs:
     - build
     runs-on: ubuntu-latest
     environment:
-      name: pypi
+      name: publish-pypi
       url: https://pypi.org/p/gadma
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
@@ -71,7 +71,7 @@ jobs:
     runs-on: ubuntu-latest
 
     environment:
-      name: testpypi
+      name: publish-testpypi
       url: https://test.pypi.org/p/gadma
 
     permissions:
