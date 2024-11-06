@@ -47,6 +47,11 @@ jobs:
         run: |
           conda install dadi scikit-allel
           
+      - name: Install momi2 (Linux).
+        run: |
+          pip install momi
+        if: runner.os == 'Linux'
+          
       - name: Install dependencies for installation of moments and ignore numpy version in pyproject.toml for MacOS (python3.8).
         run: |
           pip install Cython
