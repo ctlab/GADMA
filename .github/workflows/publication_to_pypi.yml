@@ -14,10 +14,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@master
-    - name: Set up Python 3.8
+    - name: Set up Python 3.10
       uses: actions/setup-python@v4
       with:
-        python-version: 3.8
+        python-version: 3.10
       if: github.repository_owner == 'ctlab'
 
     - name: Check out src from Git
@@ -28,26 +28,15 @@ jobs:
         git fetch --depth=1 origin +refs/tags/*:refs/tags/*
       if: github.repository_owner == 'ctlab'
 
-    - name: Install GADMA and its dependencies.
+    - name: Install flit
       run: |
-        python3 -m pip install setuptools --upgrade
-        python3 -m pip install numpy
-        python3 -m pip install Cython
-        python3 -m pip install dadi
-        python3 -m pip install --user --upgrade setuptools wheel
+        pip install flit
       if: github.repository_owner == 'ctlab'
-
-    - name: Install pypa/build
-      run: python3 -m pip install build --user
-
-    - name: Build a binary wheel and a source tarball
-      run: python3 -m build
       
-    - name: Store the distribution packages
-      uses: actions/upload-artifact@v4
-      with:
-        name: python-package-distributions
-        path: dist/
+    - name: Create pip package
+      run: |
+        flit build
+      if: github.repository_owner == 'ctlab'
 
   publish-to-testpypi:
     name: Publish distribution 📦 to TestPyPI
@@ -58,22 +47,18 @@ jobs:
 
     environment:
       name: publish-testpypi
-      url: https://test.pypi.org/p/gadma
 
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
 
     steps:
-    - name: Download all the dists
-      uses: actions/download-artifact@v4
-      with:
-        name: python-package-distributions
-        path: dist/
-
     - name: Publish distribution 📦 to Test PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        repository-url: https://test.pypi.org/legacy/
+      run: |
+        flit publish
+      env:
+        FLIT_INDEX_URL: https://test.pypi.org/p/gadma
+        FLIT_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        FLIT_USERNAME: __token__
 
   publish-to-pypi:
     name: Publish distribution 📦 to PyPI
@@ -90,11 +75,10 @@ jobs:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
 
     steps:
-    - name: Download all the dists
-      uses: actions/download-artifact@v4
-      with:
-        name: python-package-distributions
-        path: dist/
-
     - name: Publish distribution 📦 to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
+      run: |
+        flit publish
+      env:
+        FLIT_INDEX_URL: https://test.pypi.org/p/gadma
+        FLIT_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        FLIT_USERNAME: __token__
