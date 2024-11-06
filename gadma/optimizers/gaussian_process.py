@@ -1,30 +1,30 @@
-# import numpy as np
-# import copy
-#
-#
-# class GaussianProcess(object):
-#     """
-#     Base class to keep Gaussian process for Bayesian optimization.
-#     """
-#     def __init__(self, gp_model):
-#         self.gp_model = gp_model
-#
-#     def train(self, X, Y, optimize=True):
-#         raise NotImplementedError
-#
-#     def get_noise(self):
-#         raise NotImplementedError
-#
-#     def predict(self, X):
-#         raise NotImplementedError
-#
-#     def get_K(self):
-#         raise NotImplementedError
-#
-#     def get_hypers(self):
-#         raise NotImplementedError
-#
-#
+import numpy as np
+import copy
+
+
+class GaussianProcess(object):
+    """
+    Base class to keep Gaussian process for Bayesian optimization.
+    """
+    def __init__(self, gp_model):
+        self.gp_model = gp_model
+
+    def train(self, X, Y, optimize=True):
+        raise NotImplementedError
+
+    def get_noise(self):
+        raise NotImplementedError
+
+    def predict(self, X):
+        raise NotImplementedError
+
+    def get_K(self):
+        raise NotImplementedError
+
+    def get_hypers(self):
+        raise NotImplementedError
+
+
 # class GPyGaussianProcess(GaussianProcess):
 #     def _convert(self, X, Y=None):
 #         X = np.array(X, dtype=float)
@@ -58,28 +58,28 @@
 #         theta.extend(self.gp_model.model.kern.lengthscale)
 #         theta.append(self.get_noise())
 #         return theta
-#
-#
-# class SMACGaussianProcess(GaussianProcess):
-#     def __init__(self, gp_model):
-#         super(SMACGaussianProcess, self).__init__(gp_model=gp_model)
-#         self.gp_model.normalize_y = True
-#
-#     def train(self, X, Y, optimize=True):
-#         self.gp_model._train(X, Y, do_optimize=optimize)
-#
-#     def get_noise(self):
-#         return 0
-#
-#     def predict(self, X):
-#         mu, var = self.gp_model.predict_marginalized_over_instances(
-#             np.array(X)
-#         )
-#         sigma = np.sqrt(var)
-#         return mu.reshape(mu.shape[0]), sigma.reshape(sigma.shape[0])
-#
-#     def get_K(self):
-#         return self.gp_model.kernel(self.gp_model.gp.X_train_)
-#
-#     def get_hypers(self):
-#         return np.exp(self.gp_model.hypers)
+
+
+class SMACGaussianProcess(GaussianProcess):
+    def __init__(self, gp_model):
+        super(SMACGaussianProcess, self).__init__(gp_model=gp_model)
+        self.gp_model.normalize_y = True
+
+    def train(self, X, Y, optimize=True):
+        self.gp_model._train(X, Y, do_optimize=optimize)
+
+    def get_noise(self):
+        return 0
+
+    def predict(self, X):
+        mu, var = self.gp_model.predict_marginalized_over_instances(
+            np.array(X)
+        )
+        sigma = np.sqrt(var)
+        return mu.reshape(mu.shape[0]), sigma.reshape(sigma.shape[0])
+
+    def get_K(self):
+        return self.gp_model.kernel(self.gp_model.gp.X_train_)
+
+    def get_hypers(self):
+        return np.exp(self.gp_model.hypers)

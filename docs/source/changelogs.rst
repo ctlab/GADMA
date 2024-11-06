@@ -1,7 +1,7 @@
 Changelogs
 ==============
 
-[2.0.1] - 2023-11-06
+[2.0.2] - 2023-11-06
 --------------------
 GADMA was updated and tested on Python3.10 with the latest versions of dependencies.
 
