@@ -155,7 +155,7 @@ For example, if there is model structure equal to (2, 1, 1) and one want to have
 .. code-block:: none
 
     # params_file
-    Migration masks: [[[0, 0], [1, 0], [[0, 0, 1], [0, 0, 0], [1, 0, 0]]]
+    Migration masks: [[[0, 0], [1, 0]], [[0, 0, 1], [0, 0, 0], [1, 0, 0]]]
 
 .. note::
     Option ``Migration masks`` is used only in case of demographic model with structure and ``Initial structure`` equal to ``Final structure``.
