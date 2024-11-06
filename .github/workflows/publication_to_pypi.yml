@@ -9,76 +9,81 @@ on:
 
 jobs:
   build:
-    name: Build Python distributions
-    runs-on: ubuntu-20.04
+    name: Build distribution 📦
+    runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@master
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v4
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
       with:
         python-version: "3.10"
       if: github.repository_owner == 'ctlab'
-
-    - name: Check out src from Git
-      uses: actions/checkout@v4
+      
     - name: Get history and tags for SCM versioning to work
       run: |
         git fetch --prune --unshallow
         git fetch --depth=1 origin +refs/tags/*:refs/tags/*
       if: github.repository_owner == 'ctlab'
 
-    - name: Install flit
-      run: |
-        pip install flit
-      if: github.repository_owner == 'ctlab'
+    - name: Install pypa/build
+      run: python3 -m pip install build --user
+
+    - name: Install pypa/build
+      run: python3 -m pip install build --user
+
+    - name: Build a binary wheel and a source tarball
+      run: python3 -m build
       
-    - name: Create pip package
-      run: |
-        flit build
-      if: github.repository_owner == 'ctlab'
-
-  publish-to-testpypi:
-    name: Publish distribution 📦 to TestPyPI
-    if: github.repository_owner == 'ctlab'
-    needs:
-    - build
-    runs-on: ubuntu-20.04
-
-    environment:
-      name: publish-testpypi
-
-    permissions:
-      id-token: write  # IMPORTANT: mandatory for trusted publishing
-
-    steps:
-    - name: Publish distribution 📦 to Test PyPI
-      run: |
-        flit publish
-      env:
-        FLIT_INDEX_URL: https://test.pypi.org/p/gadma
-        FLIT_PASSWORD: ${{ secrets.PYPI_TOKEN }}
-        FLIT_USERNAME: __token__
+    - name: Store the distribution packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
 
   publish-to-pypi:
     name: Publish distribution 📦 to PyPI
     if: github.repository_owner == 'ctlab' && github.event.release
     needs:
     - build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/gadma
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+
+    - name: Publish distribution 📦 to Test PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+
+  publish-to-testpypi:
+    name: Publish distribution 📦 to TestPyPI
+    if: github.repository_owner == 'ctlab'
+    needs:
+    - build
+    runs-on: ubuntu-latest
 
     environment:
-      name: publish-pypi
-      url: https://pypi.org/p/gadma
+      name: testpypi
+      url: https://test.pypi.org/p/gadma
 
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
 
     steps:
-    - name: Publish distribution 📦 to PyPI
-      run: |
-        flit publish
-      env:
-        FLIT_INDEX_URL: https://test.pypi.org/p/gadma
-        FLIT_PASSWORD: ${{ secrets.PYPI_TOKEN }}
-        FLIT_USERNAME: __token__
+    - name: Download all the dists
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+    - name: Publish distribution 📦 to TestPyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
