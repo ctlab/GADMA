@@ -54,14 +54,14 @@ try:
 except ImportError:
     demesdraw = None
 
-try:
-    import GPy
-except ImportError:
-    GPy = None
-try:
-    import GPyOpt
-except ImportError:
-    GPyOpt = None
+# try:
+#     import GPy
+# except ImportError:
+#     GPy = None
+# try:
+#     import GPyOpt
+# except ImportError:
+#     GPyOpt = None
 try:
     import smac  # NOQA
     import ConfigSpace  # NOQA
@@ -86,8 +86,8 @@ momi_available = momi is not None
 demes_available = demes is not None
 demesdraw_available = demesdraw is not None
 
-GPy_available = GPy is not None
-GPyOpt_available = GPyOpt is not None
+# GPy_available = GPy is not None
+# GPyOpt_available = GPyOpt is not None
 bayesmark_available = bayesmark is not None
 
 from .data import DataHolder, SFSDataHolder, VCFDataHolder  # NOQA

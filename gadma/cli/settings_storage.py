@@ -929,7 +929,7 @@ class SettingsStorage(object):
                             f"{str(e)}"
                         ) from e
             else:
-                check_dir_existence(self.bed_file_dir)
+                check_dir_existence(self.bed_files_dir)
             # If we have recombination rate only then we have to create rec map
             if not we_have_rec_maps and we_have_rec_rate:
                 try:

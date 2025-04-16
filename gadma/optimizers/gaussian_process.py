@@ -25,39 +25,39 @@ class GaussianProcess(object):
         raise NotImplementedError
 
 
-class GPyGaussianProcess(GaussianProcess):
-    def _convert(self, X, Y=None):
-        X = np.array(X, dtype=float)
-        if Y is not None:
-            return X, np.array(Y).reshape(len(Y), -1)
-        return X
-
-    def train(self, X, Y, optimize=True):
-        X, Y = self._convert(X, Y)
-        if self.gp_model.model is None:
-            self.gp_model._create_model(X=X, Y=Y)
-        else:
-            self.gp_model.model.set_XY(X, Y)
-        if optimize:
-            self.gp_model.updateModel(X_all=X, Y_all=Y, X_new=X, Y_new=Y)
-
-    def get_noise(self):
-        return float(self.gp_model.model.Gaussian_noise.variance)
-
-    def predict(self, X):
-        X = self._convert(X)
-        mu, sigma = self.gp_model.predict(X)
-        return mu.reshape(mu.shape[0]), sigma.reshape(sigma.shape[0])
-
-    def get_K(self):
-        X = self.gp_model.model.X
-        return self.gp_model.model.kern.K(X, X)
-
-    def get_hypers(self):
-        theta = []
-        theta.extend(self.gp_model.model.kern.lengthscale)
-        theta.append(self.get_noise())
-        return theta
+# class GPyGaussianProcess(GaussianProcess):
+#     def _convert(self, X, Y=None):
+#         X = np.array(X, dtype=float)
+#         if Y is not None:
+#             return X, np.array(Y).reshape(len(Y), -1)
+#         return X
+#
+#     def train(self, X, Y, optimize=True):
+#         X, Y = self._convert(X, Y)
+#         if self.gp_model.model is None:
+#             self.gp_model._create_model(X=X, Y=Y)
+#         else:
+#             self.gp_model.model.set_XY(X, Y)
+#         if optimize:
+#             self.gp_model.updateModel(X_all=X, Y_all=Y, X_new=X, Y_new=Y)
+#
+#     def get_noise(self):
+#         return float(self.gp_model.model.Gaussian_noise.variance)
+#
+#     def predict(self, X):
+#         X = self._convert(X)
+#         mu, sigma = self.gp_model.predict(X)
+#         return mu.reshape(mu.shape[0]), sigma.reshape(sigma.shape[0])
+#
+#     def get_K(self):
+#         X = self.gp_model.model.X
+#         return self.gp_model.model.kern.K(X, X)
+#
+#     def get_hypers(self):
+#         theta = []
+#         theta.extend(self.gp_model.model.kern.lengthscale)
+#         theta.append(self.get_noise())
+#         return theta
 
 
 class SMACGaussianProcess(GaussianProcess):

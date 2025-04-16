@@ -8,10 +8,11 @@ from .local_optimizer import ManuallyConstrOptimizer  # NOQA
 from .global_optimizer import register_global_optimizer, get_global_optimizer  # NOQA
 from .global_optimizer import all_global_optimizers, GlobalOptimizer  # NOQA
 from .genetic_algorithm import GeneticAlgorithm  # NOQA
-from .bayesian_optimization import GPyOptBayesianOptimizer  # NOQA
+# from .bayesian_optimization import GPyOptBayesianOptimizer  # NOQA
 from .bayesian_optimization import SMACBayesianOptimizer, SMACSquirrelOptimizer  # NOQA
 from .combinations import GlobalOptimizerAndLocalOptimizer  # NOQA
 from .linear_constrain import LinearConstrain  # NOQA
 from .optimizer_result import OptimizerResult  # NOQA
 from .gaussian_process import GaussianProcess  # NOQA
-from .gaussian_process import GPyGaussianProcess, SMACGaussianProcess  # NOQA
+# from .gaussian_process import GPyGaussianProcess
+from .gaussian_process import SMACGaussianProcess  # NOQA

@@ -1,6 +1,21 @@
 Changelogs
 ==============
 
+[2.0.2] - 2023-11-06
+--------------------
+GADMA was updated and tested on Python3.10 with the latest versions of dependencies.
+
+Changelog since 2.0.0:
+
+1. Add lower bounds for first and second splits (see #92)
+2. Create pyproject.toml and setup.cfg
+3. Add dependencies including `moments-popgen`, `demes` and `demesdraw` to setup - they will be automatically installed.
+4. Change code to work with last version of `moments`. 
+5. Drop support for Gpy and GPyOpt bayesian optimization
+6. Tests for SMAC bayesian optimization does not run on GitHub Actions - need to upgrade code for the last `smac` version (TODO).
+7. Update params_file template
+8. Update docs
+
 [2.0.0] - 2023-09-23
 --------------------
 
@@ -8,6 +23,7 @@ Changelogs
 Official release of GADMA2.0.0, it includes all pre-releases 2.0.0rc1 - 2.0.0rc26
 
 Changelog since 2.0.0rc26:
+
 1. Catch cases when theta and ancestral population size are negative for moments and dadi engines (issue #84). Fix optimization routine to ignore such parameters.
 2. Fix GitHub Action tests and PyPi publishing.
 3. Add documentation (regarding issues #60, #75, #85)
