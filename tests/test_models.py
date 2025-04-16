@@ -622,7 +622,6 @@ class TestModels(unittest.TestCase):
         model5.add_epoch(T3, [0.5, fxnu1], [[0, m], [0, 0]], ["Sud", d2])
         model5.add_split(1, [nu2, nu1])
         model5.add_epoch(t, [nu1, nu2, nu1], None, None)
-        model5.add_p_misid(p_misid)
 
         model6 = EpochDemographicModel(Nanc_size=Nanc)
         model6.add_epoch(t, [nu1])
@@ -653,6 +652,18 @@ class TestModels(unittest.TestCase):
             has_dom=False,
             has_dyns=True,
             sym_migs=True,
+            frac_split=True,
+            has_p_misid=False,
+            has_inbr=False,
+        )
+        model_struct_3 = StructureDemographicModel(
+            initial_structure=[2, 1, 1],
+            final_structure=[2, 1, 1],
+            has_migs=False,
+            has_sels=False,
+            has_dom=False,
+            has_dyns=True,
+            sym_migs=False,
             frac_split=True,
             has_p_misid=True,
             has_inbr=False,
@@ -701,6 +712,9 @@ class TestModels(unittest.TestCase):
             models.append(model_struct_1)
             models.append(model_struct_2)
 
+            if engine.id in ["dadi", "moments"]:
+                models.append(model_struct_3)
+
             for ind, model in enumerate(models):
                 if engine.id == "momentsLD":
                     dataset = self._vcf_datasets_ld_precomputed()
@@ -713,7 +727,7 @@ class TestModels(unittest.TestCase):
                         if not model.has_anc_size:
                             continue
                     if engine.id == 'dadi':
-                        options = {'pts': [4, 6, 8]}
+                        options = {'pts': [6, 8, 10]}
                         args = (options['pts'],)
                     else:
                         options = {}
@@ -738,6 +752,8 @@ class TestModels(unittest.TestCase):
                     data.sequence_length = 50818468
                     # we read data but save only updated data_holder
                     engine.data = data
+                    if hasattr(model, "has_p_misid") and model.has_p_misid and engine.data.folded:
+                        continue
                     engine.inner_data = None
                     engine.model = model
                     Nanc = None

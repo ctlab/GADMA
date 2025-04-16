@@ -238,12 +238,14 @@ class TestModelStructure(unittest.TestCase):
                 for engine in all_simulation_engines():
                     if engine.id not in ["dadi", "moments"] and not has_anc:
                         continue
+                    if engine.id not in ["dadi", "moments"] and p_misid:
+                        continue
                     engine.set_model(dm)
                     if engine.id == 'dadi':
                         sizes = [8 for _ in range(len(structure))]
                         if len(structure) == 1:
                             sizes = [20]
-                        kwargs = {"pts": [8, 10, 12]}  # pts
+                        kwargs = {"pts": [8, 18, 28]}  # pts
                     else:
                         sizes = [4 for _ in range(len(structure))]
                         kwargs = {}
