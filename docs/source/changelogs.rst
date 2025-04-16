@@ -1,7 +1,18 @@
 Changelogs
 ==============
 
-[2.0.2] - 2023-11-06
+[2.0.3] - 2025-04-16
+--------------------
+Minor release of GADMA with few fixes of known bugs and new feature.
+
+Changelog since 2.0.2:
+
+1. Add estimation of ancestral state misidentification error (see #100)
+2. Fix the bug for custom model when Nanc<0 was printing
+3. Fix bug for resume runs. There was a key error when resume run that was without migration and include estimation of migration in resumed run.
+4. Fix bug with version printing.
+
+[2.0.2] - 2024-11-06
 --------------------
 GADMA was updated and tested on Python3.10 with the latest versions of dependencies.
 
