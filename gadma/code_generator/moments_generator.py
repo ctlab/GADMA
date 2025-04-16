@@ -1,7 +1,7 @@
-from ..models import CustomDemographicModel, EpochDemographicModel,\
+from ..models import CustomDemographicModel, EpochDemographicModel, \
     Epoch, Split, BinaryOperation
 from ..utils import DiscreteVariable, DynamicVariable, Variable
-from .dadi_generator import FUNCTION_NAME, _print_p0, _print_main,\
+from .dadi_generator import FUNCTION_NAME, _print_p0, _print_main, \
                             _print_load_data, _print_bounds
 import numpy as np
 import copy

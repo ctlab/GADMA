@@ -1,5 +1,5 @@
-from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable,\
-                    DynamicVariable, FractionVariable, GrowthRateVariable,\
+from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable, \
+                    DynamicVariable, FractionVariable, GrowthRateVariable, \
                     SelectionVariable
 from .. import moments_available, dadi_available
 from .. import demes_available, demesdraw_available

@@ -1,4 +1,4 @@
-from ..models import CustomDemographicModel, EpochDemographicModel,\
+from ..models import CustomDemographicModel, EpochDemographicModel, \
     TreeDemographicModel
 from ..utils import Variable, DiscreteVariable, DynamicVariable
 from ..utils import TimeVariable, PopulationSizeVariable, FractionVariable

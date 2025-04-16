@@ -129,7 +129,7 @@ class BinaryOperation(Operation):
     def __eq__(self, other):
         if self is other:
             return True
-        return type(self) == type(other) and (
+        return type(self) is type(other) and (
                 self.arg1 == other.arg1 and self.arg2 == other.arg2
                 or
                 self.is_commutative() and

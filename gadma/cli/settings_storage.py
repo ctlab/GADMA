@@ -9,14 +9,14 @@ from ..data import SFSDataHolder, \
 from ..engines import get_engine, MomentsEngine, MomentsLdEngine
 from ..engines import DadiEngine
 from ..engines import all_engines, all_drawing_engines, all_available_engines
-from ..models import StructureDemographicModel, CustomDemographicModel,\
+from ..models import StructureDemographicModel, CustomDemographicModel, \
     EpochDemographicModel, TreeDemographicModel
 from ..optimizers import get_local_optimizer, get_global_optimizer
 from ..optimizers import LinearConstrain
-from ..utils import check_dir_existence, check_file_existence, abspath,\
+from ..utils import check_dir_existence, check_file_existence, abspath, \
     module_name_from_path, custom_generator, ensure_dir_existence
-from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable,\
-    ContinuousVariable, DynamicVariable, GrowthRateVariable,\
+from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable, \
+    ContinuousVariable, DynamicVariable, GrowthRateVariable, \
     SelectionVariable, FractionVariable, DemographicVariable
 from ..data import extract_chromosomes_from_vcf
 from ..data import create_recombination_maps_from_rate

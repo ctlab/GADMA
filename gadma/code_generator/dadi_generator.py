@@ -1,4 +1,4 @@
-from ..models import CustomDemographicModel, EpochDemographicModel,\
+from ..models import CustomDemographicModel, EpochDemographicModel, \
     Epoch, Split, BinaryOperation
 from ..utils import Variable, DiscreteVariable, DynamicVariable
 from ..data import SFSDataHolder, VCFDataHolder

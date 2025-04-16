@@ -1,5 +1,5 @@
 from ..utils import Variable, PopulationSizeVariable, TimeVariable
-from ..utils import MigrationVariable, DynamicVariable, SelectionVariable,\
+from ..utils import MigrationVariable, DynamicVariable, SelectionVariable, \
                     FractionVariable, ContinuousVariable
 from . import Epoch, Split
 from .variables_combinations import Multiplication, Subtraction
@@ -383,7 +383,7 @@ class StructureDemographicModel(EpochDemographicModel):
             assert len(old_vars) == len(new_vars)
             # Now we cretae correspondence between those variables
             for old_var, new_var in zip(old_vars, new_vars):
-                assert type(old_var) == type(new_var)  # addit. check for types
+                assert type(old_var) is type(new_var)  # addit. check for types
                 oldvar2newvar[old_var] = new_var
         if self.has_anc_size:
             assert self.has_anc_size

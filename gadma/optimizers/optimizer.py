@@ -5,7 +5,7 @@ import os
 
 from ..utils import Variable, ContinuousVariable, DiscreteVariable
 from ..utils import fix_args, cache_func
-from ..utils import ensure_file_existence, check_file_existence,\
+from ..utils import ensure_file_existence, check_file_existence, \
                     variables_values_repr, eval_wrapper
 from ..utils import logarithm_transform, exponent_transform, ident_transform
 from ..utils import apply_transform

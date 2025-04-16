@@ -1,6 +1,6 @@
 from ..engines import get_engine, all_available_engines
-from ..utils import sort_by_other_list, ensure_dir_existence,\
-                    ensure_file_existence, check_file_existence,\
+from ..utils import sort_by_other_list, ensure_dir_existence, \
+                    ensure_file_existence, check_file_existence, \
                     check_dir_existence
 from ..utils import WeightedMetaArray
 from ..optimizers import GlobalOptimizerAndLocalOptimizer
