@@ -449,9 +449,15 @@ class TestModelStructure(unittest.TestCase):
             self.assertRaises(ValueError, model.increase_structure, [2, 2])
 
     def test_transform(self):
+        # we will not test everything - it takes too much time
+        # we will run random subset instead
+        n_random = 100
+        all_combinations = np.array(list(itertools.product([False, True], repeat=8)))
+        random_base_combinations = all_combinations[np.random.choice(range(len(all_combinations)), size=n_random)]
+        random_new_combinations = all_combinations[np.random.choice(range(len(all_combinations)), size=n_random)]
         for structure in BASE_TEST_STRUCTURES:
             for base_migs, base_sels, base_dom, base_dyns, base_symms, base_fracs, base_inbr, base_p_misid in\
-                    list(itertools.product([False, True],repeat=8)):
+                    random_base_combinations:
                 if not base_sels and base_dom:
                     continue
                 base_mig_masks = [None, self._generate_mig_mask(structure,
@@ -470,7 +476,7 @@ class TestModelStructure(unittest.TestCase):
                                                    has_inbr=base_inbr,
                                                    has_p_misid=base_p_misid)
                     for new_migs, new_sels, new_dom, new_dyns, new_symms, new_fracs, new_inbr, new_p_misid in\
-                            list(itertools.product([False, True],repeat=8)):
+                            random_new_combinations:
                         if not new_sels and new_dom:
                             continue
                         new_mig_masks = [None, self._generate_mig_mask(
