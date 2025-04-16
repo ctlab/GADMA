@@ -218,6 +218,11 @@ Split fractions: True
 #   Default: False
 Inbreeding: False
 
+#   Estimate the average ancestral misidentification error.
+#   Assume that ancestral state is identified incorrectly with
+#   a probability of p_misid that is inferred from the data.
+Ancestral state misid error: False
+
 #   If False, then a multinomial approach is used in Dadi and moments.
 #   In the multinomial approach, the ancestral size is inferred implicitly.
 #   Default: False
