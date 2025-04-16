@@ -392,6 +392,8 @@ class TestEngines(unittest.TestCase):
             has_dyns=True,
             sym_migs=False,
             frac_split=False,
+            has_p_misid=False,
+            has_inbr=False,
         )
         dm.mutation_rate = 1e-8
         dm.recombination_rate = 1e-8

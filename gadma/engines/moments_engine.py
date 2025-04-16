@@ -159,6 +159,13 @@ class MomentsEngine(DadiOrMomentsEngine):
                         event.n_pop, event.n_pop + 1, event.pop_to_div + 1)
                     fs = getattr(moments.Manips, func_name)(fs, *ns_split)
                 n_split += 1
+
+        if self.model.has_p_misid:
+            value = self.get_value_from_var2value(
+                var2value,
+                self.model.p_misid
+            )
+            fs = (1 - value) * fs + value * moments.Numerics.reverse_array(fs)
         return fs
 
     def draw_schematic_model_plot(self, values, save_file=None,

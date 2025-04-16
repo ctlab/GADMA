@@ -149,6 +149,10 @@ def _print_moments_func(model, values, dt_fac):
 
             ret_str += f"(fs, {', '.join(ns_split)})\n"
             n_split += 1
+    if model.has_p_misid:
+        name = model.p_misid.name
+        ret_str += f"\tfs = (1 - {name}) * fs + " \
+                   f"{name} * moments.Numerics.reverse_array(fs)\n"
     ret_str += "\treturn fs\n"
     return ret_str
 

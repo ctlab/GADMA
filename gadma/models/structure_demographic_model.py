@@ -37,6 +37,9 @@ class StructureDemographicModel(EpochDemographicModel):
                        False then newly formed population has size as
                        an independent variable.
     :type frac_split: bool
+    :param has_misid: If True then there is an additional parameter for the
+                      ancestral state misidentification error
+    :type has_misid: bool
     :param migs_mask: List of matrices of 0 and 1 for each time interval (after
                       first split) that defines what migrations this interval
                       has. E.g. [[[0, 1],[0, 0]], [[0, 0], [0, 0]]] for
@@ -58,7 +61,7 @@ class StructureDemographicModel(EpochDemographicModel):
     """
     def __init__(self, initial_structure, final_structure,
                  has_migs, has_sels, has_dom, has_dyns, sym_migs, frac_split,
-                 migs_mask=None, has_anc_size=False,
+                 has_p_misid, migs_mask=None, has_anc_size=False,
                  gen_time=None, theta0=None, mutation_rate=None,
                  recombination_rate=None, Nref=None, has_inbr=None):
         if has_anc_size:
@@ -89,6 +92,8 @@ class StructureDemographicModel(EpochDemographicModel):
         self.frac_split = frac_split
         self.migs_mask = migs_mask
         self.has_inbr = has_inbr
+        # works automatically through EpochDemModel
+        # self.has_p_misid = has_p_misid
 
         # check that dominance coeffcients are set only if selection is on
         if self.has_dom and not self.has_sels:
@@ -156,7 +161,8 @@ class StructureDemographicModel(EpochDemographicModel):
             theta0=self.theta0,
             mutation_rate=self.mutation_rate,
             recombination_rate=self.recombination_rate,
-            Nanc_size=Nanc_size
+            Nanc_size=Nanc_size,
+            p_misid=self.p_misid,
         )
 
         if not (np.all(np.array(structure) >= self.initial_structure)):
@@ -251,6 +257,10 @@ class StructureDemographicModel(EpochDemographicModel):
                 var = FractionVariable('F%d' % n_pop)
                 inbr_args.append(var)
             self.add_inbreeding(inbr_args)
+
+        if self.has_p_misid:
+            var = FractionVariable("p_misid")
+            self.add_p_misid(var)
 
         return self
 
@@ -393,6 +403,9 @@ class StructureDemographicModel(EpochDemographicModel):
             for old_inbr_arg, new_inbr_arg in zip(old_model.inbreeding_args,
                                                   self.inbreeding_args):
                 oldvar2newvar[old_inbr_arg] = new_inbr_arg
+        if old_model.has_p_misid:
+            assert self.has_p_misid
+            oldvar2newvar[old_model.p_misid] = self.p_misid
         # we have to add info about Nanc_size variable
         oldvar2newvar[old_model.Nanc_size] = self.Nanc_size
     #    print(oldvar2newvar)
@@ -493,6 +506,9 @@ class StructureDemographicModel(EpochDemographicModel):
                 if self.has_dom == model.has_dom \
                         and var.name.startswith("h"):
                     var2value[var] = other_varname2value[var.name]
+                if self.has_p_misid == model.has_p_misid \
+                        and var.name.startswith("p_misid"):
+                    var2value[var] = other_varname2value[var.name]
             elif var.name in other_varname2value:
                 var2value[var] = other_varname2value[var.name]
         # do not forget about Nanc_size
@@ -555,6 +571,10 @@ class StructureDemographicModel(EpochDemographicModel):
             elif isinstance(var, FractionVariable) \
                     and var.name.startswith('F'):
                 assert self.has_inbr and not model.has_inbr
+                var2value[var] = 0
+            elif isinstance(var, FractionVariable) \
+                    and var.name.startswith('p_misid'):
+                assert self.has_p_misid and not model.has_p_misid
                 var2value[var] = 0
             elif isinstance(var, PopulationSizeVariable):
                 assert not self.frac_split and model.frac_split

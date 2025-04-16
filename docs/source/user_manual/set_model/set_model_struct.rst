@@ -130,6 +130,21 @@ GADMA can estimate inbreeding coefficients for demographic models with structure
     Inbreeding: True
     ...
 
+Ancestral state misidentification error
+__________
+
+GADMA can estimate the average error for ancestral state misidentification using ``dadi`` or ``moments`` engine. To enable inference of this error one should set the following:
+
+.. code-block:: none
+
+    # param file
+    ...
+    Ancestral state misid error: True
+    ...
+
+.. warning::
+    This feature is available only when data is not folded, i.e. `Outgroup` is True.
+
 No migrations and symmetric migrations
 _______________________________________
 

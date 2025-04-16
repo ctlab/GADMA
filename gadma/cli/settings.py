@@ -45,6 +45,7 @@ migration_masks = None
 inbreeding = False
 selection = False
 dominance = False
+ancestral_state_misid_error = False
 
 # LD params
 ld_kwargs = None

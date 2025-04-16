@@ -145,6 +145,13 @@ class DadiEngine(DadiOrMomentsEngine):
         else:
             sfs = dadi.Spectrum.from_phi(phi, ns, [xx] * len(ns))
 
+        if self.model.has_p_misid:
+            value = self.get_value_from_var2value(
+                var2value,
+                self.model.p_misid
+            )
+            sfs = (1 - value) * sfs + value * dadi.Numerics.reverse_array(sfs)
+
         return sfs
 
     def simulate(self, values, ns, sequence_length, population_labels, pts):

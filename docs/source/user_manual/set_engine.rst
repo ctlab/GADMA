@@ -107,6 +107,11 @@ Engine comparison
      - ❌
      - ❌
      - ❌
+   * - Anc. state misid. error
+     - ✅
+     - ✅
+     - ❌
+     - ❌
 
 \* No migrations are drawn
 

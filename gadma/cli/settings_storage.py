@@ -214,7 +214,8 @@ class SettingsStorage(object):
                    'symmetric_migrations', 'split_fractions',
                    'generate_x_transform', 'global_log_transform',
                    'local_log_transform', 'inbreeding', 'selection',
-                   'dominance', 'ancestral_size_as_parameter']
+                   'dominance', 'ancestral_size_as_parameter',
+                   'ancestral_state_misid_error']
     _int_list_attrs = ['pts', 'initial_structure', 'final_structure',
                        'projections']
     _float_list_attrs = ['lower_bound', 'upper_bound']
@@ -1323,6 +1324,7 @@ class SettingsStorage(object):
             split_f = self.split_fractions
             migs_mask = self.migration_masks
             create_inbr = self.inbreeding
+            create_p_misid = self.ancestral_state_misid_error
             model = StructureDemographicModel(
                 self.initial_structure,
                 self.final_structure,
@@ -1333,6 +1335,7 @@ class SettingsStorage(object):
                 has_dyns=create_dyns,
                 sym_migs=sym_migs,
                 frac_split=split_f,
+                has_p_misid=create_p_misid,
                 migs_mask=copy.deepcopy(migs_mask),
                 gen_time=gen_time,
                 theta0=theta0,
@@ -1567,6 +1570,12 @@ class SettingsStorage(object):
             self.selection = False
 
         if self.inbreeding:
+            if self.custom_filename is not None:
+                warnings.warn(
+                    "`Inbreeding` is set to False as custom model is used."
+                )
+                self.inbreeding = False
+        if self.inbreeding:
             if self.projections is not None:
                 warnings.warn(
                     "For correct inference of the inbreeding input data should"
@@ -1579,6 +1588,28 @@ class SettingsStorage(object):
                     "Please check your engine. If you want to infer "
                     "inbreeding please change engine to `dadi`"
                 )
+
+        if self.ancestral_state_misid_error:
+            if self.custom_filename is not None:
+                warnings.warn(
+                    "`Anc state misid error` is set to False as custom "
+                    "model is used."
+                )
+                self.ancestral_state_misid_error = False
+            if self.outgroup is False:
+                warnings.warn(
+                    "`Anc state misid error` is set to False as SFS data "
+                    "is folded (`Outgroup` is False)."
+                )
+                self.ancestral_state_misid_error = False
+        if self.ancestral_state_misid_error:
+            if self.engine not in ["dadi", "moments"]:
+                raise ValueError(
+                    "Please check your engine. If you want to infer "
+                    "ancestral state misid error please change engine to "
+                    "`dadi` or `moments`"
+                )
+
         if (self.recombination_rate is not None and
                 self.recombination_rate != 0):
             if self.engine in ['moments', 'dadi']:

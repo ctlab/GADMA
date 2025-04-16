@@ -197,9 +197,10 @@ def get_settings():
             engine_settings = ['engine', 'pts', 'lower_bound', 'upper_bound',
                                'upper_bound_of_first_split',
                                'upper_bound_of_second_split']
-            if_true_settings = ['no_migrations', 'only_sudden',
-                                'symmetric_migrations', 'split_fractions',
-                                'inbreeding', 'selection', 'dominance']
+            model_settings = ['no_migrations', 'only_sudden',
+                              'symmetric_migrations', 'split_fractions',
+                              'inbreeding', 'selection', 'dominance',
+                              'ancestral_state_misid_error']
             forbiden_settings = ['custom_filename', 'initial_structure']
             special_settings = ['migration_masks']
 
@@ -212,23 +213,18 @@ def get_settings():
             for attr in differ_in_element(forbiden_settings):
                 raise ValueError(f"Setting {attr} could not be changed in "
                                  "resumed run.")
-            for attr in differ_in_element(data_settings + engine_settings):
+            dif_attrs = differ_in_element(
+                data_settings + engine_settings + model_settings
+            )
+            for attr in dif_attrs:
                 settings_storage.generate_x_transform = True
                 if not settings_storage.only_models:
-                    warnings.warn(f"Setting {attr} is different in new "
-                                  "settings and all likelihoods should be "
-                                  "recalculated in new run. Check option only_"
-                                  "models maybe it should be set to True.")
-                    break
-            for attr in differ_in_element(if_true_settings):
-                if getattr(settings_storage, attr):
-                    settings_storage.generate_x_transform = True
-                    if not settings_storage.only_models:
-                        warnings.warn(f"Setting {attr} was changed from False "
-                                      "to True in new settings and all "
-                                      "likelihoods should be recalculated in "
-                                      "new run. Check option only_models maybe"
-                                      " it should be set to True.")
+                    names = [f"`{' '.join(x.split('_'))}`" for x in dif_attrs]
+                    warnings.warn(f"Settings {names} are different "
+                                  "in new settings and all likelihoods should "
+                                  "be recalculated in new run. Check option"
+                                  "`Only models` maybe it should be set to "
+                                  "True.")
                     break
             for attr in differ_in_element(special_settings):
                 if attr == 'migration_masks':

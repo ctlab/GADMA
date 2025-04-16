@@ -180,10 +180,11 @@ class EpochDemographicModel(DemographicModel):
 
     def __init__(self, gen_time=None, theta0=None, mutation_rate=None,
                  recombination_rate=None, Nref=None,
-                 has_anc_size=None, Nanc_size=None, linear_constrain=None,
-                 inbreeding_args=None):
+                 has_anc_size=None, Nanc_size=None, p_misid=None,
+                 linear_constrain=None, inbreeding_args=None):
         if has_anc_size is None:
             has_anc_size = Nanc_size is not None
+        self.p_misid = p_misid
         self.inbreeding_args = inbreeding_args
         self.events = list()
         super(EpochDemographicModel, self).__init__(
@@ -273,6 +274,14 @@ class EpochDemographicModel(DemographicModel):
     def add_inbreeding(self, inbr_args=None):
         self.inbreeding_args = inbr_args
         self.add_variables(inbr_args)
+
+    @property
+    def has_p_misid(self):
+        return self.p_misid is not None
+
+    def add_p_misid(self, p_misid):
+        self.p_misid = p_misid
+        self.add_variable(p_misid)
 
     def add_epoch(self, time_arg, size_args, mig_args=None,
                   dyn_args=None, sel_args=None,
@@ -456,6 +465,10 @@ class EpochDemographicModel(DemographicModel):
             inbr_string = ", ".join(inbr_coefficients)
 
             strings.append(f"[inbr: {inbr_string}]")
+
+        if self.p_misid is not None:
+            value = round(values_dict[self.p_misid.name], 3)
+            strings.append(f"[{self.p_misid.name}: {value}]")
 
         return "[ " + ",\t".join(strings) + " ]"
 

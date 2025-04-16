@@ -41,6 +41,7 @@ GADMA could infer two base types of demographic models:
       * ``Split fractions`` infers fractions in which ancestral population is split.
       * ``Inbreeding`` infers inbreeding coefficients (only for ``dadi`` engine).
       * ``Selection`` infers selection coefficients.
+      * ``Ancestral state misid error`` infers error of ancestral state misidentification (only for ``dadi`` and ``moments`` engines).
       * ``Ancestral size as parameter`` disables multinomial approach of ``dadi`` and ``moments`` engines when ancestral size is inferred implicitly.
       * ``Lower bound of first split`` limits lower bound of the most ancient split.
       * ``Upper bound of first split`` limits upper bound of the most ancient split.

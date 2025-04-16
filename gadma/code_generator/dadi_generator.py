@@ -110,6 +110,11 @@ def _print_dadi_func(model, values):
                    ")\n".format(", ".join(inbr_names))
     if not model.has_inbreeding:
         ret_str += "\tsfs = dadi.Spectrum.from_phi(phi, ns, [xx]*len(ns))\n"
+
+    if model.has_p_misid:
+        name = model.p_misid.name
+        ret_str += f"\tsfs = (1 - {name}) * sfs + " \
+                   f"{name} * dadi.Numerics.reverse_array(sfs)\n"
     ret_str += "\treturn sfs\n"
     return ret_str
 

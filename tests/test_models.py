@@ -578,6 +578,7 @@ class TestModels(unittest.TestCase):
         fxnu1 = Multiplication(f, nu1)
         tf = Multiplication(f, t)
         t_copy = copy.deepcopy(t)
+        p_misid = FractionVariable("p_misid")
 
         model1 = EpochDemographicModel()
         model1.add_epoch(t, [nu1])
@@ -621,6 +622,7 @@ class TestModels(unittest.TestCase):
         model5.add_epoch(T3, [0.5, fxnu1], [[0, m], [0, 0]], ["Sud", d2])
         model5.add_split(1, [nu2, nu1])
         model5.add_epoch(t, [nu1, nu2, nu1], None, None)
+        model5.add_p_misid(p_misid)
 
         model6 = EpochDemographicModel(Nanc_size=Nanc)
         model6.add_epoch(t, [nu1])
@@ -639,6 +641,8 @@ class TestModels(unittest.TestCase):
             has_dyns=True,
             sym_migs=True,
             frac_split=True,
+            has_p_misid=False,
+            has_inbr=False,
         )
         model_struct_2 = StructureDemographicModel(
             initial_structure=[2, 1, 1],
@@ -650,6 +654,8 @@ class TestModels(unittest.TestCase):
             has_dyns=True,
             sym_migs=True,
             frac_split=True,
+            has_p_misid=True,
+            has_inbr=False,
         )
 
         values = {nu1: 2, nu2: 0.5, nu3: 0.5, t_copy: 0.3,
@@ -658,7 +664,7 @@ class TestModels(unittest.TestCase):
                   Nanc: 10000, Nu2: 5000, T3: 4000,
                   'nu1F': 1.0, 'nu2B': 0.7, 'nu2F': 1.0, 'T': 0.5, 'Tp': 0.3,
                   'N_1F': 20000, 'r_2': -1e-5, 'N_2F': 5000,
-                  'T_1': 500, 'T_2': 100}
+                  'T_1': 500, 'T_2': 100, "p_misid": 0.01}
 
         for engine in all_available_engines():
             #print("!!!", engine)

@@ -22,6 +22,8 @@ class TreeDemographicModel(DemographicModel):
     :type gen_time: float
     :param recombination_rate: Recombination rate per generation per base
     :type recombination_rate: float
+    :param theta0: Mutation flux equal to 4 * mu * L
+    :type theta0: float
     :param linear_constrain: linear constrain on parameters.
     :type linear_constrain: :class:`gadma.optimizers.LinearConstrain`
 

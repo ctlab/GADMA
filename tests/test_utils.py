@@ -131,6 +131,8 @@ class TestUtils(unittest.TestCase):
             has_dyns=False,
             sym_migs=True,
             frac_split=True,
+            has_p_misid=False,
+            has_inbr=False,
         )
         # we make time variables greater as it is unstable with small values
         for i in range(len(model.variables)):
