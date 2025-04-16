@@ -230,7 +230,7 @@ class DadiOrMomentsEngine(Engine):
         failed_f = invalid_data_sum / self.data.sum()
         if model_sfs.sum() < 0:  # the worst case
             key = self._get_key(values, grid_sizes)
-            self.saved_add_info[key] = {"theta": None, "failed_f": failed_f}
+            self.saved_add_info[key] = {"theta": -1, "failed_f": failed_f}
             return None
         # Otherwise we continue and write failed results at the end
 

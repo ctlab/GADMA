@@ -245,24 +245,23 @@ def print_runs_summary(start_time, shared_dict, settings):
             addit_str = ""
             Nanc = None
             is_custom = isinstance(engine.model, CustomDemographicModel)
-            if engine.id in ["dadi", "moments"] and not is_custom:
+            if (hasattr(engine.model, "fixed_anc_size") and
+                    engine.model.fixed_anc_size is not None):
+                Nanc = engine.model.fixed_anc_size
+            elif engine.id in ["dadi", "moments"]:
                 # dadi and moments has the same function get_N_ancestral
                 # but we want to print theta
                 theta = engine.get_theta(x, *settings.get_engine_args())
+                # get_N_anc_from_theta will return None if it is impossible to
+                # translate units
                 Nanc = engine.get_N_ancestral_from_theta(theta)
-                if theta is None:
+                if theta is None or theta < 0:
                     theta_str = "None"
                 else:
                     theta_str = f"{theta: .2f}"
                 addit_str += f"(theta = {theta_str})"
             elif not is_custom:
                 Nanc = engine.get_N_ancestral(x, *settings.get_engine_args())
-            elif all([
-                is_custom,
-                engine.id == "momentsLD",
-                engine.model.fixed_anc_size
-            ]):
-                Nanc = engine.model.fixed_anc_size
             # Nanc can be None if we have custom demographic model and
             # we cannot get Nanc size from theta
             model_str = ""
@@ -280,7 +279,7 @@ def print_runs_summary(start_time, shared_dict, settings):
                 # In some cases dadi and moments fail to generate SFS
                 # and Nanc size become <0. In that case we ignore such
                 # solutions (ll is None) and do not translate values
-                if engine.id in ['dadi', 'moments'] and Nanc is None:
+                if engine.id in ['dadi', 'moments'] and Nanc < 0:
                     model_str += "[WARNING Nanc < 0!]"
                     x_translated = x
                     units = "genetic"
