@@ -1,7 +1,7 @@
 Changelogs
 ==============
 
-[2.0.3] - 2025-04-16
+[2.0.3] - 2025-04-17
 --------------------
 Minor release of GADMA with few fixes of known bugs and new feature.
 
