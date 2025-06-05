@@ -6,6 +6,7 @@ import random
 from collections import OrderedDict
 
 # from .gaussian_process import GPyGaussianProcess, SMACGaussianProcess
+from .gaussian_process import SMACGaussianProcess
 from .optimizer import ConstrainedOptimizer
 from .global_optimizer import GlobalOptimizer, register_global_optimizer
 from .optimizer_result import OptimizerResult
