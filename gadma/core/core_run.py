@@ -425,15 +425,6 @@ class CoreRun(object):
         np.random.seed()
         self.optimize_kwargs['callback'] = self.callback
         self.optimize_kwargs['save_file'] = self.get_save_file()
-        # We set some kwargs if they were not set in run_with_increase
-        if self.settings.initial_structure is None:
-            options = list(self.get_run_options())
-            assert len(options) > 0
-            restore_file, _, only_models, x_transform = options[0]
-            self.optimize_kwargs['restore_file'] = restore_file
-            self.optimize_kwargs['restore_points_only'] = only_models
-            self.optimize_kwargs['global_x_transform'] = x_transform[0]
-            self.optimize_kwargs['local_x_transform'] = x_transform[1]
         f = self.engine.evaluate
         variables = self.model.variables
         optimizer = GlobalOptimizerAndLocalOptimizer(self.global_optimizer,
@@ -454,9 +445,6 @@ class CoreRun(object):
         :param initial_kwargs: Initial kwargs for optimization.
         """
         np.random.seed()
-        # Simple checks
-        assert self.settings.initial_structure is not None
-        assert self.settings.final_structure is not None
 
         options = self.get_run_options()
         restore_file, struct, only_models, x_transform = next(options)
@@ -475,7 +463,7 @@ class CoreRun(object):
         result = self.run_without_increase(initial_kwargs)
         for restore_file, structure, only_models, x_transform in options:
             X_init = result.X_out
-            if self.model.get_structure() != structure:
+            if structure is not None and self.model.get_structure() != structure:
                 self.model, X_init = self.model.increase_structure(structure,
                                                                    X=X_init)
             Y_init = copy.copy(result.Y_out)
@@ -502,74 +490,121 @@ class CoreRun(object):
         optimization.
 
         """
+        # If we do not have resume directory and no structure
+        # we can return options quick
+        if self.resume_dir is None and self.settings.initial_structure is None:
+            return iter([(None, None, False, (None, None))])
+
+        # Otherwise, we should generate them carefully
+        # list of files to restore runs, it is sorted by structure if relevant
         restore_files = []
+        # list of bools, if true restore just models, not optimization itself
         only_models = []
+        # list of structures, contains None of structure is not relevant
         structures = []
+
+        # Start with loading available saved files
         if self.resume_dir is not None:
             for filename in os.listdir(self.resume_dir):
                 file_path = os.path.join(self.resume_dir, filename)
+                # lookink for files that start with `save_file`
                 if filename.startswith(self.SAVE_FILENAME):
+                    # without structure we have just `save_file`
                     if self.settings.initial_structure is None:
+                        # If this is it
                         if filename == self.SAVE_FILENAME:
                             restore_files.append(file_path)
+                            structures.append(None)
                             break
+                        # Otherwise, we want to continue our search
                         continue
+                    # We warn if we find just `save_file` in run for structure
                     if len(filename) == len(self.SAVE_FILENAME):
                         warnings.warn(f"File {file_path} has name like saved"
                                       f" file of optimization but has no "
                                       f"structure at the end of the name. "
                                       f"So it is ignored.")
                         continue
+                    # We catch saved file for structure
+                    # extract structure from filename
+                    # e.g. [1, 1] from `saved_file_1_1`
                     strct_str = filename[len(self.SAVE_FILENAME)+1:]
                     structure = [int(x) for x in strct_str.split('_')]
-                    if np.all(np.array(structure) >=
-                              np.array(self.settings.initial_structure)):
+                    # check that this structure falls into our interval
+                    good1 = np.all(
+                        [s >= s1 for s, s1 in zip(structure, self.settings.initial_structure)]
+                    )
+                    good2 = np.all(
+                        [s <= s2 for s, s2 in zip(structure, self.settings.final_structure)]
+                    )
+                    if good1 and good2:
                         restore_files.append(file_path)
                         structures.append(structure)
-
+            # Order saved files and structures 
             if self.settings.initial_structure is not None:
                 restore_files, structures = sort_by_other_list(
-                    restore_files, structures, key=lambda x: sum(x))
+                    restore_files, structures, key=lambda x: sum(x)
+                )
             else:
                 x_transform = (None, None)
                 if self.settings.generate_x_transform:
                     x_transform = (ident_transform, ident_transform)
                 return iter([(restore_files[0], None,
                               self.settings.only_models, x_transform)])
-
-            some_file_not_valid = False
+            # Go through saved files and check if they are valid
+            some_file_not_valid = False  # flag
             for i in range(len(restore_files)):
+                # If we found one file that is not valid, we remove others
                 if some_file_not_valid:
                     restore_files[i] = None
-                    only_models.append(False)
+                    only_models.append(False)  # does not matter what value
                     continue
                 gs = self.global_optimizer.valid_restore_file(restore_files[i])
                 ls = self.local_optimizer.valid_restore_file(restore_files[i])
                 only_models.append(False)
                 if not gs or not ls:
                     some_file_not_valid = True
+            # If we resume run and want to take models only
+            # we need one additional round of optimization.
+            # We will retore previous run (or finish it) and then use
+            # final models one more time.
             if self.settings.only_models:
                 only_models.append(True)
                 structures.append(structures[-1])
 
+        # to iterate through structures we will use sums
         if self.settings.initial_structure is None:
-            return iter([(None, None, False, (None, None))])
+            final_sum = 0
+            initial_sum = 0
+        else:
+            final_sum = sum(self.settings.final_structure)
+            initial_sum = sum(self.settings.initial_structure)
 
-        final_sum = sum(self.settings.final_structure)
-        initial_sum = sum(self.settings.initial_structure)
+        # result that we will return
         res_files, res_strct, res_bools, res_trans = [], [], [], []
+
+        # Check if we need to trasform retored x
+        # E.g. we restore run with migration, but we retore it without
+        # (transform for global opt, tranfrom for local opt)
+        x_transform = (None, None)
+        common_x_transform = True
         if self.settings.generate_x_transform:
-            old_params = os.path.join(self.settings.resume_from, 'params_file')
-            old_extra = os.path.join(self.settings.resume_from,
-                                     'extra_params_file')
-            if not check_file_existence(old_extra):
-                old_extra = None
-            old_settings = SettingsStorage.from_file(old_params, old_extra)
-            old_init_model = old_settings.get_model()
+            if self.settings.initial_structure is None:
+                x_transform = (ident_transform, ident_transform)
+            else:
+                old_params = os.path.join(self.settings.resume_from,
+                                          'params_file')
+                old_extra = os.path.join(self.settings.resume_from,
+                                         'extra_params_file')
+                if not check_file_existence(old_extra):
+                    old_extra = None
+                old_settings = SettingsStorage.from_file(old_params, old_extra)
+                # return model class
+                old_init_model = old_settings.get_model()
+                # we will create different trasforms for each structure
+                common_x_transform = False
         # additional one is when true only models is used
-        addit_one = int(self.settings.only_models)
-        if addit_one == 1:
-            addit_one -= int(self.settings.resume_from is None)
+        addit_one = int(self.settings.only_models and self.settings.resume_from is not None)
         for i in range(final_sum - initial_sum + 1 + addit_one):
             if i >= len(restore_files):
                 restore_file = None
@@ -583,28 +618,29 @@ class CoreRun(object):
                 restore_points_only = False
             else:
                 restore_points_only = only_models[i]
-            if not self.settings.generate_x_transform or restore_file is None:
-                gs_x_transform = None
-                ls_x_transform = None
-            else:
-                old_init_model = old_init_model.from_structure(structure)
-                gs_x_transform = partial(
-                    self.model.transform_values_from_other_model,
-                    copy.deepcopy(old_init_model))
-                copy_old_model = copy.deepcopy(old_init_model)
-                copy_self_model = copy.deepcopy(self.model)
-                copy_old_model.has_dyns = False
-                copy_old_model = copy_old_model.from_structure(structure)
-                copy_self_model.has_dyns = False
-                copy_self_model = copy_self_model.from_structure(structure)
-                ls_x_transform = partial(
-                    copy_self_model.transform_values_from_other_model,
-                    copy_old_model)
+            if not common_x_transform:
+                if restore_file is None:
+                    x_transform = (None, None)
+                else:
+                    old_init_model = old_init_model.from_structure(structure)
+                    gs_x_transform = partial(
+                        self.model.transform_values_from_other_model,
+                        copy.deepcopy(old_init_model))
+                    copy_old_model = copy.deepcopy(old_init_model)
+                    copy_self_model = copy.deepcopy(self.model)
+                    copy_old_model.has_dyns = False
+                    copy_old_model = copy_old_model.from_structure(structure)
+                    copy_self_model.has_dyns = False
+                    copy_self_model = copy_self_model.from_structure(structure)
+                    ls_x_transform = partial(
+                        copy_self_model.transform_values_from_other_model,
+                        copy_old_model)
+                    x_transform = (gs_x_transform, ls_x_transform)
 
             res_files.append(restore_file)
             res_strct.append(structure)
             res_bools.append(restore_points_only)
-            res_trans.append((gs_x_transform, ls_x_transform))
+            res_trans.append(x_transform)
         return zip(res_files, res_strct, res_bools, res_trans)
 
     def run(self, initial_kwargs={}):
@@ -616,10 +652,7 @@ class CoreRun(object):
         print(f'Run launch number {self.index}\n', end='')
         if self.index in self.shared_dict.dict:
             del self.shared_dict.dict[self.index]
-        if self.settings.initial_structure is None:
-            result = self.run_without_increase(initial_kwargs)
-        else:
-            result = self.run_with_increase(initial_kwargs)
+        result = self.run_with_increase(initial_kwargs)
         result.x = WeightedMetaArray(result.x)
         result.x.metadata = 'f'
         self.base_callback(result.x, result.y)
