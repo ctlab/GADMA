@@ -84,27 +84,27 @@ def choose_kernel_if_needed(
     return optimizer.kernel_name, None
 
 
-# class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
-#     """
-#     Class for Bayesian optimization
-#     """
-#     def __init__(self, kernel="Auto", ARD=True, acquisition_type='MPI',
-#                  random_type='resample', custom_rand_gen=None,
-#                  log_transform=False, maximize=False):
-#         if not GPy_available or not GPyOpt_available:
-#             raise ValueError("Install GPyOpt and GPy to use "
-#                              "Bayesian optimization.")
-#         self.kernel_name = kernel
-#         self.ARD = ARD
-#         self.acquisition_type = acquisition_type
-#         super(GPyOptBayesianOptimizer, self).__init__(
-#             random_type=random_type,
-#             custom_rand_gen=custom_rand_gen,
-#             log_transform=log_transform,
-#             maximize=maximize
-#         )
-#
-#     def _get_kernel_class(self):
+class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
+    """
+    Class for Bayesian optimization
+    """
+    def __init__(self, kernel="Auto", ARD=True, acquisition_type='MPI',
+                 random_type='resample', custom_rand_gen=None,
+                 log_transform=False, maximize=False):
+        if not GPy_available or not GPyOpt_available:
+            raise ValueError("Install GPyOpt and GPy to use "
+                             "Bayesian optimization.")
+        self.kernel_name = kernel
+        self.ARD = ARD
+        self.acquisition_type = acquisition_type
+        super(GPyOptBayesianOptimizer, self).__init__(
+            random_type=random_type,
+            custom_rand_gen=custom_rand_gen,
+            log_transform=log_transform,
+            maximize=maximize
+        )
+
+ #    def _get_kernel_class(self):
 #         if self.kernel_name.lower() == "auto":
 #             return None
 #         kernel_name = self.kernel_name.lower().capitalize()
@@ -124,66 +124,66 @@ def choose_kernel_if_needed(
 #                                'domain': var.domain})
 #         return gpy_domain
 #
-#     @staticmethod
-#     def _write_report_to_stream(variables, run_info, stream):
-#
-#         def get_x_repr(x):
-#             if isinstance(x, WeightedMetaArray):
-#                 return x.str_as_list()
-#             return str(list(x))
-#
-#         bo_obj = run_info.bo_obj
-#         if bo_obj is not None:
-#             bo_obj._compute_results()
-#         x_best = run_info.result.x
-#         y_best = run_info.result.y
-#         n_iter = run_info.result.n_iter
-#
-#         print('===================== Iteration %05d =====================' %
-#               n_iter, file=stream)
-#
-#         if n_iter == 0:
-#             print("Initial design:", file=stream)
-#         else:
-#             print("Got points:", file=stream)
-#
-#         print("Fitness function\tParameters", file=stream)
-#         for x, y in zip(run_info.result.X_out, run_info.result.Y_out):
-#             print(f"{y}\t{get_x_repr(x)}", file=stream)
-#
-#         if bo_obj is not None:
-#             print('\nCurrent state of the model:', file=stream)
-#
-#             print(str(bo_obj.model), file=stream)
-#             print(bo_obj.model.model.kern.lengthscale, file=stream)
-#
-#         if hasattr(run_info, "gp_train_times"):
-#             print("\nTime for GP training:", run_info.gp_train_times[n_iter],
-#                   file=stream)
-#         if hasattr(run_info, "gp_predict_times"):
-#             print("Time for GP prediction:",
-#                   run_info.gp_predict_times[n_iter],
-#                   file=stream)
-#         if hasattr(run_info, "acq_opt_times"):
-#             print("Time for acq. optim.:",
-#                   run_info.acq_opt_times[n_iter], file=stream)
-#         if hasattr(run_info, "eval_times"):
-#             print("Time of evaluation:",
-#                   run_info.eval_times[n_iter], file=stream)
-#         if hasattr(run_info, "iter_times"):
-#             print("Total time of iteration:",
-#                   run_info.iter_times[n_iter], file=stream)
-#
-#         print('=============================================================',
-#               end="\n\n", file=stream)
-#         print('*************************************************************',
-#               file=stream)
-#         print('Current optimum: %0.3f' % y_best, file=stream)
-#         print(f'On parameters: {get_x_repr(x_best)}', file=stream)
-#         print('*************************************************************',
-#               file=stream)
-#         print("\n", file=stream)
-#
+    @staticmethod
+    def _write_report_to_stream(variables, run_info, stream):
+
+        def get_x_repr(x):
+            if isinstance(x, WeightedMetaArray):
+                return x.str_as_list()
+            return str(list(x))
+
+        bo_obj = run_info.bo_obj
+        if bo_obj is not None:
+            bo_obj._compute_results()
+        x_best = run_info.result.x
+        y_best = run_info.result.y
+        n_iter = run_info.result.n_iter
+
+        print('===================== Iteration %05d =====================' %
+              n_iter, file=stream)
+
+        if n_iter == 0:
+            print("Initial design:", file=stream)
+        else:
+            print("Got points:", file=stream)
+
+        print("Fitness function\tParameters", file=stream)
+        for x, y in zip(run_info.result.X_out, run_info.result.Y_out):
+            print(f"{y}\t{get_x_repr(x)}", file=stream)
+
+        if bo_obj is not None:
+            print('\nCurrent state of the model:', file=stream)
+
+            print(str(bo_obj.model), file=stream)
+            print(bo_obj.model.model.kern.lengthscale, file=stream)
+
+        if hasattr(run_info, "gp_train_times"):
+            print("\nTime for GP training:", run_info.gp_train_times[n_iter],
+                  file=stream)
+        if hasattr(run_info, "gp_predict_times"):
+            print("Time for GP prediction:",
+                  run_info.gp_predict_times[n_iter],
+                  file=stream)
+        if hasattr(run_info, "acq_opt_times"):
+            print("Time for acq. optim.:",
+                  run_info.acq_opt_times[n_iter], file=stream)
+        if hasattr(run_info, "eval_times"):
+            print("Time of evaluation:",
+                  run_info.eval_times[n_iter], file=stream)
+        if hasattr(run_info, "iter_times"):
+            print("Total time of iteration:",
+                  run_info.iter_times[n_iter], file=stream)
+
+        print('=============================================================',
+              end="\n\n", file=stream)
+        print('*************************************************************',
+              file=stream)
+        print('Current optimum: %0.3f' % y_best, file=stream)
+        print(f'On parameters: {get_x_repr(x_best)}', file=stream)
+        print('*************************************************************',
+              file=stream)
+        print("\n", file=stream)
+
 #     def _create_run_info(self):
 #         """
 #         Creates the initial run_info. It has the following fields:
@@ -1025,6 +1025,11 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
 
         x_best = X_init[0]
         y_best = Y_init[0]
+        # if we restored run_info and it has better solution, we should update
+        if self.run_info.result.x is not None and self.run_info.result.y is not None:
+            if self.sign * self.run_info.result.y < self.sign * y_best:
+                x_best = self.run_info.result.x
+                y_best = self.run_info.result.y
         iter_callback(x_best, y_best, X_init, Y_init, message=message)
 
         # Get config space
