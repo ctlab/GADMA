@@ -104,7 +104,7 @@ class GPyOptBayesianOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             maximize=maximize
         )
 
- #    def _get_kernel_class(self):
+#     def _get_kernel_class(self):
 #         if self.kernel_name.lower() == "auto":
 #             return None
 #         kernel_name = self.kernel_name.lower().capitalize()
@@ -1026,10 +1026,11 @@ class SMACBOKernelCombination(GlobalOptimizer, ConstrainedOptimizer):
         x_best = X_init[0]
         y_best = Y_init[0]
         # if we restored run_info and it has better solution, we should update
-        if self.run_info.result.x is not None and self.run_info.result.y is not None:
-            if self.sign * self.run_info.result.y < self.sign * y_best:
-                x_best = self.run_info.result.x
-                y_best = self.run_info.result.y
+        result_obj = self.run_info.result
+        if result_obj.x is not None and result_obj.y is not None:
+            if self.sign * result_obj.y < self.sign * y_best:
+                x_best = result_obj.x
+                y_best = result_obj.y
         iter_callback(x_best, y_best, X_init, Y_init, message=message)
 
         # Get config space

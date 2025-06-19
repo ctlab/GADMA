@@ -463,9 +463,12 @@ class CoreRun(object):
         result = self.run_without_increase(initial_kwargs)
         for restore_file, structure, only_models, x_transform in options:
             X_init = result.X_out
-            if structure is not None and self.model.get_structure() != structure:
-                self.model, X_init = self.model.increase_structure(structure,
-                                                                   X=X_init)
+            if structure is not None:
+                if self.model.get_structure() != structure:
+                    self.model, X_init = self.model.increase_structure(
+                        structure,
+                        X=X_init
+                    )
             Y_init = copy.copy(result.Y_out)
             self.optimize_kwargs['X_init'] = X_init
             self.optimize_kwargs['Y_init'] = Y_init
@@ -531,16 +534,18 @@ class CoreRun(object):
                     strct_str = filename[len(self.SAVE_FILENAME)+1:]
                     structure = [int(x) for x in strct_str.split('_')]
                     # check that this structure falls into our interval
+                    init_str = self.settings.initial_structure
+                    final_str = self.settings.final_structure
                     good1 = np.all(
-                        [s >= s1 for s, s1 in zip(structure, self.settings.initial_structure)]
+                        [s >= s1 for s, s1 in zip(structure, init_str)]
                     )
                     good2 = np.all(
-                        [s <= s2 for s, s2 in zip(structure, self.settings.final_structure)]
+                        [s <= s2 for s, s2 in zip(structure, final_str)]
                     )
                     if good1 and good2:
                         restore_files.append(file_path)
                         structures.append(structure)
-            # Order saved files and structures 
+            # Order saved files and structures
             if self.settings.initial_structure is not None:
                 restore_files, structures = sort_by_other_list(
                     restore_files, structures, key=lambda x: sum(x)
@@ -604,7 +609,8 @@ class CoreRun(object):
                 # we will create different trasforms for each structure
                 common_x_transform = False
         # additional one is when true only models is used
-        addit_one = int(self.settings.only_models and self.settings.resume_from is not None)
+        resume_is_not_none = self.settings.resume_from is not None
+        addit_one = int(self.settings.only_models and resume_is_not_none)
         for i in range(final_sum - initial_sum + 1 + addit_one):
             if i >= len(restore_files):
                 restore_file = None
