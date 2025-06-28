@@ -469,7 +469,10 @@ class CoreRun(object):
                         structure,
                         X=X_init
                     )
-            Y_init = copy.copy(result.Y_out)
+            if not self.settings.generate_x_transform:
+                Y_init = copy.copy(result.Y_out)
+            else:
+                Y_init = None
             self.optimize_kwargs['X_init'] = X_init
             self.optimize_kwargs['Y_init'] = Y_init
             self.optimize_kwargs['restore_file'] = restore_file
@@ -550,12 +553,12 @@ class CoreRun(object):
                 restore_files, structures = sort_by_other_list(
                     restore_files, structures, key=lambda x: sum(x)
                 )
-            else:
-                x_transform = (None, None)
-                if self.settings.generate_x_transform:
-                    x_transform = (ident_transform, ident_transform)
-                return iter([(restore_files[0], None,
-                              self.settings.only_models, x_transform)])
+#            else:
+#                x_transform = (None, None)
+#                if self.settings.generate_x_transform:
+#                    x_transform = (ident_transform, ident_transform)
+#                return iter([(restore_files[0], None,
+#                              self.settings.only_models, x_transform)])
             # Go through saved files and check if they are valid
             some_file_not_valid = False  # flag
             for i in range(len(restore_files)):

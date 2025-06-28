@@ -109,8 +109,7 @@ class GlobalOptimizer(Optimizer):
                 Y = [self.sign * y for y in Y_init]
             else:
                 Y = list()
-            for x in X_init[len(Y):]:
-                X.append(x)
+            for x in X[len(Y):]:
                 Y.append(f(x))
         for _ in range(num_init - len(X)):
             x = self.randomize(variables, random_type, custom_rand_gen)
