@@ -463,7 +463,7 @@ class CoreRun(object):
         result = self.run_without_increase(initial_kwargs)
         for restore_file, structure, only_models, x_transform in options:
             X_init = result.X_out
-            if structure is not None:
+            if self.settings.initial_structure is not None:
                 if self.model.get_structure() != structure:
                     self.model, X_init = self.model.increase_structure(
                         structure,
@@ -553,12 +553,6 @@ class CoreRun(object):
                 restore_files, structures = sort_by_other_list(
                     restore_files, structures, key=lambda x: sum(x)
                 )
-#            else:
-#                x_transform = (None, None)
-#                if self.settings.generate_x_transform:
-#                    x_transform = (ident_transform, ident_transform)
-#                return iter([(restore_files[0], None,
-#                              self.settings.only_models, x_transform)])
             # Go through saved files and check if they are valid
             some_file_not_valid = False  # flag
             for i in range(len(restore_files)):
