@@ -1313,7 +1313,7 @@ class SettingsStorage(object):
         gen_time = self.time_for_generation
         theta0 = self.theta0
         mut_rate = self.mutation_rate
-        rec_rate = self.recombination_rate 
+        rec_rate = self.recombination_rate
         if ((self.custom_filename is not None or
                 self.model_func is not None) and
                 self.lower_bound is not None and
