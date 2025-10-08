@@ -1313,48 +1313,8 @@ class SettingsStorage(object):
         gen_time = self.time_for_generation
         theta0 = self.theta0
         mut_rate = self.mutation_rate
-        rec_rate = self.recombination_rate
-        if (self.initial_structure is not None and
-                self.final_structure is not None):
-            create_migs = not self.no_migrations
-            create_sels = self.selection
-            create_dom = self.dominance
-            create_dyns = not self.only_sudden
-            sym_migs = self.symmetric_migrations
-            split_f = self.split_fractions
-            migs_mask = self.migration_masks
-            create_inbr = self.inbreeding
-            create_p_misid = self.ancestral_state_misid_error
-            model = StructureDemographicModel(
-                self.initial_structure,
-                self.final_structure,
-                has_anc_size=self.ancestral_size_as_parameter,
-                has_migs=create_migs,
-                has_sels=create_sels,
-                has_dom=create_dom,
-                has_dyns=create_dyns,
-                sym_migs=sym_migs,
-                frac_split=split_f,
-                has_p_misid=create_p_misid,
-                migs_mask=copy.deepcopy(migs_mask),
-                gen_time=gen_time,
-                theta0=theta0,
-                mutation_rate=mut_rate,
-                recombination_rate=rec_rate,
-                has_inbr=create_inbr
-            )
-            constrain = self.get_linear_constrain_for_model(model)
-            model.linear_constrain = constrain
-            if self.fixed_ancestral_size:
-                if self.ancestral_size_as_parameter is not None:
-                    ValueError(
-                        "Option `Fixed ancestral size` is set, please set "
-                        "`Ancestral size as parameter` to True"
-                    )
-                model.fix_variable(model.Nanc_size, self.fixed_ancestral_size)
-                model.Nanc_size = self.fixed_ancestral_size
-            return model
-        elif ((self.custom_filename is not None or
+        rec_rate = self.recombination_rate 
+        if ((self.custom_filename is not None or
                 self.model_func is not None) and
                 self.lower_bound is not None and
                 self.upper_bound is not None):
@@ -1422,7 +1382,46 @@ class SettingsStorage(object):
                 fixed_anc_size=self.fixed_ancestral_size,
                 has_anc_size=self.ancestral_size_as_parameter
             )
-
+        elif (self.initial_structure is not None and
+                self.final_structure is not None):
+            create_migs = not self.no_migrations
+            create_sels = self.selection
+            create_dom = self.dominance
+            create_dyns = not self.only_sudden
+            sym_migs = self.symmetric_migrations
+            split_f = self.split_fractions
+            migs_mask = self.migration_masks
+            create_inbr = self.inbreeding
+            create_p_misid = self.ancestral_state_misid_error
+            model = StructureDemographicModel(
+                self.initial_structure,
+                self.final_structure,
+                has_anc_size=self.ancestral_size_as_parameter,
+                has_migs=create_migs,
+                has_sels=create_sels,
+                has_dom=create_dom,
+                has_dyns=create_dyns,
+                sym_migs=sym_migs,
+                frac_split=split_f,
+                has_p_misid=create_p_misid,
+                migs_mask=copy.deepcopy(migs_mask),
+                gen_time=gen_time,
+                theta0=theta0,
+                mutation_rate=mut_rate,
+                recombination_rate=rec_rate,
+                has_inbr=create_inbr
+            )
+            constrain = self.get_linear_constrain_for_model(model)
+            model.linear_constrain = constrain
+            if self.fixed_ancestral_size:
+                if self.ancestral_size_as_parameter is not None:
+                    ValueError(
+                        "Option `Fixed ancestral size` is set, please set "
+                        "`Ancestral size as parameter` to True"
+                    )
+                model.fix_variable(model.Nanc_size, self.fixed_ancestral_size)
+                model.Nanc_size = self.fixed_ancestral_size
+            return model
         elif self.custom_filename is None and self.model_func is not None:
             try:
                 model = self.model_func()
