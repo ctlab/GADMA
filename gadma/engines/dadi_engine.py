@@ -2,8 +2,7 @@ from . import register_engine
 from .dadi_moments_common import DadiOrMomentsEngine
 from ..models import CustomDemographicModel, Epoch, Split
 from ..utils import DynamicVariable
-from .. import SFSDataHolder, dadi_available
-import numpy as np
+from .. import dadi_available
 
 
 class DadiEngine(DadiOrMomentsEngine):

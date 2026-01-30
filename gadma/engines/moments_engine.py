@@ -2,9 +2,11 @@ from . import register_engine
 from .dadi_moments_common import DadiOrMomentsEngine
 from ..models import CustomDemographicModel, Epoch, Split
 from ..utils import DynamicVariable, get_correct_dtype
-from .. import SFSDataHolder, moments_available
+from .. import moments_available, matplotlib_available
 from ..data import check_and_return_projections_and_labels
 import numpy as np
+if matplotlib_available:
+    from matplotlib import pyplot as plt
 
 
 class MomentsEngine(DadiOrMomentsEngine):
@@ -196,6 +198,9 @@ class MomentsEngine(DadiOrMomentsEngine):
         """
         moments = self.base_module
 
+        # We will create figure to have more control and to return it
+        fig, ax = plt.subplots(figsize=(6.72, 3.36))
+
         if self.data_holder is not None:
             if (self.data_holder.projections is not None
                     and self.data_holder.population_labels is not None):
@@ -213,19 +218,26 @@ class MomentsEngine(DadiOrMomentsEngine):
         plot_mod = moments.ModelPlot.generate_model(self._inner_func,
                                                     values, ns)
         draw_scale = nref is not None
-        show = save_file is None
         if nref is not None:
             nref = int(nref)
-        moments.ModelPlot.plot_model(plot_mod,
-                                     save_file=save_file,
-                                     show=show,
-                                     fig_title=fig_title,
+        moments.ModelPlot.plot_model(model=plot_mod,
+                                     save_file=None,
+                                     ax=ax,
+                                     show=False,
+                                     fig_title=None,
                                      draw_scale=draw_scale,
                                      pop_labels=pop_labels,
                                      nref=nref,
                                      gen_time=gen_time,
                                      gen_time_units=gen_time_units,
                                      reverse_timeline=True)
+        fig.suptitle(fig_title)
+        fig.tight_layout()
+        if save_file is None:
+            plt.show()
+        else:
+            fig.savefig(save_file)
+        return fig
 
     def simulate(self, values, ns, sequence_length, population_labels,
                  dt_fac=default_dt_fac):

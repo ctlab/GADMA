@@ -9,9 +9,7 @@ from multiprocessing import Process, Queue, queues
 import warnings
 import copy
 import math
-import pandas
 from .. import smac_available
-from pathlib import Path
 if smac_available:
     from smac.runhistory.runhistory import RunHistory
     from smac.tae import StatusType
@@ -654,7 +652,7 @@ def get_loo_score_for_optimizer(optimizer, variables, X, Y,
     """
     Optimizer has the correct kernel
     """
-    from ..optimizers import GaussianProcess, SMACBayesianOptimizer
+    from ..optimizers import GaussianProcess
     # We transform X and Y if needed
     X, Y = transform_smac(optimizer, variables, X, Y)
     Y = normalize(Y)

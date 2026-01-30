@@ -1,5 +1,3 @@
-import os.path
-
 from ..models import CustomDemographicModel, EpochDemographicModel, \
     Epoch, Split, BinaryOperation, StructureDemographicModel
 from ..utils import DiscreteVariable, DynamicVariable, Variable
@@ -238,7 +236,7 @@ def _print_momentsLD_load_data(engine, data_holder):
     ret_str += "    with open(preprocessed_data, \"rb\") as fin:\n"
     ret_str += "        region_stats, data = pickle.load(fin)\n"
     ret_str += "else:\n"
-    ret_str += f"    for bed_file in sorted(os.listdir(bed_files)):\n"
+    ret_str += "    for bed_file in sorted(os.listdir(bed_files)):\n"
     ret_str += "        chrom = bed_file.split('_')[-2]\n"
     ret_str += "        region_stats.update({\n"
     ret_str += "            f\"{reg_num}\":\n" \
@@ -258,9 +256,9 @@ def _print_momentsLD_load_data(engine, data_holder):
                        "map_name=f\"{chrom}\",\n"
             ret_str += "                    " \
                        "chromosome=f\"{chrom}\",\n"
-    ret_str += f"                    pop_file=pop_map,\n"
+    ret_str += "                    pop_file=pop_map,\n"
     bed_path = "os.path.join(bed_files, bed_file)"
-    ret_str += f"                    bed_file=bed_path,\n"
+    ret_str += f"                    bed_file={bed_path},\n"
     ret_str += f"                    pops={pops},\n"
     ret_str += "                    **kwargs\n"
     ret_str += "                )\n"
@@ -322,8 +320,8 @@ def _print_ll():
     ret_str += "    data['varcovs'],\n"
     ret_str += "    num_pops=model.num_pops,\n"
     ret_str += "    normalization=0)\n"
-    ret_str += f"ll_model = " \
-               f"moments.LD.Inference.ll_over_bins(means, model, varcovs)\n\n"
+    ret_str += "ll_model = " \
+               "moments.LD.Inference.ll_over_bins(means, model, varcovs)\n\n"
     ret_str += "print('Model log likelihood (LL(model, data)): " \
                "{0}'.format(ll_model))\n\n"
     return ret_str

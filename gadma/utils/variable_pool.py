@@ -25,7 +25,7 @@ class VariablePool(list):
         Raises ValueError if ``item`` is not Variable.
         """
         if not isinstance(item, Variable):
-            raise ValueError(f"Items of VariablePool could be Variables only.")
+            raise ValueError("Items of VariablePool could be Variables only.")
 
     def append(self, item):
         """

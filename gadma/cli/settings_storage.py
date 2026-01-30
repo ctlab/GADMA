@@ -3,19 +3,18 @@ import ruamel.yaml
 import numpy as np
 from . import settings
 from . import citations
-from .. import demes_available, momi_available
 from ..data import SFSDataHolder, \
     VCFDataHolder, check_and_return_projections_and_labels
 from ..engines import get_engine, MomentsEngine, MomentsLdEngine
 from ..engines import DadiEngine
 from ..engines import all_engines, all_drawing_engines, all_available_engines
 from ..models import StructureDemographicModel, CustomDemographicModel, \
-    EpochDemographicModel, TreeDemographicModel
+    EpochDemographicModel, TreeDemographicModel, DemographicModel
 from ..optimizers import get_local_optimizer, get_global_optimizer
 from ..optimizers import LinearConstrain
 from ..utils import check_dir_existence, check_file_existence, abspath, \
     module_name_from_path, custom_generator, ensure_dir_existence
-from ..utils import PopulationSizeVariable, TimeVariable, MigrationVariable, \
+from ..utils import PopulationSizeVariable, \
     ContinuousVariable, DynamicVariable, GrowthRateVariable, \
     SelectionVariable, FractionVariable, DemographicVariable
 from ..data import extract_chromosomes_from_vcf
@@ -583,12 +582,12 @@ class SettingsStorage(object):
                 if self.lower_bound_of_first_split is not None:
                     raise ValueError(
                         "Do not specify `Lower bound of first split` as there"
-                        f" is no split for 1 population"
+                        " is no split for 1 population"
                     )
                 if self.upper_bound_of_first_split is not None:
                     raise ValueError(
                         "Do not specify `Upper bound of first split` as there"
-                        f" is no split for 1 population"
+                        " is no split for 1 population"
                     )
             if value < 3:
                 if self.lower_bound_of_second_split is not None:
@@ -639,7 +638,8 @@ class SettingsStorage(object):
         elif (name == 'units_of_time_in_drawing' or
                 name == 'const_of_time_in_drawing'):
             d = {'generations': 1, 'years': 1, 'thousand years': 0.001,
-                 'thousands of years': 0.001, 'kya': 0.001}
+                 'thousands of years': 0.001, 'kya': 0.001,
+                 'genetic units': 0.5}
             if name == 'units_of_time_in_drawing':
                 value = value.lower()
                 if value not in d:
@@ -648,7 +648,7 @@ class SettingsStorage(object):
                 if (value != 'generations' and
                         self.time_for_generation is None):
                     value = 'generations'
-                    warnings.warn(f"There is no time for one generation, time"
+                    warnings.warn("There is no time for one generation, time"
                                   " will be in generations.")  # TODO move
                 object.__setattr__(self, 'const_of_time_in_drawing', d[value])
             else:
@@ -909,7 +909,6 @@ class SettingsStorage(object):
         we_have_rec_rate = self.recombination_rate is not None
         we_have_rec_maps = (self.recombination_maps is not None and
                             os.path.isdir(self.recombination_maps))
-        we_have_rec = we_have_rec_rate or we_have_rec_maps
         if isinstance(self.data_holder, VCFDataHolder):
             if self.bed_files_dir is None:
                 try:
@@ -942,7 +941,7 @@ class SettingsStorage(object):
                         recombination_rate=self.recombination_rate,
                     )
                     self.recombination_maps = path
-                except Exception:
+                except Exception as e:
                     if self.engine == "momentsLD":
                         raise ValueError(
                             "Failed to generate recombination maps files "
@@ -1318,15 +1317,6 @@ class SettingsStorage(object):
                 self.model_func is not None) and
                 self.lower_bound is not None and
                 self.upper_bound is not None):
-            # get_variables take bounds equal to None into account
-            lower_bound = self.lower_bound
-            upper_bound = self.upper_bound
-            if not hasattr(super(SettingsStorage, self), "lower_bound"):
-                lower_bound = None
-
-            if not hasattr(super(SettingsStorage, self), "upper_bound"):
-                upper_bound = None
-
             variables = get_variables(self.parameter_identifiers,
                                       self.lower_bound, self.upper_bound,
                                       engine=self.engine)
@@ -1344,7 +1334,7 @@ class SettingsStorage(object):
                     model = self.model_func()
                     assert isinstance(model, DemographicModel)
                     return model
-                except Exception as e:
+                except Exception:
                     pass
                 # If not then we cteate Custom model
                 return CustomDemographicModel(
@@ -1369,7 +1359,7 @@ class SettingsStorage(object):
                 model.mutation_rate = mut_rate
                 model.recombination_rate = rec_rate
                 return model
-            except Exception as e:
+            except Exception:
                 pass
             # If not then we cteate Custom model
             return CustomDemographicModel(
@@ -1427,7 +1417,7 @@ class SettingsStorage(object):
                 model = self.model_func()
                 assert isinstance(model, DemographicModel)
                 return model
-            except Exception as e:
+            except Exception:
                 pass
 
             return CustomDemographicModel(
@@ -1476,12 +1466,6 @@ class SettingsStorage(object):
             elif mu_is_None:
                 msg = "`Mutation rate` is required"
             for engine in all_available_engines():
-                if engine.id == "demes" and not Nanc_will_be:
-                    if print_warnings:
-                        warnings.warn(
-                            f"Code for demes will not be generated as {msg}"
-                        )
-                    continue
                 if (engine.id == "momi2" and
                         (not Nanc_will_be or L_is_None)):
                     if print_warnings:
@@ -1517,6 +1501,11 @@ class SettingsStorage(object):
         else:
             assert isinstance(model, CustomDemographicModel)
             available_engines.append(self.engine)
+            # for dadi we can still generate code for demes as well
+            if self.engine == "dadi":
+                for engine in all_available_engines():
+                    if engine.id == "demes":
+                        available_engines.append(engine.id)
         return available_engines
 
     def is_valid(self):
@@ -1615,21 +1604,23 @@ class SettingsStorage(object):
                 warnings.warn(f"Engine {self.engine} will ignore "
                               "not-zero recombination rate.")
         # check for custom model and engine to draw
+        good_case = self.model_plot_engine == "demes" and self.engine == "dadi"
         if self.custom_filename is not None:
-            if self.model_plot_engine != self.engine:
-                if get_engine(self.engine).can_draw_model:
-                    warnings.warn(
-                        "Custom model was set, engine to draw models will be "
-                        f"the same as for evaluations: {self.engine}"
-                    )
-                    self.model_plot_engine = self.engine
-                else:
-                    warnings.warn(
-                        "Custom model could be drawn with the same engine that"
-                        " will be used for evaluation only. However that "
-                        f"engine {self.engine} cannot draw models. No picture"
-                        "of model will be generated."
-                    )
+            if not good_case:
+                if self.model_plot_engine != self.engine:
+                    if get_engine(self.engine).can_draw_model:
+                        warnings.warn(
+                            "Custom model was set, engine to draw models will "
+                            f"be the same as for evaluations: {self.engine}"
+                        )
+                        self.model_plot_engine = self.engine
+                    else:
+                        warnings.warn(
+                            "Custom model could be drawn with the same engine "
+                            "that will be used for evaluation only. However "
+                            f"that engine {self.engine} cannot draw models. "
+                            "No picture of model will be generated."
+                        )
 
         if self.engine == "momi2":
             if "Lin" in self.dynamics:
@@ -1778,12 +1769,12 @@ class SettingsStorage(object):
             if self.lower_bound_of_first_split is not None:
                 raise ValueError(
                     "Do not specify `Lower bound of first split` as there is"
-                    f" no split for 1 population"
+                    " no split for 1 population"
                 )
             if self.upper_bound_of_first_split is not None:
                 raise ValueError(
                     "Do not specify `Upper bound of first split` as there is"
-                    f" no split for 1 population"
+                    " no split for 1 population"
                 )
 
         if (hasattr(self, "number_of_populations") and
@@ -1851,7 +1842,7 @@ class SettingsStorage(object):
         cites = []
 
         # GADMA citation
-        reason = f"GADMA"
+        reason = "GADMA"
         cites.append([
             reason,
             [citations.gadma_citation, citations.gadma2_citation]

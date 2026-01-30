@@ -1,11 +1,12 @@
 from . import Engine, register_engine, get_engine
-from ..models import CustomDemographicModel, BinaryOperation
+from ..models import CustomDemographicModel
 from ..models import TreeDemographicModel, EpochDemographicModel
 from ..models import Leaf, PopulationSizeChange, LineageMovement
 from ..data import check_and_return_projections_and_labels, read_popinfo
 from ..data import get_list_of_names_from_vcf
 from .. import SFSDataHolder, VCFDataHolder
 from .. import momi_available, dadi_available, matplotlib_available
+from .. import moments_available
 from ..code_generator import id2printfunc
 import tempfile
 import os
@@ -302,20 +303,25 @@ class MomiEngine(Engine):
         model = self.get_momi_model(values)
         model.gen_time = gen_time
 
+        # create figure
+        fig, ax = plt.subplots(figsize=(3.84, 3.84))
         # draw plot
         self.base_module.DemographyPlot(
             model,
             pop_x_positions=pop_labels,
-            figsize=(6, 8),
+            ax=ax,
             linthreshy=None,
             pulse_color_bounds=(0, .25),
         )
+        fig.suptitle(fig_title)
+        fig.tight_layout()
         # save it or show
         if save_file is None:
             plt.show()
         else:
             plt.savefig(save_file)
         self.model = original_model
+        return fig
 
     def generate_code(self, values, filename=None, nanc=None,
                       gen_time=None, gen_time_units="years"):

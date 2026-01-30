@@ -7,16 +7,16 @@ from . import register_engine
 from . import Engine
 from ..models import DemographicModel, StructureDemographicModel
 from ..models import CustomDemographicModel, Epoch, Split
-from .. import VCFDataHolder, moments_LD_available
+from .. import VCFDataHolder, moments_LD_available, matplotlib_available
 from ..utils import DynamicVariable, get_correct_dtype, check_file_existence
 from ..code_generator import id2printfunc
 from ..data import check_and_return_projections_and_labels
-from ..data import extract_chromosomes_from_vcf
-from os import listdir
 import moments.LD
 import multiprocessing
 from collections import ChainMap
 import os
+if matplotlib_available:
+    from matplotlib import pyplot as plt
 
 
 def _read_data_one_job(args):
@@ -114,11 +114,6 @@ class MomentsLdEngine(Engine):
 
     @classmethod
     def _get_region_stats(cls, data_holder):
-        if isinstance(data_holder, VCFDataHolder):
-            pops = data_holder.population_labels
-
-        chromosomes = extract_chromosomes_from_vcf(data_holder.filename)
-
         rec_map_exist = data_holder.recombination_maps is not None
         if rec_map_exist:
             first_rec_map = os.listdir(data_holder.recombination_maps)[0]
@@ -408,10 +403,13 @@ class MomentsLdEngine(Engine):
         """
         data = self.inner_data
         model = self.simulate(values)
+        # We put each statistic in a list of one element to plot each statistic
+        # on independent canvas
         stats_to_plot = [
             [name] for name in model.names()[:-1][0] if name != 'pi2_0_0_0_0'
         ]
 
+        # We will have nice  LaTex labels for stats on the plots
         labels_to_plot = []
         for stat in stats_to_plot:
             if stat[0].startswith('DD'):
@@ -436,20 +434,34 @@ class MomentsLdEngine(Engine):
                 numbers = "{" + f"{pi_add}" + f"{numbers}" + "}"
                 label = [rf"$\{core}_{numbers}$"]
                 labels_to_plot.append(label)
-        moments.LD.Plotting.plot_ld_curves_comp(
+
+        # Create a grid
+        rows = 3
+        cols = round(len(stats_to_plot) / rows)
+        fig_size = (cols*1.5, rows*1.5)
+        fig = moments.LD.Plotting.plot_ld_curves_comp(
             model,
             data["means"][:-1],
             data["varcovs"][:-1],
             rs=np.array(self.r_bins),
             stats_to_plot=stats_to_plot,
             labels=labels_to_plot,
-            fig_size=(len(stats_to_plot), 7),
-            show=save_file is None,
-            cols=round(len(stats_to_plot) / 3),
-            output=save_file,
+            fig_size=fig_size,
+            show=False,
+            rows=rows,
+            output=None,
             plot_means=True,
-            plot_vcs=True
+            plot_vcs=True,
         )
+        fig_title = "Comparison of observed LD stats (dashed line) and "\
+                    "expected LD stats from inferred model (solid line)"
+        fig.suptitle(fig_title, wrap=True)
+        fig.tight_layout()
+        if save_file is None:
+            plt.show()
+        else:
+            fig.savefig(save_file)
+        return fig
 
     def generate_code(self, values, filename, args=None, nanc=None,
                       gen_time=None, gen_time_units="years"):
@@ -504,12 +516,6 @@ class MomentsLdEngine(Engine):
              ) = check_and_return_projections_and_labels(
                 self.data_holder)
         self.data_holder.outgroup = None
-
-
-def extract_rec_map_name_and_extension(rec_map):
-    extension = rec_map.split(".")[1]
-    rec_map = "_".join(rec_map.split(".")[0].split('_')[:-1])
-    return rec_map, extension
 
 
 if moments_LD_available:

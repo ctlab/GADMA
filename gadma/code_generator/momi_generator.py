@@ -1,16 +1,13 @@
 from ..models import CustomDemographicModel, EpochDemographicModel, \
     TreeDemographicModel
-from ..utils import Variable, DiscreteVariable, DynamicVariable
+from ..utils import Variable, DynamicVariable
 from ..utils import TimeVariable, PopulationSizeVariable, FractionVariable
-from ..models import Operation, BinaryOperation, UnaryOperation, Log, Exp
+from ..models import Operation, BinaryOperation, UnaryOperation
 from ..data import SFSDataHolder, VCFDataHolder
 from ..models import Leaf, PopulationSizeChange, LineageMovement
 from . import dadi_generator
 from ..data import read_popinfo
-import sys
-import os
 import copy
-import inspect
 import numpy as np
 
 
@@ -97,7 +94,7 @@ def print_momi_model(engine, values, nanc, gen_time):
     params_ids = ", ".join([var.name for var in model.variables])
     ret_str += f"\t{params_ids} = params\n\n"
 
-    ret_str += f"\tmodel = momi.DemographicModel(\n"
+    ret_str += "\tmodel = momi.DemographicModel(\n"
     ret_str += "\t\tN_e=1,\n"
     ret_str += "\t\tgen_time=1,\n"
     ret_str += f"\t\tmuts_per_gen={engine.model.mutation_rate}\n"
@@ -162,7 +159,7 @@ def print_data_reading(engine):
             filename = f"'{engine.data_holder.filename}'"
             ret_str = f"data = momi.sfs_from_dadi({filename})\n"
         else:
-            ret_str = f"import gadma\n"
+            ret_str = "import gadma\n"
             ret_str += "data_holder = gadma.SFSDataHolder("
             ret_str += f"'{engine.data_holder.filename}')\n"
             ret_str += "data = gadma.get_engine('momi2')"\
@@ -218,7 +215,7 @@ def print_main_part(engine, values, nanc):
     sfs_data = isinstance(engine.data_holder, SFSDataHolder)
     if sfs_data and engine.data_holder.non_ascertained_pops is not None:
         pop_list = ", ".join(engine.data_holder.non_ascertained_pops)
-        add_kwargs = ", non_ascertained_pops=[{pop_list}]"
+        add_kwargs = f", non_ascertained_pops=[{pop_list}]"
 
     ret_str += f"model.set_data(data, length={length}{add_kwargs})\n"
     ret_str += "ll_model = model.log_likelihood()\n"

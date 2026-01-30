@@ -1,11 +1,6 @@
-import multiprocessing
-from collections import ChainMap
 import moments.LD
 import shutil
-import allel
-from os import listdir
 import pickle
-from gadma.cli import SettingsStorage
 from gadma.data.data import VCFDataHolder
 from gadma.engines.engine import get_engine
 from gadma.utils import ensure_dir_existence
@@ -20,9 +15,7 @@ gadma.cli.arg_parser.tool_name = "gadma-precompute_ld_data"
 def main():
     settings_storage, args = arg_parser.get_settings()
 
-    if isinstance(settings_storage.data_holder, VCFDataHolder):
-        pops = settings_storage.data_holder.population_labels
-    else:
+    if not isinstance(settings_storage.data_holder, VCFDataHolder):
         raise ValueError("Wrong type of data_holder: "
                          f"{settings_storage.data_holder.__class__}")
     ensure_dir_existence(

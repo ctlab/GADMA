@@ -184,8 +184,8 @@ class EpochDemographicModel(DemographicModel):
                  linear_constrain=None, inbreeding_args=None):
         if has_anc_size is None:
             has_anc_size = Nanc_size is not None
-        self.p_misid = p_misid
         self.inbreeding_args = inbreeding_args
+        self.p_misid = p_misid
         self.events = list()
         super(EpochDemographicModel, self).__init__(
             gen_time=gen_time,
@@ -279,7 +279,7 @@ class EpochDemographicModel(DemographicModel):
     def has_p_misid(self):
         return self.p_misid is not None
 
-    def add_p_misid(self, p_misid):
+    def add_p_misid(self, p_misid=None):
         self.p_misid = p_misid
         self.add_variable(p_misid)
 
@@ -448,7 +448,7 @@ class EpochDemographicModel(DemographicModel):
             if isinstance(self.Nanc_size, Variable):
                 Nanc_str = f"[{self.Nanc_size.name}"
             else:
-                Nanc_str = f"[Nanc"
+                Nanc_str = "[Nanc"
             size = self.get_value_from_var2value(var2value, self.Nanc_size)
             Nanc_str += f" = {int(size)}]"
             strings.append(Nanc_str)
@@ -573,8 +573,6 @@ class EpochDemographicModel(DemographicModel):
         # Assume that ancestral always has constant size
         last_dyn = []
         last_g = []
-        add_split_before_epoch = False
-        pop_to_div = None
 
         def create_g(dyn_value, init_size, end_size, time_diff):
             if dyn_value == "Sud":
@@ -760,8 +758,6 @@ class EpochDemographicModel(DemographicModel):
                 }
 
                 first_epoch_after_split = True
-                pop_to_div = event.pop_to_div
-                add_split_before_epoch = True
                 last_size = last_size[:-1]
                 last_dyn = last_dyn[:-1]
                 last_g = last_g[:-1]

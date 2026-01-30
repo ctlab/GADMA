@@ -579,7 +579,10 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         Y_gen = run_info.result.Y_out
         x_best = run_info.result.x
         y_best = run_info.result.y
-        mean_time = np.mean(run_info.gen_times)
+        if len(run_info.gen_times) > 0:
+            mean_time = np.mean(run_info.gen_times)
+        else:
+            mean_time = 0
 
         print(f"Generation #{n_gen}.", file=stream)
         print("Current generation of solutions:", file=stream)

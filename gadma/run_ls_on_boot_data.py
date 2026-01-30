@@ -199,7 +199,7 @@ def main():
             raise ValueError(f"Parameter `{attr_name}` is missed both in "
                              f"demographic model and params files")
     if p0 is None:
-        raise ValueError(f"Parameter `p0` (or `popt`) is missed both in "
+        raise ValueError("Parameter `p0` (or `popt`) is missed both in "
                          "demographic model and params files")
 
     model = settings.get_model()  # We check again that nothing is missed

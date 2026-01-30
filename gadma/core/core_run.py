@@ -1,15 +1,13 @@
-from ..engines import get_engine, all_available_engines
+from ..engines import get_engine
 from ..utils import sort_by_other_list, ensure_dir_existence, \
                     ensure_file_existence, check_file_existence, \
                     check_dir_existence
 from ..utils import WeightedMetaArray
 from ..optimizers import GlobalOptimizerAndLocalOptimizer
 from ..utils import get_aic_score, get_claic_score, ident_transform, bcolors
-from ..models import EpochDemographicModel, StructureDemographicModel
-from ..models import CustomDemographicModel
+from ..models import StructureDemographicModel
 from .draw_and_generate_code import draw_plots_to_file, generate_code_to_file
-from .draw_and_generate_code import get_Nanc_gen_time_and_units
-from ..data import VCFDataHolder
+from .draw_and_generate_code import get_fig_title, get_Nanc_gen_time_and_units
 from ..cli import SettingsStorage
 import os
 import numpy as np
@@ -201,7 +199,7 @@ class CoreRun(object):
             except Exception:
                 pass
 
-    def draw_iter_callback(self, x, y):
+    def draw_iter_callback(self, x, y, final=False):
         """
         Draws best model on current iteration in the pictures directory.
         Pictures directory is located in the output directory of this run.
@@ -213,8 +211,8 @@ class CoreRun(object):
         """
         n_iter = self.draw_iter_callback_counter
         verbose = self.settings.draw_models_every_n_iteration
-        if verbose != 0 and n_iter % verbose == 0:
-            fig_title = f"Iteration {n_iter}, "\
+        if verbose != 0 and (n_iter % verbose == 0 or final):
+            fig_title = f"Iteration {n_iter}\n"\
                         f"Log-likelihood: {y:.2f}"
             save_file = os.path.join(self.pictures_dir,
                                      f"iteration_{n_iter}.png")
@@ -222,7 +220,7 @@ class CoreRun(object):
                                save_file, fig_title)
         self.draw_iter_callback_counter += 1
 
-    def code_iter_callback(self, x, y):
+    def code_iter_callback(self, x, y, final=False):
         """
         Generates code of best model on current iteration to the code
         directory. Code directory is located in the output directory of this
@@ -236,40 +234,39 @@ class CoreRun(object):
         n_iter = self.code_iter_callback_counter
         verbose = self.settings.print_models_code_every_n_iteration
         filename = f"iteration_{n_iter}"
-        if verbose != 0 and n_iter % verbose == 0:
+        if verbose != 0 and (n_iter % verbose == 0 or final):
             Nanc, gen_time, gen_time_units = get_Nanc_gen_time_and_units(
                 x=x,
                 engine=self.engine,
                 settings=self.settings,
             )
-            if isinstance(self.model, EpochDemographicModel):
-                for engine_id in os.listdir(self.code_dir):
-                    if engine_id.startswith("."):
-                        continue
-                    engine = get_engine(engine_id)
-                    save_file = os.path.join(self.code_dir, engine.id,
-                                             filename)
-                    args = self.settings.get_engine_args(engine.id)
-                    # engine.set_data(self.engine.data)
-                    engine.data_holder = self.engine.data_holder
-                    engine.set_model(self.engine.model)
-                    try:
-                        if engine.id == "momentsLD":
-                            args = None
-                        engine.generate_code(x, save_file, *args, Nanc,
-                                             gen_time=gen_time,
-                                             gen_time_units=gen_time_units)
-                    except Exception as e:
-                        pass
-            else:
-                save_file = os.path.join(self.code_dir, filename)
-                args = self.settings.get_engine_args()
-                if self.engine.id == "momentsLD":
-                    args = None
-                self.engine.generate_code(x, save_file, *args,  Nanc,
-                                          gen_time=gen_time,
-                                          gen_time_units=gen_time_units)
+            for engine_id in os.listdir(self.code_dir):
+                if engine_id.startswith("."):
+                    continue
+                engine = get_engine(engine_id)
+                save_file = os.path.join(self.code_dir, engine.id,
+                                         filename)
+                args = self.settings.get_engine_args(engine.id)
+                # engine.set_data(self.engine.data)
+                engine.data_holder = self.engine.data_holder
+                engine.set_model(self.engine.model)
+                try:
+                    if engine.id == "momentsLD":
+                        args = None
+                    engine.generate_code(x, save_file, *args, Nanc,
+                                         gen_time=gen_time,
+                                         gen_time_units=gen_time_units)
+                except Exception:
+                    pass
+
         self.code_iter_callback_counter += 1
+
+    def iter_callback(self, x, y, final=False):
+        try:
+            self.draw_iter_callback(x, y, final=final)
+        except Exception:
+            pass
+        self.code_iter_callback(x, y, final=final)
 
     def callback(self, x, y):
         """
@@ -285,11 +282,7 @@ class CoreRun(object):
 
         """
         self.base_callback(x, y)
-        try:
-            self.draw_iter_callback(x, y)
-        except Exception:
-            pass
-        self.code_iter_callback(x, y)
+        self.iter_callback(x, y)
 
     def intermediate_callback(self, x, y):
         """
@@ -334,15 +327,11 @@ class CoreRun(object):
                                                            x, y_dict)
 
         # Draw and generate code for best_by model
-        if self.aic_score:
-            value_str = f"{value: .2f}" if value is not None else "None"
-        if self.claic_score:
-            if value[0] is None:
-                value_str = "None"
-            else:
-                value_str = f"{value[0]:.2f} (eps={value[1]: .1e})"
-        fig_title = f"Best by {best_by}. Log-likelihood: {y:.2f}, "\
-                    f"{best_by}: {value_str}."
+        fig_title = get_fig_title(
+            best_by=best_by,
+            metrics_names=y_dict.keys(),
+            metrics_vals_dict=y_dict
+        )
         prefix = (self.settings.LOCAL_OUTPUT_DIR_PREFIX +
                   self.settings.LONG_NAME_2_SHORT.get(best_by.lower(),
                                                       best_by.lower()))
@@ -379,7 +368,11 @@ class CoreRun(object):
         :param final: If True then solution is final and it will be saved by
                       `final` name.
         """
-        fig_title = f"Best by {best_by} model. {best_by}: {y: .2f}"
+        fig_title = get_fig_title(
+            best_by=best_by,
+            metrics_names=[best_by],
+            metrics_vals_dict={best_by: y}
+        )
         if final:
             prefix = self.settings.LOCAL_OUTPUT_DIR_PREFIX_FINAL
         else:
@@ -431,6 +424,8 @@ class CoreRun(object):
                                                      self.local_optimizer)
         opt_kwargs = {**self.optimize_kwargs, **initial_kwargs}
         result = optimizer.optimize(f, variables, **opt_kwargs)
+        # generate code and draw model for the final model of this subrun
+        self.iter_callback(result.x, result.y, final=True)
         self.intermediate_callback(result.x, result.y)
         return result
 
@@ -463,7 +458,7 @@ class CoreRun(object):
         result = self.run_without_increase(initial_kwargs)
         for restore_file, structure, only_models, x_transform in options:
             X_init = result.X_out
-            if self.settings.initial_structure is not None:
+            if isinstance(self.model, StructureDemographicModel):
                 if self.model.get_structure() != structure:
                     self.model, X_init = self.model.increase_structure(
                         structure,

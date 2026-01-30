@@ -1,5 +1,5 @@
 from .. import matplotlib, Image
-from .. import matplotlib_available, PIL_available, moments_available
+from .. import matplotlib_available, PIL_available
 from ..models import EpochDemographicModel, CustomDemographicModel
 from ..utils import DiscreteVariable
 from ..engines import all_available_engines, Engine, get_engine
@@ -11,6 +11,8 @@ import io
 from datetime import datetime
 import copy
 import numpy as np
+if matplotlib_available:
+    from matplotlib import pyplot as plt
 
 
 def get_Nanc_gen_time_and_units(x, engine, settings):
@@ -24,6 +26,10 @@ def get_Nanc_gen_time_and_units(x, engine, settings):
                    settings.const_of_time_in_drawing
         gen_time_units = settings.units_of_time_in_drawing
     else:
+        if settings.units_of_time_in_drawing == "genetic units":
+            gen_time = 0.5
+            gen_time_units = settings.units_of_time_in_drawing
+            Nanc = 1.0
         gen_time = 1.0
         gen_time_units = "generations"
     return Nanc, gen_time, gen_time_units
@@ -45,6 +51,8 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
 
     :note: print warnings if schematic model plot was not drawn.
     """
+    # close all other figures that were accidentally created before
+    plt.close()
     if not matplotlib_available:
         raise ValueError("Matplotlib is required to draw models.")
     model_plot_engine = get_engine(settings.model_plot_engine)
@@ -69,6 +77,9 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
     bad_model = False
     if engine.id != model_plot_engine.id:
         bad_model = isinstance(engine.model, CustomDemographicModel)
+        good_case = engine.id == "dadi" and model_plot_engine.id == "demes"
+        if bad_model and good_case:
+            bad_model = False
 
     # Check that plots will be drawn
     draw_comp_plot = comp_plot_engine.can_draw_comp
@@ -79,15 +90,14 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
                          "draw data comparison and engine "
                          f"{model_plot_engine.id} cannot draw models.")
 
+    fig1 = None
+    fig2 = None
     # 1. Draw data comparison
     if draw_comp_plot:
         # 1.1 Set file or buffer to save plot
-        if PIL_available and draw_model_plot:
-            save_file_comp = io.BytesIO()
-        else:
-            save_file_comp = filename[:pos] + '_data_comp' + filename[pos:]
+        save_file_comp = filename[:pos] + '_data_comp.pdf'
         # 1.2 Draw plot to save_file
-        comp_plot_engine.draw_data_comp_plot(
+        fig1 = comp_plot_engine.draw_data_comp_plot(
             x,
             *settings.get_engine_args(comp_plot_engine.id),
             save_file=save_file_comp,
@@ -97,30 +107,26 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
     # 2 Draw schematic model plot
     if draw_model_plot:
         # 2.1 Set file or buffer to save plot
-        if PIL_available and draw_comp_plot:
-            save_file_model = io.BytesIO()
-        else:
-            save_file_model = filename[:pos] + '_model' + filename[pos:]
+        save_file_model = filename[:pos] + '_model.pdf'
         # 2.2 Draw model plot with moments engine
         # We use try except to be careful
-        try:
-            model_plot_engine.draw_schematic_model_plot(
-                values=x,
-                save_file=save_file_model,
-                fig_title=fig_title,
-                nref=Nanc,
-                gen_time=gen_time,
-                gen_time_units=gen_time_units
-            )
-        except Exception as e:
-            if draw_comp_plot:
-                save_file_comp.seek(0)
-                with open(filename, 'wb') as fl:
-                    fl.write(save_file_comp.read())
-            raise e
+        fig2 = model_plot_engine.draw_schematic_model_plot(
+            values=x,
+            save_file=save_file_model,
+            fig_title=fig_title,
+            nref=Nanc,
+            gen_time=gen_time,
+            gen_time_units=gen_time_units
+        )
 
     # 3. Concatenate plots if PIL is available
     if PIL_available and draw_comp_plot and draw_model_plot:
+        save_file_comp = io.BytesIO()
+        save_file_model = io.BytesIO()
+
+        fig1.savefig(save_file_comp, dpi=300)
+        fig2.savefig(save_file_model, dpi=300)
+
         save_file_comp.seek(0)
         save_file_model.seek(0)
 
@@ -141,6 +147,10 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
         new_img.paste(img2, (img1.size[0], 0))
 
         new_img.save(filename)
+    if fig1 is not None:
+        plt.close(fig1)
+    if fig2 is not None:
+        plt.close(fig2)
 
 
 def generate_code_to_file(
@@ -176,13 +186,14 @@ def generate_code_to_file(
     )
     # Generate code
     if isinstance(engine.model, EpochDemographicModel):
+        # we now can use even demes when we do not have Nanc
         engines_ids = available_engines
-        if not settings.Nanc_will_be_available():
-            if "demes" in engines_ids:
-                engines_ids.remove("demes")
         engines = [get_engine(engine_id) for engine_id in engines_ids]
     else:
         engines = [copy.deepcopy(engine)]
+        # we can still use demes if we have dadi's custom model
+        if engine.id == "dadi" and "demes" in available_engines:
+            engines.append(get_engine("demes"))
     failes = {}  # engine.id: reason
 
     for other_engine in engines:
@@ -201,6 +212,35 @@ def generate_code_to_file(
 
     if len(failes) > 0:
         raise ValueError("; ".join([f"{id}: {failes[id]}" for id in failes]))
+
+
+def get_string_for_metric_value(value):
+    if isinstance(value, tuple):
+        if value[0] is None:
+            return "None"
+        return f"{value[0]:.2f} (eps={value[1]:.1e})"
+    return f"{value:.2f}"
+
+
+def get_fig_title(best_by, metrics_names, metrics_vals_dict):
+    """
+    Returns a string for figure title. Best by {best_by} + metric: value
+
+    :param best_by: String telling by which metric this model is the best
+    :type best_by: string
+    :param metrics_names: Names of metrics that should be mentioned in the
+                          second part of the title
+    :type metrics_names: list of strings
+    :param metrics_vals_dict: Dictionary with metric_name: value
+    :type matrics_vals_dict: dict
+    """
+    fig_title_items = [f"Best by {best_by} model"]
+    for metric_name in metrics_names:
+        value = metrics_vals_dict.get(metric_name, None)
+        fig_title_items.append(
+            f"{metric_name}: {get_string_for_metric_value(value)}"
+        )
+    return fig_title_items[0] + "\n" + ", ".join(fig_title_items[1:])
 
 
 def print_runs_summary(start_time, shared_dict, settings):
@@ -227,9 +267,9 @@ def print_runs_summary(start_time, shared_dict, settings):
         metrics = local_metrics
 
         print(f"All best by {best_by} models")
-        print("Number", *metrics, "Model", "Units", sep='\t')
+        metrics_names = [metric[0].upper() + metric[1:] for metric in metrics]
+        print("Number", *metrics_names, "Model", "Units", sep='\t')
         # save fig titles to use in drawing of best model at the end
-        fig_titles = []
         for model in sorted_models:
             index, info = model
             engine, x, y_vals = info
@@ -308,30 +348,11 @@ def print_runs_summary(start_time, shared_dict, settings):
                 units_str = units
 
             # Begin to print
-            metric_vals = []
-            for metr in metrics:
-                if metr not in y_vals:
-                    metric_vals.append("None")
-                else:
-                    if isinstance(y_vals[metr], tuple):
-                        if y_vals[metr][0] is None:
-                            val_str = "None"
-                        else:
-                            val_str = f"{y_vals[metr][0]:.2f} "\
-                                      f"(eps={y_vals[metr][1]:.1e})"
-                    else:
-                        val_str = f"{y_vals[metr]:.2f}"
-                    metric_vals.append(val_str)
+            metric_vals = [
+                get_string_for_metric_value(y_vals[met]) for met in metrics
+            ]
             print(f"Run {index}", *metric_vals, model_str,
                   units_str, sep='\t')
-            fig_titles.append(f"Best by {best_by} model. ")
-            ind = 0
-            for metr in metrics:
-                if metr not in y_vals:
-                    continue
-                val_str = metric_vals[ind]
-                ind += 1
-                fig_titles[-1] += f"{metr}: {val_str}"
 
         # Check bounds for the best model
         index, (engine, x, y_vals) = sorted_models[0]
@@ -376,7 +397,6 @@ def print_runs_summary(start_time, shared_dict, settings):
 
         # Draw and generate code for best model
         index, (engine, x, y_vals) = sorted_models[0]
-        fig_title = fig_titles[0]
         prefix = (settings.BASE_OUTPUT_DIR_PREFIX +
                   settings.LONG_NAME_2_SHORT.get(best_by.lower(),
                                                  best_by.lower()))
@@ -385,6 +405,11 @@ def print_runs_summary(start_time, shared_dict, settings):
         save_code_file = os.path.join(out_dir, prefix + "_model.py")
         drawn = True
         gener = True
+        fig_title = get_fig_title(
+            best_by=best_by,
+            metrics_names=metrics,
+            metrics_vals_dict=y_vals
+        )
         try:
             draw_plots_to_file(x, engine, settings, save_plot_file, fig_title)
         except Exception as e:

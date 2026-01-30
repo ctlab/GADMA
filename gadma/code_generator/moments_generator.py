@@ -200,7 +200,7 @@ def _print_model_plotting(engine, nanc, gen_time, gen_time_units):
     if gen_time is None:
         gen_time = 1.0
     fig_title = "Demographic model from GADMA"
-    ret_str += f"moments.ModelPlot.plot_model(gen_mod,\n"
+    ret_str += "moments.ModelPlot.plot_model(gen_mod,\n"
     ret_str += f"                             save_file='{filename}',\n"
     ret_str += f"                             fig_title='{fig_title}',\n"
     ret_str += f"                             draw_scale={draw_scale},\n"
@@ -208,7 +208,7 @@ def _print_model_plotting(engine, nanc, gen_time, gen_time_units):
     ret_str += f"                             nref={nanc},\n"
     ret_str += f"                             gen_time={gen_time},\n"
     ret_str += f"                             gen_time_units='{units}',\n"
-    ret_str += f"                             reverse_timeline=True)"
+    ret_str += "                             reverse_timeline=True)"
     return ret_str
 
 

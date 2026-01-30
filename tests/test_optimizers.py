@@ -6,7 +6,6 @@ from gadma import *
 from gadma.optimizers import *
 from gadma.engines import *
 from gadma.models import *
-from gadma.cli.arg_parser import test_args
 from gadma.core import SharedDictForCoreRun
 from gadma.utils import ident_transform
 if smac_available:
@@ -526,6 +525,7 @@ class TestLocalOpt(TestBaseOptClass):
 class TestCoreRun(unittest.TestCase):
     @pytest.mark.timeout(0)
     def test_core_run(self):
+        from gadma.cli.arg_parser import test_args
         settings = test_args()
         settings.input_data = os.path.join(DATA_PATH, "DATA", "sfs",
                                            'small_1pop.fs')
@@ -538,6 +538,7 @@ class TestCoreRun(unittest.TestCase):
 
         settings.custom_filename = os.path.join(DATA_PATH, "MODELS",
                                                 "small_1pop_dem_model_dadi.py")
+        settings.engine = "dadi"
         settings.directory_with_bootstrap = os.path.join(
             DATA_PATH, "DATA", "sfs", 'small_1_pop_bootstrap')
         settings.read_bootstrap_data()

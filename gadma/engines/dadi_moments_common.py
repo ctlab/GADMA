@@ -82,8 +82,6 @@ class DadiOrMomentsEngine(Engine):
         if self.model.linear_constrain is None:
             return optimal_theta
         # If we have constrains we deal with them:
-        upper_lb = None
-        lower_ub = None
         Ax = self.model.linear_constrain._get_value(values)
         theta_lb = theta0 * self.model.linear_constrain.lb / Ax
         theta_ub = theta0 * self.model.linear_constrain.ub / Ax
@@ -176,21 +174,33 @@ class DadiOrMomentsEngine(Engine):
                 data=self.data
             )
         # Draw
+        D_or_d = "D" if n_pop == 1 else "d"
+        M_or_m = "M" if n_pop == 1 else "m"
+        fig_title = f"Comparison of observed SFS ({D_or_d}ata) and\n"\
+                    f"expected SFS from inferred model ({M_or_m}odel)"
+        fig = plt.figure(figsize=(max(1, n_pop - 1) * 3.84, 3.84))
         if n_pop == 1:
             self.base_module.Plotting.plot_1d_comp_Poisson(
-                model,
-                self.data,
-                show=show
+                model=model,
+                data=self.data,
+                show=False,
             )
-            if show:
-                plt.show()
         else:
             func_name = f"plot_{n_pop}d_comp_Poisson"
             plotting_func = getattr(self.base_module.Plotting, func_name)
-            plotting_func(model, self.data, vmin=vmin, show=show)
-        if not show:
+            plotting_func(
+                model=model,
+                data=self.data,
+                vmin=vmin,
+                show=False,
+            )
+        fig.suptitle(fig_title, wrap=True, y=0.96)
+        fig.tight_layout()
+        if show:
+            plt.show()
+        else:
             plt.savefig(save_file)
-            plt.close('all')
+        return fig
 
     def evaluate(self, values, grid_sizes):
         """

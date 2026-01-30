@@ -8,8 +8,6 @@ from .event import PopulationSizeChange, LineageMovement, Leaf
 from . import DemographicModel, EpochDemographicModel
 import numpy as np
 
-from ..utils import Variable
-
 
 class TreeDemographicModel(DemographicModel):
     """

@@ -92,8 +92,7 @@ class StructureDemographicModel(EpochDemographicModel):
         self.frac_split = frac_split
         self.migs_mask = migs_mask
         self.has_inbr = has_inbr
-        # works automatically through EpochDemModel
-        # self.has_p_misid = has_p_misid
+        self.has_p_misid_var = has_p_misid
 
         # check that dominance coeffcients are set only if selection is on
         if self.has_dom and not self.has_sels:
@@ -258,10 +257,9 @@ class StructureDemographicModel(EpochDemographicModel):
                 inbr_args.append(var)
             self.add_inbreeding(inbr_args)
 
-        if self.has_p_misid:
+        if self.has_p_misid_var:
             var = FractionVariable("p_misid")
             self.add_p_misid(var)
-
         return self
 
     def get_structure(self):

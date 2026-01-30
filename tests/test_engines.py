@@ -313,6 +313,11 @@ class TestEngines(unittest.TestCase):
         engine.draw_schematic_model_plot(values, save_file="plot.png",
                                          gen_time=25, gen_time_units="years")
 
+        # check that demographic units are genetic if we do not set nanc
+        dm.has_anc_size = False
+        gr = engine.build_demes_graph(values=values, nanc=None, gen_time_units="generations")
+        self.assertEqual(gr.time_units, "genetic units")
+
         dm = EpochDemographicModel(Nanc_size=1000)
         dm.add_split(0, [nu1F, nu2B])
         dm.add_epoch(Tp, [nu1F, nu2F], dyn_args=['Sud', Dyn])
@@ -328,10 +333,11 @@ class TestEngines(unittest.TestCase):
         engine.draw_schematic_model_plot(values, save_file=None,
                                          gen_time=25, gen_time_units="years")
 
-        # error when no nanc is set
+        # error when we give model that has several ancestor populations
+        # data still has three populations
         dm = EpochDemographicModel()
         engine.model = dm
-        self.assertRaises(ValueError, engine.build_demes_graph,
+        self.assertRaises(AssertionError, engine.build_demes_graph,
                           values=values, nanc=None)
 
     def test_moments_drawing(self):

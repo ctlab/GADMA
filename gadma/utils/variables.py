@@ -1,7 +1,7 @@
 import numpy as np
 from .distributions import uniform_generator, trunc_normal_sigma_generator, \
     trunc_lognormal_sigma_generator, \
-    DemographicGenerator, rescale_generator, generator_for_Nanc
+    DemographicGenerator, rescale_generator
 from functools import partial
 from keyword import iskeyword
 import copy

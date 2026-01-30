@@ -1,10 +1,66 @@
 from . import Engine, register_engine
 from ..models import EpochDemographicModel, StructureDemographicModel
-from ..models import Split
+from ..models import CustomDemographicModel, Split, Epoch
 from collections import defaultdict
 from .. import demes, demes_available
 from .. import demesdraw, demesdraw_available
 from .. import matplotlib
+
+
+def get_demes_graph_from_dadi_func(
+    model_func,
+    params,
+    Nanc,
+    gen_time,
+    pop_labels
+):
+    """
+    Calls dadi to construct demes graph.
+    :param model_func: Function with model for dadi
+    :param params: Parameter values for dadi function
+    :param Nanc: Size of ancestral population to do the rescaling
+    :param gen_time: Time of one generation for rescaling
+    :param pop_labels: List of MODERN populations' labels
+    """
+    import dadi
+    # we need to run dadi function once to have the correct cash
+    npop = len(pop_labels)
+    ns, pts = [2 for _ in range(npop)], 10
+    model_func(params, ns, pts)
+    # we need to create a mapping for the last created populations,
+    # otherwise they will have strange names
+    # first we count "eras". This code is copied from dadi.
+    # Dadi creates new labels and we just repeat after it to get
+    # how many sets of new labels are going to be created
+    era = 1
+    for prev_i, e in enumerate(dadi.Demes.cache[1:]):
+        if e.deme_ids is None:
+            if isinstance(e, dadi.Demes.Split):
+                era += 1
+            elif isinstance(e, dadi.Demes.Remove):
+                pass
+            elif isinstance(e, dadi.Demes.Reorder):
+                pass
+            elif e.duration > 0 and dadi.Demes.cache[prev_i].duration > 0:
+                era += 1
+    mapping = {
+        new_label: [f'd{era}_{ind+1}']
+        for ind, new_label in enumerate(pop_labels)
+    }
+    try:
+        g = dadi.Demes.output(
+            Nref=Nanc,
+            generation_time=gen_time,
+            deme_mapping=mapping,
+        )
+    except Exception:
+        # If we fail, maybe we can try without mapping
+        g = dadi.Demes.output(
+            Nref=Nanc,
+            generation_time=gen_time,
+            deme_mapping=None,
+        )
+    return g
 
 
 class DemesEngine(Engine):
@@ -18,7 +74,11 @@ class DemesEngine(Engine):
 
     id = 'demes'  #:
     base_module = None  #:
-    supported_models = [EpochDemographicModel, StructureDemographicModel]  #:
+    supported_models = [
+        EpochDemographicModel,
+        StructureDemographicModel,
+        CustomDemographicModel
+    ]  #:
     supported_data = None  # Any data is good, we do not need it #:
     inner_data_type = None  # base_module.Spectrum  #:
 
@@ -37,10 +97,74 @@ class DemesEngine(Engine):
     def build_demes_graph(self, values, nanc=None,
                           gen_time=None, gen_time_units="generations"):
         assert self.model is not None
+        description = None
+
+        # We will use labels of final populations to name their ancestors
+        if (self.data_holder is not None and
+                self.data_holder.population_labels is not None):
+            pop_labels = list(self.data_holder.population_labels)
+        else:
+            n_pop = self.model.number_of_populations()
+            pop_labels = [f"pop{i}" for i in range(n_pop)]
+        pop_labels = [label.replace(" ", "_") for label in pop_labels]
+
         if not self.model.has_anc_size and nanc is None:
-            raise ValueError("Demographic model has no ancestral size variable"
-                             " and no value for it was given to the function. "
-                             "Demes engine requires Nanc size value to work.")
+            # If model is given in genetic units, then we will still draw it
+            # We will take Nanc as 1 and we need to translate time in genetic
+            # units back, so we will need to divide it by 2 as they will be
+            # ultiplied by 2 Nanc
+            gen_time = 0.5
+            gen_time_units = "genetic units"
+            nanc = 1.0
+
+            # if we have migration we might have a problem as demes does not
+            # like when migrations are more than 1.0
+            is_epoch_model = not isinstance(self.model, CustomDemographicModel)
+            if is_epoch_model and len(pop_labels) >= 1:
+                rate = 1
+                var2value = self.model.var2value(values)
+                for epoch in self.model.events:
+                    if not isinstance(epoch, Epoch):
+                        continue
+                    if epoch.mig_args is not None:
+                        for mig_row in epoch.mig_args:
+                            mig_to_i = 0
+                            for mig_el in mig_row:
+                                if mig_el in var2value:
+                                    mig_to_i += var2value[mig_el]
+                            rate = max(rate, mig_to_i)
+                if rate > 1:
+                    rate = max(100, rate)
+                    description = "WARNING: "\
+                                  f"migration rates are divided by {rate}"
+                    for epoch in self.model.events:
+                        if not isinstance(epoch, Epoch):
+                            continue
+                        if epoch.mig_args is not None:
+                            for mig_row in epoch.mig_args:
+                                for mig_el in mig_row:
+                                    if mig_el in var2value:
+                                        var2value[mig_el] /= rate
+                    values = [var2value[var] for var in self.model.variables]
+
+        in_genetic_units = gen_time_units == "genetic units"
+
+        # If we have a custom model we can work with it only if it is for dadi
+        # If genetic units then Nanc should be None, dadi will scale migration
+        if isinstance(self.model, CustomDemographicModel):
+            graph = get_demes_graph_from_dadi_func(
+                model_func=self.model.function,
+                params=values,
+                Nanc=None if in_genetic_units else nanc,
+                gen_time=gen_time,
+                pop_labels=pop_labels,
+            )
+            # we will change to genetic units for consistency
+            if graph.time_units == "scaled":
+                graph.time_units = "genetic units"
+                graph.description = "WARNING: migration rates are normalized"
+            return graph
+
         phys_values = self.model.translate_values(
             units="physical",
             values=values,
@@ -60,26 +184,18 @@ class DemesEngine(Engine):
         if (hasattr(self.model, "Nanc_size") and
                 self.model.Nanc_size in var2value):
             var2value[self.model.Nanc_size] = Nanc_size
-        # We will use labels of final populations to name their ancestors
-        if (self.data_holder is not None and
-                self.data_holder.population_labels is not None):
-            pop_labels = list(self.data_holder.population_labels)
-        else:
-            n_pop = self.model.number_of_populations()
-            pop_labels = [f"pop{i}" for i in range(n_pop)]
-        pop_labels = [label.replace(" ", "_") for label in pop_labels]
         whole_labels_list = list()
         # demes got time counted from nowdays so we will keep how deep we are
         last_time = 0
         # create demes builder
         builder = demes.Builder(
-            description=None,
+            description=description,
             time_units=gen_time_units,
             generation_time=gen_time,
             doi=None,
             defaults=None
         )
-        if gen_time is None:
+        if gen_time is None or in_genetic_units:
             gen_time = 1.0
         # We will create list of epochs dictionaries for each deme
         demes_epochs_dicts = defaultdict(list)
@@ -170,7 +286,12 @@ class DemesEngine(Engine):
                 last_time += event_time
         # Now we add all demes including the first one
         Nanc_label = "ancestral"
-        assert len(pop_labels) == 1
+        # pop_labels should change in prev loop and one population should
+        # have been left
+        if len(pop_labels) != 1:
+            raise AssertionError(
+                "Given model has several ancestral populations"
+            )
         # We should check if ancestral population coincide with common
         # ancestor population
         if len(demes_epochs_dicts[pop_labels[-1]]) == 0:
@@ -241,8 +362,7 @@ class DemesEngine(Engine):
             gen_time_units=gen_time_units
         )
 
-        fig = matplotlib.pyplot.figure()
-        ax = fig.add_subplot(1, 1, 1)
+        fig, ax = demesdraw.utils.get_fig_axes(aspect=1, scale=0.8)
         demesdraw.tubes(
             graph,
             ax=ax,
@@ -254,12 +374,16 @@ class DemesEngine(Engine):
             num_lines_per_migration=10,
             seed=None,
             labels='xticks-mid',
-            fill=True
+            fill=True,
+            # We will draw scale bar only when units are translated
+            scale_bar=(graph.time_units != "genetic units"),
         )
+        fig.tight_layout()
         if save_file is None:
             matplotlib.pyplot.show()
         else:
             fig.savefig(save_file)
+        return fig
 
 
 if demes_available:

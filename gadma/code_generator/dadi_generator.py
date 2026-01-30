@@ -2,7 +2,6 @@ from ..models import CustomDemographicModel, EpochDemographicModel, \
     Epoch, Split, BinaryOperation
 from ..utils import Variable, DiscreteVariable, DynamicVariable
 from ..data import SFSDataHolder, VCFDataHolder
-import sys
 import os
 import copy
 import inspect
@@ -51,7 +50,6 @@ def _print_dadi_func(model, values):
     ret_str += "\txx = dadi.Numerics.default_grid(pts)\n"\
                "\tphi = dadi.PhiManip.phi_1D(xx)\n"
 
-    inbreeding = False
     for ind, event in enumerate(model.events):
         if event.__class__ is Epoch:
             if event.dyn_args is not None:

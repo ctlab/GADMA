@@ -203,12 +203,10 @@ def get_chrom2len(data_holder):
     import allel
     vcf_file = data_holder.filename
 
-    min_region_num = 15
     # Read VCF
     read_vcf = allel.read_vcf(vcf_file)
     # get list of chromosomes
     chromosome_names = extract_chromosomes_from_vcf(vcf_file)
-    n_chrom = len(chromosome_names)
 
     # Get total length of chromosomes and check that it is valid
     chrom2len = {}
