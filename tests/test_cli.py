@@ -28,6 +28,74 @@ def get_settings_test():
     return settings, args
 
 
+def check_output_files(test, outdir, engine, num_runs, model_plot, comp_plot, custom_model, gen_code_iter, draw_model_iter, mu_L_available, aic_or_claic=None):
+    from gadma import moments_available, dadi_available, momi_available, demes_available
+    def check_file_exists(directory, filename):
+        msg = f"Expect file or directory named {filename} in the output directory {directory}, but it is not there.\n"\
+              f"Listdir of output directory:\n{os.listdir(directory)}"
+        test.assertTrue(os.path.exists(os.path.join(directory, filename)), msg)
+
+    def check_output_for_engines(directory, engines_list, prefix=""):
+        for eng in engines_list:
+            if eng != "demes":
+                check_file_exists(directory=directory, filename=prefix + f"best_logLL_model_{eng}_code.py")
+            else:
+                check_file_exists(directory=directory, filename=prefix + f"best_logLL_model_{eng}_code.py.yml")
+            if aic_or_claic is not None:
+                if eng != "demes":
+                    check_file_exists(directory=directory, filename=prefix + f"best_{aic_or_claic}_model_{eng}_code.py")
+                else:
+                    check_file_exists(directory=directory, filename=prefix + f"best_{aic_or_claic}_model_{eng}_code.py.yml")
+
+    def check_pictures_output(directory, full_prefix=""):
+        if model_plot:
+            check_file_exists(directory=directory, filename=full_prefix + "_model.pdf")
+        if comp_plot:
+            check_file_exists(directory=directory, filename=full_prefix + "_data_comp.pdf")
+        if model_plot and comp_plot and gadma.PIL_available:
+            check_file_exists(directory=directory, filename=full_prefix + ".png")
+                
+
+    check_file_exists(directory=outdir, filename="params_file")
+    check_file_exists(directory=outdir, filename="extra_params_file")
+    check_file_exists(directory=outdir, filename="GADMA.log")
+    check_engines = [engine]
+    if not custom_model:
+        if dadi_available and engine != "dadi":
+            check_engines.append("dadi")
+        if moments_available and engine != "moments":
+            check_engines.append("moments")
+        if momi_available and mu_L_available and engine != "momi2":
+            check_engines.append("momi2")
+        if demes_available:
+            check_engines.append("demes")
+    else:
+        if engine == "dadi" and demes_available:
+            check_engines.append("demes")
+
+    check_output_for_engines(directory=outdir, engines_list=check_engines)
+
+    for num in range(num_runs):
+        check_file_exists(directory=outdir, filename=str(num + 1))
+        check_file_exists(directory=os.path.join(outdir, str(num + 1)), filename="GADMA_GA.log")
+        check_file_exists(directory=os.path.join(outdir, str(num + 1)), filename="eval_file")
+        check_output_for_engines(directory=os.path.join(outdir, str(num + 1)), engines_list=check_engines, prefix="current_")
+        check_output_for_engines(directory=os.path.join(outdir, str(num + 1)), engines_list=check_engines, prefix="final_")
+        check_pictures_output(directory=os.path.join(outdir, str(num + 1)), full_prefix="final_best_logLL_model")
+        # check output for iterations
+        if gen_code_iter:
+            check_file_exists(directory=os.path.join(outdir, str(num + 1)), filename="code")
+            for eng in check_engines:
+                check_file_exists(directory=os.path.join(outdir, str(num + 1), "code"), filename=eng)
+                ext = "py" if eng != "demes" else "yml"
+                check_file_exists(directory=os.path.join(outdir, str(num + 1), "code", eng), filename=f"iteration_0.{ext}")
+        if draw_model_iter:
+            check_file_exists(directory=os.path.join(outdir, str(num + 1)), filename="pictures")
+            check_pictures_output(directory=os.path.join(outdir, str(num + 1), "pictures"), full_prefix="iteration_0")
+
+    check_pictures_output(directory=outdir, full_prefix="best_logLL_model")
+
+
 class TestCLI(unittest.TestCase):
     def tearDown(self):
         if Path("./some_dir").exists():
@@ -425,6 +493,19 @@ class TestCLI(unittest.TestCase):
         try:
             sys.argv = ['gadma', '-p', param_file]
             core.main()
+            check_output_files(
+                test=self,
+                outdir=out_dir,
+                engine="dadi",
+                num_runs=1,
+                model_plot=True,
+                comp_plot=True,
+                custom_model=True,
+                gen_code_iter=True,
+                draw_model_iter=True,
+                mu_L_available=False,
+                aic_or_claic="claic",
+            )
         finally:
             if check_dir_existence(out_dir):
                 shutil.rmtree(out_dir)
@@ -516,13 +597,24 @@ class TestCLI(unittest.TestCase):
                      "engine: dadi")
         sys.argv = ['gadma', '-p', params_file, '--output', outdir]
         try:
-            gadma.matplotlib_available = False
-            core.main()
+            gadma.core.main()
+            check_output_files(
+                test=self,
+                outdir=outdir,
+                engine="dadi",
+                num_runs=1,
+                model_plot=True,
+                comp_plot=True,
+                custom_model=False,
+                gen_code_iter=False,
+                draw_model_iter=False,
+                mu_L_available=False,
+                aic_or_claic="aic",
+            )
         finally:
             if check_dir_existence(outdir):
                 shutil.rmtree(outdir)
             os.remove(params_file)
-            gadma.matplotlib_available = True
 
     def test_inbreeding_fail_run_with_moments(self):
         params_file = 'params'
@@ -540,7 +632,6 @@ class TestCLI(unittest.TestCase):
         sys.argv = ['gadma', '-p', params_file,
                     '--output', outdir]
         try:
-            gadma.matplotlib_available = False
             self.assertRaises(ValueError, core.main)
         finally:
             if check_dir_existence(outdir):
@@ -664,6 +755,19 @@ class TestSomeHandsOn(unittest.TestCase):
                     '--only_models']
         try:
             core.main()
+            check_output_files(
+                test=self,
+                outdir=outdir,
+                engine="moments",
+                num_runs=1,
+                model_plot=True,
+                comp_plot=True,
+                custom_model=False,
+                gen_code_iter=False,
+                draw_model_iter=False,
+                mu_L_available=False,
+                aic_or_claic=None,
+            )
         finally:
             if check_dir_existence(outdir):
                 shutil.rmtree(outdir)

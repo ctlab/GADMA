@@ -51,10 +51,10 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
 
     :note: print warnings if schematic model plot was not drawn.
     """
-    # close all other figures that were accidentally created before
-    plt.close()
     if not matplotlib_available:
         raise ValueError("Matplotlib is required to draw models.")
+    # close all other figures that were accidentally created before
+    plt.close()
     model_plot_engine = get_engine(settings.model_plot_engine)
     model_plot_engine.data_holder = engine.data_holder
     model_plot_engine.model = engine.model

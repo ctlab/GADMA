@@ -143,7 +143,66 @@ class CoreRun(object):
         self._data = data
         self.engine.set_data(data)
 
-    def base_callback(self, x, y):
+    def draw_and_generate_code_body(
+        self,
+        best_by,
+        x,
+        metrics_names,
+        metrics_vals_dict,
+        final=False,
+        print_exception=False,
+        raise_exception=True,
+    ):
+        if final:
+            prefix = self.settings.LOCAL_OUTPUT_DIR_PREFIX_FINAL
+        else:
+            prefix = self.settings.LOCAL_OUTPUT_DIR_PREFIX
+        prefix += self.settings.LONG_NAME_2_SHORT.get(
+            best_by.lower(),
+            best_by.lower()
+        )
+        fig_title = get_fig_title(
+            best_by=best_by,
+            metrics_names=metrics_names,
+            metrics_vals_dict=metrics_vals_dict,
+        )
+        save_plot_file = os.path.join(self.output_dir, prefix + "_model.png")
+        save_code_file = os.path.join(self.output_dir,
+                                      prefix + "_model")
+        try:
+            draw_plots_to_file(
+                x,
+                self.engine,
+                self.settings,
+                save_plot_file,
+                fig_title
+            )
+        except Exception as e:
+            if print_exception:
+                print(
+                    f"{bcolors.WARNING}Run {self.index}: failed to draw model"
+                    f"due to the following exception: {e}{bcolors.ENDC}"
+                )
+            if raise_exception:
+                raise e
+        try:
+            generate_code_to_file(
+                x,
+                self.engine,
+                self.settings,
+                save_code_file,
+                self.available_engines,
+            )
+        except Exception as e:
+            if print_exception:
+                print(
+                    f"{bcolors.WARNING}Run {self.index}: failed to generate "
+                    f"code due to the following exception: {e}{bcolors.ENDC}"
+                )
+            if raise_exception:
+                raise e
+
+    def base_callback(self, x, y, final=False):
         """
         Base callback:
 
@@ -160,10 +219,11 @@ class CoreRun(object):
             aic = get_aic_score(n_params, y)
             y_dict = {best_by: y, 'AIC score': aic}
         else:
-            y_dict = y
+            y_dict = {best_by: y}
 
         sign = self.global_optimizer.sign
         equal_x = False
+
         if self.x_best is not None:
             equal_x = list(self.x_best) == list(x)
             x_has_w = hasattr(x, 'weights')
@@ -172,9 +232,10 @@ class CoreRun(object):
                 equal_x = False
             elif x_has_w and x.metadata != self.x_best.metadata:
                 equal_x = False
-        if (self.x_best is None or
-                sign * self.y_best > sign * y or
-                (self.y_best == y and not equal_x)):
+        first_model = self.x_best is None
+        improvement = first_model or (sign * self.y_best > sign * y)
+        different = first_model or self.y_best == y and not equal_x
+        if first_model or final or improvement or different:
             # Sometimes when we restore results we loose additional info
             # that is stored in engine, we want to get it for the best model
             if self.x_best is None:
@@ -184,20 +245,15 @@ class CoreRun(object):
             self.y_best = y
             self.shared_dict._put_new_model_for_process(
                 self.index, best_by, (self.engine, x, y_dict))
-            prefix = (self.settings.LOCAL_OUTPUT_DIR_PREFIX +
-                      self.settings.LONG_NAME_2_SHORT.get(best_by, best_by))
-            save_code_file = os.path.join(self.output_dir,
-                                          prefix + "_model")
-            try:
-                generate_code_to_file(
-                    x,
-                    self.engine,
-                    self.settings,
-                    save_code_file,
-                    self.available_engines,
-                )
-            except Exception:
-                pass
+            self.draw_and_generate_code_body(
+                best_by=best_by,  # log-likelihood
+                x=x,
+                metrics_names=y_dict.keys(),
+                metrics_vals_dict=y_dict,
+                final=final,
+                print_exception=False,
+                raise_exception=False,
+            )
 
     def draw_iter_callback(self, x, y, final=False):
         """
@@ -284,7 +340,7 @@ class CoreRun(object):
         self.base_callback(x, y)
         self.iter_callback(x, y)
 
-    def intermediate_callback(self, x, y):
+    def intermediate_callback(self, x, y, final=False):
         """
         Almost final callback that is called after each global + local
         optimization.
@@ -325,76 +381,15 @@ class CoreRun(object):
                                                            best_by,
                                                            self.engine,
                                                            x, y_dict)
-
-        # Draw and generate code for best_by model
-        fig_title = get_fig_title(
-            best_by=best_by,
+        self.draw_and_generate_code_body(
+            best_by=best_by,  # aic or claic
+            x=x,
             metrics_names=y_dict.keys(),
-            metrics_vals_dict=y_dict
+            metrics_vals_dict=y_dict,
+            final=final,
+            print_exception=True,
+            raise_exception=False,
         )
-        prefix = (self.settings.LOCAL_OUTPUT_DIR_PREFIX +
-                  self.settings.LONG_NAME_2_SHORT.get(best_by.lower(),
-                                                      best_by.lower()))
-        save_plot_file = os.path.join(self.output_dir, prefix + "_model.png")
-        save_code_file = os.path.join(self.output_dir, prefix + "_model")
-        try:
-            draw_plots_to_file(x, self.engine, self.settings,
-                               save_plot_file, fig_title)
-        except Exception as e:
-            print(f"{bcolors.WARNING}Run {self.index}: failed to draw model "
-                  f"due to the following exception: {e}{bcolors.ENDC}")
-        try:
-            generate_code_to_file(
-                x,
-                self.engine,
-                self.settings,
-                save_code_file,
-                self.available_engines,
-            )
-        except Exception as e:
-            print(f"{bcolors.WARNING}Run {self.index}: failed to generate code"
-                  f" due to the following exception: {e}{bcolors.ENDC}")
-
-    def draw_model_in_output_dir(self, x, y,
-                                 best_by='log-likelihood', final=True):
-        """
-        Draws picture of demographic model with `x` as parameters to the
-        output directory of run.
-
-        :param x: Vector of values for model parameters.
-        :param y: Value of log-likelihood for this values.
-        :param best_by: By what function (log-likelihood, AIC, CLAIC) this
-                        colution is best.
-        :param final: If True then solution is final and it will be saved by
-                      `final` name.
-        """
-        fig_title = get_fig_title(
-            best_by=best_by,
-            metrics_names=[best_by],
-            metrics_vals_dict={best_by: y}
-        )
-        if final:
-            prefix = self.settings.LOCAL_OUTPUT_DIR_PREFIX_FINAL
-        else:
-            prefix = self.settings.LOCAL_OUTPUT_DIR_PREFIX
-        prefix += self.settings.LONG_NAME_2_SHORT.get(best_by, best_by)
-        save_plot_file = os.path.join(self.output_dir, prefix + "_model.png")
-        save_code_file = os.path.join(self.output_dir, prefix + "_model")
-        try:
-            generate_code_to_file(
-                x,
-                self.engine,
-                self.settings,
-                save_code_file,
-                self.available_engines,
-            )
-        except Exception:
-            pass
-        try:
-            draw_plots_to_file(x, self.engine, self.settings,
-                               save_plot_file, fig_title)
-        except Exception:
-            pass
 
     def get_save_file(self):
         """
@@ -426,7 +421,7 @@ class CoreRun(object):
         result = optimizer.optimize(f, variables, **opt_kwargs)
         # generate code and draw model for the final model of this subrun
         self.iter_callback(result.x, result.y, final=True)
-        self.intermediate_callback(result.x, result.y)
+        self.intermediate_callback(result.x, result.y, final=False)
         return result
 
     def run_with_increase(self, initial_kwargs={}):
@@ -653,9 +648,7 @@ class CoreRun(object):
         result = self.run_with_increase(initial_kwargs)
         result.x = WeightedMetaArray(result.x)
         result.x.metadata = 'f'
-        self.base_callback(result.x, result.y)
-        self.intermediate_callback(result.x, result.y)
-        # draw final model in output dir
-        self.draw_model_in_output_dir(result.x, result.y)
+        self.base_callback(result.x, result.y, final=True)
+        self.intermediate_callback(result.x, result.y, final=True)
         print(f'Finish genetic algorithm number {self.index}\n', end='')
         return result

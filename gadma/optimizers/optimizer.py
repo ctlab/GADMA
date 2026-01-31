@@ -519,6 +519,8 @@ class Optimizer(object):
         # Otherwise there are problems when we want to run additional x iters
         # This block could be commented out but it could cause problems
         if self.run_info.result.success:
+            if callback is not None:
+                callback(self.run_info.result.x, self.run_info.result.y)
             return self.run_info.result
 
         optimize_kwargs = self.process_optimize_kwargs(f=f_in_opt,

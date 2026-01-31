@@ -1,7 +1,7 @@
 import unittest
 
 from .test_data import YRI_CEU_DATA
-from .test_cli import get_settings_test
+from .test_cli import get_settings_test, check_output_files
 from gadma import *
 import gadma
 from gadma.core import SharedDictForCoreRun
@@ -193,13 +193,24 @@ class TestRestore(unittest.TestCase):
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file,
                     '--output', outdir]
         try:
-            gadma.matplotlib_available = False
             core.main()
+            check_output_files(
+                test=self,
+                outdir=outdir,
+                engine="moments",
+                num_runs=3,
+                model_plot=True,
+                comp_plot=True,
+                custom_model=False,
+                gen_code_iter=True,
+                draw_model_iter=True,
+                mu_L_available=False,
+                aic_or_claic="aic",
+            )
         finally:
             if check_dir_existence(outdir):
                 shutil.rmtree(outdir)
             os.remove(params_file)
-            gadma.matplotlib_available = True
 
     def test_restore_models_from_finished_run(self):
         finished_run_dir = os.path.join(DATA_PATH, 'my_example_run')
@@ -218,6 +229,19 @@ class TestRestore(unittest.TestCase):
         try:
             gadma.PIL_available = False
             core.main()
+            check_output_files(
+                test=self,
+                outdir=finished_run_dir + '_resumed',
+                engine="moments",
+                num_runs=3,
+                model_plot=True,
+                comp_plot=True,
+                custom_model=False,
+                gen_code_iter=True,
+                draw_model_iter=True,
+                mu_L_available=False,
+                aic_or_claic=None,
+            )
         finally:
             if check_dir_existence(finished_run_dir + '_resumed'):
                 shutil.rmtree(finished_run_dir + '_resumed')
@@ -242,6 +266,19 @@ class TestRestore(unittest.TestCase):
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
         try:
             core.main()
+            check_output_files(
+                test=self,
+                outdir=finished_run_dir + '_resumed',
+                engine="moments",
+                num_runs=3,
+                model_plot=True,
+                comp_plot=True,
+                custom_model=False,
+                gen_code_iter=True,
+                draw_model_iter=True,
+                mu_L_available=True,
+                aic_or_claic=None,
+            )
         finally:
             if check_dir_existence(finished_run_dir + '_resumed'):
                 shutil.rmtree(finished_run_dir + '_resumed')
@@ -267,15 +304,24 @@ class TestRestore(unittest.TestCase):
                      "local_maxeval: 10\n")
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
         try:
-            gadma.PIL_available = False
-            gadma.moments_available = False
             core.main()
+            check_output_files(
+                test=self,
+                outdir=finished_run_dir + '_resumed',
+                engine="dadi",
+                num_runs=3,
+                model_plot=True,
+                comp_plot=True,
+                custom_model=False,
+                gen_code_iter=True,
+                draw_model_iter=True,
+                mu_L_available=False,
+                aic_or_claic=None,
+            )
         finally:
             if check_dir_existence(finished_run_dir + '_resumed'):
                 shutil.rmtree(finished_run_dir + '_resumed')
             os.remove(params_file)
-            gadma.PIL_available = True
-            gadma.moments_available = True
 
     def test_restore_with_different_options_failure(self):
         finished_run_dir = os.path.join(DATA_PATH, 'my_example_run')
@@ -283,21 +329,17 @@ class TestRestore(unittest.TestCase):
         with open(params_file, 'w') as fl:
             fl.write("Stuck generation number: 2\n"
                      "Projections: 4,4\n"
-                     "Initial structure: 1, 1\n"
+                     "Initial structure: 1, 1\n" # is not allowed to be changed
                      "Silence: True\n"
                      "global_maxiter: 2\n"
                      "local_maxeval: 10\n")
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
         try:
-            gadma.PIL_available = False
-            gadma.moments_available = False
             self.assertRaises(ValueError, core.main)
         finally:
             if check_dir_existence(finished_run_dir + '_resumed'):
                 shutil.rmtree(finished_run_dir + '_resumed')
             os.remove(params_file)
-            gadma.PIL_available = True
-            gadma.moments_available = True
 
     def test_restore_with_new_migration_masks(self):
         finished_run_dir = os.path.join(DATA_PATH,
@@ -316,6 +358,19 @@ class TestRestore(unittest.TestCase):
         try:
             settings, _ = get_settings_test()
             core.main()
+            check_output_files(
+                test=self,
+                outdir=finished_run_dir + '_resumed',
+                engine="moments",
+                num_runs=3,
+                model_plot=True,
+                comp_plot=True,
+                custom_model=False,
+                gen_code_iter=True,
+                draw_model_iter=True,
+                mu_L_available=False,
+                aic_or_claic=None,
+            )
 
             # call corerun for cover case when there is o extra file in resume
             shared_dict = SharedDictForCoreRun(multiprocessing=False)
@@ -328,6 +383,19 @@ class TestRestore(unittest.TestCase):
             sys.argv = ['gadma', '--resume', finished_run_dir + "_resumed", 
                         '-p', params_file]
             core.main()
+            check_output_files(
+                test=self,
+                outdir=finished_run_dir + '_resumed_resumed',
+                engine="moments",
+                num_runs=3,
+                model_plot=True,
+                comp_plot=True,
+                custom_model=False,
+                gen_code_iter=True,
+                draw_model_iter=True,
+                mu_L_available=False,
+                aic_or_claic=None,
+            )
 
             with open(params_file, 'w') as fl:
                 fl.write("Migration masks: [[0]]\n")
@@ -377,12 +445,8 @@ class TestRestore(unittest.TestCase):
                      "local_maxeval: 10\n")
         sys.argv = ['gadma', '--resume', finished_run_dir, '-p', params_file]
         try:
-            gadma.PIL_available = False
-            gadma.moments_available = False
             self.assertRaises(ValueError, core.main)
         finally:
             if check_dir_existence(finished_run_dir + '_resumed'):
                 shutil.rmtree(finished_run_dir + '_resumed')
             os.remove(params_file)
-            gadma.PIL_available = True
-            gadma.moments_available = True

@@ -1623,19 +1623,27 @@ class SettingsStorage(object):
                         )
 
         if self.engine == "momi2":
+            if self.sequence_length is None:
+                raise RuntimeError(
+                    "Engine momi2 requires `Sequence length` option specified"
+                )
+            if self.mutation_rate is None:
+                raise RuntimeError(
+                    "Engine momi2 requires `Mutation rate` option specified"
+                )
             if "Lin" in self.dynamics:
-                warnings.warn("Momi engine does not support Linear size "
+                warnings.warn("Momi2 engine does not support Linear size "
                               "function. It is removed from possible dynamics")
                 self.dynamics = [dyn for dyn in self.dynamics if dyn != "Lin"]
             if not self.ancestral_size_as_parameter:
                 warnings.warn(
-                    "Momi engine need ancestral size as parameter. The option "
-                    "`Ancestral size as parameter` is set to `True`"
+                    "Momi2 engine need ancestral size as parameter. The option"
+                    " `Ancestral size as parameter` is set to `True`"
                 )
                 self.ancestral_size_as_parameter = True
             if not self.no_migrations:
                 warnings.warn(
-                    "Momi engine does not support continous migrations. The "
+                    "Momi2 engine does not support continous migrations. The "
                     "option `No migrations` is set to `True`"
                 )
                 self.no_migrations = True
@@ -1643,9 +1651,14 @@ class SettingsStorage(object):
         if self.model_plot_engine == "momi2":
             if not self.no_migrations or "Lin" in self.dynamics:
                 warnings.warn(
-                    "Momi was chosen to draw models. Mind the fact that it "
+                    "Momi2 was chosen to draw models. Mind the fact that it "
                     "does not support linear size change and does not draw "
                     "migrations"
+                )
+            if self.units_of_time_in_drawing.lower() == "genetic units":
+                raise RuntimeError(
+                    "Model plot engine momi2 does not draw time in "
+                    f"{self.units_of_time_in_drawing}."
                 )
             if self.units_of_time_in_drawing.lower() not in ["generations",
                                                              "years"]:
