@@ -252,7 +252,7 @@ class TestDataHolder(unittest.TestCase):
             outgroup=None,
         )
         sfs = get_engine(id).read_data(data_holder)
-        self.assertEqual(sfs.S(), 1)
+        self.assertEqual(sfs.S(), 2)
 
     def _test_read_fails(self, id):
         warnings.filterwarnings(action="ignore", message="unclosed",

@@ -191,11 +191,20 @@ class TestCLI(unittest.TestCase):
 
         # integers
         settings.verbose = 1
+        settings.verbose = 1.0
         settings.n_elitism = np.int8(2)
         self.assertRaises(ValueError, settings.__setattr__,
+                          'n_elitism', -1)
+        self.assertRaises(ValueError, settings.__setattr__,
                           'number_of_repeats', 1.5)
+        # sequence length
         self.assertRaises(ValueError, settings.__setattr__,
                           'sequence_length', -10)
+        self.assertRaises(ValueError, settings.__setattr__,
+                          'sequence_length', "something")
+        self.assertRaises(ValueError, settings.__setattr__,
+                          'sequence_length', {"1": 100, "2": "something"})
+
         # lists of integers
         settings.pts = [10, 20, 30]
         settings.projections = '10, 20'
@@ -377,6 +386,17 @@ class TestCLI(unittest.TestCase):
                           'engine', 'demes')
         self.assertRaises(ValueError,  settings.__setattr__,
                           'model_plot_engine', 'dadi')
+        # check that momi transforms to momi2
+        if gadma.momi_available:
+            settings.engine = "momi"
+            self.assertEqual(settings.engine, "momi2")
+            self.engine = "moments"
+
+        # check error for wrong dadi extrapolation
+        settings.dadi_extrapolation = "make_extrap_func"
+        self.assertRaises(ValueError, settings.__setattr__,
+                          'dadi_extrapolation', 'something_else')
+        settings.dadi_extrapolation = "make_extrap_log_func"
 
         # units of time in drawing
         settings.time_for_generation = 1.0
@@ -392,7 +412,6 @@ class TestCLI(unittest.TestCase):
         # min and max bound of variables
         settings.min_n = 0.1
         settings.max_n = 1000
-        print(PopulationSizeVariable.default_domain)
         self.assertRaises(ValueError, settings.__setattr__,
                           'min_n', 0)
         self.assertTrue(
@@ -434,6 +453,12 @@ class TestCLI(unittest.TestCase):
         settings.upper_bound = [100, 100, 5, 5]
         dm = settings.get_model()
 
+        # get model for model from gadma
+        settings = SettingsStorage()
+        settings.custom_filename = os.path.join(
+            DATA_PATH, "MODELS", "simple_gadma_model.py")
+        dm = settings.get_model()
+
         # get initial structure when number of populations is known
         settings = SettingsStorage()
         self.assertEqual(settings.initial_structure, None)
@@ -468,6 +493,133 @@ class TestCLI(unittest.TestCase):
                 settings.number_of_populations = 5
                 settings.num_init_const = 10
                 check_required_settings(settings)
+
+        # check is_valid function of settings_storage
+        try:
+            settings = SettingsStorage()
+            settings.engine = "moments"
+            settings.output_directory = "Some_out_dir"
+            settings.mutation_rate = 1e-5
+            settings.sequence_length = 1e6
+            settings.model_plot_engine = "demes"
+            vcf_file = os.path.join(DATA_PATH, "DATA", "vcf", 'out_of_africa_chr22_sim.vcf')
+            popmap = os.path.join(DATA_PATH, "DATA", "vcf", 'out_of_africa_chr22_sim.popmap')
+            settings.input_data = f"{vcf_file}, {popmap}"
+
+            settings.is_valid()
+            
+            # structure model
+            settings.selection = False
+            settings.dominance = True
+            settings.is_valid()
+            self.assertFalse(settings.selection)
+            self.assertFalse(settings.dominance)
+
+            settings.ancestral_state_misid_error = True
+            settings.outgroup = False
+            settings.is_valid()
+            self.assertFalse(settings.ancestral_state_misid_error)
+            settings.outgroup = True
+
+            if gadma.momi_available:
+                settings.ancestral_state_misid_error = True
+                settings.engine = "momi2"
+                self.assertRaises(ValueError, settings.is_valid)
+                settings.engine = "moments"
+                settings.ancestral_state_misid_error = False
+
+                settings.engine = "momi2"
+                settings.mutation_rate = None
+                self.assertRaises(RuntimeError, settings.is_valid)
+                settings.mutation_rate = 1e-5
+                settings.sequence_length = None
+                self.assertRaises(RuntimeError, settings.is_valid)
+                settings.sequence_length = {"chr22": 100000, "chr1": 1000000}
+                self.assertRaises(ValueError, settings.is_valid)
+                settings.sequence_length = 1e6
+                settings.model_plot_engine = "momi2"
+                settings.units_of_time_in_drawing = "genetic units"
+                self.assertRaises(RuntimeError, settings.is_valid)
+                settings.model_plot_engine = "demes"
+                settings.units_of_time_in_drawing = "years"
+                settings.engine = "moments"
+                settings.dynamics = ["Sud", "Lin", "Exp"]
+
+            settings.ld_kwargs = {'cM': False, 'report': True}
+            settings.is_valid()
+            settings.ld_kwargs = None
+            settings.is_valid()
+
+            settings.number_of_populations = 1
+            settings.lower_bound_of_first_split = 100
+            self.assertRaises(ValueError, settings.is_valid)
+            settings.lower_bound_of_first_split = None
+            settings.upper_bound_of_first_split = 100
+            self.assertRaises(ValueError, settings.is_valid)
+            settings.upper_bound_of_first_split = None
+            settings.lower_bound_of_second_split = 100
+            self.assertRaises(ValueError, settings.is_valid)
+            settings.lower_bound_of_second_split = None
+            settings.upper_bound_of_second_split = 100
+            self.assertRaises(ValueError, settings.is_valid)
+            settings.upper_bound_of_second_split = None
+            del settings.number_of_populations
+
+            settings.number_of_populations = 3
+            settings.lower_bound_of_first_split = 100
+            settings.upper_bound_of_first_split = 10
+            self.assertRaises(ValueError, settings.is_valid)
+            settings.lower_bound_of_first_split = None
+            settings.upper_bound_of_first_split = None
+            settings.lower_bound_of_second_split = 100
+            settings.upper_bound_of_second_split = 10
+            self.assertRaises(ValueError, settings.is_valid)
+            settings.lower_bound_of_second_split = None
+            settings.upper_bound_of_second_split = None
+            del settings.number_of_populations
+            
+            settings.fixed_ancestral_size = 10000
+            settings.sequence_length = None
+            self.assertRaises(ValueError, settings.is_valid)
+            settings.sequence_length = 1e6
+            settings.mutation_rate = None
+            self.assertRaises(ValueError, settings.is_valid)
+            settings.mutation_rate = 1e-5
+
+            settings.ancestral_size_as_parameter = False
+            settings.is_valid()
+            self.assertTrue(settings.ancestral_size_as_parameter)
+            settings.fixed_ancestral_size = None
+            settings.ancestral_size_as_parameter = False
+
+            # custom model
+            settings.custom_filename = os.path.join(DATA_PATH, "MODELS", 'demographic_model_moments_YRI_CEU.py')
+            settings.is_valid()
+            self.assertEqual(settings.model_plot_engine, "moments")
+
+            settings.inbreeding = True
+            settings.is_valid()
+            self.assertFalse(settings.inbreeding)
+
+            settings.ancestral_state_misid_error = True
+            settings.is_valid()
+            self.assertFalse(settings.ancestral_state_misid_error)
+
+            settings.engine = "moments"
+            settings.model_plot_engine = "demes"
+
+            settings.engine = "momentsLD"
+            settings.custom_filename = os.path.join(DATA_PATH, "MODELS", 'demographic_model_momentsLD_YRI_CEU.py')
+            settings.is_valid()  # will give warning that no plot will be generated
+
+            vcf_file = os.path.join(DATA_PATH, "DATA", "vcf", 'data.vcf')
+            popmap = os.path.join(DATA_PATH, "DATA", "vcf", 'popmap')
+            settings.input_data = f"{vcf_file}, {popmap}"
+            settings.sequence_length = 1e6
+            self.assertRaises(ValueError, settings.is_valid)
+        finally:
+            if check_dir_existence("Some_out_dir"):
+                shutil.rmtree("Some_out_dir")
 
     def test_old_param_file(self):
         # ignore warnings about deprecation and renaming
@@ -594,7 +746,8 @@ class TestCLI(unittest.TestCase):
                      "global_maxiter: 2\n"
                      "local_maxiter: 1\n"
                      "inbreeding: True\n"
-                     "engine: dadi")
+                     "engine: dadi\n"
+                     "units_of_time_in_drawing: genetic units")
         sys.argv = ['gadma', '-p', params_file, '--output', outdir]
         try:
             gadma.core.main()

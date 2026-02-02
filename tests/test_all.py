@@ -162,7 +162,7 @@ class TestRestore(unittest.TestCase):
             restore_core_run = CoreRun(0, shared_dict, restore_settings)
             res3 = restore_core_run.run()
 
-            self.assertTrue(res3.y >= res2.y)
+            self.assertTrue(res3.y >= res2.y, f"{ls_opt}: {res3.y} < {res2.y}")
         if os.path.exists(settings.output_directory):
             rmdir(settings.output_directory)
         if os.path.exists(out_dir):
