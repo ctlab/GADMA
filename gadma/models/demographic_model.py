@@ -88,10 +88,12 @@ class DemographicModel(Model):
 
     def get_number_of_parameters(self, values):
         """
-        Returns number of parameters of the model.
+        Returns number of parameters of the model. Variables with fixed
+        values are not counted.
         """
-        var2value = self.var2value(values)
-        return len(var2value.keys())
+        # check that values correspond to the variables of the model
+        self.var2value(values)
+        return len(self.variables)
 
     def as_custom_string(self, values):
         """
@@ -400,6 +402,9 @@ class EpochDemographicModel(DemographicModel):
         could be different to the number of variables. According to the
         population size dynamics in `values` some variables could have no
         influence on the model and in this case they are not counted.
+        E.g. size of population at the beginning of an epoch has influence
+        only if dynamic of this population is not sudden change (`Sud`).
+        Variables with fixed values are not counted.
 
         :param values: Values of the parameters. Dynamics makes the most
                        sense.
@@ -407,6 +412,20 @@ class EpochDemographicModel(DemographicModel):
         """
         var2value = self.var2value(values)
         all_variables = VariablePool()
+
+        def count(entity):
+            # Entity could be a variable, a combination of variables
+            # (e.g. size after split with fraction) or just a constant
+            if isinstance(entity, Variable):
+                entity_variables = [entity]
+            elif isinstance(entity, Model):
+                entity_variables = entity.variables
+            else:
+                return
+            for var in entity_variables:
+                if var not in all_variables and var not in self.fixed_values:
+                    all_variables.append(var)
+
         for event in self.events:
             if isinstance(event, Split):
                 continue
@@ -417,21 +436,27 @@ class EpochDemographicModel(DemographicModel):
                                event.dyn_args,
                                event.sel_args,
                                event.dom_args)
-            variables = help_event.variables
+            for var in help_event.variables:
+                count(var)
+            # Initial size of population has influence only if dynamic of
+            # this population is not sudden change
             if event.dyn_args is not None:
-                for dyn in event.dyn_args:
+                for dyn, init_size in zip(event.dyn_args,
+                                          event.init_size_args):
                     if isinstance(dyn, Variable):
                         value = var2value[dyn]
                     else:
                         value = dyn
                     if value != 'Sud':
-                        for init_size in event.init_size_args:
-                            if (isinstance(init_size, Variable) and
-                                    init_size not in variables):
-                                variables.append(init_size)
-            for var in variables:
-                if var not in all_variables and var not in self.fixed_values:
-                    all_variables.append(var)
+                        count(init_size)
+        # Parameters that are not arguments of any epoch
+        if self.has_anc_size:
+            count(self.Nanc_size)
+        if self.has_inbreeding:
+            for inbr_arg in self.inbreeding_args:
+                count(inbr_arg)
+        if self.has_p_misid:
+            count(self.p_misid)
         return len(all_variables)
 
     def as_custom_string(self, values):

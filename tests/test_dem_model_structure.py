@@ -403,6 +403,78 @@ class TestModelStructure(unittest.TestCase):
                                     msg=f"{ll_true} != {new_ll} : {msg}")
                 ii += 1
 
+    def test_number_of_parameters(self):
+        def get_model(**kwargs):
+            options = {"has_migs": True, "has_sels": False, "has_dom": False,
+                       "has_dyns": True, "sym_migs": False,
+                       "frac_split": True, "has_p_misid": False}
+            options.update(kwargs)
+            return StructureDemographicModel([1, 1], [1, 1], **options)
+
+        def get_values(dm, dyn11, dyn12):
+            values = {}
+            for var in dm.variables:
+                if var.name == "dyn11":
+                    values[var.name] = dyn11
+                elif var.name == "dyn12":
+                    values[var.name] = dyn12
+                elif var.name == "Nanc":
+                    values[var.name] = 10000
+                else:
+                    values[var.name] = 0.5
+            return values
+
+        # time, two sizes, two dynamics and two migrations are always here
+        base = 7
+
+        # 1. Model with fraction of split: it has influence if at least
+        # one population has dynamic that is not sudden change
+        dm = get_model(frac_split=True)
+        self.assertEqual(len(dm.variables), base + 1)
+        for dyn11, dyn12 in itertools.product(["Sud", "Lin", "Exp"],
+                                              repeat=2):
+            n_par = dm.get_number_of_parameters(get_values(dm, dyn11, dyn12))
+            all_sudden = dyn11 == "Sud" and dyn12 == "Sud"
+            self.assertEqual(n_par, base if all_sudden else base + 1,
+                             msg=f"dynamics: {dyn11}, {dyn12}")
+        # fixed fraction is not counted
+        dm.fix_variable(dm.get_variable("s1"), 0.3)
+        n_par = dm.get_number_of_parameters(get_values(dm, "Exp", "Exp"))
+        self.assertEqual(n_par, base)
+
+        # 2. Model without fraction of split: each population has its own
+        # size after split and it has influence only for this population
+        dm = get_model(frac_split=False)
+        self.assertEqual(len(dm.variables), base + 2)
+        for dyn11, dyn12 in itertools.product(["Sud", "Lin", "Exp"],
+                                              repeat=2):
+            n_par = dm.get_number_of_parameters(get_values(dm, dyn11, dyn12))
+            n_not_sudden = int(dyn11 != "Sud") + int(dyn12 != "Sud")
+            self.assertEqual(n_par, base + n_not_sudden,
+                             msg=f"dynamics: {dyn11}, {dyn12}")
+
+        # 3. Ancestral size, inbreeding and misidentification are parameters
+        dm = get_model(frac_split=True, has_anc_size=True, has_inbr=True,
+                       has_p_misid=True)
+        self.assertEqual(len(dm.variables), base + 1 + 1 + 2 + 1)
+        n_par = dm.get_number_of_parameters(get_values(dm, "Exp", "Exp"))
+        self.assertEqual(n_par, len(dm.variables))
+        n_par = dm.get_number_of_parameters(get_values(dm, "Sud", "Sud"))
+        self.assertEqual(n_par, len(dm.variables) - 1)
+        # but not when the value is fixed
+        dm.fix_variable(dm.get_variable("Nanc"), 10000)
+        n_par = dm.get_number_of_parameters(get_values(dm, "Exp", "Exp"))
+        self.assertEqual(n_par, len(dm.variables))
+        self.assertEqual(n_par, base + 1 + 2 + 1)
+
+        # 4. Fixed variables of custom model are not counted
+        nu, t = PopulationSizeVariable("nu"), TimeVariable("t")
+        dm = CustomDemographicModel(function=lambda x, ns: None,
+                                    variables=[nu, t])
+        self.assertEqual(dm.get_number_of_parameters([1.0, 0.5]), 2)
+        dm.fix_variable(t, 0.5)
+        self.assertEqual(dm.get_number_of_parameters([1.0]), 1)
+
     def test_fails(self):
         bad_struct = [[0], [0, 1], [1, 0]]
 
