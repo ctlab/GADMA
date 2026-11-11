@@ -433,7 +433,7 @@ class SettingsStorage(object):
                     if not isinstance(val, numbers.Integral):
                         raise ValueError(
                             f"Setting {name} should contain integer values "
-                            "when it is a dictionary (got {value})."
+                            f"when it is a dictionary (got {value})."
                         )
                     new_val[str(key)] = val
                 value = new_val
@@ -645,11 +645,6 @@ class SettingsStorage(object):
                 if value not in d:
                     raise ValueError(f"Setting {name} ({value}) must be one "
                                      f"of: {d.keys()}")
-                if (value != 'generations' and
-                        self.time_for_generation is None):
-                    value = 'generations'
-                    warnings.warn("There is no time for one generation, time"
-                                  " will be in generations.")  # TODO move
                 object.__setattr__(self, 'const_of_time_in_drawing', d[value])
             else:
                 if d[self.units_of_time_in_drawing] != value:
@@ -1512,14 +1507,6 @@ class SettingsStorage(object):
         """
         Checks that settings are fine. Rises errors if something is not right.
         """
-        # we change time units on pictures if time for generation is not set
-        if self.time_for_generation is None:
-            if self.units_of_time_in_drawing != "generations":
-                warnings.warn(
-                    "Time for generation is not set. All times will be in"
-                    " generations (output and pictures)."
-                )
-                self.units_of_time_in_drawing != "generations"
         if (self.input_data is None and
                 self.resume_from is None):
             raise AttributeError("Input file is required. It could be set by "
@@ -1541,6 +1528,21 @@ class SettingsStorage(object):
                 "Engines dadi and moments require mutation rate and sequence "
                 "length for unit translation"
             )
+
+        # ATTENTION: relative parameters should be set correctly before this
+        # we change time units on pictures if time for generation is not set
+        if self.time_for_generation is None:
+            okay_list = ["generations", "genetic units"]
+            if self.units_of_time_in_drawing not in okay_list:
+                can_translate = self.Nanc_will_be_available()
+                if self.relative_parameters or not can_translate:
+                    self.units_of_time_in_drawing != "genetic units"
+                else:
+                    self.units_of_time_in_drawing != "generations"
+                warnings.warn(
+                    "Time for generation is not set. All times will be in"
+                    " {self.units_of_time_in_drawing} (output and pictures)."
+                )
 
         if self.dominance and not self.selection:
             warnings.warn(
@@ -1844,7 +1846,7 @@ class SettingsStorage(object):
             if not self.ancestral_size_as_parameter:
                 self.ancestral_size_as_parameter = True
                 warnings.warn(
-                    "Option `Ancestral sizea as parameter` is set to True, "
+                    "Option `Ancestral size as parameter` is set to True, "
                     "as fixed ancestral population size is used."
                 )
 

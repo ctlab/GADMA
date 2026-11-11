@@ -313,6 +313,12 @@ class TestEngines(unittest.TestCase):
         engine.draw_schematic_model_plot(values, save_file="plot.png",
                                          gen_time=25, gen_time_units="years")
 
+        # now check for genetic units
+        engine.generate_code(values=values, gen_time=0.5,
+                             gen_time_units="genetic units")
+        engine.draw_schematic_model_plot(values, save_file="plot.png",
+                                         gen_time=0.5, gen_time_units="genetic units")
+
         # check that demographic units are genetic if we do not set nanc
         dm.has_anc_size = False
         gr = engine.build_demes_graph(values=values, nanc=None, gen_time_units="generations")
