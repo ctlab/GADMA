@@ -720,7 +720,16 @@ class SettingsStorage(object):
 
         # 3.12 Check migration masks
         if name == 'migration_masks' and value is not None:
-            if np.array(value).shape == (2, 2):
+            # One mask of size 2x2 could be set without the outer list.
+            # We do not use numpy to check it as masks could have different
+            # sizes: 2x2 and 3x3 in case of three populations.
+            is_one_mask = (
+                isinstance(value, list) and len(value) == 2 and
+                all(isinstance(line, list) and len(line) == 2 and
+                    not any(isinstance(el, list) for el in line)
+                    for line in value)
+            )
+            if is_one_mask:
                 value = [value]
             transformed_value = []
             for i, mask in enumerate(value):
