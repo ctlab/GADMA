@@ -621,6 +621,106 @@ class TestCLI(unittest.TestCase):
             if check_dir_existence("Some_out_dir"):
                 shutil.rmtree("Some_out_dir")
 
+    def test_units_of_time_without_time_for_generation(self):
+        """
+        If time for generation is not set then time could be measured either
+        in generations or in genetic units.
+        """
+        from gadma.core.draw_and_generate_code import \
+            get_Nanc_gen_time_and_units
+        outdir = "Some_out_dir_for_units"
+        data_file = os.path.join(DATA_PATH, "DATA", "sfs", "small_1pop.fs")
+
+        def get_settings_and_messages(units=None, **kwargs):
+            settings = SettingsStorage()
+            settings.engine = "moments"
+            settings.model_plot_engine = "demes"
+            settings.output_directory = outdir
+            settings.input_data = data_file
+            for name, value in kwargs.items():
+                setattr(settings, name, value)
+            if units is not None:
+                settings.units_of_time_in_drawing = units
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                settings.is_valid()
+            messages = [str(warning.message) for warning in caught
+                        if "Time for generation" in str(warning.message)]
+            return settings, messages
+
+        try:
+            # 1. Size of ancestral population is unknown: genetic units
+            settings, messages = get_settings_and_messages()
+            self.assertEqual(settings.units_of_time_in_drawing,
+                             "genetic units")
+            self.assertEqual(len(messages), 1)
+            self.assertTrue("will be in genetic units" in messages[0],
+                            msg=messages[0])
+
+            # 2. Size of ancestral population is known: generations
+            settings, messages = get_settings_and_messages(
+                mutation_rate=1e-8, sequence_length=1e6
+            )
+            self.assertEqual(settings.units_of_time_in_drawing,
+                             "generations")
+            self.assertEqual(len(messages), 1)
+            self.assertTrue("will be in generations" in messages[0],
+                            msg=messages[0])
+
+            # 3. It is known but parameters are relative: genetic units
+            settings, messages = get_settings_and_messages(
+                mutation_rate=1e-8, sequence_length=1e6,
+                relative_parameters=True
+            )
+            self.assertEqual(settings.units_of_time_in_drawing,
+                             "genetic units")
+
+            # 4. Units that could be used are not changed
+            for units in ["generations", "genetic units"]:
+                settings, messages = get_settings_and_messages(
+                    units=units, mutation_rate=1e-8, sequence_length=1e6
+                )
+                self.assertEqual(settings.units_of_time_in_drawing, units)
+                self.assertEqual(len(messages), 0)
+
+            # 5. Nothing is changed if time for generation is set
+            settings, messages = get_settings_and_messages(
+                units="thousand years", time_for_generation=25
+            )
+            self.assertEqual(settings.units_of_time_in_drawing,
+                             "thousand years")
+            self.assertEqual(len(messages), 0)
+        finally:
+            if check_dir_existence(outdir):
+                shutil.rmtree(outdir)
+
+        # Check values that are used for drawing and generation of code
+        class EngineWithNanc(object):
+            def get_N_ancestral(self, values, *args):
+                return 12345
+
+        engine = EngineWithNanc()
+        settings = SettingsStorage()
+        settings.engine = "moments"
+        # no time for generation
+        settings.units_of_time_in_drawing = "generations"
+        self.assertEqual(get_Nanc_gen_time_and_units([], engine, settings),
+                         (12345, 1.0, "generations"))
+        # size of ancestral population is not changed for genetic units
+        settings.units_of_time_in_drawing = "genetic units"
+        self.assertEqual(get_Nanc_gen_time_and_units([], engine, settings),
+                         (12345, 0.5, "genetic units"))
+        settings.time_for_generation = 25
+        self.assertEqual(get_Nanc_gen_time_and_units([], engine, settings),
+                         (12345, 0.5, "genetic units"))
+        settings.units_of_time_in_drawing = "thousand years"
+        self.assertEqual(get_Nanc_gen_time_and_units([], engine, settings),
+                         (12345, 0.025, "thousand years"))
+        # time for generation is not used if time is in generations
+        settings.units_of_time_in_drawing = "generations"
+        self.assertEqual(get_Nanc_gen_time_and_units([], engine, settings),
+                         (12345, 1.0, "generations"))
+
     def test_old_param_file(self):
         # ignore warnings about deprecation and renaming
         warnings.filterwarnings(action='ignore', category=UserWarning,

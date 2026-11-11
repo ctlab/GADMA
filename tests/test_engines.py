@@ -411,6 +411,81 @@ class TestEngines(unittest.TestCase):
         dm.recombination_rate = 1e-8
         return dm
 
+    @pytest.mark.skipif(not gadma.demes_available, reason="No demes")
+    def test_demes_engine_genetic_units(self):
+        """
+        In genetic units size of ancestral population is equal to 1 and time
+        is the same as values of time parameters.
+        """
+        for sym_migs in [False, True]:
+            dm = StructureDemographicModel(
+                initial_structure=[1, 1],
+                final_structure=[1, 1],
+                has_migs=True,
+                has_sels=False,
+                has_dom=False,
+                has_dyns=False,
+                sym_migs=sym_migs,
+                frac_split=True,
+                has_p_misid=False,
+            )
+            values = {"s1": 0.5, "t1": 0.3, "nu11": 1.5, "nu12": 0.8,
+                      "m1_12": 0.5, "m1_21": 0.2}
+            x = [values[var.name] for var in dm.variables]
+            engine = get_engine("demes")
+            engine.set_model(dm)
+
+            # 1. Units are genetic if there is no size of ancestral
+            # population or if they are required
+            graphs = [
+                engine.build_demes_graph(x),
+                engine.build_demes_graph(x, gen_time_units="genetic units"),
+                engine.build_demes_graph(x, nanc=1.0, gen_time=0.5,
+                                         gen_time_units="genetic units"),
+                engine.build_demes_graph(x, nanc=12345, gen_time=25,
+                                         gen_time_units="genetic units"),
+            ]
+            for graph in graphs:
+                self.assertEqual(graph.time_units, "genetic units")
+                ancestral = graph["ancestral"]
+                # time of split is equal to t1
+                self.assertTrue(np.isclose(ancestral.end_time, 0.3),
+                                msg=f"Time of split: {ancestral.end_time}")
+                self.assertTrue(
+                    np.isclose(ancestral.epochs[0].start_size, 1.0)
+                )
+                self.assertTrue(
+                    np.isclose(graph["pop0"].epochs[0].start_size, 1.5)
+                )
+                self.assertTrue(
+                    np.isclose(graph["pop1"].epochs[0].start_size, 0.8)
+                )
+                self.assertEqual(graphs[0].asdict(), graph.asdict())
+
+            # 2. Migration rates that are greater than 1 are divided, each
+            # rate is divided one time
+            values["m1_12"] = 5.0
+            x = [values[var.name] for var in dm.variables]
+            for kwargs in [{}, {"gen_time_units": "genetic units"}]:
+                graph = engine.build_demes_graph(x, **kwargs)
+                self.assertTrue("divided by 100" in graph.description)
+                rates = sorted([mig.rate for mig in graph.migrations])
+                if sym_migs:
+                    expected = [5.0 / 2 / 100, 5.0 / 2 / 100]
+                else:
+                    expected = [0.2 / 2 / 100, 5.0 / 2 / 100]
+                self.assertTrue(np.allclose(rates, expected),
+                                msg=f"{rates} != {expected}")
+
+            # 3. Time is in generations if size of ancestral population is
+            # given and other units are not required
+            values["m1_12"] = 0.5
+            x = [values[var.name] for var in dm.variables]
+            graph = engine.build_demes_graph(x, nanc=1000)
+            self.assertEqual(graph.time_units, "generations")
+            self.assertTrue(np.isclose(graph["ancestral"].end_time,
+                                       2 * 1000 * 0.3))
+
     def test_drawing_engines(self):
         data_holder = self.get_data_holder()
         dm = self.get_model()

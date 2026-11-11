@@ -1,6 +1,7 @@
 from . import Engine, register_engine
 from ..models import EpochDemographicModel, StructureDemographicModel
 from ..models import CustomDemographicModel, Split, Epoch
+from ..utils import Variable
 from collections import defaultdict
 from .. import demes, demes_available
 from .. import demesdraw, demesdraw_available
@@ -108,11 +109,14 @@ class DemesEngine(Engine):
             pop_labels = [f"pop{i}" for i in range(n_pop)]
         pop_labels = [label.replace(" ", "_") for label in pop_labels]
 
-        if not self.model.has_anc_size and nanc is None:
-            # If model is given in genetic units, then we will still draw it
-            # We will take Nanc as 1 and we need to translate time in genetic
-            # units back, so we will need to divide it by 2 as they will be
-            # ultiplied by 2 Nanc
+        # Model is built in genetic units if it is required or if we do not
+        # know the size of ancestral population
+        no_nanc = not self.model.has_anc_size and nanc is None
+        in_genetic_units = gen_time_units == "genetic units" or no_nanc
+
+        if in_genetic_units:
+            # We take Nanc as 1. Time in genetic units is measured in
+            # 2 * Nanc generations, so one generation is 0.5 of time unit.
             gen_time = 0.5
             gen_time_units = "genetic units"
             nanc = 1.0
@@ -122,7 +126,10 @@ class DemesEngine(Engine):
             is_epoch_model = not isinstance(self.model, CustomDemographicModel)
             if is_epoch_model and len(pop_labels) >= 1:
                 rate = 1
-                var2value = self.model.var2value(values)
+                var2value = dict(self.model.var2value(values))
+                # the same variable could be used for several migrations
+                # (e.g. symmetric migrations), it should be divided once
+                mig_vars = set()
                 for epoch in self.model.events:
                     if not isinstance(epoch, Epoch):
                         continue
@@ -130,24 +137,18 @@ class DemesEngine(Engine):
                         for mig_row in epoch.mig_args:
                             mig_to_i = 0
                             for mig_el in mig_row:
-                                if mig_el in var2value:
+                                if (isinstance(mig_el, Variable) and
+                                        mig_el in var2value):
                                     mig_to_i += var2value[mig_el]
+                                    mig_vars.add(mig_el)
                             rate = max(rate, mig_to_i)
                 if rate > 1:
                     rate = max(100, rate)
                     description = "WARNING: "\
                                   f"migration rates are divided by {rate}"
-                    for epoch in self.model.events:
-                        if not isinstance(epoch, Epoch):
-                            continue
-                        if epoch.mig_args is not None:
-                            for mig_row in epoch.mig_args:
-                                for mig_el in mig_row:
-                                    if mig_el in var2value:
-                                        var2value[mig_el] /= rate
+                    for mig_var in mig_vars:
+                        var2value[mig_var] /= rate
                     values = [var2value[var] for var in self.model.variables]
-
-        in_genetic_units = gen_time_units == "genetic units"
 
         # If we have a custom model we can work with it only if it is for dadi
         # If genetic units then Nanc should be None, dadi will scale migration
@@ -177,9 +178,10 @@ class DemesEngine(Engine):
         # useful function
         def get_value(entity):
             return self.model.get_value_from_var2value(var2value, entity)
-        if self.model.has_anc_size:
+        if self.model.has_anc_size and not in_genetic_units:
             Nanc_size = get_value(self.model.Nanc_size)
         else:
+            # it is equal to 1 for genetic units
             Nanc_size = nanc
         if (hasattr(self.model, "Nanc_size") and
                 self.model.Nanc_size in var2value):
@@ -195,7 +197,7 @@ class DemesEngine(Engine):
             doi=None,
             defaults=None
         )
-        if gen_time is None or in_genetic_units:
+        if gen_time is None:
             gen_time = 1.0
         # We will create list of epochs dictionaries for each deme
         demes_epochs_dicts = defaultdict(list)

@@ -21,15 +21,20 @@ def get_Nanc_gen_time_and_units(x, engine, settings):
     in plot drawing.
     """
     Nanc = engine.get_N_ancestral(x, *settings.get_engine_args())
-    if settings.time_for_generation is not None:
+    if settings.units_of_time_in_drawing == "genetic units":
+        # Time is measured in 2 * Nanc generations, so one generation is
+        # 0.5 of time unit when Nanc is equal to 1. Engines that draw models
+        # take Nanc as 1 for genetic units themselves, so we do not change
+        # its value here: it is also used for generation of code.
+        gen_time = 0.5
+        gen_time_units = settings.units_of_time_in_drawing
+    elif (settings.time_for_generation is not None and
+            settings.units_of_time_in_drawing != "generations"):
         gen_time = settings.time_for_generation *\
                    settings.const_of_time_in_drawing
         gen_time_units = settings.units_of_time_in_drawing
     else:
-        if settings.units_of_time_in_drawing == "genetic units":
-            gen_time = 0.5
-            gen_time_units = settings.units_of_time_in_drawing
-            Nanc = 1.0
+        # time is in generations, time for one generation is not used
         gen_time = 1.0
         gen_time_units = "generations"
     return Nanc, gen_time, gen_time_units

@@ -1535,13 +1535,15 @@ class SettingsStorage(object):
             okay_list = ["generations", "genetic units"]
             if self.units_of_time_in_drawing not in okay_list:
                 can_translate = self.Nanc_will_be_available()
-                if self.relative_parameters or not can_translate:
-                    self.units_of_time_in_drawing != "genetic units"
+                is_genetic = self.relative_parameters or not can_translate
+                # momi2 can not draw model in genetic units
+                if is_genetic and self.model_plot_engine != "momi2":
+                    self.units_of_time_in_drawing = "genetic units"
                 else:
-                    self.units_of_time_in_drawing != "generations"
+                    self.units_of_time_in_drawing = "generations"
                 warnings.warn(
-                    "Time for generation is not set. All times will be in"
-                    " {self.units_of_time_in_drawing} (output and pictures)."
+                    "Time for generation is not set. All times will be in "
+                    f"{self.units_of_time_in_drawing} (output and pictures)."
                 )
 
         if self.dominance and not self.selection:

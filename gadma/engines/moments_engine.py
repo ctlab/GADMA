@@ -217,6 +217,9 @@ class MomentsEngine(DadiOrMomentsEngine):
         ns = [4 for _ in range(n_pop)]
         plot_mod = moments.ModelPlot.generate_model(self._inner_func,
                                                     values, ns)
+        # moments draws model in genetic units if nref is not set
+        if gen_time_units == "genetic units":
+            nref = None
         draw_scale = nref is not None
         if nref is not None:
             nref = int(nref)
