@@ -729,7 +729,12 @@ class EpochDemographicModel(DemographicModel):
                                               last_size_value):
                                 equal_g = False
 
-                        if equal_dyn and equal_g:
+                        # The first epoch before the split is never joined
+                        # with the epoch after it: split should keep its
+                        # time and it takes size of population from this
+                        # first epoch.
+                        is_split = size_change_kwargs[i]["is_split"]
+                        if equal_dyn and equal_g and not is_split:
                             time_diff = operation_creation(
                                 operation=Subtraction,
                                 arg1=curr_time,
@@ -773,7 +778,7 @@ class EpochDemographicModel(DemographicModel):
                 # And we have to update our dictionary for pop_to_div
                 size_change_kwargs[event.pop_to_div] = {
                     "init_event": event,
-                    "size": event.size_args[i],
+                    "size": event.size_args[event.pop_to_div],
                     "dyn": size_change_kwargs[event.pop_to_div]["dyn"],
                     "t": last_time,
                     "g": size_change_kwargs[event.pop_to_div]['g'],

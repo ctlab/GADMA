@@ -117,11 +117,16 @@ class MomiEngine(Engine):
             return self.inner_data.sampled_pops[index]
         return self.data_holder.population_labels[index]
 
-    def get_momi_model(self, values, pop_labels=None):
+    def get_momi_model(self, values, pop_labels=None, gen_time=1):
         """
-        Returns momi's demographic model. Time is in generations.
+        Returns momi's demographic model. Time is in generations by default.
 
         If pop_labels are None then labels from `_get_pop_name` are taken.
+
+        :param gen_time: Time of one generation. Time in the returned model
+                         is measured in the same units as `gen_time`, e.g.
+                         in years if `gen_time` is in years. It is not used
+                         for custom models.
         """
         var2value = self.model.var2value(values)
 
@@ -148,10 +153,13 @@ class MomiEngine(Engine):
         Nanc_var = gadma_model.get_Nanc_variable(model_values)
         Nanc = gadma_model.get_value_from_var2value(var2value, Nanc_var)
 
+        # Time should be in generations here. It is translated to the units
+        # of gen_time below, where momi model is created.
         values = self.model.translate_values(
             units="physical",
             values=values,
-            Nanc=Nanc
+            Nanc=Nanc,
+            time_in_generations=True,
         )
 
         var2value = self.model.var2value(values)
@@ -163,12 +171,12 @@ class MomiEngine(Engine):
 
         assert isinstance(gadma_model, TreeDemographicModel)
         # Create momi model
-        # Time is in generations
+        # Time is in units of gen_time (in generations by default)
         # N_e - default size of population if other is not set,
         # it is ignored
         model = self.base_module.DemographicModel(
             N_e=1e4,
-            gen_time=1,
+            gen_time=gen_time,
             muts_per_gen=gadma_model.mutation_rate
         )
         for event in gadma_model.events:
@@ -178,10 +186,11 @@ class MomiEngine(Engine):
                 g = 0
             else:
                 assert dyn == "Exp", "Linear size change is not supported"
-                g = get_value(event.g)
+                # growth rate is per unit of time
+                g = get_value(event.g) / gen_time
 
             N = get_value(event.size_pop)
-            t = get_value(event.t)
+            t = get_value(event.t) * gen_time
             if isinstance(event, Leaf):
                 name = self._get_pop_name(event.pop, pop_labels=pop_labels)
                 model.add_leaf(
@@ -299,9 +308,10 @@ class MomiEngine(Engine):
             assert self.data_holder is not None
             pop_labels = self.data_holder.population_labels
 
-        # get momi model
-        model = self.get_momi_model(values)
-        model.gen_time = gen_time
+        # get momi model with time in the units of gen_time
+        if gen_time is None:
+            gen_time = 1
+        model = self.get_momi_model(values, gen_time=gen_time)
 
         # create figure
         fig, ax = plt.subplots(figsize=(3.84, 3.84))

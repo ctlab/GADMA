@@ -1,7 +1,14 @@
 import unittest
+import os
+import numpy as np
+import pytest
+import gadma
 from gadma import *
-from gadma.models import TreeDemographicModel
+from gadma.models import TreeDemographicModel, LineageMovement
 from gadma.models.variables_combinations import operation_creation, Exp
+
+DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data", "DATA")
+YRI_CEU_DATA = os.path.join(DATA_PATH, "sfs", "YRI_CEU.fs")
 
 
 class TestTreeDemModel(unittest.TestCase):
@@ -199,4 +206,102 @@ class TestTreeDemModel(unittest.TestCase):
         em.add_epoch(operation_creation(Subtraction, t1, 0), [nu1F, nu2F])
         self.assertEqual(2, translated_model.number_of_populations())
         self.assertEqual(translated_model, em)
+
+    @staticmethod
+    def get_structure_model_and_values(gen_time=None, has_dyns=False):
+        """
+        Model with structure (2, 1). Size of ancestral population is 10000,
+        so its size is changed 3000 generations ago and split happens
+        1000 generations ago.
+        """
+        model = StructureDemographicModel(
+            initial_structure=[2, 1], final_structure=[2, 1],
+            has_migs=False, has_sels=False, has_dom=False,
+            has_dyns=has_dyns, sym_migs=False, frac_split=False,
+            has_p_misid=False, has_anc_size=True, gen_time=gen_time,
+            mutation_rate=1.25e-8,
+        )
+        values = {"Nanc": 10000, "t1": 0.1, "nu11": 0.5, "nu11_1": 0.3,
+                  "nu11_2": 0.4, "t2": 0.05, "nu21": 0.7, "nu22": 0.6,
+                  "dyn11": "Sud", "dyn21": "Exp", "dyn22": "Sud"}
+        return model, values
+
+    def test_split_time_in_translation_from_epoch_model(self):
+        """
+        Time of split should be the same no matter if size of population
+        is changed during the split or not.
+        """
+        model, values = self.get_structure_model_and_values()
+        # In the second case size of the first population is the same
+        # before and after the split.
+        for nu21 in [0.7, 0.5]:
+            values["nu21"] = nu21
+            x = [values[var.name] for var in model.variables]
+            tree_model, _ = model.translate_to(TreeDemographicModel, x)
+            phys_values = model.translate_values(units="physical", values=x,
+                                                 time_in_generations=True)
+            var2value = model.var2value(phys_values)
+
+            def get_value(entity):
+                return model.get_value_from_var2value(var2value, entity)
+
+            splits = [event for event in tree_model.events
+                      if isinstance(event, LineageMovement)]
+            self.assertEqual(len(splits), 1)
+            self.assertTrue(np.isclose(get_value(splits[0].t), 1000),
+                            msg=f"Time of split is {get_value(splits[0].t)}"
+                                f" instead of 1000 (nu21={nu21})")
+            # size of the population after the merge
+            self.assertTrue(np.isclose(get_value(splits[0].size_pop), 5000))
+            # change of the size 3000 generations ago is still in the model
+            all_times = [get_value(event.t) for event in tree_model.events]
+            self.assertTrue(np.any(np.isclose(all_times, 3000)),
+                            msg=f"Times of events: {all_times}")
+
+    @pytest.mark.skipif(not gadma.momi_available, reason="No momi2")
+    def test_momi_time_is_in_generations(self):
+        """
+        Time for one generation should not change likelihood: momi model is
+        created with time in generations.
+        """
+        data_holder = SFSDataHolder(YRI_CEU_DATA, sequence_length=50818468)
+        ll_values = []
+        for gen_time in [None, 25]:
+            model, values = self.get_structure_model_and_values(
+                gen_time=gen_time, has_dyns=True
+            )
+            engine = get_engine("momi2")
+            engine.set_data(data_holder)
+            engine.set_model(model)
+            x = [values[var.name] for var in model.variables]
+            ll_values.append(engine.evaluate(x))
+
+            # split is 1000 generations ago
+            momi_model = engine.get_momi_model(x)
+            split_time = momi_model.topology_events[0].t.x
+            self.assertTrue(np.isclose(split_time, 1000),
+                            msg=f"Time of split is {split_time} "
+                                f"(gen_time={gen_time})")
+
+            # generated code should give the same value
+            code = engine.generate_code(x, None, nanc=None,
+                                        gen_time=gen_time or 1,
+                                        gen_time_units="years")
+            # we do not want to draw picture
+            code = code[:code.index("from matplotlib import pyplot")]
+            namespace = {}
+            exec(code, namespace)
+            self.assertTrue(np.isclose(ll_values[-1], namespace["ll_model"]))
+        self.assertTrue(np.isclose(ll_values[0], ll_values[1]),
+                        msg=f"Likelihood depends on the generation time: "
+                            f"{ll_values}")
+
+        # Model with time in other units, it is used for drawing.
+        # It is the same model, so likelihood is the same.
+        momi_model_years = engine.get_momi_model(x, gen_time=25)
+        split_time_years = momi_model_years.topology_events[0].t.x
+        self.assertTrue(np.isclose(split_time_years, 25000))
+        momi_model_years.set_data(engine.inner_data, length=50818468)
+        self.assertTrue(np.isclose(ll_values[-1],
+                                   momi_model_years.log_likelihood()))
 

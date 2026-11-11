@@ -195,12 +195,14 @@ def print_main_part(engine, values, nanc):
         var2value = model.var2value(values)
         values_phys = [var2value[var] for var in model.variables]
     else:
-        # momi has values in physical units
+        # momi has values in physical units, time is in generations as
+        # generated model has gen_time equal to 1
         Nanc = model.get_Nanc_size(model_values)
         values_phys = model.translate_values(
             units="physical",
             values=model_values,
-            Nanc=Nanc
+            Nanc=Nanc,
+            time_in_generations=True,
         )
 
     ret_str = f"params = {values_phys}\n"
