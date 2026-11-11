@@ -53,14 +53,17 @@ def get_claic_score(func_ex, all_boot, p0, data, engine=None, args=(),
                    - dadi
                    - moments
     :param args: Arguments of ``func_ex`` function.
-    :param eps: Step size for Hessian and gradient calculations. Usually is
-                between 1e-5 and 1e-2. The smaller eps is the more accurate
-                CLAIC value is.
+    :param eps: Relative step size for Hessian and gradient calculations.
+                Usually is between 1e-4 and 1e-2. It should not be too
+                small (derivatives are dominated by numerical noise) or too
+                big (derivatives are not accurate). Values that are greater
+                than 1e-2 are replaced by 1e-2.
     :param pts: Deprecated parameter from GADMA version 1. If is set then
                 warning is printed.
 
-    returns: None if failed to get CLAIC due to singular matrix of Hessian.\
-             Could be solved by increasing value of ``eps``.
+    returns: None if failed to get CLAIC, e.g. when it is not possible to\
+             evaluate likelihood for the given parameters. Parameters\
+             without influence on the likelihood are not taken into account.
 
     note: There differencies between GADMA v1 and GADMA v2, there is some\
           backward compatibility, but sometimes errors could be raised.

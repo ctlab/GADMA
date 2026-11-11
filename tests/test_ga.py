@@ -595,3 +595,161 @@ class TestInference(unittest.TestCase):
             # else:
             # c1 = gadma.Inference.get_claic_score(func, boots, p0, data,
             #                                 engine.id, pts=None)
+
+    def test_claic_uses_bootstrapped_data(self):
+        """
+        CLAIC = 2 * trace(J * H^-1) - 2 * LL, where hessian H is evaluated
+        for the original data and J is build from gradients that are
+        evaluated for each of bootstrapped data.
+        """
+        dirname = os.path.join(EXAMPLE_FOLDER, "DATA",
+                               "sfs", 'YRI_CEU_test_boots')
+        projections = (3, 3)
+        p0 = [1.881, 0.0710, 1.845, 0.911, 0.355, 0.111]
+        pts = [4, 6, 8]
+        eps = 1e-2
+        for engine in all_engines():
+            if engine.id not in ["dadi", "moments"]:
+                continue
+            module = engine.base_module
+            data = engine.read_data(SFSDataHolder(EXAMPLE_DATA,
+                                                  projections=projections))
+            boots = gadma.Inference.load_data_from_dir(dirname, engine.id,
+                                                       projections=projections)
+            self.assertTrue(len(boots) > 1)
+            filename = os.path.join(
+                EXAMPLE_FOLDER, "MODELS",
+                f'demographic_model_{engine.id}_YRI_CEU.py')
+            spec = importlib.util.spec_from_file_location("module", filename)
+            model_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(model_module)
+            func = model_module.model_func
+
+            kwargs = {"pts": pts} if engine.id == "dadi" else {}
+
+            def get_claic(some_boots):
+                return gadma.Inference.get_claic_score(
+                    func, some_boots, p0, data, engine.id, eps=eps, **kwargs
+                )
+
+            claic = get_claic(boots)
+
+            # 1. Compare with value that is evaluated directly
+            Godambe = importlib.import_module(f"{module.__name__}.Godambe")
+            if hasattr(Godambe, "get_grad"):
+                get_grad = Godambe.get_grad
+            else:
+                get_grad = Godambe._get_grad
+            ns = data.sample_sizes
+            if engine.id == "dadi":
+                func_ex = module.Numerics.make_extrap_log_func(func)
+            else:
+                func_ex = func
+
+            def ll_func(params, some_data):
+                if engine.id == "dadi":
+                    model = func_ex(params, ns, pts)
+                else:
+                    model = func_ex(params, ns)
+                return module.Inference.ll_multinom(model, some_data)
+
+            x0 = np.array(p0)
+            H = - Godambe.get_hess(ll_func, x0, eps, args=[data])
+            J = np.zeros((len(x0), len(x0)))
+            for boot in boots:
+                grad = get_grad(ll_func, x0, eps,
+                                args=[module.Spectrum(boot)])
+                J += np.outer(grad, grad)
+            J /= len(boots)
+            expected = 2 * np.trace(np.dot(J, np.linalg.inv(H)))
+            expected -= 2 * ll_func(x0, data)
+            self.assertTrue(np.isclose(claic, expected),
+                            msg=f"{engine.id}: {claic} != {expected}")
+
+            # 2. Value should be different for another bootstrapped data
+            for other_boots in [boots[:1], boots[1:]]:
+                other_claic = get_claic(other_boots)
+                self.assertFalse(
+                    np.isclose(claic, other_claic),
+                    msg=f"{engine.id}: CLAIC is the same ({claic}) for "
+                        "different bootstrapped data."
+                )
+
+    def test_claic_for_parameters_without_influence(self):
+        """
+        Some parameters could have no influence on the likelihood, e.g.
+        fraction of split when sizes of populations are changed suddenly.
+        Hessian is singular in that case. CLAIC should be evaluated and be
+        equal to CLAIC of the model without such parameters.
+        """
+        dirname = os.path.join(EXAMPLE_FOLDER, "DATA",
+                               "sfs", 'YRI_CEU_test_boots')
+        projections = (4, 4)
+        eps = 1e-3
+        values = {"s1": 0.5, "t1": 0.3, "nu11": 1.5, "nu12": 0.8,
+                  "m1_12": 1.0}
+        names_with_influence = ["t1", "nu11", "nu12", "m1_12"]
+        for engine in all_engines():
+            if engine.id not in ["dadi", "moments"]:
+                continue
+            module = engine.base_module
+            engine.set_data(SFSDataHolder(EXAMPLE_DATA,
+                                          projections=projections))
+            data = engine.data
+            boots = gadma.Inference.load_data_from_dir(dirname, engine.id,
+                                                       projections=projections)
+            model = StructureDemographicModel(
+                initial_structure=[1, 1], final_structure=[1, 1],
+                has_migs=True, has_sels=False, has_dom=False,
+                has_dyns=False, sym_migs=True, frac_split=True,
+                has_p_misid=False,
+            )
+            engine.set_model(model)
+            self.assertEqual(sorted(values.keys()),
+                             sorted([var.name for var in model.variables]))
+            x0 = [values[var.name] for var in model.variables]
+            if engine.id == "dadi":
+                args = ([8, 12, 16],)
+            else:
+                args = (engine.default_dt_fac,)
+            ll = engine.evaluate(x0, *args)
+
+            # fraction of split has no influence
+            other_values = dict(values)
+            other_values["s1"] = 0.1
+            other_x0 = [other_values[var.name] for var in model.variables]
+            self.assertEqual(ll, engine.evaluate(other_x0, *args))
+
+            claic, used_eps = gadma.utils.get_claic_score(
+                engine, x0, boots, args=args, eps=eps, log_likelihood=ll,
+                return_eps=True
+            )
+            self.assertEqual(used_eps, eps)
+            self.assertTrue(claic is not None)
+
+            # Evaluate the same without fraction of split
+            Godambe = importlib.import_module(f"{module.__name__}.Godambe")
+            if hasattr(Godambe, "get_grad"):
+                get_grad = Godambe.get_grad
+            else:
+                get_grad = Godambe._get_grad
+            ns = data.sample_sizes
+
+            def ll_func(params, some_data):
+                new_values = dict(values)
+                new_values.update(zip(names_with_influence, params))
+                x = [new_values[var.name] for var in model.variables]
+                sfs = engine.simulate(x, ns, None, None, *args)
+                return module.Inference.ll_multinom(sfs, some_data)
+
+            p0 = np.array([values[name] for name in names_with_influence])
+            H = - Godambe.get_hess(ll_func, p0, eps, args=[data])
+            J = np.zeros((len(p0), len(p0)))
+            for boot in boots:
+                grad = get_grad(ll_func, p0, eps,
+                                args=[module.Spectrum(boot)])
+                J += np.outer(grad, grad)
+            J /= len(boots)
+            expected = 2 * np.trace(np.dot(J, np.linalg.inv(H))) - 2 * ll
+            self.assertTrue(np.isclose(claic, expected),
+                            msg=f"{engine.id}: {claic} != {expected}")

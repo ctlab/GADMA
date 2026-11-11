@@ -488,35 +488,39 @@ def get_aic_score(n_params, log_likelihood):
 
 
 def get_claic_score(engine, x0, boots, args=(),
-                    eps=1e-5, log_likelihood=None, return_eps=False):
+                    eps=1e-3, log_likelihood=None, return_eps=False):
     """
-    Calculate CLAIC score for the model.
+    Calculate CLAIC score for the model:
+
+        CLAIC = 2 * trace(J * H^-1) - 2 * log_likelihood,
+
+    where H is hessian of log-likelihood for the original data and J is
+    evaluated from gradients of log-likelihood for bootstrapped data.
+    Derivatives are evaluated numerically. Parameters without influence on
+    the likelihood are not taken into account.
 
     :param engine: Engine with model and data.
     :param x0: Parameters of the model.
     :param boots: Bootstrap data.
     :params args: Arguments for engine's ``evaluate`` function.
+    :param eps: Relative step size for numerical derivatives. It should not
+                be too small (derivatives are dominated by numerical noise
+                of the engine) or too big (derivatives are not accurate).
+                Value 1e-3 works well both for dadi and moments. Values
+                that are greater than 1e-2 are replaced by 1e-2.
     :params log_likelihood: Value of log-likelihood for ``x0``.
     :params return_eps: If True then tuple (CLAIC, eps) is returned.
+
+    :returns: CLAIC score or None if it was not possible to evaluate it.
     """
     if log_likelihood is None:
         log_likelihood = engine.evaluate(x0, *args)
     eps = min(eps, 1e-2)
     claic_score = None
-    while eps <= 1e-2:
-        try:
-            claic_component = engine.get_claic_component(x0, boots,
-                                                         *args, eps)
+    if log_likelihood is not None:
+        claic_component = engine.get_claic_component(x0, boots, *args, eps)
+        if claic_component is not None:
             claic_score = 2 * claic_component - 2 * log_likelihood
-            break
-        except np.linalg.linalg.LinAlgError as e:
-            if str(e) == 'Singular matrix':
-                eps *= 10
-            else:
-                print(e)
-                raise e
-        except Exception as e:
-            raise e
     if return_eps:
         return claic_score, eps
     else:

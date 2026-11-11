@@ -3,12 +3,12 @@ from ..models import DemographicModel, StructureDemographicModel, \
                      CustomDemographicModel
 from ..utils import DiscreteVariable, cache_func, bcolors
 from .. import SFSDataHolder, VCFDataHolder
-from .. import dadi_available, moments_available
 from ..code_generator import id2printfunc
 from ..data.data_utils import get_defaults_from_vcf_format, ploidy_from_vcf
 from ..data.data_utils import check_population_labels_vcf, \
                               check_projections_vcf
 
+import importlib
 import warnings
 import os
 import numpy as np
@@ -288,13 +288,17 @@ class DadiOrMomentsEngine(Engine):
         return ll_model
 
     def get_claic_component(self, x0, all_boots, grid_sizes, eps):
-        if dadi_available:
-            from dadi import Godambe
-        elif moments_available:
-            from moments import Godambe
+        # Functions for hessian and gradient are taken from the module of
+        # the engine: dadi.Godambe or moments.Godambe
+        Godambe = importlib.import_module(
+            f"{self.base_module.__name__}.Godambe"
+        )
+        get_hess = Godambe.get_hess
+        # function for gradient has different names in dadi and moments
+        if hasattr(Godambe, "get_grad"):
+            get_grad = Godambe.get_grad
         else:
-            ImportError("For CLAIC evaluation either dadi or moments is"
-                        " required.")
+            get_grad = Godambe._get_grad
         # Cache evaluations of the frequency spectrum inside our hessian/J
         # evaluation function
         var2val = self.model.var2value(x0)
@@ -337,20 +341,52 @@ class DadiOrMomentsEngine(Engine):
 
         cached_simul = cache_func(simul_func)
 
+        # Hessian is evaluated for the original data and gradients are
+        # evaluated for each bootstrapped data, so `data` is an argument
         def func(x, data):
             model = cached_simul(x)
-            return self.base_module.Inference.ll_multinom(model, self.data)
-        H = - Godambe.get_hess(func, p0, eps, args=[self.data])
-        H_inv = np.linalg.inv(H)
+            return self.base_module.Inference.ll_multinom(model, data)
+        H = - get_hess(func, p0, eps, args=[self.data])
 
         J = np.zeros((len(p0), len(p0)))
         for ii, boot in enumerate(all_boots):
             boot = self.base_module.Spectrum(boot)
-            grad_temp = Godambe.get_grad(func, p0, eps, args=[boot])
+            grad_temp = get_grad(func, p0, eps, args=[boot])
             J_temp = np.outer(grad_temp, grad_temp)
             J += J_temp
 
         J = J/len(all_boots)
+
+        if len(p0) == 0:
+            return 0.0
+        if not (np.all(np.isfinite(H)) and np.all(np.isfinite(J))):
+            # it was not possible to evaluate derivatives
+            return None
+
+        # Parameters could have very different scales, so we take
+        # derivatives by relative changes of parameters. It does not change
+        # the trace of J*H^-1.
+        scale = np.where(p0 != 0, np.abs(p0), 1.0)
+        scale_matrix = np.outer(scale, scale)
+        H = (H + H.T) / 2 * scale_matrix
+        J = J * scale_matrix
+
+        # Some parameters could have no influence on the likelihood, e.g.
+        # size of population right after the split when it is changed
+        # suddenly. Hessian is singular in that case. So we use only those
+        # directions in the space of parameters that change the likelihood.
+        eig_vals, eig_vecs = np.linalg.eigh(H)
+        threshold = 1e-10 * np.max(np.abs(eig_vals))
+        has_influence = np.abs(eig_vals) > threshold
+        eig_vals = eig_vals[has_influence]
+        eig_vecs = eig_vecs[:, has_influence]
+        if np.any(eig_vals < 0):
+            warnings.warn(
+                "Parameters are not the point of (local) maximum of "
+                "likelihood: there are directions in which log-likelihood "
+                "is increasing. Value of CLAIC could be unreliable."
+            )
+        H_inv = np.dot(eig_vecs / eig_vals, eig_vecs.T)
 
         # G = J*H^-1
         G = np.dot(J, H_inv)
