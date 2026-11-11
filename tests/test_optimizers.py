@@ -518,6 +518,64 @@ class TestLocalOpt(TestBaseOptClass):
 
         opt.optimize(f, variables, verbose=0)
 
+    def test_combination_out_solutions(self):
+        """
+        Solutions X_out and their values Y_out of the combination of global
+        and local optimizers are used as initial solutions for the next
+        optimization. So values should correspond to solutions, including
+        the best one that is the result of local optimizer.
+        """
+        def f(x):
+            return (x[0] - 0.3) ** 2 + 10 * (x[1] + 0.2) ** 2 + 1
+
+        variables = [ContinuousVariable("var1", domain=[-1, 1]),
+                     ContinuousVariable("var2", domain=[-1, 1])]
+
+        for ls_id in ["BFGS", "L-BFGS-B", "Powell"]:
+            for maximize in [False, True]:
+                def func(x):
+                    return -f(x) if maximize else f(x)
+
+                gs_opt = get_global_optimizer("Genetic_algorithm")
+                ls_opt = get_local_optimizer(ls_id)
+                gs_opt.maximize = maximize
+                ls_opt.maximize = maximize
+                opt = GlobalOptimizerAndLocalOptimizer(gs_opt, ls_opt)
+                msg = f"local optimizer: {ls_id}, maximize: {maximize}"
+
+                # few iterations of global optimizer so the local one could
+                # improve the solution
+                res = opt.optimize(func, variables, global_num_init=5,
+                                   global_maxiter=2, verbose=0)
+                self.assertTrue(np.isclose(res.y, func(res.x)), msg=msg)
+                self.assertEqual(len(res.X_out), len(res.Y_out), msg=msg)
+                for x, y in zip(res.X_out, res.Y_out):
+                    self.assertTrue(np.isclose(y, func(x)),
+                                    msg=f"{y} != {func(x)}, {msg}")
+                # the best solution is the first one
+                self.assertTrue(np.allclose(res.X_out[0], res.x), msg=msg)
+                self.assertTrue(np.isclose(res.Y_out[0], res.y), msg=msg)
+                if maximize:
+                    self.assertTrue(res.y >= max(res.Y_out), msg=msg)
+                else:
+                    self.assertTrue(res.y <= min(res.Y_out), msg=msg)
+
+                # the next optimization starts from these solutions,
+                # so its result could not be worse
+                gs_opt = get_global_optimizer("Genetic_algorithm")
+                gs_opt.maximize = maximize
+                opt = GlobalOptimizerAndLocalOptimizer(gs_opt, ls_opt)
+                next_res = opt.optimize(func, variables,
+                                        X_init=res.X_out, Y_init=res.Y_out,
+                                        global_num_init=len(res.X_out),
+                                        global_maxiter=2, verbose=0)
+                if maximize:
+                    self.assertTrue(next_res.y >= res.y,
+                                    msg=f"{next_res.y} < {res.y}, {msg}")
+                else:
+                    self.assertTrue(next_res.y <= res.y,
+                                    msg=f"{next_res.y} > {res.y}, {msg}")
+
 #    def test_2pop_example_1(self):
 #        for engine in all_engines():
 #            self.run_example(engine.id, get_2pop_sim_example_1)

@@ -241,7 +241,10 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
                                           global_result.Y_out,
                                           reverse=ga_maximize)
         if np.allclose(Y_out[0], global_result.y):
+            # The best solution of global optimizer is replaced by the result
+            # of local optimizer, its value should be replaced too
             X_out[0] = x_best
+            Y_out[0] = y_best
         else:
             X_out.insert(0, x_best)
             Y_out.insert(0, y_best)
