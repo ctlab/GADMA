@@ -184,7 +184,12 @@ def _print_moments_simulation():
 
 
 def _print_model_plotting(engine, nanc, gen_time, gen_time_units):
-    ret_str = "\n\nplot_ns = [4 for _ in ns]  # small sizes for fast drawing\n"
+    """
+    Returns code that draws picture of the model using moments. The code is
+    commented out as other tools are used for drawing now. It is still
+    generated, so one can uncomment it to get the picture from moments.
+    """
+    ret_str = "plot_ns = [4 for _ in ns]  # small sizes for fast drawing\n"
     ret_str += f"gen_mod = moments.ModelPlot.generate_model({FUNCTION_NAME},\n"
     ret_str += "                                           p0, plot_ns)\n"
 
@@ -209,7 +214,12 @@ def _print_model_plotting(engine, nanc, gen_time, gen_time_units):
     ret_str += f"                             gen_time={gen_time},\n"
     ret_str += f"                             gen_time_units='{units}',\n"
     ret_str += "                             reverse_timeline=True)"
-    return ret_str
+
+    # Comment the code out
+    commented_lines = ["# " + line for line in ret_str.split("\n")]
+    header = "\n\n# Uncomment the following code to draw the model " \
+             "with moments:\n"
+    return header + "\n".join(commented_lines)
 
 
 def _print_moments_main(engine, values, nanc, gen_time, gen_time_units):
