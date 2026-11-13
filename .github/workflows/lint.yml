@@ -15,10 +15,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --upgrade setuptools
           pip install pycodestyle
           pip install flake8
-          python setup.py build
 
       - name: Check code style.
         run: pycodestyle gadma
