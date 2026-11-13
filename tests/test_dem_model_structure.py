@@ -186,8 +186,9 @@ class TestModelStructure(unittest.TestCase):
         for structure in BASE_TEST_STRUCTURES:
             for create_migs, create_sels, create_dyns, sym_migs, fracs, has_anc, inbr, p_misid in\
                     list(itertools.product([False, True],repeat=8)):
-                if not create_migs:
-                    sym_migs = False
+                if not create_migs and sym_migs:
+                    # it is the same model as the one without sym_migs
+                    continue
                 def model_generator(structure):
                     model = StructureDemographicModel(
                         structure,
@@ -202,7 +203,9 @@ class TestModelStructure(unittest.TestCase):
                         has_anc_size=has_anc,
                         has_inbr=inbr
                     )
-                    # we will narrow domains so that test will be faster
+                    # we will narrow domains so that test will be faster,
+                    # time should not be very small: our check is sometimes
+                    # wrong then
                     for i in range(len(model.variables)):
                         var = model.variables[i]
                         if isinstance(var, PopulationSizeVariable):
@@ -220,11 +223,6 @@ class TestModelStructure(unittest.TestCase):
  
                 dm = model_generator(structure)
                 dm.mutation_rate = 1e-8
-                # Change domain as when time is very small then our check
-                # sometimes is wrong
-                for i in range(len(dm.variables)):
-                    if isinstance(dm.variables[i], TimeVariable):
-                        dm.variables[i].domain = [1e-2, 5]
                 variables = dm.variables
                 x = [var.resample() for var in variables]
                 bad_structure = list(structure)
@@ -247,9 +245,18 @@ class TestModelStructure(unittest.TestCase):
                         if len(structure) == 1:
                             sizes = [20]
                         kwargs = {"pts": [8, 18, 28]}  # pts
+                        if len(structure) == 3:
+                            # three populations take the most of the time
+                            # and likelihoods are equal on small grid too
+                            sizes = [4, 4, 4]
+                            kwargs = {"pts": [6, 10, 14]}
                     else:
                         sizes = [4 for _ in range(len(structure))]
                         kwargs = {}
+                        if engine.id == "moments" and not check_ll:
+                            # result of simulation is not compared with
+                            # anything, so we can use bigger time step
+                            kwargs = {"dt_fac": 0.1}
 
                     # check that our x is valid for the engine
                     if engine.id == "momi2":
@@ -531,6 +538,9 @@ class TestModelStructure(unittest.TestCase):
         random_base_combinations = all_combinations[np.random.choice(range(len(all_combinations)), size=n_random)]
         random_new_combinations = all_combinations[np.random.choice(range(len(all_combinations)), size=n_random)]
         for structure in BASE_TEST_STRUCTURES:
+            # Base models do not depend on new models, so we create them
+            # once for the structure and not for each pair of models.
+            base_models = []
             for base_migs, base_sels, base_dom, base_dyns, base_symms, base_fracs, base_inbr, base_p_misid in\
                     random_base_combinations:
                 if not base_sels and base_dom:
@@ -550,31 +560,36 @@ class TestModelStructure(unittest.TestCase):
                                                    frac_split=base_fracs,
                                                    has_inbr=base_inbr,
                                                    has_p_misid=base_p_misid)
-                    for new_migs, new_sels, new_dom, new_dyns, new_symms, new_fracs, new_inbr, new_p_misid in\
-                            random_new_combinations:
-                        if not new_sels and new_dom:
-                            continue
-                        new_mig_masks = [None, self._generate_mig_mask(
-                            structure, new_symms)]
-                        if len(structure) == 1 or not new_migs:
-                            new_mig_masks = [None]
-                        for new_mask in new_mig_masks:
-                            new = StructureDemographicModel(structure,
-                                                            structure,
-                                                            has_migs=new_migs,
-                                                            has_sels=new_sels,
-                                                            has_dom=new_dom,
-                                                            has_dyns=new_dyns,
-                                                            sym_migs=new_symms,
-                                                            migs_mask=new_mask,
-                                                            frac_split=new_fracs,
-                                                            has_inbr=new_inbr,
-                                                            has_p_misid=new_p_misid)
-                            x = [var.resample() for var in new.variables]
-                            new_x = dm.transform_values_from_other_model(new, x)
-                            new.add_variable(TimeVariable("t_some"))
-                            new_x.append(3)
-                            self.assertRaises(
-                                ValueError,
-                                new.transform_values_from_other_model,
-                                dm, new_x)
+                    base_models.append(dm)
+            for new_migs, new_sels, new_dom, new_dyns, new_symms, new_fracs, new_inbr, new_p_misid in\
+                    random_new_combinations:
+                if not new_sels and new_dom:
+                    continue
+                new_mig_masks = [None, self._generate_mig_mask(
+                    structure, new_symms)]
+                if len(structure) == 1 or not new_migs:
+                    new_mig_masks = [None]
+                for new_mask in new_mig_masks:
+                    new = StructureDemographicModel(structure,
+                                                    structure,
+                                                    has_migs=new_migs,
+                                                    has_sels=new_sels,
+                                                    has_dom=new_dom,
+                                                    has_dyns=new_dyns,
+                                                    sym_migs=new_symms,
+                                                    migs_mask=new_mask,
+                                                    frac_split=new_fracs,
+                                                    has_inbr=new_inbr,
+                                                    has_p_misid=new_p_misid)
+                    x = [var.resample() for var in new.variables]
+                    all_new_x = [
+                        dm.transform_values_from_other_model(new, x)
+                        for dm in base_models
+                    ]
+                    new.add_variable(TimeVariable("t_some"))
+                    for dm, new_x in zip(base_models, all_new_x):
+                        new_x.append(3)
+                        self.assertRaises(
+                            ValueError,
+                            new.transform_values_from_other_model,
+                            dm, new_x)

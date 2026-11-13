@@ -49,6 +49,10 @@ VCF_DATA = os.path.join(DATA_PATH, "vcf", "data.vcf")
 POPMAP = os.path.join(DATA_PATH, "vcf", "popmap")
 VCF_SIM_YRI_CEU_DATA =  os.path.join(DATA_PATH, "vcf",
                                      "out_of_africa_chr22_sim.vcf")
+# First 4000 sites of the file above. They include lines with bad filter,
+# with not nucleotide alleles and with repeated positions.
+VCF_SIM_YRI_CEU_SMALL_DATA =  os.path.join(
+    DATA_PATH, "vcf", "out_of_africa_chr22_sim_small.vcf")
 BAD_FILTER_VCF_DATA = os.path.join(DATA_PATH, "vcf", "bad_filter.vcf")
 NO_AA_INFO_VCF = os.path.join(DATA_PATH, "vcf", "no_aa_info.vcf")
 ONE_PLOIDY_VCF = os.path.join(DATA_PATH, "vcf", "one_ploidy.vcf")
@@ -194,7 +198,8 @@ class TestDataHolder(unittest.TestCase):
         outgroup = [None, True, False]
         labels = [None, ["YRI", "CEU"], ["CEU", "YRI"], ["CEU"]]
         seq_lens = [None, 51304566]
-        data = [(VCF_SIM_YRI_CEU_DATA, POPMAP_SIM_YRI_CEU)]
+        # we read data a lot of times here, so we take small file
+        data = [(VCF_SIM_YRI_CEU_SMALL_DATA, POPMAP_SIM_YRI_CEU)]
         for dat, siz, lab, out in itertools.product(data, sizes, labels,
                                                     outgroup):
             # print(siz, lab, out)

@@ -685,6 +685,23 @@ class TestCoreRun(unittest.TestCase):
                         shutil.rmtree("Some_out_dir")
 
 
+    def test_same_values_of_best_model(self):
+        """
+        Local search returns the same solution with different round-off
+        errors, it should not be taken as new best model.
+        """
+        from gadma.core.core_run import are_same_values
+        x = [1.5, np.float64(20.0), 'Sud', 0.0]
+        self.assertTrue(are_same_values(x, list(x)))
+        self.assertTrue(are_same_values(x, np.array(x, dtype=object)))
+        self.assertTrue(
+            are_same_values(x, [1.5 * (1 + 1e-12), 20.0, 'Sud', 0.0]))
+        self.assertFalse(
+            are_same_values(x, [1.5 * (1 + 1e-6), 20.0, 'Sud', 0.0]))
+        self.assertFalse(are_same_values(x, [1.5, 20.0, 'Exp', 0.0]))
+        self.assertFalse(are_same_values(x, [1.5, 20.0, 'Sud', 1e-20]))
+        self.assertFalse(are_same_values(x, [1.5, 20.0, 'Sud']))
+
     def test_core_run_restore(self):
         old_run_out = os.path.join(DATA_PATH, "my_example_run")
         sys.argv = ['gadma', "--resume", old_run_out]

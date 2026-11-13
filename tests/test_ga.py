@@ -9,6 +9,7 @@ import gadma
 from gadma.utils import custom_generator, WeightedMetaArray
 from gadma.optimizers import GeneticAlgorithm, register_global_optimizer
 from gadma.data.data import VCFDataHolder
+import functools
 import importlib
 import pickle
 import os
@@ -27,6 +28,24 @@ EXAMPLE_DATA_LD = VCFDataHolder(
     population_labels=["YRI", "CEU"],
     preprocessed_data=PREPROCESSED_DATA
 )
+
+
+def remember_results(model_func):
+    """
+    Returns the same function of demographic model that remembers its
+    results. Model is simulated a lot of times for the same values of
+    parameters when CLAIC is evaluated several times.
+    """
+    results = {}
+
+    @functools.wraps(model_func)
+    def wrapper(params, ns, *args):
+        key = (tuple(float(el) for el in params),
+               tuple(int(el) for el in ns), repr(args))
+        if key not in results:
+            results[key] = model_func(params, ns, *args)
+        return copy.deepcopy(results[key])
+    return wrapper
 
 
 class TestGlobalOptimizers(unittest.TestCase):
@@ -515,7 +534,7 @@ class TestInference(unittest.TestCase):
                 optimize_ga(data, func, engine.id, args=args,
                             p_ids=p_ids, maxtime_per_eval=0.1,
                             num_init=num_init, X_init=X_init, Y_init=None,
-                            gen_size=10, ga_maxiter=5, ls_maxiter=1,
+                            gen_size=10, ga_maxiter=2, ls_maxiter=1,
                             verbose=1, callback=None,
                             save_file='save_file', eval_file='eval_file',
                             mutation_rate=1.5e-8,
@@ -543,7 +562,8 @@ class TestInference(unittest.TestCase):
             spec = importlib.util.spec_from_file_location("module", filename)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
-            func = module.model_func
+            # CLAIC is evaluated several times for the same values
+            func = remember_results(module.model_func)
 
             if engine.id == 'dadi':
                 pts = [4, 6, 8]
@@ -623,7 +643,8 @@ class TestInference(unittest.TestCase):
             spec = importlib.util.spec_from_file_location("module", filename)
             model_module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(model_module)
-            func = model_module.model_func
+            # CLAIC is evaluated several times for the same values
+            func = remember_results(model_module.model_func)
 
             kwargs = {"pts": pts} if engine.id == "dadi" else {}
 

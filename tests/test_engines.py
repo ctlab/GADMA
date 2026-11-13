@@ -191,7 +191,9 @@ class TestEngines(unittest.TestCase):
         engine = get_engine('dadi')
 
         ns = (4, 4, 4)
-        pts = [10, 20, 30]
+        # values are random and for some of them simulation is very long on
+        # big grid, small grid is enough as the same one is used for dadi
+        pts = [6, 10, 14]
 
         data, dm, values, ll = self.model_3pop_dadi(ns, pts)
         vals = [values[var.name] for var in dm.variables
@@ -210,6 +212,42 @@ class TestEngines(unittest.TestCase):
             values=vals,
             options={"pts": pts}
         ), ll)
+
+    def test_sfs_of_evaluation_is_used_in_comp_plot(self):
+        """
+        Best model is drawn right after its evaluation. SFS for comparison
+        plot should be taken from that evaluation and not simulated again.
+        """
+        engine = get_engine('dadi')
+        ns = (4, 4, 4)
+        pts = [6, 10, 14]
+        data, dm, values, ll = self.model_3pop_dadi(ns, pts)
+        vals = [values[var.name] for var in dm.variables
+                if (var.name in values)]
+        engine.set_data(data)
+        engine.set_model(dm)
+
+        simulate = engine.simulate
+        n_calls = []
+
+        def simulate_and_count(*args, **kwargs):
+            n_calls.append(1)
+            return simulate(*args, **kwargs)
+
+        engine.simulate = simulate_and_count
+        self.assertEqual(engine.evaluate(vals, pts), ll)
+        self.assertEqual(len(n_calls), 1)
+        engine.draw_data_comp_plot(vals, pts, save_file="plot.png")
+        self.assertEqual(len(n_calls), 1)
+        # values that were not evaluated are simulated
+        other_vals = list(vals)
+        other_vals[0] = 1.5 * other_vals[0]
+        engine.draw_data_comp_plot(other_vals, pts, save_file="plot.png")
+        self.assertEqual(len(n_calls), 2)
+        # saved SFS is not valid for new model or data
+        engine.set_model(dm)
+        engine.draw_data_comp_plot(vals, pts, save_file="plot.png")
+        self.assertEqual(len(n_calls), 3)
 
     def test_moments_engine(self):
         engine = get_engine('moments')

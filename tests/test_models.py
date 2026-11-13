@@ -1,4 +1,5 @@
 import unittest
+from unittest import mock
 import pytest
 from pathlib import Path
 import shutil
@@ -451,9 +452,10 @@ class TestModels(unittest.TestCase):
         yield ("dadi snp file",
                SFSDataHolder(os.path.join(EXAMPLE_FOLDER, 'DATA', 'sfs',
                                           'dadi_snp_file.txt')))
+        # first 4000 sites of out_of_africa_chr22_sim.vcf
         yield ("vcf data",
                VCFDataHolder(
-                    vcf_file=os.path.join(EXAMPLE_FOLDER, "DATA", "vcf", "out_of_africa_chr22_sim.vcf"),
+                    vcf_file=os.path.join(EXAMPLE_FOLDER, "DATA", "vcf", "out_of_africa_chr22_sim_small.vcf"),
                     popmap_file=os.path.join(EXAMPLE_FOLDER, "DATA", "vcf", "out_of_africa_chr22_sim_3pop.popmap")
                ))
 
@@ -677,6 +679,7 @@ class TestModels(unittest.TestCase):
                   'N_1F': 20000, 'r_2': -1e-5, 'N_2F': 5000,
                   'T_1': 500, 'T_2': 100, "p_misid": 0.01}
 
+        ld_curves_drawn = False
         for engine in all_available_engines():
             #print("!!!", engine)
             models = [model1, model2, model3, model5, model6]
@@ -750,6 +753,10 @@ class TestModels(unittest.TestCase):
                             if input_values[key] == "Lin":
                                 input_values[key] = "Exp"
                     data.sequence_length = 50818468
+                    if engine.id == "moments" and description == "dadi snp file":
+                        # full size of this data is (30, 24, 44) and one
+                        # simulation takes more than a second in moments
+                        data.projections = [6, 4, 8]
                     # we read data but save only updated data_holder
                     engine.data = data
                     if hasattr(model, "has_p_misid") and model.has_p_misid and engine.data.folded:
@@ -776,7 +783,20 @@ class TestModels(unittest.TestCase):
                         engine.data = data
                         true_ll = engine.evaluate(input_values, **options)
                         d = {}
-                        exec(cmd, d)
+                        if engine.id == "momentsLD" and ld_curves_drawn:
+                            # Generated code draws LD curves and it takes
+                            # almost all its time. We have drawn them for
+                            # the first model, here we only check the call.
+                            with mock.patch.object(
+                                    moments.LD.Plotting,
+                                    "plot_ld_curves_comp",
+                                    autospec=True) as draw_curves:
+                                exec(cmd, d)
+                            draw_curves.assert_called_once()
+                        else:
+                            exec(cmd, d)
+                            if engine.id == "momentsLD":
+                                ld_curves_drawn = True
 
                         msg += f": {true_ll} != {d['ll_model']}"
                         #print(true_ll, d["ll_model"])
