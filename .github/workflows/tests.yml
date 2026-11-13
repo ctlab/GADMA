@@ -62,15 +62,12 @@ jobs:
       - name: Install GADMA and its dependencies.
         run: |
           pip install .
-          
-      - name: Use old matplotlib for tests to enable moments pictures.
-        run: |
-          conda install "matplotlib<3.5"
 
       - name: Check installations of packages.
         run: |
           python -c "import numpy"
           python -c "import scipy"
+          python -c "import matplotlib.pyplot"
           python -c "import dadi"
           python -c "import moments"
           python -c "import gadma"

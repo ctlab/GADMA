@@ -97,7 +97,7 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
         settings=settings,
     )
     warnings.filterwarnings(
-            'ignore', category=matplotlib.cbook.MatplotlibDeprecationWarning)
+            'ignore', category=matplotlib.MatplotlibDeprecationWarning)
 
     # 0. Get place of dot in filename - where file extention starts
     pos = filename.rfind('.')

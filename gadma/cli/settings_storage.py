@@ -1,5 +1,6 @@
 import os
 import ruamel.yaml
+from ruamel.yaml import YAML
 import numpy as np
 from . import settings
 from . import citations
@@ -1041,12 +1042,10 @@ class SettingsStorage(object):
         loaded_dict = {}
         if param_file is not None:
             with open(param_file, encoding="utf-8") as fl:
-                loaded_dict = ruamel.yaml.load(fl,
-                                               ruamel.yaml.RoundTripLoader)
+                loaded_dict = YAML(typ="rt").load(fl)
         if extra_param_file is not None:
             with open(extra_param_file, encoding="utf-8") as fl:
-                extra_dict = ruamel.yaml.load(fl,
-                                              ruamel.yaml.RoundTripLoader)
+                extra_dict = YAML(typ="rt").load(fl)
             loaded_dict = {**loaded_dict, **extra_dict}
 
         for key in loaded_dict:
@@ -1108,8 +1107,7 @@ class SettingsStorage(object):
                                       [PARAM_TEMPLATE, EXTRA_PARAM_TEMPLATE]):
             with open(template, encoding="utf-8") as fl:
                 readed_template = fl.read()
-            loaded_template = ruamel.yaml.load(readed_template,
-                                               ruamel.yaml.RoundTripLoader)
+            loaded_template = YAML(typ="rt").load(readed_template)
             for key_name in loaded_template:
                 attr_name = key_name.lower()
                 attr_name = attr_name.replace("' ", '_')
@@ -1146,14 +1144,14 @@ class SettingsStorage(object):
                 else:
                     value = u'False'
                 return self.represent_scalar(u'tag:yaml.org,2002:bool', value)
-            ruamel.yaml.RoundTripRepresenter.add_representer(type(None),
-                                                             my_represent_none)
-            ruamel.yaml.RoundTripRepresenter.add_representer(bool,
-                                                             my_represent_bool)
+            yaml_rt = YAML(typ="rt")
+            yaml_rt.default_flow_style = True
+            yaml_rt.width = 4096  # do not wrap long values (e.g. paths)
+            yaml_rt.representer.add_representer(type(None),
+                                                my_represent_none)
+            yaml_rt.representer.add_representer(bool, my_represent_bool)
             with open(filename, 'w', encoding="utf-8") as fl:
-                ruamel.yaml.dump(loaded_template, fl,
-                                 default_flow_style=True,
-                                 Dumper=ruamel.yaml.RoundTripDumper)
+                yaml_rt.dump(loaded_template, fl)
         # save missed attributes at the end of extra file
         final_dict = dict()
         with open(extra_params_file, 'a', encoding="utf-8") as fl:
@@ -1171,7 +1169,13 @@ class SettingsStorage(object):
                 if isinstance(value, np.ndarray):
                     value = value.tolist()
                 final_dict[attr_name] = value
-            fl.write(ruamel.yaml.dump(final_dict, default_flow_style=False))
+            try:
+                # ruamel.yaml >= 0.18
+                yaml_py = YAML(typ="full", pure=True)
+            except NotImplementedError:
+                yaml_py = YAML(typ="unsafe", pure=True)
+            yaml_py.default_flow_style = False
+            yaml_py.dump(final_dict, fl)
 
     def get_global_optimizer(self):
         """

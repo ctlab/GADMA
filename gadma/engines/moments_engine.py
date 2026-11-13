@@ -200,6 +200,16 @@ class MomentsEngine(DadiOrMomentsEngine):
 
         # We will create figure to have more control and to return it
         fig, ax = plt.subplots(figsize=(6.72, 3.36))
+        # moments.ModelPlot calls ax.grid(b=...); newer matplotlib has
+        # renamed that argument to `visible` and no longer accepts `b`
+        _ax_grid = ax.grid
+
+        def _grid_compat(*args, b=None, **kwargs):
+            if b is not None and not args:
+                # first positional argument in every matplotlib version
+                args = (b,)
+            return _ax_grid(*args, **kwargs)
+        ax.grid = _grid_compat
 
         if self.data_holder is not None:
             if (self.data_holder.projections is not None
