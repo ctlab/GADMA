@@ -67,6 +67,51 @@ class DadiOrMomentsEngine(Engine):
     def multinom(self):
         return not self.model.has_anc_size
 
+    def set_model(self, model):
+        super(DadiOrMomentsEngine, self).set_model(model)
+        self._saved_sfs = {}
+
+    def set_data(self, data):
+        super(DadiOrMomentsEngine, self).set_data(data)
+        self._saved_sfs = {}
+
+    def __getstate__(self):
+        # Saved SFS are not copied and not sent to other processes together
+        # with engine, they will be simulated again there if required.
+        state = self.__dict__.copy()
+        state["_saved_sfs"] = {}
+        return state
+
+    def _save_simulated_sfs(self, values, grid_sizes, sfs, ll):
+        """
+        Remembers SFS that was simulated during evaluation. SFS for two
+        points are kept: for the last one and for the one with the best
+        log-likelihood. Best model is drawn after its evaluation, so its SFS
+        is taken from here and is not simulated one more time.
+        """
+        key = self._get_key(values, grid_sizes)
+        best = self._saved_sfs.get("best")
+        if ll is not None and (best is None or ll >= best[2]):
+            self._saved_sfs["best"] = (key, sfs, ll)
+        self._saved_sfs["last"] = (key, sfs, ll)
+
+    def _get_simulated_sfs(self, values, grid_sizes):
+        """
+        Returns SFS for data sample sizes. It is simulated if it was not saved
+        during the evaluation.
+        """
+        key = self._get_key(values, grid_sizes)
+        for saved in getattr(self, "_saved_sfs", {}).values():
+            if saved[0] == key:
+                return saved[1].copy()
+        return self.simulate(
+            values,
+            self.data.sample_sizes,
+            None,
+            None,
+            grid_sizes
+        )
+
     def _get_key(self, x, grid_sizes):
         var2value = self.model.var2value(x)
         key = tuple(var2value[var] for var in self.model.variables)
@@ -160,13 +205,7 @@ class DadiOrMomentsEngine(Engine):
         show = save_file is None
         n_pop = len(self.data.sample_sizes)
         # Get simulated data
-        model = self.simulate(
-            values,
-            self.data.sample_sizes,
-            None,
-            None,
-            grid_sizes
-        )
+        model = self._get_simulated_sfs(values, grid_sizes)
         # check for the multinom
         if self.multinom:
             model = self.base_module.Inference.optimally_scaled_sfs(
@@ -218,6 +257,7 @@ class DadiOrMomentsEngine(Engine):
                                   None,
                                   None,
                                   grid_sizes)
+        simulated_sfs = model_sfs
 
         # We can start checking our model SFS
         # Some entries can be negative if numerics failed
@@ -285,6 +325,8 @@ class DadiOrMomentsEngine(Engine):
         # Save simulated data
         key = self._get_key(values, grid_sizes)
         self.saved_add_info[key] = {"theta": theta, "failed_f": failed_f}
+        self._save_simulated_sfs(values_gen, grid_sizes, simulated_sfs,
+                                 ll_model)
         return ll_model
 
     def get_claic_component(self, x0, all_boots, grid_sizes, eps):

@@ -40,6 +40,32 @@ def get_Nanc_gen_time_and_units(x, engine, settings):
     return Nanc, gen_time, gen_time_units
 
 
+def get_image_of_figure(fig, dpi):
+    """
+    Returns picture of the figure as PIL image.
+
+    Pixels are taken from matplotlib directly. It is faster than to save
+    figure to PNG and to read it back, and the picture is the same.
+
+    :param fig: Figure to get picture of.
+    :type fig: :class:`matplotlib.figure.Figure`
+    :param dpi: Resolution of the picture.
+    :type dpi: int
+    """
+    buf = io.BytesIO()
+    fig.savefig(buf, format="rgba", dpi=dpi)
+    # Size of the picture is evaluated in the same way as in matplotlib
+    width, height = [int(size * dpi) for size in fig.get_size_inches()]
+    if buf.tell() == 4 * width * height:
+        return Image.frombuffer("RGBA", (width, height), buf.getvalue(),
+                                "raw", "RGBA", 0, 1)
+    # Size is different from the expected one, we take it from PNG then
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=dpi)
+    buf.seek(0)
+    return Image.open(buf)
+
+
 def draw_plots_to_file(x, engine, settings, filename, fig_title):
     """
     Draws plots of data (SFS) and model from ``engine`` with parameters
@@ -126,17 +152,8 @@ def draw_plots_to_file(x, engine, settings, filename, fig_title):
 
     # 3. Concatenate plots if PIL is available
     if PIL_available and draw_comp_plot and draw_model_plot:
-        save_file_comp = io.BytesIO()
-        save_file_model = io.BytesIO()
-
-        fig1.savefig(save_file_comp, dpi=300)
-        fig2.savefig(save_file_model, dpi=300)
-
-        save_file_comp.seek(0)
-        save_file_model.seek(0)
-
-        img1 = Image.open(save_file_model)
-        img2 = Image.open(save_file_comp)
+        img1 = get_image_of_figure(fig2, dpi=300)
+        img2 = get_image_of_figure(fig1, dpi=300)
 
         if img2.size[1] < img1.size[1]:
             img2 = img2.resize(

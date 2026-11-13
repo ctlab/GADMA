@@ -10,11 +10,37 @@ from .draw_and_generate_code import draw_plots_to_file, generate_code_to_file
 from .draw_and_generate_code import get_fig_title, get_Nanc_gen_time_and_units
 from ..cli import SettingsStorage
 import os
+import numbers
 import numpy as np
 from collections import OrderedDict
 import copy
 import warnings
 from functools import partial
+
+
+def are_same_values(values_1, values_2, rtol=1e-8):
+    """
+    Returns True if two lists of values of model parameters are the same.
+    Numbers are compared up to the relative difference ``rtol``: local search
+    returns the same solution with different round-off errors.
+
+    :param values_1: First list of values.
+    :param values_2: Second list of values.
+    :param rtol: Maximal relative difference between two equal numbers.
+    :type rtol: float
+    """
+    if len(values_1) != len(values_2):
+        return False
+    for val_1, val_2 in zip(values_1, values_2):
+        if val_1 == val_2:
+            continue
+        both_numbers = (isinstance(val_1, numbers.Real) and
+                        isinstance(val_2, numbers.Real))
+        if not both_numbers:
+            return False
+        if abs(val_1 - val_2) > rtol * max(abs(val_1), abs(val_2)):
+            return False
+    return True
 
 
 class CoreRun(object):
@@ -225,7 +251,7 @@ class CoreRun(object):
         equal_x = False
 
         if self.x_best is not None:
-            equal_x = list(self.x_best) == list(x)
+            equal_x = are_same_values(self.x_best, x)
             x_has_w = hasattr(x, 'weights')
             x_best_has_w = hasattr(self.x_best, 'weights')
             if x_has_w != x_best_has_w:
