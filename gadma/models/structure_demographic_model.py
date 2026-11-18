@@ -160,6 +160,7 @@ class StructureDemographicModel(EpochDemographicModel):
             theta0=self.theta0,
             mutation_rate=self.mutation_rate,
             recombination_rate=self.recombination_rate,
+            Nref=self.Nref,
             Nanc_size=Nanc_size,
             p_misid=self.p_misid,
         )
@@ -352,6 +353,10 @@ class StructureDemographicModel(EpochDemographicModel):
                         new_values.append("Sud")
                     elif isinstance(var, SelectionVariable):
                         new_values.append(0)
+                    # Dominance has no effect as there is no selection, we
+                    # put the value that dadi and moments have by default
+                    elif isinstance(var, FractionVariable):
+                        new_values.append(0.5)
                     else:
                         raise ValueError(f"Unknown type of variable: "
                                          f"{var.__class__}")

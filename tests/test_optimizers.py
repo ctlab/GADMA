@@ -15,6 +15,7 @@ import gadma
 import dadi
 import scipy
 import shutil
+import tempfile
 import warnings
 import os
 import sys
@@ -701,6 +702,58 @@ class TestCoreRun(unittest.TestCase):
         self.assertFalse(are_same_values(x, [1.5, 20.0, 'Exp', 0.0]))
         self.assertFalse(are_same_values(x, [1.5, 20.0, 'Sud', 1e-20]))
         self.assertFalse(are_same_values(x, [1.5, 20.0, 'Sud']))
+
+    def test_bounds_of_split_time_after_increase(self):
+        """
+        Bounds of the split time should be kept when structure of the model
+        is increased during the run.
+        """
+        upper_bound = 1000
+        settings = SettingsStorage()
+        settings.output_directory = tempfile.mkdtemp("gadma_test_dir")
+        try:
+            settings.input_data = YRI_CEU_DATA
+            settings.projections = [4, 4]
+            settings.engine = "moments"
+            settings.theta0 = 0.37976
+            settings.initial_structure = [1, 1]
+            settings.final_structure = [2, 2]
+            settings.only_sudden = True
+            settings.upper_bound_of_first_split = upper_bound
+            settings.num_init_const = 2
+            settings.global_maxiter = 2
+            settings.local_maxiter = 1
+            settings.draw_models_every_n_iteration = 0
+            settings.print_models_code_every_n_iteration = 0
+            settings.silence = True
+            shared_dict = SharedDictForCoreRun(multiprocessing=False)
+            core_run = CoreRun(1, shared_dict, settings)
+            result = core_run.run(settings.get_optimizers_init_kwargs())
+        finally:
+            shutil.rmtree(settings.output_directory)
+
+        model = core_run.model
+        self.assertEqual(model.get_structure(), [2, 2])
+        # Time of split is the sum of times of two intervals after it
+        times_after_split = ["t2", "t3"]
+        constrain = model.linear_constrain
+        self.assertTrue(constrain is not None)
+        is_involved = [var.name in times_after_split
+                       for var in model.variables]
+        self.assertEqual(sum(is_involved), 2)
+        self.assertTrue(np.all(constrain.A == [is_involved]),
+                        msg=str(constrain))
+        self.assertTrue(np.all(constrain.ub == [upper_bound / 2]),
+                        msg=str(constrain))
+        # Time of split of the result in generations is inside of the bound
+        engine = core_run.engine
+        theta = engine.get_theta(result.x, *settings.get_engine_args())
+        Nanc = engine.get_N_ancestral_from_theta(theta)
+        var2value = model.var2value(result.x)
+        time = sum(value for var, value in var2value.items()
+                   if var.name in times_after_split)
+        self.assertTrue(2 * Nanc * time <= upper_bound * (1 + 1e-8),
+                        msg=f"Time of split: {2 * Nanc * time}")
 
     def test_core_run_restore(self):
         old_run_out = os.path.join(DATA_PATH, "my_example_run")

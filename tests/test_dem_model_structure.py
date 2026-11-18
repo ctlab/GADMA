@@ -482,6 +482,90 @@ class TestModelStructure(unittest.TestCase):
         dm.fix_variable(t, 0.5)
         self.assertEqual(dm.get_number_of_parameters([1.0]), 1)
 
+    def test_nref_is_kept(self):
+        """
+        Rescaling factor of the model should not be lost when the model is
+        built from structure.
+        """
+        dm = StructureDemographicModel([1, 1], [2, 1],
+                                       has_migs=True, has_sels=False,
+                                       has_dom=False, has_dyns=True,
+                                       sym_migs=False, frac_split=True,
+                                       has_p_misid=False, Nref=12345)
+        self.assertEqual(dm.Nref, 12345)
+        dm, _ = dm.increase_structure()
+        self.assertEqual(dm.get_structure(), [2, 1])
+        self.assertEqual(dm.Nref, 12345)
+
+    def test_increase_structure_with_dominance(self):
+        """
+        Structure of the model with selection and dominance coefficients
+        could be increased and likelihood stays the same.
+        """
+        engine = get_engine("moments")
+        for structure, fracs in itertools.product(
+                [(1,), (1, 1), (2, 1), (1, 1, 1)], [False, True]):
+            dm = StructureDemographicModel(structure,
+                                           np.array(structure) + 1,
+                                           has_migs=True, has_sels=True,
+                                           has_dom=True, has_dyns=True,
+                                           sym_migs=False, frac_split=fracs,
+                                           has_p_misid=False)
+            # domains are narrowed as in the test of likelihood above
+            for var in dm.variables:
+                if isinstance(var, PopulationSizeVariable):
+                    var.domain = [1e-1, 5.]
+                elif isinstance(var, TimeVariable):
+                    var.domain = [0.1, 1.]
+                elif isinstance(var, (MigrationVariable, SelectionVariable)):
+                    var.domain = [0, 2.]
+            sizes = [4 for _ in structure]
+            engine.set_model(dm)
+            # data is simulated for other values of parameters, so
+            # likelihood is sensitive to the values of the model
+            data = engine.simulate(
+                values=[var.resample() for var in dm.variables],
+                ns=sizes,
+                sequence_length=1e6,
+                population_labels=[f"Pop{i}" for i in range(len(sizes))]
+            )
+            engine.set_data(data)
+            x = [var.resample() for var in dm.variables]
+            ll_true = engine.evaluate(x)
+
+            for i in range(len(structure)):
+                new_structure = list(structure)
+                new_structure[i] += 1
+                msg = f"Increase structure from {structure} to "\
+                      f"{new_structure}, fracs: {fracs}"
+                new_dm = copy.deepcopy(dm)
+                new_dm, new_X = new_dm.increase_structure(new_structure, [x])
+                self.assertEqual(new_dm.get_structure(), new_structure,
+                                 msg=msg)
+                # new dominance coefficients have valid values
+                for var, value in zip(new_dm.variables, new_X[0]):
+                    if var.name.startswith("h"):
+                        self.assertTrue(
+                            var.domain[0] <= value <= var.domain[1],
+                            msg=f"{var.name} = {value}. {msg}"
+                        )
+                engine.set_model(new_dm)
+                new_ll = engine.evaluate(new_X[0])
+                # New interval right after the ancestral one changes nothing.
+                # In other cases one interval is divided into two ones,
+                # numerical solution is slightly different then.
+                if i == 0 and structure[0] == 1:
+                    rtol = 1e-5
+                else:
+                    rtol = 1e-2
+                if ll_true is None or new_ll is None:
+                    # numerics failed for these values
+                    is_equal = ll_true is None and new_ll is None
+                else:
+                    is_equal = np.allclose(ll_true, new_ll, rtol=rtol)
+                self.assertTrue(is_equal,
+                                msg=f"{ll_true} != {new_ll} : {msg}")
+
     def test_fails(self):
         bad_struct = [[0], [0, 1], [1, 0]]
 

@@ -429,6 +429,16 @@ class CoreRun(object):
             return self.save_file + suffix
         return self.save_file
 
+    def update_linear_constrain(self):
+        """
+        Builds linear constrain (bounds of the split times from settings) for
+        the current structure of the demographic model. Constrain is written
+        for variables of the model, so it is removed when the structure is
+        changed and should be built again.
+        """
+        constrain = self.settings.get_linear_constrain_for_model(self.model)
+        self.model.linear_constrain = constrain
+
     def run_without_increase(self, initial_kwargs={}):
         """
         Run one launch without any increase of demographic model structure.
@@ -471,6 +481,7 @@ class CoreRun(object):
                           f"It will be restored.")
             self.settings.initial_structure = struct
             self.model = self.model.from_structure(struct)
+            self.update_linear_constrain()
         self.optimize_kwargs['restore_file'] = restore_file
         self.optimize_kwargs['restore_points_only'] = only_models
         self.optimize_kwargs['global_x_transform'] = x_transform[0]
@@ -485,6 +496,7 @@ class CoreRun(object):
                         structure,
                         X=X_init
                     )
+                    self.update_linear_constrain()
             if not self.settings.generate_x_transform:
                 Y_init = copy.copy(result.Y_out)
             else:
