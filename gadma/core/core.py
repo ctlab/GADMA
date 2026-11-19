@@ -33,7 +33,10 @@ def job(index, shared_dict, settings):
     :type settings: :class:`gadma.cli.settings_storage.SettingsStorage`
     """
     try:
+        # Bounds of variables and options of engines are kept in classes,
+        # they could be lost in a new process
         settings.ensure_global_bounds()
+        settings.ensure_engines_options()
         obj = CoreRun(index, shared_dict, settings)
         obj.run(settings.get_optimizers_init_kwargs())
     except Exception as e:

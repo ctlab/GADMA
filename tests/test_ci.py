@@ -74,6 +74,97 @@ class TestConfidenceIntervals(unittest.TestCase):
                         "-d", no_ids_model_name, "-o", output_dir]
             self.assertRaises(ValueError, gadma.run_ls_on_boot_data.main)
 
+    def test_dadi_extrapolation_in_run_boots(self):
+        """
+        Local search on bootstrapped data uses the extrapolation of dadi
+        that is used in the file with demographic model.
+        """
+        import dadi
+        import numpy as np
+        import pandas as pd
+        import tempfile
+        from gadma.engines import DadiEngine
+        from gadma.run_ls_on_boot_data import load_module, \
+            get_dadi_extrapolation_from_python_file
+
+        dir_boot = os.path.join(DATA_DIR, "DATA", "sfs",
+                                "small_1_pop_bootstrap")
+        base_model = os.path.join(DATA_DIR, "MODELS",
+                                  "small_1pop_dem_model_dadi.py")
+        with open(base_model) as f:
+            base_code = f.read()
+        p0, pts = [2, 0.1, 0.5, 2], [4, 6, 8]
+        log_name, lin_name = "make_extrap_log_func", "make_extrap_func"
+        codes = {
+            "no": base_code,
+            "log": base_code + f"\nfunc_ex = dadi.Numerics.{log_name}("
+                               "model_func)\n",
+            "lin": base_code + f"\nfunc_ex = dadi.Numerics.{lin_name}("
+                               "model_func)\n",
+            "lin_import": "from dadi.Numerics import make_extrap_func\n" +
+                          base_code + "\n# not make_extrap_log_func\n"
+                          "func_ex = make_extrap_func(model_func)\n",
+            "both": base_code + f"\nfunc_ex = dadi.Numerics.{lin_name}("
+                                f"model_func)\nfunc_ex_2 = dadi.Numerics."
+                                f"{log_name}(model_func)\n",
+            "not_python": "some text (",
+        }
+        in_file = {"no": None, "log": log_name, "lin": lin_name,
+                   "lin_import": lin_name, "both": None, "not_python": None}
+
+        work_dir = tempfile.mkdtemp("gadma_test_dir")
+        try:
+            files = {}
+            for key, code in codes.items():
+                files[key] = os.path.join(work_dir, f"model_{key}.py")
+                with open(files[key], "w") as f:
+                    f.write(code)
+                self.assertEqual(
+                    get_dadi_extrapolation_from_python_file(files[key]),
+                    in_file[key], msg=key
+                )
+            self.assertEqual(get_dadi_extrapolation_from_python_file(None),
+                             None)
+            params_file = os.path.join(work_dir, "ls_params.py")
+            with open(params_file, "w") as f:
+                f.write(f"p0 = {p0}\npts = {pts}\n")
+
+            # Local search is switched off, so the result is theta of p0
+            # for each bootstrapped data. It depends on the extrapolation.
+            boot_names = sorted(os.listdir(dir_boot))
+            model_func = load_module(base_model).model_func
+            expected = {}
+            for name in [log_name, lin_name]:
+                func_ex = getattr(dadi.Numerics, name)(model_func)
+                expected[name] = []
+                for boot_name in boot_names:
+                    fs = dadi.Spectrum.from_file(
+                        os.path.join(dir_boot, boot_name))
+                    expected[name].append(dadi.Inference.optimal_sfs_scaling(
+                        func_ex(p0, fs.sample_sizes, pts), fs))
+            self.assertFalse(np.allclose(expected[log_name],
+                                         expected[lin_name]))
+
+            for key, jobs, used in [("lin", 1, lin_name),
+                                    ("no", 1, log_name),
+                                    ("lin_import", 2, lin_name),
+                                    ("log", 1, log_name)]:
+                output_dir = os.path.join(work_dir, f"out_{key}")
+                sys.argv = ["gadma-run_ls_on_boot_data", "-b", dir_boot,
+                            "-d", files[key], "-o", output_dir,
+                            "-p", params_file, "-j", str(jobs),
+                            "--opt", "None"]
+                gadma.run_ls_on_boot_data.main()
+                table = pd.read_csv(
+                    os.path.join(output_dir, "result_table.csv"), index_col=0)
+                thetas = [table.loc[boot_name, "Theta"]
+                          for boot_name in boot_names]
+                self.assertTrue(np.allclose(thetas, expected[used]),
+                                msg=f"file {key}, jobs {jobs}: {thetas}")
+        finally:
+            shutil.rmtree(work_dir)
+            DadiEngine.extrapolation = log_name
+
     def test_run_ci_evaluation(self):
         moments.LD.Inference._varcov_inv_cache = {}
         warnings.filterwarnings(action='ignore', category=UserWarning,

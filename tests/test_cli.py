@@ -621,6 +621,57 @@ class TestCLI(unittest.TestCase):
             if check_dir_existence("Some_out_dir"):
                 shutil.rmtree("Some_out_dir")
 
+    def test_options_of_engines_in_new_process(self):
+        """
+        Options of engines are kept in their classes. A new process could
+        start with the default values of them, so they should be set again
+        for the run that is made there.
+        """
+        from gadma.engines import DadiEngine, MomentsLdEngine
+        from gadma.core import core
+
+        def get_options():
+            return (DadiEngine.extrapolation, MomentsLdEngine.ld_kwargs,
+                    MomentsLdEngine.n_processes)
+
+        def set_options(options):
+            (DadiEngine.extrapolation, MomentsLdEngine.ld_kwargs,
+             MomentsLdEngine.n_processes) = options
+
+        defaults = get_options()
+        options = ("make_extrap_func", {"r_bins": "[0, 1e-6, 1e-5]"}, 3)
+        self.assertNotEqual(defaults, options)
+        settings = SettingsStorage()
+        core_run_cls = core.CoreRun
+        try:
+            settings.dadi_extrapolation = options[0]
+            settings.ld_kwargs = options[1]
+            settings.number_of_processes = options[2]
+            self.assertEqual(get_options(), options)
+
+            # the state of a new process
+            set_options(defaults)
+            settings.ensure_engines_options()
+            self.assertEqual(get_options(), options)
+
+            # run in a new process
+            options_in_run = []
+
+            class Run(object):
+                def __init__(self, index, shared_dict, settings):
+                    pass
+
+                def run(self, initial_kwargs):
+                    options_in_run.append(get_options())
+
+            core.CoreRun = Run
+            set_options(defaults)
+            core.job(1, None, settings)
+            self.assertEqual(options_in_run, [options])
+        finally:
+            core.CoreRun = core_run_cls
+            set_options(defaults)
+
     def test_bounds_of_split_time_in_settings(self):
         """
         Bounds of split times could be used for the model with structure

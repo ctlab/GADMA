@@ -815,6 +815,18 @@ class SettingsStorage(object):
                 print_warnings=False,
             )
 
+    def ensure_engines_options(self):
+        """
+        Sets options that are kept in the classes of engines: extrapolation
+        of dadi, kwargs and number of processes of momentsLD. They are set
+        when the corresponding settings are assigned, but another process
+        could start with the default values of them (it depends on the start
+        method of processes), so they should be set there again.
+        """
+        DadiEngine.extrapolation = self.dadi_extrapolation
+        MomentsLdEngine.ld_kwargs = self.ld_kwargs
+        MomentsLdEngine.n_processes = self.number_of_processes
+
     def __getattr__(self, name):
         try:
             return object.__getattribute__(self, name)

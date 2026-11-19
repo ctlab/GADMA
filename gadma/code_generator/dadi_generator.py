@@ -223,11 +223,12 @@ def _print_bounds(engine):
     return f"lower_bound = [{lower_bound}]\nupper_bound = [{upper_bound}]\n"
 
 
-def _print_dadi_simulation():
+def _print_dadi_simulation(engine):
     """
-    Returns string of code about simulation with dadi.
+    Returns string of code about simulation with dadi. Extrapolation is the
+    same as engine uses.
     """
-    ret_str = f"func_ex = dadi.Numerics.make_extrap_log_func"\
+    ret_str = f"func_ex = dadi.Numerics.{engine.extrapolation}"\
               f"({FUNCTION_NAME})\n"
     ret_str += "model = func_ex(p0, ns, pts)\n"
     return ret_str
@@ -316,7 +317,7 @@ def _print_main(engine, values, mode='dadi', nanc=None):
 def _print_dadi_main(engine, values, nanc=None):
     ret_str = _print_p0(engine, values)
     ret_str += _print_bounds(engine)
-    ret_str += _print_dadi_simulation()
+    ret_str += _print_dadi_simulation(engine)
     ret_str += _print_main(engine, values, mode='dadi', nanc=nanc)
     return ret_str
 

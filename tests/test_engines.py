@@ -213,6 +213,43 @@ class TestEngines(unittest.TestCase):
             options={"pts": pts}
         ), ll)
 
+    def test_dadi_extrapolation_in_generated_code(self):
+        """
+        Generated code of dadi uses the same extrapolation as the engine,
+        so it gives the same likelihood.
+        """
+        settings = SettingsStorage()
+        settings.engine = "dadi"
+        settings.input_data = os.path.join(DATA_PATH, "DATA", "sfs",
+                                           "YRI_CEU.fs")
+        settings.projections = [4, 4]
+        settings.pts = [6, 8, 10]
+        settings.initial_structure = [1, 1]
+        settings.only_sudden = True
+        settings.no_migrations = True
+        model = settings.get_model()
+        x = [0.2 if var.name.startswith("t") else 1.5
+             for var in model.variables]
+        ll_values = []
+        for extrapolation in ["make_extrap_log_func", "make_extrap_func"]:
+            engine = get_engine("dadi")
+            engine.extrapolation = extrapolation
+            engine.set_data(settings.inner_data)
+            engine.set_model(model)
+            engine.data_holder = settings.data_holder
+            ll_values.append(engine.evaluate(x, settings.pts))
+            code = engine.generate_code(x, None, settings.pts)
+            self.assertTrue(f"dadi.Numerics.{extrapolation}(" in code,
+                            msg=extrapolation)
+            namespace = {}
+            exec(code, namespace)
+            self.assertTrue(
+                np.isclose(ll_values[-1], namespace["ll_model"]),
+                msg=f"{extrapolation}: {ll_values[-1]} != "
+                    f"{namespace['ll_model']}"
+            )
+        self.assertFalse(np.isclose(ll_values[0], ll_values[1]))
+
     def test_selection_and_dominance_of_each_population(self):
         """
         Selection and dominance coefficients of every population are used
