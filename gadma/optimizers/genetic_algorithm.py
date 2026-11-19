@@ -376,9 +376,10 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
 
         * Roulette Wheel - the better fitness function is the higher chance
           to be selected for mutation and crossover for the individual is.
-        * Rank - almost the same as Roulette Wheel but with rank insted
-          fitness function. This means weight=1 for the best individual,
-          weight=2 for the second best and so on.
+        * Rank - almost the same as Roulette Wheel but with rank instead of
+          fitness function. This means weight=n for the best individual
+          out of n, weight=n-1 for the second best and so on down to
+          weight=1 for the worst one.
 
         :param X_gen: previous generation of individuals.
         :param Y_gen: fitnesses of the previous generation. If `None` then
@@ -419,8 +420,9 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                     p = 1 - p
                     p /= np.sum(p)
         elif selection_type == 'rank':
+            # Individuals are sorted from the best one to the worst one
             n = len(X_gen)
-            p = np.arange(1, n+1) / (n * (n - 1))
+            p = np.arange(n, 0, -1, dtype=float)
             p /= np.sum(p)
         else:
             raise ValueError(f"Unknown selection type: {selection_type}.")

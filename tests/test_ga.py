@@ -1,4 +1,5 @@
 import unittest
+from unittest import mock
 from gadma import *
 import numpy as np
 import pytest
@@ -229,6 +230,38 @@ class TestGeneticAlg(unittest.TestCase):
         # fails
         self.assertRaises(ValueError, ga.selection, f,
                           variables, X_gen, selection_type='bad_type')
+
+    def test_selection_prefers_better_solutions(self):
+        """
+        For every type of selection a better solution has a greater chance
+        to become a parent.
+        """
+        def f(x):
+            return np.sum(x)
+
+        ga = get_global_optimizer('Genetic_algorithm')
+        variables = [ContinuousVariable('var%d' % i, domain=[0, 1])
+                     for i in range(3)]
+        X_gen = [[var.resample() for var in variables] for _ in range(10)]
+        original_choice = np.random.choice
+        for sel_type in ['roulette_wheel', 'rank']:
+            probs = []
+
+            def choice(a, size=None, replace=True, p=None):
+                # we remember probabilities of choice among the generation
+                if p is not None and len(p) == len(X_gen):
+                    probs.append(np.array(p, dtype=float))
+                return original_choice(a, size=size, replace=replace, p=p)
+
+            with mock.patch('numpy.random.choice', choice):
+                ga.selection(f, variables, X_gen, selection_type=sel_type)
+            self.assertTrue(len(probs) > 0)
+            for p in probs:
+                self.assertTrue(np.isclose(np.sum(p), 1))
+                # solutions are sorted from the best one to the worst one
+                self.assertTrue(np.all(np.diff(p) < 0),
+                                msg=f"Selection {sel_type} has probabilities"
+                                    f" {p} from the best to the worst.")
 
     def test_opt_without_report_file(self):
         def f(x):
