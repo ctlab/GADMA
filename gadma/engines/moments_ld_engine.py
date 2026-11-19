@@ -11,12 +11,14 @@ from .. import VCFDataHolder, moments_LD_available, matplotlib_available
 from ..utils import DynamicVariable, get_correct_dtype, check_file_existence
 from ..code_generator import id2printfunc
 from ..data import check_and_return_projections_and_labels
-import moments.LD
 import multiprocessing
 from collections import ChainMap
 import os
 if matplotlib_available:
     from matplotlib import pyplot as plt
+# moments is not required for GADMA, engine is not registered without it
+if moments_LD_available:
+    import moments.LD
 
 
 def _read_data_one_job(args):
@@ -83,7 +85,9 @@ class MomentsLdEngine(Engine):
 
     supported_models = [DemographicModel, StructureDemographicModel,
                         CustomDemographicModel]
-    supported_data = [VCFDataHolder, dict, moments.LD.LDstats_mod.LDstats]
+    supported_data = [VCFDataHolder, dict]
+    if moments_LD_available:
+        supported_data.append(moments.LD.LDstats_mod.LDstats)
 
     r_bins = np.array(
         [0, 1e-6, 2e-6, 5e-6, 1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3]

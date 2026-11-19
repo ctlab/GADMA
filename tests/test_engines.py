@@ -213,6 +213,48 @@ class TestEngines(unittest.TestCase):
             options={"pts": pts}
         ), ll)
 
+    def test_import_without_optional_packages(self):
+        """
+        GADMA is imported when some packages are not installed: engines of
+        moments are not available without moments, pandas is needed only
+        for the scripts of confidence intervals.
+        """
+        import ast
+        import subprocess
+        import sys
+        code = (
+            "import sys, warnings\n"
+            "warnings.filterwarnings('ignore')\n"
+            "for name in {blocked!r}:\n"
+            "    sys.modules[name] = None  # import of it fails\n"
+            "import gadma\n"
+            "print(sorted(eng.id for eng in gadma.all_engines()))\n"
+        )
+        env = dict(os.environ)
+        repo_dir = os.path.dirname(os.path.dirname(gadma.__file__))
+        env["PYTHONPATH"] = os.pathsep.join(
+            [repo_dir] + [el for el in [env.get("PYTHONPATH")] if el])
+        all_ids = sorted(eng.id for eng in all_engines())
+        for blocked in [["moments"], ["pandas"]]:
+            res = subprocess.run(
+                [sys.executable, "-c", code.format(blocked=blocked)],
+                capture_output=True, universal_newlines=True, env=env
+            )
+            self.assertEqual(res.returncode, 0,
+                             msg=f"{blocked}: {res.stderr[-1000:]}")
+            ids = ast.literal_eval(res.stdout.strip().split("\n")[-1])
+            if blocked == ["moments"]:
+                self.assertEqual(
+                    ids,
+                    [el for el in all_ids if not el.startswith("moments")]
+                )
+            else:
+                # momi needs pandas itself
+                self.assertEqual(
+                    [el for el in ids if el != "momi2"],
+                    [el for el in all_ids if el != "momi2"]
+                )
+
     def test_dadi_extrapolation_in_generated_code(self):
         """
         Generated code of dadi uses the same extrapolation as the engine,

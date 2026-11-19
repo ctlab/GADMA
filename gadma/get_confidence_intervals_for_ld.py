@@ -3,12 +3,10 @@ import os.path
 
 from gadma.utils.utils import abspath, \
     check_file_existence, module_name_from_path
-import moments.LD
 import pickle
 import importlib.util
 import sys
 import copy
-import pandas as pd
 
 
 def main():
@@ -17,6 +15,9 @@ def main():
     Reads read generated data_for_ci.py file and
     calculate confidence intervals from it.
     """
+    # Packages are imported here: they are not required for import of GADMA
+    import moments.LD
+    import pandas as pd
     parser = argparse.ArgumentParser("GADMA module for calculating confidence "
                                      "intervals from calculated LD params")
 
