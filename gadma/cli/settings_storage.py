@@ -1409,8 +1409,6 @@ class SettingsStorage(object):
                 recombination_rate=rec_rate,
                 has_inbr=create_inbr
             )
-            constrain = self.get_linear_constrain_for_model(model)
-            model.linear_constrain = constrain
             if self.fixed_ancestral_size:
                 if self.ancestral_size_as_parameter is not None:
                     ValueError(
@@ -1419,6 +1417,10 @@ class SettingsStorage(object):
                     )
                 model.fix_variable(model.Nanc_size, self.fixed_ancestral_size)
                 model.Nanc_size = self.fixed_ancestral_size
+            # Constrain is built for the variables of the model, so we do it
+            # when the variable of ancestral size is already fixed
+            constrain = self.get_linear_constrain_for_model(model)
+            model.linear_constrain = constrain
             return model
         elif self.custom_filename is None and self.model_func is not None:
             try:
@@ -1845,6 +1847,37 @@ class SettingsStorage(object):
                 raise ValueError(
                     "`Lower bound of second split` should be less than `Upper"
                     " bound of first split`"
+                )
+        # Check that it is possible to use bounds
+        split_bounds = {
+            "Lower bound of first split": self.lower_bound_of_first_split,
+            "Upper bound of first split": self.upper_bound_of_first_split,
+            "Lower bound of second split": self.lower_bound_of_second_split,
+            "Upper bound of second split": self.upper_bound_of_second_split,
+        }
+        set_bounds = ", ".join(f"`{name}`"
+                               for name, value in split_bounds.items()
+                               if value is not None)
+        if len(set_bounds) > 0:
+            # We do not know what parameters of the custom model are times
+            if self.custom_filename is not None or self.model_func is not None:
+                raise ValueError(
+                    f"Bounds of split times ({set_bounds}) could be used "
+                    "for demographic model with structure only: it is "
+                    "unknown what parameters of custom demographic model "
+                    "correspond to the times of splits."
+                )
+            # Bounds are in generations, so size of ancestral population is
+            # required to compare them with the time of the model
+            Nanc_is_known = (self.Nanc_will_be_available() or
+                             self.fixed_ancestral_size is not None)
+            if not Nanc_is_known:
+                raise ValueError(
+                    f"Bounds of split times ({set_bounds}) are measured in "
+                    "generations and time of the demographic model could not "
+                    "be translated to generations. Please specify `Theta0` "
+                    "or both `Mutation rate` and `Sequence length`, another "
+                    "option is to set `Ancestral size as parameter` to True."
                 )
         if self.fixed_ancestral_size is not None:
             # check that mu and L are given

@@ -274,7 +274,8 @@ class TestEngines(unittest.TestCase):
         )
         self.assertTrue(np.allclose(eng_ll, ll),
                         msg=f"{eng_ll} != {ll}")
-        # check that multinom and constrain lead to error
+        # check that constrain is used when ancestral size is known (not
+        # multinom): solution that does not satisfy constrain is skipped
         dm = EpochDemographicModel(Nanc_size=10000)
         dm.add_epoch(TimeVariable("t"), [PopulationSizeVariable("nu")])
         engine.model = dm
@@ -284,8 +285,19 @@ class TestEngines(unittest.TestCase):
             sequence_length=1e6,
             population_labels=["Pop1"]
         )
-        engine.model.linear_constrain = optimizers.LinearConstrain([[0, 1], [1, -1]], [0, 0], [1, 1])
-        self.assertRaises(ValueError, engine.evaluate, values=[1, 1])
+        ll = engine.evaluate(values=[1, 1])
+        self.assertTrue(ll is not None)
+        # time is multiplied by ancestral size and compared with bounds
+        A = [[int(isinstance(var, TimeVariable)) for var in dm.variables]]
+        engine.model.linear_constrain = optimizers.LinearConstrain(
+            A, [5000], [20000])
+        self.assertEqual(engine.evaluate(values=[1, 1]), ll)
+        engine.model.linear_constrain = optimizers.LinearConstrain(
+            A, [0], [5000])
+        self.assertTrue(engine.evaluate(values=[1, 1]) is None)
+        engine.model.linear_constrain = optimizers.LinearConstrain(
+            A, [20000], [np.inf])
+        self.assertTrue(engine.evaluate(values=[1, 1]) is None)
 
     def test_upper_bounds_on_split_time(self):
         import dadi
@@ -308,6 +320,234 @@ class TestEngines(unittest.TestCase):
         engine.model.linear_constrain.lb = [51, -1]
         engine.set_model(engine.model)
         self.assertRaises(ValueError, engine.get_theta, values)
+
+    def test_bounds_of_split_time_with_known_ancestral_size(self):
+        """
+        Bounds of split times are checked when size of ancestral population
+        is parameter of the model or constant: solution that is out of bounds
+        is skipped, other solutions have the same value as without bounds.
+        """
+        engine_ids = ["moments", "dadi"]
+        if gadma.momi_available:
+            engine_ids.append("momi2")
+        for engine_id, is_fixed in [(engine_id, is_fixed)
+                                    for engine_id in engine_ids
+                                    for is_fixed in [False, True]]:
+            if engine_id == "momi2" and is_fixed:
+                continue
+            msg = f"engine: {engine_id}, fixed ancestral size: {is_fixed}"
+            settings = SettingsStorage()
+            settings.engine = engine_id
+            settings.input_data = os.path.join(DATA_PATH, "DATA", "sfs",
+                                               "YRI_CEU.fs")
+            settings.projections = [4, 4]
+            if engine_id == "dadi":
+                settings.pts = [8, 10, 12]
+            settings.mutation_rate = 1.25e-8
+            settings.sequence_length = 4.04e6
+            settings.initial_structure = [1, 1]
+            settings.only_sudden = True
+            settings.no_migrations = True
+            settings.ancestral_size_as_parameter = True
+            if is_fixed:
+                settings.fixed_ancestral_size = 10000
+            settings.lower_bound_of_first_split = 2000
+            settings.upper_bound_of_first_split = 6000
+
+            model = settings.get_model()
+            names = [var.name for var in model.variables]
+            self.assertEqual("Nanc" in names, not is_fixed, msg=msg)
+            # constrain is built for the variables of the model
+            constrain = model.linear_constrain
+            self.assertTrue(constrain is not None, msg=msg)
+            self.assertTrue(
+                np.all(constrain.A == [[name == "t1" for name in names]]),
+                msg=f"{constrain}. {msg}"
+            )
+            engine = get_engine(engine_id)
+            engine.set_data(settings.inner_data)
+            engine.set_model(model)
+            engine.data_holder = settings.data_holder
+            args = settings.get_engine_args()
+
+            # Ancestral size is 10000, so split is 20000 * t1 generations ago
+            for time, is_inside in [(0.05, False), (0.2, True), (0.5, False)]:
+                x = [{"Nanc": 10000., "t1": time}.get(name, 1.0)
+                     for name in names]
+                ll = engine.evaluate(x, *args)
+                model.linear_constrain = None
+                ll_without_bounds = engine.evaluate(x, *args)
+                model.linear_constrain = constrain
+                self.assertTrue(ll_without_bounds is not None, msg=msg)
+                if is_inside:
+                    self.assertEqual(ll, ll_without_bounds, msg=msg)
+                else:
+                    self.assertTrue(ll is None,
+                                    msg=f"time {time}, value {ll}. {msg}")
+                # size of ancestral population is available for all values
+                self.assertEqual(engine.get_N_ancestral(x, *args), 10000,
+                                 msg=msg)
+
+            # Optimizers get the same constrain for values of the variables,
+            # size of ancestral population is its factor. Solution that is
+            # out of bounds is moved to the bound: time is scaled.
+            opt_constrain = engine.get_linear_constrain_for_optimizers()
+            self.assertTrue(opt_constrain is not None, msg=msg)
+            if is_fixed:
+                self.assertEqual(opt_constrain.factor, 10000, msg=msg)
+                self.assertEqual(opt_constrain.factor_index, None, msg=msg)
+            else:
+                self.assertEqual(opt_constrain.factor_index,
+                                 names.index("Nanc"), msg=msg)
+            for Nanc, time, new_time in [(10000., 0.05, 0.1),
+                                         (10000., 0.2, 0.2),
+                                         (10000., 0.5, 0.3),
+                                         (5000., 0.5, 0.5),
+                                         (5000., 0.1, 0.2),
+                                         (50000., 0.1, 0.06)]:
+                if is_fixed and Nanc != 10000:
+                    continue
+                x = [{"Nanc": Nanc, "t1": time}.get(name, 1.0)
+                     for name in names]
+                is_inside = (time == new_time)
+                self.assertEqual(engine.fits_linear_constrain(x), is_inside,
+                                 msg=f"{x}. {msg}")
+                self.assertEqual(opt_constrain.fits(x), is_inside,
+                                 msg=f"{x}. {msg}")
+                x_tr, success = opt_constrain.try_to_transform(x)
+                self.assertTrue(success, msg=f"{x}. {msg}")
+                x_expected = [{"Nanc": Nanc, "t1": new_time}.get(name, 1.0)
+                              for name in names]
+                self.assertTrue(np.allclose(x_tr, x_expected),
+                                msg=f"{x_tr}. {msg}")
+                self.assertTrue(engine.fits_linear_constrain(x_tr),
+                                msg=f"{x_tr}. {msg}")
+                self.assertTrue(engine.evaluate(list(x_tr), *args)
+                                is not None, msg=f"{x_tr}. {msg}")
+            # The same answer as engine has for random values
+            np.random.seed(11)
+            for _ in range(50):
+                x = [var.resample() for var in model.variables]
+                self.assertEqual(opt_constrain.fits(x),
+                                 engine.fits_linear_constrain(x),
+                                 msg=f"{x}. {msg}")
+
+        # If size of ancestral population is not known from the model then
+        # engine deals with bounds itself, optimizers do not get constrain
+        settings = SettingsStorage()
+        settings.engine = "moments"
+        settings.input_data = os.path.join(DATA_PATH, "DATA", "sfs",
+                                           "YRI_CEU.fs")
+        settings.mutation_rate = 1.25e-8
+        settings.sequence_length = 4.04e6
+        settings.initial_structure = [1, 1]
+        settings.upper_bound_of_first_split = 6000
+        model = settings.get_model()
+        self.assertTrue(model.linear_constrain is not None)
+        engine = get_engine("moments")
+        engine.set_data(settings.inner_data)
+        engine.set_model(model)
+        self.assertTrue(engine.get_linear_constrain_for_optimizers() is None)
+        settings.ancestral_size_as_parameter = True
+        model = settings.get_model()
+        engine.set_model(model)
+        self.assertTrue(
+            engine.get_linear_constrain_for_optimizers() is not None)
+        model.linear_constrain = None
+        self.assertTrue(engine.get_linear_constrain_for_optimizers() is None)
+
+    def test_fixed_ancestral_size(self):
+        """
+        Likelihood of the model with fixed size of ancestral population is
+        equal to the likelihood of the model where this size is a parameter
+        with the same value. Generated code gives the same likelihood.
+        """
+        Nanc = 10000
+        engine_ids = ["moments", "dadi"]
+        if gadma.momi_available:
+            engine_ids.append("momi2")
+        for engine_id in engine_ids:
+            ll_values = {}
+            for is_fixed in [False, True]:
+                msg = f"engine: {engine_id}, fixed ancestral size: {is_fixed}"
+                settings = SettingsStorage()
+                settings.engine = engine_id
+                settings.input_data = os.path.join(DATA_PATH, "DATA", "sfs",
+                                                   "YRI_CEU.fs")
+                settings.projections = [4, 4]
+                if engine_id == "dadi":
+                    settings.pts = [8, 10, 12]
+                settings.mutation_rate = 1.25e-8
+                settings.sequence_length = 4.04e6
+                # Sizes of populations depend on the size of ancestral
+                # population in this model: size is changed from it during
+                # the first interval and populations are its fractions
+                # right after the split.
+                settings.initial_structure = [2, 1]
+                settings.split_fractions = True
+                settings.no_migrations = True
+                settings.ancestral_size_as_parameter = True
+                if is_fixed:
+                    settings.fixed_ancestral_size = Nanc
+                model = settings.get_model()
+                names = [var.name for var in model.variables]
+                self.assertEqual("Nanc" in names, not is_fixed, msg=msg)
+
+                # the same values for both models
+                x = []
+                n_sizes = 0
+                for var in model.variables:
+                    if var.name == "Nanc":
+                        x.append(Nanc)
+                    elif isinstance(var, DynamicVariable):
+                        x.append("Exp")
+                    elif isinstance(var, TimeVariable):
+                        x.append(0.4)
+                    elif isinstance(var, FractionVariable):
+                        x.append(0.3)
+                    else:
+                        self.assertTrue(
+                            isinstance(var, PopulationSizeVariable),
+                            msg=f"{var}. {msg}"
+                        )
+                        n_sizes += 1
+                        x.append(0.5 * n_sizes)
+                engine = get_engine(engine_id)
+                engine.set_data(settings.inner_data)
+                engine.set_model(model)
+                engine.data_holder = settings.data_holder
+                args = settings.get_engine_args()
+                ll_values[is_fixed] = engine.evaluate(x, *args)
+                self.assertTrue(ll_values[is_fixed] is not None, msg=msg)
+
+                # generated code gives the same value
+                code = engine.generate_code(x, None, *args)
+                if engine_id == "momi2":
+                    # we do not want to draw picture
+                    code = code[:code.index("from matplotlib import pyplot")]
+                namespace = {}
+                exec(code, namespace)
+                self.assertTrue(
+                    np.isclose(ll_values[is_fixed], namespace["ll_model"]),
+                    msg=f"{ll_values[is_fixed]} != {namespace['ll_model']}"
+                        f" : {msg}"
+                )
+
+                # Size of ancestral population is equal to 1 in genetic
+                # units, so simulation is the same for values of the model
+                # and for values translated to genetic units
+                if engine_id != "momi2" and not is_fixed:
+                    x_gen = model.translate_values(units="genetic", values=x)
+                    self.assertEqual(x_gen[0], 1.0, msg=msg)
+                    ns = engine.data.sample_sizes
+                    self.assertTrue(
+                        np.allclose(engine.simulate(x, ns, None, None, *args),
+                                    engine.simulate(x_gen, ns, None, None,
+                                                    *args)),
+                        msg=msg
+                    )
+            self.assertTrue(np.isclose(ll_values[False], ll_values[True]),
+                            msg=f"{ll_values}, engine: {engine_id}")
 
     def test_demes_engine(self):
         data_holder = DataHolder(
@@ -941,6 +1181,25 @@ class TestModelEvaluation(unittest.TestCase):
         theta = 4 * 10000 * 6.0e-5
         self.assertEqual(theta, engine.get_theta(vals))
         self.assertEqual(10000, engine.get_N_ancestral_from_theta(theta))
+
+        # constrain is checked as ancestral size is known: time is multiplied
+        # by it and solution that is out of bounds is skipped
+        A = [[int(var.name == "tf") for var in dm.variables]]
+        time = 10000 * values["tf"]
+        engine.model.linear_constrain = optimizers.LinearConstrain(
+            A, [0.5 * time], [2 * time])
+        self.assertEqual(engine.evaluate(vals), ll_moments)
+        engine.model.linear_constrain = optimizers.LinearConstrain(
+            A, [0], [0.5 * time])
+        self.assertTrue(engine.evaluate(vals) is None)
+        # optimizers get constrain with ancestral size as its factor, they
+        # move such solution to the bound
+        opt_constrain = engine.get_linear_constrain_for_optimizers()
+        self.assertEqual(opt_constrain.factor, 10000)
+        self.assertFalse(opt_constrain.fits(vals))
+        vals_tr, success = opt_constrain.try_to_transform(vals)
+        self.assertTrue(success)
+        self.assertTrue(engine.evaluate(list(vals_tr)) is not None)
 
     @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     @pytest.mark.timeout(0)

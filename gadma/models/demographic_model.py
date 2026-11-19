@@ -63,6 +63,19 @@ class DemographicModel(Model):
                              f"units of a given variable: {variable}.")
         super(DemographicModel, self).add_variable(variable)
 
+    def var2value(self, values, units=None):
+        """
+        Returns dictionary {variable: value}, see
+        :meth:`gadma.models.Model.var2value`.
+
+        :param values: List or dict {var_name: value} of values.
+        :param units: Units of the given values ("physical" or "genetic").
+                      Model could use them to return right values of the
+                      variables that are not among the given values (see
+                      :meth:`.EpochDemographicModel.var2value`).
+        """
+        return super(DemographicModel, self).var2value(values)
+
     def _get_Nanc_size(self, values):
         """
         Method to override. Is used in :meth:`.DemographicModel.get_Nanc_size`.
@@ -198,11 +211,16 @@ class EpochDemographicModel(DemographicModel):
             has_anc_size=has_anc_size,
             linear_constrain=linear_constrain
         )
+        # Variable of the size of ancestral population that is used in the
+        # events of the model. It is kept as size could be set to constant
+        # later and the variable will stay in the events.
+        self._Nanc_variable = None
         if not has_anc_size:
             assert Nanc_size is None, str(Nanc_size)
             # We create variable and fix its value to relative 1.0
             Nanc_size = PopulationSizeVariable("_Nanc_size", units="physical")
             self._Nanc_size = Nanc_size
+            self._Nanc_variable = Nanc_size
             self.variables = [self._Nanc_size]  # to avoid checks for units
             super(DemographicModel, self).fix_variable(self.Nanc_size, 1.0)
         else:
@@ -233,6 +251,7 @@ class EpochDemographicModel(DemographicModel):
                 raise ValueError("Nanc_size must be in physical units, "
                                  f"got: {self.Nanc_size.units}.")
             self.add_variable(self.Nanc_size)
+            self._Nanc_variable = self.Nanc_size
 
     def __eq__(self, other):
         if self is other:
@@ -254,6 +273,47 @@ class EpochDemographicModel(DemographicModel):
         if values is None:
             return Nanc_size
         return self.get_value_from_var2value(self.var2value(values), Nanc_size)
+
+    def get_fixed_values(self, units=None):
+        """
+        Returns dictionary {variable: value} for the fixed variables of the
+        model.
+
+        :param units: Units of the values. All sizes are relative to the size
+                      of ancestral population in "genetic" units, so its
+                      variable is equal to 1 then, even if it is fixed to
+                      some physical value. Fixed values are returned as they
+                      are for other units and by default.
+        """
+        fixed_values = dict(self.fixed_values)
+        Nanc_variable = getattr(self, "_Nanc_variable", None)
+        if units == "genetic" and Nanc_variable in fixed_values:
+            fixed_values[Nanc_variable] = 1.0
+        return fixed_values
+
+    def var2value(self, values, units=None):
+        """
+        Returns dictionary {variable: value}, see
+        :meth:`gadma.models.Model.var2value`.
+
+        :param values: List or dict {var_name: value} of values.
+        :param units: Units of the given values. All sizes are relative to
+                      the size of ancestral population in "genetic" units, so
+                      its variable is equal to 1 in the returned dictionary.
+                      The variable could be used in the events of the model
+                      (e.g. as initial size of the first epoch) and its
+                      value is physical when the size is fixed or when it is
+                      a parameter of the model. Values are returned as they
+                      are for other units and by default.
+        """
+        var2value = super(EpochDemographicModel, self).var2value(values)
+        if units != "genetic":
+            return var2value
+        var2value = dict(var2value)
+        Nanc_variable = getattr(self, "_Nanc_variable", None)
+        if Nanc_variable in var2value:
+            var2value[Nanc_variable] = 1.0
+        return var2value
 
     def _get_current_pop_sizes(self):
         """

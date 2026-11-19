@@ -8,7 +8,7 @@ from ..utils import fix_args, cache_func
 from ..utils import ensure_file_existence, check_file_existence, \
                     variables_values_repr, eval_wrapper
 from ..utils import logarithm_transform, exponent_transform, ident_transform
-from ..utils import apply_transform
+from ..utils import apply_transform, WeightedMetaArray
 from ..utils import serialize_meta_array, deserialize_meta_array
 from ..utils.utils import _is_valid_for_log
 from .optimizer_result import OptimizerResult
@@ -45,6 +45,9 @@ class Optimizer(object):
                      performed.
     :type maximize: bool
     """
+    # Linear constrain of the run, it is set by :meth:`optimize`.
+    linear_constrain = None
+
     def __init__(self, log_transform=False, maximize=False):
         self.log_transform = log_transform
         self.maximize = maximize
@@ -96,6 +99,74 @@ class Optimizer(object):
         string = f"{n_iter}\t{y}\t{x_repr}\t{metainfo}"
         return string
 
+    def _fit_to_linear_constrain(self, variables, x_tr, linear_constrain):
+        """
+        Returns values that satisfy the linear constrain and bool if it was
+        possible to get them.
+
+        If `x_tr` does not satisfy the linear constrain then it is corrected
+        by :meth:`gadma.optimizers.LinearConstrain.try_to_transform` method.
+        Corrected values should stay in the domains of variables. If it is
+        not possible then `x_tr` is returned without changes.
+
+        :param variables: Variables of objective function. They could be
+                          transformed for optimizer already.
+        :type variables: list of :class:`gadma.utils.Variable`
+        :param x_tr: Values of variables that are not transformed for
+                     optimizer, i.e. the values that objective function takes.
+        :type x_tr: list
+        :param linear_constrain: Linear constrain on `x_tr`.
+        :type linear_constrain: :class:`gadma.optimizers.LinearConstrain`
+        """
+        if linear_constrain is None or linear_constrain.fits(x_tr):
+            return x_tr, True
+        x_new, success = linear_constrain.try_to_transform(x_tr)
+        if not success:
+            return x_tr, False
+        for var, value in zip(variables, x_new):
+            if isinstance(var, ContinuousVariable):
+                domain = var.domain
+                if var.log_transformed:
+                    domain = var._true_domain
+                if not domain[0] <= value <= domain[1]:
+                    return x_tr, False
+        if isinstance(x_tr, WeightedMetaArray):
+            x_fit = WeightedMetaArray(x_new)
+            x_fit.metadata = x_tr.metadata
+            x_fit.weights = x_tr.weights
+            return x_fit, True
+        return x_new, True
+
+    def _fit_x_to_linear_constrain(self, variables, x):
+        """
+        Moves `x` in-place so that it satisfies the linear constrain of the
+        run (see :meth:`_fit_to_linear_constrain`). If it is not possible
+        then `x` is not changed.
+
+        It is used for the new solutions that optimizer proposes: optimizer
+        keeps the solution that was moved, so that its values correspond to
+        the value of objective function.
+
+        :param variables: Variables that are transformed for optimizer.
+        :type variables: list of :class:`gadma.utils.Variable`
+        :param x: Values that are transformed for optimizer.
+        :type x: list
+
+        :returns: `x`
+        """
+        linear_constrain = self.linear_constrain
+        if linear_constrain is None:
+            return x
+        x_tr = apply_transform(variables, self.inv_transform, x)
+        x_fit, success = self._fit_to_linear_constrain(
+            variables, x_tr, linear_constrain
+        )
+        if success and x_fit is not x_tr:
+            x_new = apply_transform(variables, self.transform, x_fit)
+            for i in range(len(x)):
+                x[i] = x_new[i]
+        return x
+
     def evaluate(self, f, variables, x, args=(), linear_constrain=None):
         r"""
         Evaluates function `f` on values `x`. The result is multiplied by sign
@@ -125,12 +196,11 @@ class Optimizer(object):
             variables = self._prepare_variables(variables)
         x_tr = apply_transform(variables, self.inv_transform, x)
         if linear_constrain is not None:
-            if not linear_constrain.fits(x_tr):
-                x_tr, success = linear_constrain.try_to_transform(x_tr)
-                if not success:
-                    # warnings.warn(f"HERE IS A LITTLE PROBLEM. PLEASE CHECK "
-                    #               f"IT: {x}, {x_tr}")
-                    return np.inf
+            x_tr, success = self._fit_to_linear_constrain(
+                variables, x_tr, linear_constrain
+            )
+            if not success:
+                return np.inf
         y = f(x_tr, *args)
         if y is None or np.isnan(y):
             return np.inf
@@ -469,6 +539,8 @@ class Optimizer(object):
         """
         # Create run_info that will be saved during the optimization
         self.run_info = None
+        # Optimizer could use linear constrain for the solutions it proposes
+        self.linear_constrain = linear_constrain
 
         # Check variables
         self.check_variables(variables)
@@ -537,6 +609,16 @@ class Optimizer(object):
             X = [apply_transform(vars_in_opt, self.inv_transform, _x)
                  for _x in X_iter]
             Y = [self.sign * _y for _y in Y_iter]
+            # Objective function was evaluated for the solutions that were
+            # corrected to satisfy the linear constrain (see evaluate), they
+            # are the solutions to save and report
+            if linear_constrain is not None:
+                x = self._fit_to_linear_constrain(
+                    vars_in_opt, x, linear_constrain
+                )[0]
+                X = [self._fit_to_linear_constrain(
+                        vars_in_opt, _x, linear_constrain
+                     )[0] for _x in X]
             x_best = self.run_info.result.x
             y_best = self.run_info.result.y
             if x_best is None or self.sign * y < self.sign * y_best:

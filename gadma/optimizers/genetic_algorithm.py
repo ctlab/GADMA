@@ -499,6 +499,11 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         return max(1, int(sample))
 
     def check_x(self, variables, x, raises=False):
+        """
+        Returns `x` with values that are inside of the domains of variables.
+        If there is linear constrain in the run then `x` is moved to satisfy
+        it as well (see :meth:`Optimizer._fit_x_to_linear_constrain`).
+        """
         for val, var in zip(x, variables):
             if raises:
                 if not var.correct_value(val):
@@ -513,7 +518,7 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                 if not variables[i].correct_value(x[i]):
                     raise ValueError(f"Value ({x[i]}) of Discrete variable "
                                      f"is bad. Domain: {variables[i].domain}")
-        return x
+        return self._fit_x_to_linear_constrain(variables, x)
 
     def is_stopped(self, n_gen, n_eval, impr_gen=None, maxiter=None,
                    maxeval=None, ret_status=False):

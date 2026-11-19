@@ -621,6 +621,54 @@ class TestCLI(unittest.TestCase):
             if check_dir_existence("Some_out_dir"):
                 shutil.rmtree("Some_out_dir")
 
+    def test_bounds_of_split_time_in_settings(self):
+        """
+        Bounds of split times could be used for the model with structure
+        only and when time could be translated to generations.
+        """
+        try:
+            settings = SettingsStorage()
+            settings.output_directory = "Some_out_dir"
+            settings.engine = "moments"
+            settings.input_data = os.path.join(DATA_PATH, "DATA", "sfs",
+                                               "YRI_CEU.fs")
+            # there is no error without bounds
+            settings.is_valid()
+
+            # bounds are in generations, so it is not possible to use them
+            # when size of ancestral population could not be obtained
+            for name in ["lower_bound_of_first_split",
+                         "upper_bound_of_first_split"]:
+                setattr(settings, name, 1000)
+                self.assertRaises(ValueError, settings.is_valid)
+                setattr(settings, name, None)
+            settings.upper_bound_of_first_split = 1000
+            settings.mutation_rate = 1.25e-8
+            self.assertRaises(ValueError, settings.is_valid)
+            settings.sequence_length = 4.04e6
+            settings.is_valid()
+            settings.mutation_rate = None
+            self.assertRaises(ValueError, settings.is_valid)
+            settings.theta0 = 0.37976
+            settings.is_valid()
+            settings.theta0 = None
+            self.assertRaises(ValueError, settings.is_valid)
+            settings.ancestral_size_as_parameter = True
+            settings.is_valid()
+            settings.ancestral_size_as_parameter = False
+
+            # it is unknown what parameters of custom model are split times
+            settings.theta0 = 0.37976
+            settings.is_valid()
+            settings.custom_filename = os.path.join(
+                DATA_PATH, "MODELS", 'demographic_model_moments_YRI_CEU.py')
+            self.assertRaises(ValueError, settings.is_valid)
+            settings.upper_bound_of_first_split = None
+            settings.is_valid()
+        finally:
+            if check_dir_existence("Some_out_dir"):
+                shutil.rmtree("Some_out_dir")
+
     def test_units_of_time_without_time_for_generation(self):
         """
         If time for generation is not set then time could be measured either

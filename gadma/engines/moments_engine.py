@@ -73,7 +73,9 @@ class MomentsEngine(DadiOrMomentsEngine):
         :param ns: sample sizes of simulated SFS
         :param dt_fac: step size for numerical solution
         """
-        var2value = self.model.var2value(values)
+        # values are in genetic units, e.g. the size of ancestral population
+        # is equal to 1 here even if it is fixed to some physical value
+        var2value = self.model.var2value(values, units="genetic")
 
         if isinstance(self.model, CustomDemographicModel):
             values_list = [var2value[var] for var in self.model.variables]

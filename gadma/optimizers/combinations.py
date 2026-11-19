@@ -200,6 +200,12 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
         variables_local = np.array(variables)[is_not_discrete]
 
         f_local = self._f_for_local_opt(f, variables, x_best)
+        # Linear constrain should take vectors from local optimization too
+        linear_constrain_local = linear_constrain
+        if linear_constrain is not None:
+            linear_constrain_local = linear_constrain.for_part_of_x(
+                is_not_discrete
+            )
         callback_local = self._callback_for_local_opt(callback, variables,
                                                       x_best)
         if verbose != 0:
@@ -216,7 +222,7 @@ class GlobalOptimizerAndLocalOptimizer(GlobalOptimizer, ConstrainedOptimizer):
             x0=x0,
             args=args,
             options=local_options,
-            linear_constrain=linear_constrain,
+            linear_constrain=linear_constrain_local,
             maxiter=local_maxiter,
             maxeval=local_maxeval,
             verbose=verbose,

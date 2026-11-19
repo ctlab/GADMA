@@ -1,5 +1,7 @@
 from ..data import DataHolder
 from ..models import Model
+from ..optimizers import LinearConstrain
+from ..utils import Variable, TimeVariable
 import copy
 
 _registered_engines = {}
@@ -219,6 +221,70 @@ class Engine(object):
             return self.model.get_value_from_var2value(var2value,
                                                        self.model.Nanc_size)
         raise NotImplementedError
+
+    def fits_linear_constrain(self, values):
+        """
+        Checks that values satisfy linear constrain of the model (bounds of
+        the split times). Bounds are in generations, so the check is possible
+        when size of ancestral population is known from the model: it is
+        either parameter of the model or constant. Time in genetic units is
+        multiplied by this size and compared with the bounds.
+
+        Solution that does not satisfy constrain should be skipped during
+        evaluation: None is returned instead of the value.
+
+        :param values: values of variables of setted demographic model.
+
+        :returns: True if there is no constrain or values satisfy it.
+        """
+        constrain = getattr(self.model, "linear_constrain", None)
+        if constrain is None:
+            return True
+        values_gen = self.model.translate_values(units="genetic",
+                                                 values=values,
+                                                 time_in_generations=False)
+        Nanc = Engine.get_N_ancestral(self, values)
+        return bool(constrain.fits(values_gen, factor=Nanc))
+
+    def get_linear_constrain_for_optimizers(self):
+        """
+        Returns linear constrain of the model (bounds of the split times) in
+        the form that optimizers could use: constrain on the values of the
+        model variables. It is possible when size of ancestral population is
+        known from the model, it is the factor of the constrain then: either
+        constant or one of the variables.
+
+        Optimizers move solutions that are out of bounds to the bounds
+        (see :meth:`gadma.optimizers.LinearConstrain.try_to_transform`).
+        Solutions that are still out of bounds are skipped during evaluation
+        anyway (see :meth:`fits_linear_constrain`).
+
+        :returns: constrain or None if there is no constrain, if size of
+                  ancestral population is not known from the model (engine
+                  deals with constrain itself then) or if time of the model
+                  is not in genetic units.
+        """
+        constrain = getattr(self.model, "linear_constrain", None)
+        if constrain is None or not getattr(self.model, "has_anc_size",
+                                            False):
+            return None
+        variables = self.model.variables
+        # Constrain is written for the time in genetic units
+        for A_i in constrain.A:
+            for var, coef in zip(variables, A_i):
+                if coef != 0 and not (isinstance(var, TimeVariable) and
+                                      var.units == "genetic"):
+                    return None
+        Nanc_size = self.model.Nanc_size
+        if isinstance(Nanc_size, Variable):
+            if Nanc_size not in variables:
+                return None
+            return LinearConstrain(
+                constrain.A, constrain.lb, constrain.ub,
+                factor_index=variables.index(Nanc_size)
+            )
+        return LinearConstrain(constrain.A, constrain.lb, constrain.ub,
+                               factor=Nanc_size)
 
     def evaluate(self, values, **options):
         """

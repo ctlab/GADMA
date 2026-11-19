@@ -11,27 +11,43 @@ import copy
 import numpy as np
 
 
-def get_momi_name(entity):
+def get_momi_name(entity, fixed_values=None):
+    """
+    Returns string for the entity in the code of momi model.
+
+    :param fixed_values: Dictionary {variable: value} with fixed variables of
+                         the model. They are not parameters of momi model,
+                         so their values are printed, e.g. it is the case
+                         when size of ancestral population is fixed.
+    """
+    if fixed_values is None:
+        fixed_values = {}
     if isinstance(entity, Variable):
+        if entity in fixed_values:
+            return fixed_values[entity]
         return f"'{entity.name}'"
     if isinstance(entity, Operation):
-        return f"lambda params: {get_momi_lambda(entity)}"
+        return f"lambda params: {get_momi_lambda(entity, fixed_values)}"
     return entity
 
 
-def get_momi_lambda(entity):
+def get_momi_lambda(entity, fixed_values=None):
+    if fixed_values is None:
+        fixed_values = {}
     if isinstance(entity, Variable):
+        if entity in fixed_values:
+            return fixed_values[entity]
         return f"params.{entity.name}"
     if isinstance(entity, BinaryOperation):
-        arg1 = get_momi_lambda(entity.arg1)
+        arg1 = get_momi_lambda(entity.arg1, fixed_values)
         if isinstance(entity.arg1, BinaryOperation):
             arg1 = f"({arg1})"
-        arg2 = get_momi_lambda(entity.arg2)
+        arg2 = get_momi_lambda(entity.arg2, fixed_values)
         if isinstance(entity.arg2, BinaryOperation):
             arg2 = f"({arg2})"
         return f"{arg1} {entity.operation_str()} {arg2}"
     if isinstance(entity, UnaryOperation):
-        arg = get_momi_lambda(entity.arg)
+        arg = get_momi_lambda(entity.arg, fixed_values)
         return f"np.{entity.operation_str()}({arg})"
     return entity
 
@@ -117,6 +133,8 @@ def print_momi_model(engine, values, nanc, gen_time):
 
     n_pop = engine.model.number_of_populations()
     population_labels = [engine._get_pop_name(i) for i in range(n_pop)]
+    # values of the fixed variables are printed instead of their names
+    fixed = model.fixed_values
     for event in model.events:
         if isinstance(event, (Leaf, PopulationSizeChange)):
             name = population_labels[event.pop]
@@ -125,9 +143,9 @@ def print_momi_model(engine, values, nanc, gen_time):
             else:
                 ret_str += "\tmodel.set_size(\n"
             ret_str += f"\t\tpop_name='{name}',\n"
-            ret_str += f"\t\tt={get_momi_name(event.t)},\n"
-            ret_str += f"\t\tN={get_momi_name(event.size_pop)},\n"
-            ret_str += f"\t\tg={get_momi_name(event.g)},\n"
+            ret_str += f"\t\tt={get_momi_name(event.t, fixed)},\n"
+            ret_str += f"\t\tN={get_momi_name(event.size_pop, fixed)},\n"
+            ret_str += f"\t\tg={get_momi_name(event.g, fixed)},\n"
             ret_str += "\t)\n"
         if isinstance(event, LineageMovement):
             name1 = population_labels[event.pop_from]
@@ -135,10 +153,10 @@ def print_momi_model(engine, values, nanc, gen_time):
             ret_str += "\tmodel.move_lineages(\n"
             ret_str += f"\t\tpop_from='{name1}',\n"
             ret_str += f"\t\tpop_to='{name2}',\n"
-            ret_str += f"\t\tt={get_momi_name(event.t)},\n"
-            ret_str += f"\t\tp={get_momi_name(event.p)},\n"
-            ret_str += f"\t\tN={get_momi_name(event.size_pop)},\n"
-            ret_str += f"\t\tg={get_momi_name(event.g)},\n"
+            ret_str += f"\t\tt={get_momi_name(event.t, fixed)},\n"
+            ret_str += f"\t\tp={get_momi_name(event.p, fixed)},\n"
+            ret_str += f"\t\tN={get_momi_name(event.size_pop, fixed)},\n"
+            ret_str += f"\t\tg={get_momi_name(event.g, fixed)},\n"
             ret_str += "\t)\n"
 
     ret_str += "\n\tmodel.set_params({\n"

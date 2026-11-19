@@ -454,6 +454,11 @@ class CoreRun(object):
         optimizer = GlobalOptimizerAndLocalOptimizer(self.global_optimizer,
                                                      self.local_optimizer)
         opt_kwargs = {**self.optimize_kwargs, **initial_kwargs}
+        # If size of ancestral population is known from the model then
+        # optimizers get bounds of the split times and propose solutions
+        # inside of them. Otherwise engine deals with bounds itself.
+        constrain = self.engine.get_linear_constrain_for_optimizers()
+        opt_kwargs['linear_constrain'] = constrain
         result = optimizer.optimize(f, variables, **opt_kwargs)
         # generate code and draw model for the final model of this subrun
         self.iter_callback(result.x, result.y, final=True)

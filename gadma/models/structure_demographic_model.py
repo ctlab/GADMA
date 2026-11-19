@@ -151,8 +151,16 @@ class StructureDemographicModel(EpochDemographicModel):
         :param structure: Structure of the model.
         :type structure: list of ints
         """
+        # Size of ancestral population could be fixed, then it is constant
+        # in the model, but its variable is still used in the events with
+        # that fixed value. So model is built with the new variable and it
+        # is fixed again at the end.
+        fixed_Nanc_size = None
         if self.has_anc_size:
             Nanc_size = self.Nanc_size
+            if not isinstance(Nanc_size, Variable):
+                fixed_Nanc_size = Nanc_size
+                Nanc_size = PopulationSizeVariable("Nanc", units="physical")
         else:
             Nanc_size = None
         super(StructureDemographicModel, self).__init__(
@@ -261,6 +269,10 @@ class StructureDemographicModel(EpochDemographicModel):
         if self.has_p_misid_var:
             var = FractionVariable("p_misid")
             self.add_p_misid(var)
+
+        if fixed_Nanc_size is not None:
+            self.fix_variable(self.Nanc_size, fixed_Nanc_size)
+            self._Nanc_size = fixed_Nanc_size
         return self
 
     def get_structure(self):
@@ -345,12 +357,20 @@ class StructureDemographicModel(EpochDemographicModel):
                     # We put as time some random value
                     if isinstance(var, TimeVariable):
                         new_values.append(new_event.time_arg.resample())
-                    # We put size of population as 1.0
+                    # We put size of population as 1.0, it is the same as
+                    # the size of ancestral population
                     elif isinstance(var, PopulationSizeVariable):
                         new_values.append(1.0)
-                    # Dynamic as Sud
+                    # Size is not changed during new interval, so any
+                    # dynamic gives the same model. We put sudden change if
+                    # it is allowed and any other allowed dynamic otherwise
                     elif isinstance(var, DynamicVariable):
-                        new_values.append("Sud")
+                        sud_values = [dyn for dyn in var.domain
+                                      if dyn == "Sud" or dyn == 0]
+                        if len(sud_values) > 0:
+                            new_values.append(sud_values[0])
+                        else:
+                            new_values.append(var.resample())
                     elif isinstance(var, SelectionVariable):
                         new_values.append(0)
                     # Dominance has no effect as there is no selection, we
@@ -365,8 +385,10 @@ class StructureDemographicModel(EpochDemographicModel):
             new_X = []
             for x, new_values in zip(X, new_values_list):
                 new_X.append([])
-                # if we have anc size then we should put after first variable
-                if self.has_anc_size:
+                # If size of ancestral population is a parameter then it is
+                # the first one and new values are put after it. It is not
+                # among the values when it is fixed.
+                if self.has_anc_size and isinstance(self.Nanc_size, Variable):
                     new_X[-1].extend([x[0]])
                     x = x[1:]
                 new_X[-1].extend(copy.copy(new_values))
@@ -420,14 +442,22 @@ class StructureDemographicModel(EpochDemographicModel):
             # in new_model have the same names but they are different from
             # those in model.
             varname2value = {var.name: var2value[var] for var in var2value}
-            new_var2value = {var: varname2value[var.name]
-                             for var in self.variables
-                             if var.name in varname2value}
+            # Fixed variables of the new model already have their values.
+            # We take them in genetic units as sizes are compared below, e.g.
+            # fixed size of ancestral population is equal to 1 then.
+            new_var2value = self.get_fixed_values(units="genetic")
+            new_var2value.update({var: varname2value[var.name]
+                                  for var in self.variables
+                                  if var.name in varname2value})
             for var in var2value:
+                if var in old_model.fixed_values:
+                    continue
                 new_var2value[oldvar2newvar[var]] = var2value[var]
             # To fix a lot of thing we set Nanc to 1 and change it back later
-            if self.has_anc_size:
-                new_var2value[self._Nanc_size] = 1.0
+            Nanc_is_param = (self.has_anc_size and
+                             isinstance(self.Nanc_size, Variable))
+            if Nanc_is_param:
+                new_var2value[self.Nanc_size] = 1.0
             event1 = self.events[event_index]  # our new event
             event2 = self.events[event_index + 1]  # base event
             # Time / 2
@@ -464,8 +494,8 @@ class StructureDemographicModel(EpochDemographicModel):
                 if var1 not in new_var2value:
                     new_var2value[var1] = new_var2value[var2]
             # change Nanc back
-            if self.has_anc_size:
-                new_var2value[self._Nanc_size] = old_model._get_Nanc_size(
+            if Nanc_is_param:
+                new_var2value[self.Nanc_size] = old_model._get_Nanc_size(
                     values=var2value
                 )
             new_X.append([new_var2value[var] for var in self.variables])

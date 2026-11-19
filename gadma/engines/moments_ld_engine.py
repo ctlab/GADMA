@@ -243,7 +243,9 @@ class MomentsLdEngine(Engine):
             return self.model.function(params, rho, theta)
 
         assert isinstance(self.model, DemographicModel)
-        var2value = self.model.var2value(params)
+        # values are in genetic units, e.g. the size of ancestral population
+        # is equal to 1 here even if it is fixed to some physical value
+        var2value = self.model.var2value(params, units="genetic")
 
         # starting from 1.1.16 there is additional argument in steady_state
         msg = "steady_state() missing 1 required positional argument: 'nus'"
@@ -379,6 +381,9 @@ class MomentsLdEngine(Engine):
         if self.data is None or self.model is None:
             raise ValueError("Please set data and model for the engine or"
                              " use set_and_evaluate function instead.")
+        # Solution is skipped if the split times are out of their bounds
+        if not self.fits_linear_constrain(values):
+            return None
         model = self.simulate(values)
         model = moments.LD.Inference.remove_normalized_lds(model)
         data = self.inner_data

@@ -59,6 +59,9 @@ class GlobalOptimizer(Optimizer):
         * 'resample' - call :meth:`resample` method for all variables.
 
         * 'custom' - sample values of parameters from `custom_rand_gen`.
+
+        If there is linear constrain in the run then the solution is moved
+        to satisfy it (see :meth:`Optimizer._fit_x_to_linear_constrain`).
         """
         if random_type == 'uniform':
             arr = []
@@ -76,7 +79,7 @@ class GlobalOptimizer(Optimizer):
         else:
             raise ValueError(f"Unknown type of generation of random "
                              f"solution: {random_type}.")
-        return arr
+        return self._fit_x_to_linear_constrain(variables, arr)
 
     def initial_design(self, f, variables, num_init,
                        X_init=None, Y_init=None,
@@ -109,8 +112,9 @@ class GlobalOptimizer(Optimizer):
                 Y = [self.sign * y for y in Y_init]
             else:
                 Y = list()
-            for x in X[len(Y):]:
-                Y.append(f(x))
+            for i in range(len(Y), len(X)):
+                X[i] = self._fit_x_to_linear_constrain(variables, X[i])
+                Y.append(f(X[i]))
         for _ in range(num_init - len(X)):
             x = self.randomize(variables, random_type, custom_rand_gen)
             X.append(x)

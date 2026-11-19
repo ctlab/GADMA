@@ -566,6 +566,208 @@ class TestModelStructure(unittest.TestCase):
                 self.assertTrue(is_equal,
                                 msg=f"{ll_true} != {new_ll} : {msg}")
 
+    def test_increase_structure_with_restricted_dynamics(self):
+        """
+        Structure of the model could be increased when sudden change of size
+        is not among the allowed dynamics or when there is one allowed
+        dynamic and its variables are fixed. New interval after the ancestral
+        one gets one of the allowed dynamics and likelihood stays the same.
+        """
+        engine = get_engine("moments")
+        default_domain = DynamicVariable.default_domain
+        domains = [["Lin", "Exp"], [1, 2], [0, 2], ["Sud", "Lin", "Exp"],
+                   ["Exp"], ["Sud"]]
+        try:
+            for domain, new_structure in itertools.product(domains,
+                                                           [[2, 1], [1, 2]]):
+                msg = f"Dynamics: {domain}, new structure: {new_structure}"
+                DynamicVariable.default_domain = domain
+                dm = StructureDemographicModel([1, 1], [2, 2],
+                                               has_migs=False, has_sels=False,
+                                               has_dom=False, has_dyns=True,
+                                               sym_migs=False,
+                                               frac_split=False,
+                                               has_p_misid=False)
+                # domains are narrowed as in the test of likelihood above
+                for var in dm.variables:
+                    if isinstance(var, PopulationSizeVariable):
+                        var.domain = [1e-1, 5.]
+                    elif isinstance(var, TimeVariable):
+                        var.domain = [0.1, 1.]
+                engine.set_model(dm)
+                data = engine.simulate(
+                    values=[var.resample() for var in dm.variables],
+                    ns=[4, 4],
+                    sequence_length=1e6,
+                    population_labels=["Pop0", "Pop1"]
+                )
+                engine.set_data(data)
+                x = [var.resample() for var in dm.variables]
+                ll_true = engine.evaluate(x)
+
+                new_dm = copy.deepcopy(dm)
+                new_dm, new_X = new_dm.increase_structure(new_structure, [x])
+                self.assertEqual(new_dm.get_structure(), new_structure,
+                                 msg=msg)
+                self.assertEqual(len(new_X[0]), len(new_dm.variables),
+                                 msg=msg)
+                # all dynamics are among the allowed
+                var2value = new_dm.var2value(new_X[0])
+                dyn_values = {var.name: value
+                              for var, value in var2value.items()
+                              if isinstance(var, DynamicVariable)}
+                # one population before the split and two after it
+                n_dyns = (new_structure[0] - 1) + 2 * new_structure[1]
+                self.assertEqual(len(dyn_values), n_dyns, msg=msg)
+                for name, value in dyn_values.items():
+                    self.assertTrue(value in domain,
+                                    msg=f"{name} = {value}. {msg}")
+                is_new_first_interval = new_structure[0] == 2
+                if is_new_first_interval:
+                    # sudden change is taken if it is allowed
+                    for sud_value in ["Sud", 0]:
+                        if sud_value in domain:
+                            self.assertEqual(dyn_values["dyn11"], sud_value,
+                                             msg=msg)
+                # Size is not changed during the new first interval, so
+                # likelihood is the same for any dynamic. When interval is
+                # divided numerical solution is slightly different.
+                engine.set_model(new_dm)
+                new_ll = engine.evaluate(new_X[0])
+                rtol = 1e-5 if is_new_first_interval else 1e-2
+                if ll_true is None or new_ll is None:
+                    # numerics failed for these values
+                    is_equal = ll_true is None and new_ll is None
+                else:
+                    is_equal = np.allclose(ll_true, new_ll, rtol=rtol)
+                self.assertTrue(is_equal,
+                                msg=f"{ll_true} != {new_ll} : {msg}")
+        finally:
+            DynamicVariable.default_domain = default_domain
+
+    def test_increase_structure_with_fixed_ancestral_size(self):
+        """
+        Model with fixed size of ancestral population has the same likelihood
+        as the model where this size is a parameter with the same value.
+        Likelihood stays the same when structure of the model is increased.
+        """
+        Nanc = 10000
+        engine = get_engine("moments")
+
+        def is_equal(ll_1, ll_2, rtol):
+            if ll_1 is None or ll_2 is None:
+                # numerics failed for these values
+                return ll_1 is None and ll_2 is None
+            return np.allclose(ll_1, ll_2, rtol=rtol)
+
+        structures = [(1,), (1, 1), (2, 1), (1, 1, 1)]
+        for structure, fracs in itertools.product(structures, [False, True]):
+            if len(structure) == 1 and fracs:
+                continue
+            msg = f"structure: {structure}, fracs: {fracs}"
+
+            def create_model():
+                dm = StructureDemographicModel(structure,
+                                               np.array(structure) + 2,
+                                               has_migs=True, has_sels=False,
+                                               has_dom=False, has_dyns=True,
+                                               sym_migs=False,
+                                               frac_split=fracs,
+                                               has_p_misid=False,
+                                               has_anc_size=True,
+                                               theta0=1e-4)
+                # domains are narrowed as in the test of likelihood above
+                for var in dm.variables:
+                    if var.name == "Nanc":
+                        continue
+                    if isinstance(var, PopulationSizeVariable):
+                        var.domain = [1e-1, 5.]
+                    elif isinstance(var, TimeVariable):
+                        var.domain = [0.1, 1.]
+                    elif isinstance(var, MigrationVariable):
+                        var.domain = [0, 2.]
+                return dm
+
+            dm_param = create_model()
+            # size of ancestral population is fixed the same way as it is
+            # done for the option of settings
+            dm_fixed = create_model()
+            dm_fixed.fix_variable(dm_fixed.Nanc_size, Nanc)
+            dm_fixed.Nanc_size = Nanc
+            self.assertEqual(dm_param.variables[0].name, "Nanc", msg=msg)
+            self.assertEqual([var.name for var in dm_param.variables[1:]],
+                             [var.name for var in dm_fixed.variables],
+                             msg=msg)
+
+            sizes = [4 for _ in structure]
+            engine.set_model(dm_param)
+            data = engine.simulate(
+                values=[Nanc] + [var.resample()
+                                 for var in dm_param.variables[1:]],
+                ns=sizes,
+                sequence_length=1e6,
+                population_labels=[f"Pop{i}" for i in range(len(sizes))]
+            )
+            engine.set_data(data)
+            x_fixed = [var.resample() for var in dm_fixed.variables]
+            x_param = [Nanc] + x_fixed
+
+            # size of ancestral population is equal to 1 in genetic units
+            Nanc_var = dm_param.Nanc_size
+            var2value = dm_param.var2value(x_param)
+            self.assertEqual(var2value[Nanc_var], Nanc, msg=msg)
+            var2value = dm_param.var2value(x_param, units="genetic")
+            self.assertEqual(var2value[Nanc_var], 1.0, msg=msg)
+            fixed_Nanc_var = [var for var in dm_fixed.fixed_values
+                              if var.name == "Nanc"]
+            self.assertEqual(len(fixed_Nanc_var), 1, msg=msg)
+            var2value = dm_fixed.var2value(x_fixed)
+            self.assertEqual(var2value[fixed_Nanc_var[0]], Nanc, msg=msg)
+            var2value = dm_fixed.var2value(x_fixed, units="genetic")
+            self.assertEqual(var2value[fixed_Nanc_var[0]], 1.0, msg=msg)
+
+            ll_param = engine.evaluate(x_param)
+            engine.set_model(dm_fixed)
+            ll_fixed = engine.evaluate(x_fixed)
+            self.assertTrue(is_equal(ll_param, ll_fixed, rtol=1e-8),
+                            msg=f"{ll_param} != {ll_fixed} : {msg}")
+
+            for i in range(len(structure)):
+                new_structure = list(structure)
+                new_structure[i] += 1
+                incr_msg = f"{msg}, new structure: {new_structure}"
+                new_dm = copy.deepcopy(dm_fixed)
+                new_dm, new_X = new_dm.increase_structure(new_structure,
+                                                          [x_fixed])
+                # one more increase of the model that was built again
+                next_dm = copy.deepcopy(new_dm)
+                next_dm, next_X = next_dm.increase_structure(X=new_X)
+
+                # New interval right after the ancestral one changes nothing.
+                # In other cases one interval is divided into two ones,
+                # numerical solution is slightly different then.
+                if i == 0 and structure[0] == 1:
+                    rtol = 1e-5
+                else:
+                    rtol = 1e-2
+                for model, X, rtol in [(new_dm, new_X, rtol),
+                                       (next_dm, next_X, 1e-2)]:
+                    model_msg = f"{incr_msg}, {model.get_structure()}"
+                    # size of ancestral population is still fixed
+                    self.assertEqual(model.Nanc_size, Nanc, msg=model_msg)
+                    self.assertFalse(
+                        "Nanc" in [var.name for var in model.variables],
+                        msg=model_msg
+                    )
+                    self.assertEqual(len(X[0]), len(model.variables),
+                                     msg=model_msg)
+                    engine.set_model(model)
+                    ll = engine.evaluate(X[0])
+                    self.assertTrue(is_equal(ll_param, ll, rtol=rtol),
+                                    msg=f"{ll_param} != {ll} : {model_msg}")
+                self.assertEqual(new_dm.get_structure(), new_structure,
+                                 msg=incr_msg)
+
     def test_fails(self):
         bad_struct = [[0], [0, 1], [1, 0]]
 

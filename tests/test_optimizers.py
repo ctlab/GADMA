@@ -755,6 +755,72 @@ class TestCoreRun(unittest.TestCase):
         self.assertTrue(2 * Nanc * time <= upper_bound * (1 + 1e-8),
                         msg=f"Time of split: {2 * Nanc * time}")
 
+    def test_bounds_of_split_time_with_known_ancestral_size(self):
+        """
+        If size of ancestral population is known from the model (it is a
+        parameter or it is fixed) then optimizers get bounds of the split
+        time: solutions out of bounds are moved to the bounds and are not
+        skipped. Result is inside of the bounds.
+        """
+        lower_bound, upper_bound = 2000, 3000
+        for is_fixed, structure in [(False, [1, 1]), (True, [1, 2])]:
+            msg = f"fixed ancestral size: {is_fixed}"
+            settings = SettingsStorage()
+            settings.output_directory = tempfile.mkdtemp("gadma_test_dir")
+            try:
+                settings.input_data = YRI_CEU_DATA
+                settings.projections = [4, 4]
+                settings.engine = "moments"
+                settings.mutation_rate = 1.25e-8
+                settings.sequence_length = 4.04e6
+                settings.initial_structure = [1, 1]
+                settings.final_structure = structure
+                settings.no_migrations = True
+                settings.ancestral_size_as_parameter = True
+                if is_fixed:
+                    settings.fixed_ancestral_size = 10000
+                settings.lower_bound_of_first_split = lower_bound
+                settings.upper_bound_of_first_split = upper_bound
+                settings.num_init_const = 5
+                settings.global_maxiter = 3
+                settings.local_maxiter = 2
+                settings.draw_models_every_n_iteration = 0
+                settings.print_models_code_every_n_iteration = 0
+                settings.silence = True
+                shared_dict = SharedDictForCoreRun(multiprocessing=False)
+                core_run = CoreRun(1, shared_dict, settings)
+                result = core_run.run(settings.get_optimizers_init_kwargs())
+                with open(core_run.eval_file) as fl:
+                    evaluations = [line.split("\t") for line in fl
+                                   if not line.startswith("#")][1:]
+            finally:
+                shutil.rmtree(settings.output_directory)
+
+            model = core_run.model
+            engine = core_run.engine
+            self.assertEqual(model.get_structure(), structure, msg=msg)
+            # There were solutions out of bounds among random ones, they
+            # were moved, so there are no skipped solutions.
+            self.assertTrue(len(evaluations) > 20, msg=msg)
+            values = [line[1].strip() for line in evaluations]
+            self.assertTrue("None" not in values,
+                            msg=f"Skipped: {values.count('None')}. {msg}")
+            self.assertTrue(
+                engine.get_linear_constrain_for_optimizers() is not None,
+                msg=msg
+            )
+            # Final models are inside of the bounds
+            A, b = model.get_involved_for_split_time_vars(1)
+            for x in [result.x] + list(result.X_out):
+                self.assertTrue(engine.fits_linear_constrain(x),
+                                msg=f"{x}. {msg}")
+                Nanc = engine.get_N_ancestral(x, *settings.get_engine_args())
+                values = [0 if isinstance(el, str) else el for el in x]
+                time = 2 * Nanc * (np.dot(A, values) + b)
+                self.assertTrue(lower_bound * (1 - 1e-5) <= time and
+                                time <= upper_bound * (1 + 1e-5),
+                                msg=f"Time of split: {time}. {msg}")
+
     def test_core_run_restore(self):
         old_run_out = os.path.join(DATA_PATH, "my_example_run")
         sys.argv = ['gadma', "--resume", old_run_out]
@@ -825,6 +891,178 @@ class TestLinearConstrains(unittest.TestCase):
                 continue
             opt.optimize(f, variables, linear_constrain=constrain,
                          maxiter=maxiter)
+
+    def test_try_to_transform(self):
+        """
+        Linear constrain proposes values that satisfy it: values that are
+        involved in a broken row are scaled.
+        """
+        constrain = LinearConstrain([[1, 1, 0]], [0.5], [1])
+        for x, x_expected in [([1.0, 3.0, 7.0], [0.25, 0.75, 7.0]),
+                              ([0.1, 0.1, 7.0], [0.25, 0.25, 7.0])]:
+            self.assertFalse(constrain.fits(x))
+            x_tr, success = constrain.try_to_transform(x)
+            self.assertTrue(success)
+            self.assertTrue(constrain.fits(x_tr))
+            self.assertTrue(np.allclose(x_tr, x_expected), msg=str(x_tr))
+        # values that satisfy constrain are not changed
+        x_tr, success = constrain.try_to_transform([0.3, 0.4, 7.0])
+        self.assertTrue(success)
+        self.assertTrue(np.all(x_tr == [0.3, 0.4, 7.0]))
+        # values that are not involved could be not numbers
+        x_tr, success = constrain.try_to_transform([1.0, 3.0, "Sud"])
+        self.assertTrue(success)
+        self.assertEqual(list(x_tr), [0.25, 0.75, "Sud"])
+
+        # factor of constrain: number or one of the values
+        x = [200.0, 3.0, 7.0]
+        for constrain, factor in [
+                (LinearConstrain([[0, 1, 1]], [None], [1000],
+                                 factor_index=0), None),
+                (LinearConstrain([[0, 1, 1]], [None], [1000], factor=200),
+                 None),
+                (LinearConstrain([[0, 1, 1]], [None], [1000]), 200)]:
+            self.assertFalse(constrain.fits(x, factor=factor))
+            self.assertTrue(constrain.fits([200.0, 3.0, 2.0], factor=factor))
+            x_tr, success = constrain.try_to_transform(x, factor=factor)
+            self.assertTrue(success)
+            self.assertTrue(constrain.fits(x_tr, factor=factor))
+            self.assertTrue(np.allclose(x_tr, [200.0, 1.5, 3.5]),
+                            msg=str(x_tr))
+
+        # Rows could be nested like bounds of two split times: the first
+        # row is time of the first split (sum of two intervals), the second
+        # row is time of the second split. Row that is corrected is not
+        # broken by the correction of another one.
+        constrain = LinearConstrain([[1, 1], [0, 1]], [4, 1], [6, 1.5])
+        for x, x_expected in [([1.0, 5.0], [2.5, 1.5]),
+                              ([10.0, 0.1], [5.0, 1.0]),
+                              ([10.0, 1.2], [4.8, 1.2]),
+                              ([0.5, 1.2], [2.8, 1.2])]:
+            self.assertFalse(constrain.fits(x))
+            x_tr, success = constrain.try_to_transform(x)
+            self.assertTrue(success, msg=str(x))
+            self.assertTrue(constrain.fits(x_tr))
+            self.assertTrue(np.allclose(x_tr, x_expected), msg=str(x_tr))
+        # If it is not enough to change values of one row only then all
+        # its values are scaled
+        constrain = LinearConstrain([[1, 1], [0, 1]], [None, 0.8], [1, None])
+        x_tr, success = constrain.try_to_transform([1.0, 5.0])
+        self.assertTrue(success)
+        self.assertTrue(np.allclose(x_tr, [1 / 6, 5 / 6]), msg=str(x_tr))
+
+        # It is not always possible, values are not changed then
+        for constrain, x in [
+                (LinearConstrain([[1, 1], [0, 1]], [None, 2], [1, None]),
+                 [1.0, 5.0]),
+                (LinearConstrain([[1, -1]], [1], [None]), [1.0, 3.0]),
+                (LinearConstrain([[1, 1]], [1], [None]), [0.0, 0.0])]:
+            self.assertFalse(constrain.fits(x))
+            x_tr, success = constrain.try_to_transform(x)
+            self.assertFalse(success)
+            self.assertEqual(list(x_tr), x)
+
+        # Constrain for a part of the values
+        constrain = LinearConstrain([[0, 0, 1, 0, 1]], [None], [1000],
+                                    factor_index=1)
+        part = constrain.for_part_of_x([False, True, True, False, True])
+        self.assertTrue(np.all(part.A == [[0, 1, 1]]))
+        self.assertTrue(np.all(part.ub == constrain.ub))
+        self.assertEqual(part.factor_index, 0)
+        self.assertFalse(part.fits([200.0, 3.0, 7.0]))
+        self.assertTrue(part.fits([200.0, 3.0, 2.0]))
+        self.assertRaises(ValueError, constrain.for_part_of_x,
+                          [True, True, False, True, True])
+        self.assertRaises(ValueError, constrain.for_part_of_x,
+                          [True, False, True, True, True])
+
+    def test_optimizers_with_linear_constrain(self):
+        """
+        Optimizers work with solutions that satisfy linear constrain: if the
+        solution does not satisfy it then it is corrected and objective
+        function is evaluated for the corrected one. Result of optimization
+        satisfies constrain.
+        """
+        # The minimum without constrain is 0 in (2, 2), the minimum with
+        # constrain x_1 + x_2 <= 2 is 2 in (1, 1).
+        calls = []
+
+        def f(x):
+            calls.append([float(x[-2]), float(x[-1])])
+            return (x[-2] - 2) ** 2 + (x[-1] - 2) ** 2
+
+        variables = [ContinuousVariable('var1', [0.01, 10]),
+                     ContinuousVariable('var2', [0.01, 10])]
+        constrain = LinearConstrain([[1, 1]], [None], [2])
+
+        def check(result, msg):
+            self.assertTrue(len(calls) > 0, msg=msg)
+            for x in calls:
+                self.assertTrue(constrain.fits(x), msg=f"{x}. {msg}")
+            for x, y in zip([result.x] + list(result.X_out),
+                            [result.y] + list(result.Y_out)):
+                self.assertTrue(constrain.fits(x[-2:]), msg=f"{x}. {msg}")
+                self.assertTrue(np.isclose(y, f(x)), msg=f"{x}, {y}. {msg}")
+            for x in result.X:
+                self.assertTrue(constrain.fits(x[-2:]), msg=f"{x}. {msg}")
+
+        # 1. Local search from the point that satisfies constrain and from
+        # the point that does not
+        for opt in all_local_optimizers():
+            if opt.id in [None, "None"]:
+                continue
+            for x0 in [[0.5, 0.5], [3.0, 5.0]]:
+                msg = f"optimizer {opt.id}, start {x0}"
+                calls.clear()
+                result = opt.optimize(f, variables, x0,
+                                      linear_constrain=constrain)
+                check(result, msg)
+                self.assertTrue(np.isclose(result.y, 2, atol=1e-2),
+                                msg=f"{result.x}, {result.y}. {msg}")
+
+        # 2. Genetic algorithm keeps corrected solutions
+        for log_transform in [False, True]:
+            msg = f"genetic algorithm, log transform {log_transform}"
+            np.random.seed(17)
+            opt = get_global_optimizer("Genetic_algorithm")
+            opt.log_transform = log_transform
+            calls.clear()
+            result = opt.optimize(f, variables, num_init=20, maxiter=20,
+                                  linear_constrain=constrain)
+            check(result, msg)
+            # there are no solutions that were skipped
+            self.assertTrue(np.all(np.isfinite(result.Y)), msg=msg)
+            self.assertEqual(len(result.X), len(result.Y), msg=msg)
+            for x, y in zip(result.X, result.Y):
+                self.assertTrue(np.isclose(y, f(x)), msg=f"{x}, {y}. {msg}")
+            self.assertTrue(result.y < 2.5, msg=f"{result.y}. {msg}")
+
+        # 3. Combination, discrete variable is not optimized by local search
+        variables = [DiscreteVariable('var0', [0, 1])] + variables
+        constrain_3 = LinearConstrain([[0, 1, 1]], [None], [2])
+        for local_id in ["BFGS", "BFGS_log", "L-BFGS-B"]:
+            msg = f"combination with {local_id}"
+            np.random.seed(17)
+            opt = GlobalOptimizerAndLocalOptimizer(
+                get_global_optimizer("Genetic_algorithm"),
+                get_local_optimizer(local_id)
+            )
+            calls.clear()
+            result = opt.optimize(f, variables, global_num_init=20,
+                                  global_maxiter=10,
+                                  linear_constrain=constrain_3)
+            check(result, msg)
+            self.assertTrue(np.isclose(result.y, 2, atol=1e-2),
+                            msg=f"{result.x}, {result.y}. {msg}")
+
+        # 4. Solution that could not be corrected is skipped
+        calls.clear()
+        constrain = LinearConstrain([[1, -1]], [20], [None])
+        opt = get_global_optimizer("Genetic_algorithm")
+        result = opt.optimize(f, variables[1:], num_init=10, maxiter=3,
+                              linear_constrain=constrain)
+        self.assertEqual(len(calls), 0)
+        self.assertTrue(np.isinf(result.y))
 
 
 class TestGlobalOptimizer(unittest.TestCase):

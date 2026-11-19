@@ -446,6 +446,15 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
                                 maxiter=maxiter,
                                 maxeval=maxeval,
                                 callback=callback)
+        # Objective function was evaluated for the solutions that were
+        # corrected to satisfy the linear constrain, they should be in the
+        # history instead of the points of the inner optimizer.
+        if self.linear_constrain is not None:
+            self.run_info.result.X = [
+                self._fit_to_linear_constrain(
+                    variables, x, self.linear_constrain
+                )[0] for x in self.run_info.result.X
+            ]
         return self.run_info.result
 
     def optimize(self, f, variables, *args, **kwargs):

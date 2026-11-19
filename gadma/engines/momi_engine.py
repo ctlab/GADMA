@@ -238,6 +238,9 @@ class MomiEngine(Engine):
         if self.data is None or self.model is None:
             raise ValueError("Please set data and model for the engine or"
                              " use set_and_evaluate function instead.")
+        # Solution is skipped if the split times are out of their bounds
+        if not self.fits_linear_constrain(values):
+            return None
         momi_model = self.get_momi_model(values)
 
         kwargs = {}

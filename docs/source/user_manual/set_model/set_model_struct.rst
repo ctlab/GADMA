@@ -240,3 +240,7 @@ Bounds should be specified in GENERATIONS. In order to translate time from years
     Upper bound of first split : 30
     Lower bound of second split : 10
     ...
+
+Bounds are compared with time in generations, so GADMA should be able to get the size of the ancestral population. One of the following should be specified in the parameter file: ``Theta0``, both ``Mutation rate`` and ``Sequence length``, or ``Ancestral size as parameter : True``. Otherwise GADMA stops with an error. Bounds of splits are not available for the custom demographic model, as it is unknown which of its parameters are times of splits.
+
+When the size of the ancestral population is a parameter of the model or is fixed (options ``Ancestral size as parameter`` and ``Fixed ancestral size``, engines ``momi2`` and ``momentsLD``), a demographic model with split times out of the bounds is moved to the bounds during the optimization: its time intervals after the split are scaled. If it is not possible, the model is skipped.

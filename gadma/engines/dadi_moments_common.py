@@ -148,6 +148,20 @@ class DadiOrMomentsEngine(Engine):
         optimal_theta = min(optimal_theta, theta_lower_ub)
         return optimal_theta
 
+    def _get_theta_from_values(self, values, grid_sizes):
+        """
+        Returns theta in not-multinom mode: size of ancestral population is
+        known from the values.
+        """
+        theta0_inv = self.get_N_ancestral_from_theta(1)
+        if theta0_inv is None:
+            warnings.warn("Theta0 is not set and translation of Nanc "
+                          "variable with theta0=1 could be wrong.")
+            theta0_inv = 1.0
+        theta0 = 1 / theta0_inv
+        # just get value of Nanc from values
+        return theta0 * self.get_N_ancestral(values, grid_sizes)
+
     def get_theta(self, values, grid_sizes):
         key = self._get_key(values, grid_sizes)
         if key not in self.saved_add_info:
@@ -252,6 +266,16 @@ class DadiOrMomentsEngine(Engine):
         values_gen = self.model.translate_values(units="genetic",
                                                  values=values,
                                                  time_in_generations=False)
+        # Size of ancestral population is known in not-multinom mode, so
+        # constrain (bounds of the split times) is checked before simulation.
+        # Solution that is out of bounds is skipped.
+        if not self.multinom and not self.fits_linear_constrain(values):
+            key = self._get_key(values, grid_sizes)
+            self.saved_add_info[key] = {
+                "theta": self._get_theta_from_values(values, grid_sizes),
+                "failed_f": 0.
+            }
+            return None
         model_sfs = self.simulate(values_gen,
                                   self.data.sample_sizes,
                                   None,
@@ -284,21 +308,8 @@ class DadiOrMomentsEngine(Engine):
             return None
         # Otherwise we continue and write failed results at the end
 
-        # TODO: process it
-        if not self.multinom and self.model.linear_constrain is not None:
-            raise ValueError(f"{self.id} engine could not process constrains "
-                             "on demographic model parameters (bounds of time "
-                             "splits) in not-multinom mode.")
-
         if not self.multinom:
-            theta0_inv = self.get_N_ancestral_from_theta(1)
-            if theta0_inv is None:
-                warnings.warn("Theta0 is not set and translation of Nanc "
-                              "variable with theta0=1 could be wrong.")
-                theta0_inv = 1.0
-            theta0 = 1 / theta0_inv
-            # just get value of Nanc from values
-            theta = theta0 * self.get_N_ancestral(values, grid_sizes)
+            theta = self._get_theta_from_values(values, grid_sizes)
         else:
             # If we have some constrains theta is chosen so that they are
             # satisfied, otherwise it is optimal_sfs_scaling
