@@ -1333,6 +1333,21 @@ class SettingsStorage(object):
         theta0 = self.theta0
         mut_rate = self.mutation_rate
         rec_rate = self.recombination_rate
+
+        def set_values_from_settings(model):
+            """
+            Custom model could be built by user as GADMA model. It gets
+            values that are set in settings, its own values are kept
+            when there are no such settings.
+            """
+            for attr_name, value in [("gen_time", gen_time),
+                                     ("theta0", theta0),
+                                     ("mutation_rate", mut_rate),
+                                     ("recombination_rate", rec_rate)]:
+                if value is not None:
+                    setattr(model, attr_name, value)
+            return model
+
         if ((self.custom_filename is not None or
                 self.model_func is not None) and
                 self.lower_bound is not None and
@@ -1353,7 +1368,7 @@ class SettingsStorage(object):
                 try:
                     model = self.model_func()
                     assert isinstance(model, DemographicModel)
-                    return model
+                    return set_values_from_settings(model)
                 except Exception:
                     pass
                 # If not then we cteate Custom model
@@ -1376,9 +1391,7 @@ class SettingsStorage(object):
             try:
                 model = module.model_func()
                 assert isinstance(model, DemographicModel)
-                model.mutation_rate = mut_rate
-                model.recombination_rate = rec_rate
-                return model
+                return set_values_from_settings(model)
             except Exception:
                 pass
             # If not then we cteate Custom model
@@ -1438,7 +1451,7 @@ class SettingsStorage(object):
             try:
                 model = self.model_func()
                 assert isinstance(model, DemographicModel)
-                return model
+                return set_values_from_settings(model)
             except Exception:
                 pass
 

@@ -621,6 +621,97 @@ class TestCLI(unittest.TestCase):
             if check_dir_existence("Some_out_dir"):
                 shutil.rmtree("Some_out_dir")
 
+    def test_settings_for_custom_gadma_model(self):
+        """
+        Custom model could be built by user as GADMA model. It gets theta0,
+        mutation and recombination rates and time for generation from
+        settings, its own values are kept if there are no such settings.
+        """
+        import tempfile
+        model_file = os.path.join(DATA_PATH, "MODELS",
+                                  "simple_gadma_model.py")
+
+        def get_values(model):
+            return (model.theta0, model.mutation_rate,
+                    model.recombination_rate, model.gen_time)
+
+        # 1. Model from file
+        settings = SettingsStorage()
+        settings.custom_filename = model_file
+        dm = settings.get_model()
+        self.assertTrue(isinstance(dm, EpochDemographicModel))
+        self.assertEqual(get_values(dm), (None, None, None, None))
+        settings.theta0 = 0.5
+        settings.time_for_generation = 25
+        self.assertEqual(get_values(settings.get_model()),
+                         (0.5, None, None, 25))
+        settings.mutation_rate = 1.25e-8
+        settings.recombination_rate = 1e-8
+        self.assertEqual(get_values(settings.get_model()),
+                         (0.5, 1.25e-8, 1e-8, 25))
+
+        # size of ancestral population is known then
+        settings = SettingsStorage()
+        settings.custom_filename = model_file
+        settings.engine = "moments"
+        settings.input_data = os.path.join(DATA_PATH, "DATA", "sfs",
+                                           "small_1pop.fs")
+        settings.theta0 = 0.5
+        engine = get_engine("moments")
+        engine.set_data(settings.inner_data)
+        engine.set_model(settings.get_model())
+        engine.data_holder = settings.data_holder
+        args = settings.get_engine_args()
+        x = [1.5, 0.2]
+        self.assertTrue(engine.evaluate(x, *args) is not None)
+        self.assertTrue(np.isclose(engine.get_N_ancestral(x, *args),
+                                   engine.get_theta(x, *args) / 0.5))
+
+        # 2. Model has its own values
+        work_dir = tempfile.mkdtemp("gadma_test_dir")
+        try:
+            own_model_file = os.path.join(work_dir, "gadma_model.py")
+            with open(model_file) as f:
+                code = f.read()
+            self.assertTrue("EpochDemographicModel()" in code)
+            with open(own_model_file, "w") as f:
+                f.write(code.replace(
+                    "EpochDemographicModel()",
+                    "EpochDemographicModel(theta0=0.7, mutation_rate=2e-8, "
+                    "gen_time=30)"
+                ))
+            settings = SettingsStorage()
+            settings.custom_filename = own_model_file
+            self.assertEqual(get_values(settings.get_model()),
+                             (0.7, 2e-8, None, 30))
+            settings.theta0 = 0.5
+            settings.recombination_rate = 1e-8
+            self.assertEqual(get_values(settings.get_model()),
+                             (0.5, 2e-8, 1e-8, 30))
+        finally:
+            shutil.rmtree(work_dir)
+
+        # 3. Function of the model is set directly
+        def model_func():
+            nu1 = PopulationSizeVariable("nu1")
+            t1 = TimeVariable("t1")
+            model = EpochDemographicModel(mutation_rate=2e-8)
+            model.add_epoch(time_arg=t1, size_args=[nu1])
+            return model
+
+        for bounds in [None, ([1e-2, 1e-15], [100, 5])]:
+            settings = SettingsStorage()
+            settings.model_func = model_func
+            if bounds is not None:
+                settings.parameter_identifiers = ["nu1", "t1"]
+                settings.lower_bound, settings.upper_bound = bounds
+            self.assertEqual(get_values(settings.get_model()),
+                             (None, 2e-8, None, None))
+            settings.theta0 = 0.5
+            settings.time_for_generation = 25
+            self.assertEqual(get_values(settings.get_model()),
+                             (0.5, 2e-8, None, 25))
+
     def test_options_of_engines_in_new_process(self):
         """
         Options of engines are kept in their classes. A new process could
