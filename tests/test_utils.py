@@ -65,6 +65,21 @@ class TestUtils(unittest.TestCase):
         x = [0, 0, 2]
         self.assertTrue(0 in choose_by_weight(x, None, 2))
 
+    def test_choose_by_weight(self):
+        x = list(range(5))
+        # the greater weight is the more often the element is chosen
+        weights = np.array([1000, 1, 1, 1, 1], dtype=float)
+        chosen = [choose_by_weight(x, weights, 1)[0] for _ in range(100)]
+        self.assertTrue(chosen.count(0) > 80,
+                        msg=f"Element with weight 1000 out of 1004 was "
+                            f"chosen {chosen.count(0)} times out of 100.")
+        # weights are not changed
+        self.assertEqual(list(weights), [1000, 1, 1, 1, 1])
+        # elements are chosen without repeats, weights could be integer
+        self.assertEqual(sorted(choose_by_weight(x, [1000, 1, 1, 1, 1], 5)),
+                         x)
+        self.assertEqual(sorted(choose_by_weight(x, None, 5)), x)
+
     def test_cache_info(self):
         info = CacheInfo()
         str(info)

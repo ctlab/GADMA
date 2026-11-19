@@ -205,7 +205,15 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                 x_mut[index] = var.domain[new_i]
             # Case 2 Continous variable
             else:
-                x_mut[index] *= 1 + sign * rate
+                change = 1 + sign * rate
+                if not var.log_transformed:
+                    x_mut[index] *= change
+                # We have logarithm of the value here and the value itself
+                # should be multiplied
+                elif change > 0:
+                    x_mut[index] += np.log(change)
+                else:
+                    x_mut[index] = var.domain[0]
 
             # Check if it was something that could be 0
             if var.domain[0] == 0 and sign == -1:
@@ -239,9 +247,10 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         * 'resample' - new values will be sampled from the random\
         distribution of the variables.
 
-        * 'gaussian' - will adds a unit Gaussian distributed random value.\
-        The mean of the Gaussian distribution will be taken from the mutation\
-        rate.
+        * 'gaussian' - the value is increased or decreased by its fraction.\
+        The fraction is sampled from the truncated normal distribution with\
+        the mean equal to the mutation rate. It is the value itself that is\
+        changed by its fraction even if its logarithm is used in optimization.
 
         :param x: values to mutate.
         :param variables: variables.
@@ -273,12 +282,17 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
         if isinstance(x, WeightedMetaArray):
             weights = x.weights
         else:
-            weights = np.ones(num_inds)
+            weights = np.ones(len(x))
         inds = choose_by_weight(range(len(x)), weights, num_inds)
 
-        # Copy the array to change
+        # Copy the array to change. Mutants inherit weights and history of x
         x_mut = [np.array(x, dtype=get_correct_dtype(x))
                  for _ in range(attemts)]
+        if isinstance(x, WeightedMetaArray):
+            for attempt in range(attemts):
+                x_mut[attempt] = WeightedMetaArray(x_mut[attempt])
+                x_mut[attempt].weights = copy.deepcopy(x.weights)
+                x_mut[attempt].metadata = x.metadata
 
         # Start mutation procedure
         # We try to get mutant that will be different to original x

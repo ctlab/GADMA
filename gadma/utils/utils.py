@@ -89,9 +89,9 @@ def choose_by_weight(X, weights, nsample):
     """
     if weights is None:
         weights = np.ones(len(X))
-    p = np.array(weights)
+    p = np.array(weights, dtype=float)
     p /= np.sum(p)
-    return np.random.choice(X, size=nsample, replace=False)
+    return np.random.choice(X, size=nsample, replace=False, p=p)
 
 
 def sort_by_other_list(x, y, reverse=False, key=None):

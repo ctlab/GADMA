@@ -164,6 +164,95 @@ class TestGeneticAlg(unittest.TestCase):
         self.assertRaises(ValueError, ga.mutation, x_arr,
                           variables, mutation_type='bad_type')
 
+    def test_weights_in_mutation(self):
+        """
+        Mutant inherits weights and history of its parent, weight of every
+        changed parameter is increased. Parameters with greater weights are
+        changed more often. Crossover gives offspring without weights.
+        """
+        ga = get_global_optimizer('Genetic_algorithm')
+        variables = [ContinuousVariable('var%d' % i, domain=[0, 1])
+                     for i in range(5)]
+        weights = [3, 1, 1, 5, 1]
+        parent = WeightedMetaArray([0.5 for _ in variables])
+        parent.weights = np.array(weights, dtype=float)
+        parent.metadata = 'rm'
+        for mut_type in ['uniform', 'gaussian', 'resample']:
+            mutants = ga.mutation(parent, variables, mut_type, attemts=3)
+            self.assertEqual(len(mutants), 3)
+            for x_mut in mutants:
+                is_changed = np.array(x_mut != parent)
+                self.assertTrue(np.any(is_changed))
+                self.assertTrue(
+                    np.all(x_mut.weights - weights == is_changed),
+                    msg=f"Mutant {x_mut} of {parent} has weights "
+                        f"{x_mut.weights}, parent has {weights}."
+                )
+                self.assertEqual(x_mut.metadata,
+                                 'rm' + 'm' * np.sum(is_changed))
+            # parent is the same
+            self.assertTrue(np.all(parent.weights == weights))
+            self.assertEqual(parent.metadata, 'rm')
+
+        # one parameter is changed and it is chosen according to weights
+        ga.mut_strength = 1e-10
+        parent.weights = np.array([1000, 1, 1, 1, 1], dtype=float)
+        n_first = 0
+        for _ in range(100):
+            x_mut = ga.mutation(parent, variables, 'gaussian')[0]
+            self.assertEqual(np.sum(x_mut != parent), 1)
+            n_first += int(x_mut[0] != parent[0])
+        self.assertTrue(n_first > 80,
+                        msg=f"Parameter with weight 1000 out of 1004 was "
+                            f"changed {n_first} times out of 100.")
+
+        child = ga.crossover(parent, mutants[0], variables)
+        self.assertTrue(np.all(child.weights == 1))
+        self.assertEqual(child.metadata, 'c')
+
+    def test_gaussian_mutation_in_log_scale(self):
+        """
+        Gaussian mutation changes the value by its fraction, even when the
+        optimizer works with the logarithm of the value.
+        """
+        ga = get_global_optimizer('Genetic_algorithm')
+        ga.log_transform = True
+        variables = ga._prepare_variables(
+            [PopulationSizeVariable('nu', domain=[1e-2, 100]),
+             TimeVariable('t', domain=[1e-15, 100])]
+        )
+        self.assertTrue(variables[0].log_transformed)
+        self.assertFalse(variables[1].log_transformed)
+
+        def get_mutated_values(value, index, rate):
+            ga.mut_rate = rate
+            x = WeightedMetaArray([np.log(value), value])
+            results = []
+            for _ in range(30):
+                x_mut = ga.mutation_by_ind(x, variables, index,
+                                           mutation_type='gaussian',
+                                           one_fifth_rule=False)
+                results.append([np.exp(x_mut[0]), x_mut[1]][index])
+            return results
+
+        for value in [0.05, 1.0, 1.05, 20.0]:
+            for index in [0, 1]:
+                for new_value in get_mutated_values(value, index, rate=0.2):
+                    self.assertTrue(
+                        np.isclose(new_value, 0.8 * value) or
+                        np.isclose(new_value, 1.2 * value),
+                        msg=f"Value {value} of {variables[index]} was "
+                            f"changed to {new_value} by mutation with rate "
+                            f"0.2."
+                    )
+        # bounds of the variable are kept
+        for new_value in get_mutated_values(90.0, 0, rate=0.2):
+            self.assertTrue(np.isclose(new_value, 72) or
+                            np.isclose(new_value, 100))
+        for new_value in get_mutated_values(1.0, 0, rate=1.0):
+            self.assertTrue(np.isclose(new_value, 1e-2) or
+                            np.isclose(new_value, 2))
+
     def test_crossover(self):
         cross_types = ['uniform', 'k_point']
         ks = range(1, 5)
