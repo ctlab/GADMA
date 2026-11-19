@@ -328,6 +328,92 @@ class TestEngines(unittest.TestCase):
         engine.draw_data_comp_plot(vals, pts, save_file="plot.png")
         self.assertEqual(len(n_calls), 3)
 
+    def test_sfs_in_comp_plot_is_scaled_as_for_likelihood(self):
+        """
+        Expected SFS in the plot of comparison with data is scaled by the
+        same theta as for the likelihood: by the optimal one, by the one
+        that is restricted by bounds of the split time or by the one that
+        corresponds to the size of ancestral population.
+        """
+        import tempfile
+        Nanc = 12000.
+        out_dir = tempfile.mkdtemp("gadma_test_dir")
+        cases = ["implicit", "implicit with bound", "parameter", "fixed"]
+        try:
+            for engine_id, case in [(engine_id, case)
+                                    for engine_id in ["dadi", "moments"]
+                                    for case in cases]:
+                msg = f"engine: {engine_id}, ancestral size: {case}"
+                settings = SettingsStorage()
+                settings.engine = engine_id
+                settings.input_data = os.path.join(DATA_PATH, "DATA", "sfs",
+                                                   "YRI_CEU.fs")
+                settings.projections = [4, 4]
+                if engine_id == "dadi":
+                    settings.pts = [8, 10, 12]
+                settings.mutation_rate = 1.25e-8
+                settings.sequence_length = 4.04e6
+                settings.initial_structure = [1, 1]
+                settings.only_sudden = True
+                settings.no_migrations = True
+                if case in ["parameter", "fixed"]:
+                    settings.ancestral_size_as_parameter = True
+                if case == "fixed":
+                    settings.fixed_ancestral_size = Nanc
+                if case == "implicit with bound":
+                    settings.upper_bound_of_first_split = 1000
+
+                model = settings.get_model()
+                engine = get_engine(engine_id)
+                engine.set_data(settings.inner_data)
+                engine.set_model(model)
+                engine.data_holder = settings.data_holder
+                args = settings.get_engine_args()
+                x = [{"Nanc": Nanc, "t1": 0.2}.get(var.name, 1.5)
+                     for var in model.variables]
+
+                module = engine.base_module
+                ll = engine.evaluate(x, *args)
+                sfs = engine.simulate(x, engine.data.sample_sizes, None, None,
+                                      *args)
+                ll_optimal = module.Inference.ll_multinom(sfs, engine.data)
+                if case == "implicit":
+                    self.assertTrue(np.isclose(ll, ll_optimal), msg=msg)
+                else:
+                    # theta is not optimal in other cases
+                    self.assertTrue(ll < ll_optimal - 1,
+                                    msg=f"{ll}, {ll_optimal}. {msg}")
+
+                # SFS that is drawn
+                drawn = []
+                n_calls = []
+                plot_func = module.Plotting.plot_2d_comp_Poisson
+                simulate = engine.simulate
+
+                def save_model(model, data, **kwargs):
+                    drawn.append(model)
+
+                def simulate_and_count(*args, **kwargs):
+                    n_calls.append(1)
+                    return simulate(*args, **kwargs)
+
+                module.Plotting.plot_2d_comp_Poisson = save_model
+                engine.simulate = simulate_and_count
+                try:
+                    engine.draw_data_comp_plot(
+                        x, *args, save_file=os.path.join(out_dir, "plot.png")
+                    )
+                finally:
+                    module.Plotting.plot_2d_comp_Poisson = plot_func
+                self.assertEqual(len(drawn), 1, msg=msg)
+                ll_drawn = module.Inference.ll(drawn[0], engine.data)
+                self.assertTrue(np.isclose(ll, ll_drawn),
+                                msg=f"{ll}, {ll_drawn}. {msg}")
+                # SFS of the evaluation is used, it is not simulated again
+                self.assertEqual(len(n_calls), 0, msg=msg)
+        finally:
+            shutil.rmtree(out_dir)
+
     def test_moments_engine(self):
         engine = get_engine('moments')
 

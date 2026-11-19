@@ -220,12 +220,20 @@ class DadiOrMomentsEngine(Engine):
         n_pop = len(self.data.sample_sizes)
         # Get simulated data
         model = self._get_simulated_sfs(values, grid_sizes)
-        # check for the multinom
+        # SFS is scaled by the same theta as it is for the likelihood
         if self.multinom:
-            model = self.base_module.Inference.optimally_scaled_sfs(
-                model=model,
-                data=self.data
+            # theta is optimal or it is restricted by model constrains
+            values_gen = self.model.translate_values(
+                units="genetic", values=values, time_in_generations=False
             )
+            theta = self._get_theta_from_sfs(values_gen, model)
+            if theta is None:
+                theta = self.base_module.Inference.optimal_sfs_scaling(
+                    model, self.data
+                )
+        else:
+            theta = self._get_theta_from_values(values, grid_sizes)
+        model = theta * model
         # Draw
         D_or_d = "D" if n_pop == 1 else "d"
         M_or_m = "M" if n_pop == 1 else "m"
@@ -336,8 +344,7 @@ class DadiOrMomentsEngine(Engine):
         # Save simulated data
         key = self._get_key(values, grid_sizes)
         self.saved_add_info[key] = {"theta": theta, "failed_f": failed_f}
-        self._save_simulated_sfs(values_gen, grid_sizes, simulated_sfs,
-                                 ll_model)
+        self._save_simulated_sfs(values, grid_sizes, simulated_sfs, ll_model)
         return ll_model
 
     def get_claic_component(self, x0, all_boots, grid_sizes, eps):
