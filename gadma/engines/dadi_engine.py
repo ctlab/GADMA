@@ -58,18 +58,18 @@ class DadiEngine(DadiOrMomentsEngine):
                         continue
                     ret_dict['m%d%d' % (i + 1, j + 1)] = event.mig_args[i][j]
         if event.sel_args is not None:
-            if event.n_pop == 1:
-                arg_name = 'gamma'
-            else:
-                arg_name = 'gamma%d' % (i + 1)
             for i in range(event.n_pop):
+                if event.n_pop == 1:
+                    arg_name = 'gamma'
+                else:
+                    arg_name = 'gamma%d' % (i + 1)
                 ret_dict[arg_name] = event.sel_args[i]
         if event.dom_args is not None:
-            if event.n_pop == 1:
-                arg_name = 'h'
-            else:
-                arg_name = 'h%d' % (i + 1)
             for i in range(event.n_pop):
+                if event.n_pop == 1:
+                    arg_name = 'h'
+                else:
+                    arg_name = 'h%d' % (i + 1)
                 ret_dict[arg_name] = event.dom_args[i]
         return ret_dict
 

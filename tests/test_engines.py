@@ -213,6 +213,85 @@ class TestEngines(unittest.TestCase):
             options={"pts": pts}
         ), ll)
 
+    def test_selection_and_dominance_of_each_population(self):
+        """
+        Selection and dominance coefficients of every population are used
+        during simulation, not of the last population only.
+        """
+        nu1, nu2, nu3 = [PopulationSizeVariable(f'nu{i}') for i in (1, 2, 3)]
+        t1, t2 = TimeVariable('t1'), TimeVariable('t2')
+        gammas = [SelectionVariable(f'gamma{i}') for i in (1, 2, 3)]
+        doms = [FractionVariable(f'h{i}') for i in (1, 2, 3)]
+
+        # 1. Arguments for dadi integration functions
+        dadi_engine = get_engine('dadi')
+        dm = EpochDemographicModel()
+        dm.add_epoch(t1, [nu1], sel_args=gammas[:1], dom_args=doms[:1])
+        kwargs = dadi_engine._get_kwargs(dm.events[-1], {})
+        self.assertTrue(kwargs['gamma'] is gammas[0])
+        self.assertTrue(kwargs['h'] is doms[0])
+        dm.add_split(0, [nu1, nu2])
+        dm.add_epoch(t1, [nu1, nu2], sel_args=gammas[:2], dom_args=doms[:2])
+        dm.add_split(1, [nu2, nu3])
+        dm.add_epoch(t2, [nu1, nu2, nu3], sel_args=gammas, dom_args=doms)
+        for event, n_pop in [(dm.events[-3], 2), (dm.events[-1], 3)]:
+            kwargs = dadi_engine._get_kwargs(event, {})
+            for i in range(n_pop):
+                self.assertTrue(kwargs[f'gamma{i + 1}'] is gammas[i],
+                                msg=f"{n_pop} populations: {kwargs}")
+                self.assertTrue(kwargs[f'h{i + 1}'] is doms[i],
+                                msg=f"{n_pop} populations: {kwargs}")
+            self.assertEqual(
+                len([key for key in kwargs if key[0] in "gh"]), 2 * n_pop
+            )
+
+        # 2. Two populations that are the same except selection. When
+        # coefficients of populations are swapped, SFS is transposed.
+        dm = EpochDemographicModel()
+        dm.add_split(0, [nu1, nu2])
+        dm.add_epoch(t1, [nu1, nu2], sel_args=gammas[:2], dom_args=doms[:2])
+        ns = (6, 6)
+
+        def simulate(engine, args, **new_values):
+            values = {'nu1': 1.0, 'nu2': 1.0, 't1': 0.3, 'gamma1': 0.0,
+                      'gamma2': 0.0, 'h1': 0.5, 'h2': 0.5}
+            values.update(new_values)
+            sfs = engine.simulate([values[var.name] for var in dm.variables],
+                                  ns, None, None, *args)
+            return np.ma.filled(sfs, 0.0)
+
+        total = {}
+        for engine_id, args in [('dadi', ([20, 30, 40],)), ('moments', ())]:
+            engine = get_engine(engine_id)
+            engine.set_model(dm)
+            neutral = simulate(engine, args)
+            for name, values in [('gamma', (5.0, 0.0)), ('h', (0.1, 0.9))]:
+                msg = f"engine {engine_id}, {name} {values}"
+                other = {}
+                if name == 'h':
+                    other = {'gamma1': 5.0, 'gamma2': 5.0}
+                sfs = simulate(engine, args, **other,
+                               **{f"{name}1": values[0],
+                                  f"{name}2": values[1]})
+                sfs_swapped = simulate(engine, args, **other,
+                                       **{f"{name}1": values[1],
+                                          f"{name}2": values[0]})
+                self.assertTrue(np.allclose(sfs, sfs_swapped.T, rtol=1e-2),
+                                msg=msg)
+                self.assertFalse(np.allclose(sfs, sfs_swapped, rtol=1e-2),
+                                 msg=msg)
+                self.assertFalse(np.allclose(sfs, neutral, rtol=1e-2),
+                                 msg=msg)
+                total[(engine_id, name)] = sfs.sum()
+        # two engines agree
+        for name in ['gamma', 'h']:
+            self.assertTrue(
+                np.isclose(total[('dadi', name)], total[('moments', name)],
+                           rtol=3e-2),
+                msg=f"{name}: dadi {total[('dadi', name)]}, "
+                    f"moments {total[('moments', name)]}"
+            )
+
     def test_sfs_of_evaluation_is_used_in_comp_plot(self):
         """
         Best model is drawn right after its evaluation. SFS for comparison
