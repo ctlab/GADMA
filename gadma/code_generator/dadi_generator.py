@@ -10,6 +10,25 @@ import numpy as np
 FUNCTION_NAME = 'model_func'
 
 
+def _print_unpacking_of_params(variables, indent="\t"):
+    """
+    Returns line of code that takes values of `variables` from `params` in
+    the beginning of the function of demographic model.
+
+    The line is empty if there are no variables. For one variable it is
+    `name, = params`, as `name = params` is the whole list and not the value.
+
+    :param variables: Variables which values are parameters of the function.
+    :param indent: Indent of the line.
+    """
+    if len(variables) == 0:
+        return ""
+    names = ", ".join([var.name for var in variables])
+    if len(variables) == 1:
+        names += ","
+    return f"{indent}{names} = params\n"
+
+
 def _print_dadi_func(model, values):
     """
     Returns string with function of demographic model for :py:mod:`dadi`.
@@ -40,7 +59,7 @@ def _print_dadi_func(model, values):
         if isinstance(model.Nanc_size, Variable):
             f_vars.pop(f_vars.index(model.Nanc_size))
     ret_str = f"def {FUNCTION_NAME}(params, ns, pts):\n"
-    ret_str += "\t%s = params\n" % ", ".join([x.name for x in f_vars])
+    ret_str += _print_unpacking_of_params(f_vars)
     # Not very good solution !
     if not model.has_anc_size:
         ret_str += "\t_Nanc_size"
@@ -310,7 +329,6 @@ def _print_main(engine, values, mode='dadi', nanc=None):
     if have_theta0 or mu_and_L:
         if engine.model.theta0 is not None:
             ret_str += f"theta0 = {engine.model.theta0}\n"
-            ret_str += "Nanc = int(theta / theta0)\n"
         elif mu_and_L:
             ret_str += f"mu = {engine.model.mutation_rate}\n"
             ret_str += f"L = {engine.data_holder.get_total_sequence_length()}"

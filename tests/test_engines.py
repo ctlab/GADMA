@@ -415,6 +415,158 @@ class TestEngines(unittest.TestCase):
                 msg=f"{ll_model} != {namespace['ll_model']} : {msg}"
             )
 
+    def test_generated_code_with_theta0_and_few_parameters(self):
+        """
+        Generated code is valid and gives the same likelihood as the engine
+        when size of ancestral population is a parameter together with
+        theta0, and when function of the model has no parameters or has only
+        one parameter.
+        """
+        sfs_dir = os.path.join(DATA_PATH, "DATA", "sfs")
+        # file, projections, structure, ancestral size as parameter, theta0
+        cases = [
+            ("YRI_CEU.fs", [4, 4], [1, 1], True, 0.37),
+            # model has no parameters
+            ("small_1pop.fs", [4], [1], False, None),
+            # the only parameter is the size of ancestral population
+            ("small_1pop.fs", [4], [1], True, None),
+            ("small_1pop.fs", [4], [1], True, 0.37),
+        ]
+        engine_ids = [engine.id for engine in all_available_engines()
+                      if engine.id in ["dadi", "moments"]]
+        for engine_id in engine_ids:
+            for filename, projections, structure, anc_size, theta0 in cases:
+                msg = f"{engine_id}, structure {structure}, ancestral size " \
+                      f"as parameter {anc_size}, theta0 {theta0}"
+                settings = SettingsStorage()
+                settings.engine = engine_id
+                settings.input_data = os.path.join(sfs_dir, filename)
+                settings.projections = projections
+                settings.pts = [8, 10, 12]
+                settings.initial_structure = structure
+                settings.only_sudden = True
+                settings.no_migrations = True
+                settings.ancestral_size_as_parameter = anc_size
+                if theta0 is not None:
+                    settings.theta0 = theta0
+                settings.read_data()
+                model = settings.get_model()
+                x = []
+                for var in model.variables:
+                    if var.name == "Nanc":
+                        x.append(10000)
+                    else:
+                        x.append(0.2 if var.name.startswith("t") else 1.5)
+                engine = get_engine(engine_id)
+                engine.set_data(settings.inner_data)
+                engine.set_model(model)
+                engine.data_holder = settings.data_holder
+                args = settings.get_engine_args()
+                ll_model = engine.evaluate(x, *args)
+                namespace = {}
+                exec(engine.generate_code(x, None, *args), namespace)
+                self.assertTrue(
+                    np.isclose(ll_model, namespace["ll_model"]),
+                    msg=f"{ll_model} != {namespace['ll_model']} : {msg}"
+                )
+
+            # function of the model has one parameter
+            model = EpochDemographicModel()
+            model.add_epoch(0.3, [PopulationSizeVariable("nu")])
+            engine = get_engine(engine_id)
+            engine.data = SFSDataHolder(
+                os.path.join(sfs_dir, "small_1pop.fs"), projections=[4])
+            engine.model = model
+            ll_model = engine.evaluate([1.5], *args)
+            namespace = {}
+            exec(engine.generate_code([1.5], None, *args), namespace)
+            self.assertTrue(
+                np.isclose(ll_model, namespace["ll_model"]),
+                msg=f"{ll_model} != {namespace['ll_model']} : {engine_id}, "
+                    f"one parameter"
+            )
+
+        if gadma.momi_available:
+            # one population with the size of ancestral population only
+            settings = SettingsStorage()
+            settings.engine = "momi2"
+            settings.input_data = os.path.join(sfs_dir, "YRI_CEU.fs")
+            settings.population_labels = ["YRI"]
+            settings.mutation_rate = 1.25e-8
+            settings.sequence_length = 4.04e6
+            settings.initial_structure = [1]
+            settings.ancestral_size_as_parameter = True
+            settings.read_data()
+            model = settings.get_model()
+            self.assertEqual([var.name for var in model.variables], ["Nanc"])
+            engine = get_engine("momi2")
+            engine.set_data(settings.inner_data)
+            engine.set_model(model)
+            engine.data_holder = settings.data_holder
+            ll_model = engine.evaluate([10000])
+            code = engine.generate_code([10000], None)
+            # we do not want to draw picture
+            code = code[:code.index("from matplotlib import pyplot")]
+            namespace = {}
+            exec(code, namespace)
+            self.assertTrue(np.isclose(ll_model, namespace["ll_model"]),
+                            msg=f"{ll_model} != {namespace['ll_model']}")
+
+    def test_generated_code_of_custom_model_without_loaded_module(self):
+        """
+        Code for a custom model is generated when the module with its
+        function is not among loaded modules (`sys.modules`). It is so in
+        the processes of runs, and code of moments was not saved in the
+        directories of runs for such models.
+        """
+        import importlib.util
+        import sys
+        from gadma.code_generator.moments_ld_generator import \
+            _print_momentsLD_func
+        variables = [PopulationSizeVariable("nuB"),
+                     PopulationSizeVariable("nuF"),
+                     TimeVariable("TB"), TimeVariable("TF")]
+        x = [1.5, 1.2, 0.2, 0.3]
+
+        def get_custom_model(engine_id):
+            filename = os.path.join(
+                DATA_PATH, "MODELS", f"small_1pop_dem_model_{engine_id}.py")
+            spec = importlib.util.spec_from_file_location(
+                f"not_loaded_module_of_{engine_id}", filename)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            self.assertTrue(module.model_func.__module__ not in sys.modules)
+            model = CustomDemographicModel(module.model_func, variables)
+            return filename, model
+
+        _, model = get_custom_model("moments")
+        engine = get_engine("moments")
+        engine.data = SFSDataHolder(
+            os.path.join(DATA_PATH, "DATA", "sfs", "small_1pop.fs"),
+            projections=[4])
+        engine.model = model
+        ll_model = engine.evaluate(x)
+        namespace = {}
+        exec(engine.generate_code(x, None), namespace)
+        self.assertTrue(np.isclose(ll_model, namespace["ll_model"]),
+                        msg=f"{ll_model} != {namespace['ll_model']}")
+
+        if gadma.moments_LD_available:
+            filename, model = get_custom_model("momentsLD")
+            engine = get_engine("momentsLD")
+            engine.model = model
+            engine.data_holder = VCFDataHolder(
+                vcf_file=os.path.join(DATA_PATH, "DATA", "vcf_ld",
+                                      "vcf_data.vcf"),
+                popmap_file=os.path.join(DATA_PATH, "DATA", "vcf_ld",
+                                         "pop_map.txt"),
+            )
+            namespace = {}
+            exec(_print_momentsLD_func(engine, x), namespace)
+            # it is the function of our file
+            code_file = namespace["model_func"].__code__.co_filename
+            self.assertTrue(os.path.samefile(code_file, filename))
+
     def test_selection_and_dominance_of_each_population(self):
         """
         Selection and dominance coefficients of every population are used

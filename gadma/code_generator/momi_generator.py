@@ -107,8 +107,8 @@ def print_momi_model(engine, values, nanc, gen_time):
     ret_str += "import numpy as np\n\n"
 
     ret_str += "def model_func(params):\n"
-    params_ids = ", ".join([var.name for var in model.variables])
-    ret_str += f"\t{params_ids} = params\n\n"
+    ret_str += dadi_generator._print_unpacking_of_params(model.variables)
+    ret_str += "\n"
 
     ret_str += "\tmodel = momi.DemographicModel(\n"
     ret_str += "\t\tN_e=1,\n"

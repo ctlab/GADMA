@@ -2,9 +2,11 @@ from ..models import CustomDemographicModel, EpochDemographicModel, \
     Epoch, Split, BinaryOperation, StructureDemographicModel
 from ..utils import DiscreteVariable, DynamicVariable, Variable
 from ..data import extract_chromosomes_from_vcf
+from .dadi_generator import _print_unpacking_of_params
 import numpy as np
 import copy
-import sys
+import os
+import inspect
 from os import listdir
 
 FUNCTION_NAME = "model_func"
@@ -41,7 +43,9 @@ def _print_momentsLD_func(engine, values):
     model = engine.model
     pops = engine.data_holder.population_labels
     if isinstance(model, CustomDemographicModel):
-        path_repr = repr(sys.modules[model.function.__module__].__file__)
+        # the module of the function could be not among loaded modules,
+        # e.g. in the process of a run, so file is taken from the function
+        path_repr = repr(os.path.abspath(inspect.getfile(model.function)))
         path_repr = path_repr.replace("\\", "\\\\")
         ret_str = "import importlib.util\n\n"
         ret_str += "spec = importlib.util.spec_from_file_location('module', " \
@@ -67,7 +71,7 @@ def _print_momentsLD_func(engine, values):
                 f_vars.pop(f_vars.index(model.Nanc_size))
 
     ret_str = f"def {FUNCTION_NAME}(params, rho=None, theta=0.001):\n"
-    ret_str += "    %s = params\n" % ", ".join([x.name for x in f_vars])
+    ret_str += _print_unpacking_of_params(f_vars, indent="    ")
     # Not very good solution !
     if not model.has_anc_size:
         ret_str += "    _Nanc_size"

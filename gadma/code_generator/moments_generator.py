@@ -2,10 +2,12 @@ from ..models import CustomDemographicModel, EpochDemographicModel, \
     Epoch, Split, BinaryOperation
 from ..utils import DiscreteVariable, DynamicVariable, Variable
 from .dadi_generator import FUNCTION_NAME, _print_p0, _print_main, \
-                            _print_load_data, _print_bounds
+                            _print_load_data, _print_bounds, \
+                            _print_unpacking_of_params
 import numpy as np
 import copy
-import sys
+import os
+import inspect
 
 
 def _print_moments_func(model, values, dt_fac):
@@ -20,7 +22,9 @@ def _print_moments_func(model, values, dt_fac):
     from ..engines import MomentsEngine  # to avoid cross import
 
     if isinstance(model, CustomDemographicModel):
-        path_repr = repr(sys.modules[model.function.__module__].__file__)
+        # the module of the function could be not among loaded modules,
+        # e.g. in the process of a run, so file is taken from the function
+        path_repr = repr(os.path.abspath(inspect.getfile(model.function)))
         ret_str = "import importlib.util\n\n"
         ret_str += "spec = importlib.util.spec_from_file_location('module', "\
                    f"{path_repr})\n"
@@ -39,7 +43,7 @@ def _print_moments_func(model, values, dt_fac):
         if isinstance(model.Nanc_size, Variable):
             f_vars.pop(f_vars.index(model.Nanc_size))
     ret_str = f"def {FUNCTION_NAME}(params, ns):\n"
-    ret_str += "\t%s = params\n" % ", ".join([x.name for x in f_vars])
+    ret_str += _print_unpacking_of_params(f_vars)
     # Not very good solution !
     if not model.has_anc_size:
         ret_str += "\t_Nanc_size"
