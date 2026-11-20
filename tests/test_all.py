@@ -45,10 +45,10 @@ def rosenbrock(X):
 
 class TestRestore(unittest.TestCase):
     def tearDown(self):
-        if Path("./save_file").exists():
-            os.remove("./save_file")
-        if Path("./report_file").exists():
-            os.remove("./report_file")
+        for filename in ["./save_file", "./history_save_file",
+                         "./report_file"]:
+            if Path(filename).exists():
+                os.remove(filename)
 
     def test_ga_restore(self):
         ga = get_global_optimizer("Genetic_algorithm")
@@ -134,6 +134,78 @@ class TestRestore(unittest.TestCase):
             self.assertTrue(res.n_eval <= maxeval, msg=msg)
             if opt.id == "Genetic_algorithm":
                 self.assertEqual(res.n_eval, maxeval, msg=msg)
+
+    def test_history_of_saved_run(self):
+        """
+        The run is saved after every iteration. Its history (all evaluated
+        points and their values) is kept in another file than the rest of
+        information: only new points are written there, the whole history
+        is not rewritten at each save.
+        """
+        import numpy as np
+        from gadma.utils import serialize_meta_array, ident_transform
+
+        def assert_same_run(opt, run_info, other_run_info, msg):
+            res1, res2 = run_info.result, other_run_info.result
+            self.assertEqual(len(res1.X), len(res2.X), msg=msg)
+            self.assertEqual(list(res1.Y), list(res2.Y), msg=msg)
+            for list1, list2 in [(res1.X, res2.X), (res1.X_out, res2.X_out)]:
+                for x1, x2 in zip(list1, list2):
+                    self.assertTrue(np.array_equal(x1, x2), msg=msg)
+            self.assertEqual(list(res1.Y_out), list(res2.Y_out), msg=msg)
+            self.assertTrue(np.array_equal(res1.x, res2.x), msg=msg)
+            for name in ["y", "n_eval", "n_iter", "success"]:
+                self.assertEqual(getattr(res1, name), getattr(res2, name),
+                                 msg=f"{name}. {msg}")
+
+        variables = [ContinuousVariable('var1', [0.1, 20]),
+                     ContinuousVariable('var2', [0.1, 20])]
+        save_file = "save_file"
+        optimizers = [(get_global_optimizer("Genetic_algorithm"), {}),
+                      (get_local_optimizer("BFGS_log"), {"x0": [15, 0.5]}),
+                      (get_local_optimizer("L-BFGS-B"), {"x0": [15, 0.5]})]
+        for opt, kwargs in optimizers:
+            msg = f"optimizer {opt.id}"
+            history_file = opt.get_history_file(save_file)
+            for filename in [save_file, history_file]:
+                if os.path.exists(filename):
+                    os.remove(filename)
+            sizes = []
+
+            def callback(x, y):
+                # saved run is the run of this moment
+                assert_same_run(opt, opt.load(save_file), opt.run_info, msg)
+                sizes.append((os.path.getsize(save_file),
+                              os.path.getsize(history_file)))
+
+            res = opt.optimize(rosenbrock, variables, maxiter=30,
+                               save_file=save_file, callback=callback,
+                               **kwargs)
+            self.assertTrue(len(res.X) > 30, msg=msg)
+            assert_same_run(opt, opt.load(save_file), opt.run_info, msg)
+            # points are added to the history, the other file is small
+            self.assertTrue(sizes[-1][1] > 3 * sizes[2][1], msg=msg)
+            self.assertTrue(sizes[-1][0] < 2 * sizes[2][0], msg=msg)
+
+            # writing of the history was stopped in the middle
+            with open(history_file, "ab") as fl:
+                fl.write(pickle.dumps(("some", "record"))[:10])
+            assert_same_run(opt, opt.load(save_file), opt.run_info, msg)
+            # next run with this file
+            run_info = opt.run_info
+            res = opt.optimize(rosenbrock, variables, maxiter=5,
+                               save_file=save_file, **kwargs)
+            assert_same_run(opt, opt.load(save_file), opt.run_info, msg)
+
+            # save file of the previous versions has the history inside
+            info = opt._apply_transform_to_run_info(
+                run_info, x_transform=serialize_meta_array,
+                y_transform=ident_transform)
+            os.remove(history_file)
+            with open(save_file, "wb") as fl:
+                pickle.dump({opt.id: info}, fl)
+            self.assertTrue(opt.valid_restore_file(save_file), msg=msg)
+            assert_same_run(opt, opt.load(save_file), run_info, msg)
 
     def test_save_file_after_stop_during_saving(self):
         """

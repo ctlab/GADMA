@@ -141,7 +141,7 @@ Output directory content
 
 For every repeat of the genetic algorithm GADMA creates a new folder in the output directory with corresponding number.
 
-In every folder there is ``GADMA_GA.log``, where every iteration of the algorithm is saved, pictures and generated code of best models are saved in ``pictures`` and ``code`` directories of each run. ``eval_file`` and ``save_file`` have information about evaluations and optimization.
+In every folder there is ``GADMA_GA.log``, where every iteration of the algorithm is saved, pictures and generated code of best models are saved in ``pictures`` and ``code`` directories of each run. ``eval_file`` and ``save_file`` have information about evaluations and optimization, ``history_save_file`` keeps all points that were evaluated during the optimization that is saved in ``save_file`` (both files are required to resume the run).
 
 When the genetic algorithm finishes GADMA saves pictures and python code of obtained model in the corresponding folder.
 
@@ -163,6 +163,7 @@ When all GA are executed, the codes are saved in the root directory.
         		final_best_logLL_model.png
         		eval_file
         		save_file
+        		history_save_file
         	- 2
         		GADMA_GA.log
         		- pictures
@@ -176,6 +177,7 @@ When all GA are executed, the codes are saved in the root directory.
         		final_best_logLL_model.png
         		eval_file
         		save_file
+        		history_save_file
         	params
         	extra_params
         	GADMA.log

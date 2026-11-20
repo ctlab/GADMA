@@ -15,6 +15,7 @@ from .optimizer_result import OptimizerResult
 import pickle
 from functools import partial
 import types
+import warnings
 
 
 class Optimizer(object):
@@ -47,6 +48,8 @@ class Optimizer(object):
     """
     # Linear constrain of the run, it is set by :meth:`optimize`.
     linear_constrain = None
+    # What :meth:`save` has already written to the file of history.
+    _saved_history = None
 
     def __init__(self, log_transform=False, maximize=False):
         self.log_transform = log_transform
@@ -347,6 +350,132 @@ class Optimizer(object):
         run_info.result.Y.extend(run_info.result.Y_out)
         return run_info
 
+    @staticmethod
+    def get_history_file(save_file):
+        """
+        Returns name of the file with the history of the run that is saved
+        to `save_file`: all evaluated points and values of objective function
+        for them. The file is located next to `save_file`.
+
+        :param save_file: File to save information about the run.
+        :type save_file: str
+        """
+        dirname, basename = os.path.split(save_file)
+        return os.path.join(dirname, "history_" + basename)
+
+    @staticmethod
+    def _get_file_stat(filename):
+        """
+        Returns values that tell if the file was changed: its size and time
+        of the last change. None if there is no such file.
+        """
+        try:
+            stat = os.stat(filename)
+        except OSError:
+            return None
+        return (stat.st_size, stat.st_mtime_ns)
+
+    @staticmethod
+    def _read_history_file(history_file):
+        """
+        Returns list of records of the file with history and the size of the
+        part of the file that they take. If the last record was not written
+        till the end (the run was stopped during the writing) then it is
+        ignored.
+        """
+        records = []
+        size = 0
+        if not check_file_existence(history_file):
+            return records, size
+        with open(history_file, 'rb') as fl:
+            while True:
+                try:
+                    records.append(pickle.load(fl))
+                except Exception:
+                    # end of file or the record is not full
+                    break
+                size = fl.tell()
+        return records, size
+
+    @staticmethod
+    def _number_of_same_first(old_list, new_list, number):
+        """
+        Returns how many of the first `number` elements of `old_list` are
+        the first elements of `new_list` too.
+        """
+        # Usual case, the list was extended
+        if old_list is new_list:
+            return min(number, len(new_list))
+        number = min(number, len(old_list), len(new_list))
+        for i in range(number):
+            if not np.array_equal(old_list[i], new_list[i]):
+                return i
+        return number
+
+    def _save_history(self, result, save_file):
+        """
+        Appends evaluated points and values of objective function for them
+        (`result.X` and `result.Y`) that are not saved yet to the end of the
+        file with history of `save_file`.
+
+        :returns: number of points and number of values that the saved
+                  history has now.
+        """
+        history_file = self.get_history_file(save_file)
+        saved = self._saved_history
+        if saved is None or saved["save_file"] != save_file:
+            # It is the first save of the run to this file: the whole
+            # history is written. Record that was not written till the end
+            # is removed, otherwise nothing could be read after it.
+            _, size = self._read_history_file(history_file)
+            if (check_file_existence(history_file) and
+                    os.path.getsize(history_file) > size):
+                with open(history_file, 'r+b') as fl:
+                    fl.truncate(size)
+            x_start, y_start = 0, 0
+            saved = {"save_file": save_file}
+            self._saved_history = saved
+        else:
+            x_start = self._number_of_same_first(saved["X"], result.X,
+                                                 saved["n_x"])
+            y_start = self._number_of_same_first(saved["Y"], result.Y,
+                                                 saved["n_y"])
+        n_x, n_y = len(result.X), len(result.Y)
+        # Record tells from what index the points and values go. Those that
+        # were saved before with these and greater indices are replaced.
+        record = (getattr(self, 'id', None),
+                  x_start,
+                  [serialize_meta_array(x) for x in result.X[x_start:n_x]],
+                  y_start,
+                  list(result.Y[y_start:n_y]))
+        with open(history_file, 'ab') as fl:
+            pickle.dump(record, fl)
+        saved.update({"X": result.X, "n_x": n_x, "Y": result.Y, "n_y": n_y})
+        return n_x, n_y
+
+    def _load_history(self, save_file, n_x, n_y):
+        """
+        Returns the first `n_x` points and `n_y` values of objective function
+        that were saved by this optimizer to the file with history of
+        `save_file`. Points are returned as they were saved.
+        """
+        opt_id = getattr(self, 'id', None)
+        history_file = self.get_history_file(save_file)
+        X, Y = [], []
+        for record in self._read_history_file(history_file)[0]:
+            record_id, x_start, new_X, y_start, new_Y = record
+            if record_id != opt_id:
+                continue
+            del X[x_start:]
+            X.extend(new_X)
+            del Y[y_start:]
+            Y.extend(new_Y)
+        if len(X) < n_x or len(Y) < n_y:
+            warnings.warn(f"History of the run that is saved in {save_file} "
+                          f"is not full: {len(X)} points out of {n_x} are "
+                          f"found in {history_file}.")
+        return X[:n_x], Y[:n_y]
+
     def save(self, run_info, save_file):
         """
         Save information about run into the file. Method is supposed to save
@@ -357,30 +486,47 @@ class Optimizer(object):
         It makes possible to use one save_file for several
         optimizers with different ids.
 
+        History of the run (`run_info.result.X` and `run_info.result.Y`) is
+        not written to `save_file` itself. It is kept in another file (see
+        :meth:`get_history_file`) and only the points that were not saved
+        before are added to the end of it. So the time of saving does not
+        grow with the number of iterations.
+
         :param run_info: Information to dump.
         :param save_file: File to save information.
         :type save_file: str
 
-        :note: if save_file is None then nothing will be done. In base class\
-               method just dumps `info` to `save_file` with `pickle`.
+        :note: if save_file is None then nothing will be done.
         """
         if save_file is None:
             return
+        n_x, n_y = self._save_history(run_info.result, save_file)
+        # Everything except the history is copied and written
+        info = copy.copy(run_info)
+        info.result = copy.copy(run_info.result)
+        info.result.X, info.result.Y = [], []
         info = self._apply_transform_to_run_info(
-            run_info,
+            info,
             x_transform=serialize_meta_array,
             y_transform=ident_transform
         )
+        info.history_size = (n_x, n_y)
         if hasattr(self, 'id'):
-            if (check_file_existence(save_file) and
-                    os.path.getsize(save_file) > 0):
-                with open(save_file, 'rb') as fl:
-                    d = pickle.load(fl)
-                if not isinstance(d, dict):
-                    d = {}
-            else:
-                d = {}
-            d[self.id] = copy.copy(info)
+            # Information of other optimizers from the file is kept. The
+            # file is read again only if it was changed not by this method.
+            saved = self._saved_history
+            if ("other_info" not in saved or
+                    saved["file_stat"] != self._get_file_stat(save_file)):
+                saved["other_info"] = {}
+                if (check_file_existence(save_file) and
+                        os.path.getsize(save_file) > 0):
+                    with open(save_file, 'rb') as fl:
+                        d = pickle.load(fl)
+                    if isinstance(d, dict):
+                        saved["other_info"] = {key: d[key] for key in d
+                                               if key != self.id}
+            d = dict(saved["other_info"])
+            d[self.id] = info
             info = d
         # Information is written to another file that replaces the old one
         # afterwards. Otherwise the save file is damaged when the run is
@@ -390,6 +536,7 @@ class Optimizer(object):
         with open(tmp_file, 'wb') as fl:
             pickle.dump(info, fl)
         os.replace(tmp_file, save_file)
+        self._saved_history["file_stat"] = self._get_file_stat(save_file)
 
     def valid_restore_file(self, save_file):
         """
@@ -415,12 +562,19 @@ class Optimizer(object):
         :param save_file: File to restore information from.
         :type save_file: str
 
-        :note: Method just loads from `save_file` with pickle.
+        :note: History of the run is loaded from the file that is returned
+               by :meth:`get_history_file`. Save files of the previous
+               versions have it inside.
         """
         with open(save_file, 'rb') as fl:
             info = pickle.load(fl)
         if hasattr(self, 'id') and isinstance(info, dict):
             info = info[self.id]
+        if hasattr(info, "history_size"):
+            n_x, n_y = info.history_size
+            del info.history_size
+            info.result.X, info.result.Y = self._load_history(save_file,
+                                                              n_x, n_y)
         run_info = self._apply_transform_to_run_info(
             info,
             x_transform=deserialize_meta_array,
@@ -545,6 +699,7 @@ class Optimizer(object):
         """
         # Create run_info that will be saved during the optimization
         self.run_info = None
+        self._saved_history = None
         # Optimizer could use linear constrain for the solutions it proposes
         self.linear_constrain = linear_constrain
 
