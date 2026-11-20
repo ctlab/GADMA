@@ -262,6 +262,50 @@ class TestLocalOpt(TestBaseOptClass):
                 # history of the run is saved in another file
                 os.remove(opt.get_history_file(output_file))
 
+    def test_history_of_local_search(self):
+        """
+        History of local search has every point that was evaluated inside
+        of the bounds once and its value once. It is not built again from
+        the beginning after every evaluation.
+        """
+        from unittest import mock
+        from gadma.optimizers import local_optimizer
+
+        def f(x):
+            x = np.array(x, dtype=float)
+            return float(np.sum(100 * (x[1:] - x[:-1] ** 2) ** 2 +
+                                (1 - x[:-1]) ** 2))
+
+        variables = [ContinuousVariable(f'var{i}', [0.1, 20])
+                     for i in range(3)]
+        for opt in all_local_optimizers():
+            if opt.id in [None, "None"]:
+                continue
+            msg = f"optimizer {opt.id}"
+            reported = []
+
+            def callback(x, y):
+                reported.append((np.array(x, dtype=float), y))
+
+            with mock.patch.object(
+                    local_optimizer, "apply_transform",
+                    wraps=local_optimizer.apply_transform) as transform:
+                res = opt.optimize(f, variables, x0=[15, 0.5, 3],
+                                   maxiter=30, callback=callback)
+            self.assertTrue(len(res.X) > 20, msg=msg)
+            self.assertEqual(len(res.X), len(res.Y), msg=msg)
+            self.assertEqual(len(res.X), len(reported), msg=msg)
+            for x, y, (x_rep, y_rep) in zip(res.X, res.Y, reported):
+                self.assertTrue(np.allclose(x, x_rep), msg=msg)
+                self.assertEqual(y, y_rep, msg=msg)
+                self.assertTrue(np.isclose(y, f(x)), msg=f"{x}, {y}. {msg}")
+                self.assertTrue(all(var.correct_value(el)
+                                    for el, var in zip(x, variables)),
+                                msg=f"{x}. {msg}")
+            # only the initial point is transformed in the module
+            self.assertTrue(transform.call_count < 5,
+                            msg=f"{transform.call_count} calls. {msg}")
+
     def test_registered_local_optimizers_fails(self):
         self.assertRaises(ValueError, get_local_optimizer, 'some strange_id')
         ex_id = 'BFGS_log'
@@ -1026,6 +1070,11 @@ class TestLinearConstrains(unittest.TestCase):
                 check(result, msg)
                 self.assertTrue(np.isclose(result.y, 2, atol=1e-2),
                                 msg=f"{result.x}, {result.y}. {msg}")
+                # history has corrected solutions with their values
+                self.assertEqual(len(result.X), len(result.Y), msg=msg)
+                for x, y in zip(result.X, result.Y):
+                    self.assertTrue(np.isclose(y, f(x)),
+                                    msg=f"{x}, {y}. {msg}")
 
         # 2. Genetic algorithm keeps corrected solutions
         for log_transform in [False, True]:

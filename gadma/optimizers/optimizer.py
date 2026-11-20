@@ -376,26 +376,25 @@ class Optimizer(object):
         return (stat.st_size, stat.st_mtime_ns)
 
     @staticmethod
-    def _read_history_file(history_file):
+    def _read_history_file(history_file, start=0, end=None):
         """
-        Returns list of records of the file with history and the size of the
-        part of the file that they take. If the last record was not written
-        till the end (the run was stopped during the writing) then it is
-        ignored.
+        Returns list of records of the file with history that are written
+        between the positions `start` and `end` of the file (till the end
+        of the file if `end` is None). Reading stops at the record that
+        could not be read, e.g. the run was stopped when it was written.
         """
         records = []
-        size = 0
         if not check_file_existence(history_file):
-            return records, size
+            return records
         with open(history_file, 'rb') as fl:
-            while True:
+            fl.seek(start)
+            while end is None or fl.tell() < end:
                 try:
                     records.append(pickle.load(fl))
                 except Exception:
                     # end of file or the record is not full
                     break
-                size = fl.tell()
-        return records, size
+        return records
 
     @staticmethod
     def _number_of_same_first(old_list, new_list, number):
@@ -418,6 +417,10 @@ class Optimizer(object):
         (`result.X` and `result.Y`) that are not saved yet to the end of the
         file with history of `save_file`.
 
+        Nothing is changed or removed in the file: records are added to its
+        end only. Positions of the records of this run in the file are
+        remembered to read them back (see :meth:`_load_history`).
+
         :returns: number of points and number of values that the saved
                   history has now.
         """
@@ -425,15 +428,12 @@ class Optimizer(object):
         saved = self._saved_history
         if saved is None or saved["save_file"] != save_file:
             # It is the first save of the run to this file: the whole
-            # history is written. Record that was not written till the end
-            # is removed, otherwise nothing could be read after it.
-            _, size = self._read_history_file(history_file)
-            if (check_file_existence(history_file) and
-                    os.path.getsize(history_file) > size):
-                with open(history_file, 'r+b') as fl:
-                    fl.truncate(size)
+            # history is written after everything that is in the file.
+            start = 0
+            if check_file_existence(history_file):
+                start = os.path.getsize(history_file)
             x_start, y_start = 0, 0
-            saved = {"save_file": save_file}
+            saved = {"save_file": save_file, "start": start}
             self._saved_history = saved
         else:
             x_start = self._number_of_same_first(saved["X"], result.X,
@@ -441,28 +441,42 @@ class Optimizer(object):
             y_start = self._number_of_same_first(saved["Y"], result.Y,
                                                  saved["n_y"])
         n_x, n_y = len(result.X), len(result.Y)
-        # Record tells from what index the points and values go. Those that
-        # were saved before with these and greater indices are replaced.
+        # Record tells from what index its points and values go. When the
+        # history is read, the points of the previous records with these
+        # and greater indices are not taken (the file itself is not changed).
         record = (getattr(self, 'id', None),
                   x_start,
                   [serialize_meta_array(x) for x in result.X[x_start:n_x]],
                   y_start,
                   list(result.Y[y_start:n_y]))
-        with open(history_file, 'ab') as fl:
-            pickle.dump(record, fl)
-        saved.update({"X": result.X, "n_x": n_x, "Y": result.Y, "n_y": n_y})
+        try:
+            with open(history_file, 'ab') as fl:
+                pickle.dump(record, fl)
+        except BaseException:
+            # The record could be written not till the end. If the run is
+            # saved again then its history is written after this record.
+            self._saved_history = None
+            raise
+        saved.update({"X": result.X, "n_x": n_x, "Y": result.Y, "n_y": n_y,
+                      "end": os.path.getsize(history_file)})
         return n_x, n_y
 
-    def _load_history(self, save_file, n_x, n_y):
+    def _load_history(self, save_file, n_x, n_y, positions=None):
         """
         Returns the first `n_x` points and `n_y` values of objective function
         that were saved by this optimizer to the file with history of
         `save_file`. Points are returned as they were saved.
+
+        :param positions: positions of the first and after the last record
+                          of the run in the file with history. If None then
+                          the whole file is read.
         """
         opt_id = getattr(self, 'id', None)
         history_file = self.get_history_file(save_file)
+        if positions is None:
+            positions = (0, None)
         X, Y = [], []
-        for record in self._read_history_file(history_file)[0]:
+        for record in self._read_history_file(history_file, *positions):
             record_id, x_start, new_X, y_start, new_Y = record
             if record_id != opt_id:
                 continue
@@ -511,6 +525,8 @@ class Optimizer(object):
             y_transform=ident_transform
         )
         info.history_size = (n_x, n_y)
+        info.history_positions = (self._saved_history["start"],
+                                  self._saved_history["end"])
         if hasattr(self, 'id'):
             # Information of other optimizers from the file is kept. The
             # file is read again only if it was changed not by this method.
@@ -572,9 +588,13 @@ class Optimizer(object):
             info = info[self.id]
         if hasattr(info, "history_size"):
             n_x, n_y = info.history_size
+            positions = getattr(info, "history_positions", None)
             del info.history_size
-            info.result.X, info.result.Y = self._load_history(save_file,
-                                                              n_x, n_y)
+            if positions is not None:
+                del info.history_positions
+            info.result.X, info.result.Y = self._load_history(
+                save_file, n_x, n_y, positions
+            )
         run_info = self._apply_transform_to_run_info(
             info,
             x_transform=deserialize_meta_array,

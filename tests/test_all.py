@@ -191,11 +191,18 @@ class TestRestore(unittest.TestCase):
             with open(history_file, "ab") as fl:
                 fl.write(pickle.dumps(("some", "record"))[:10])
             assert_same_run(opt, opt.load(save_file), opt.run_info, msg)
-            # next run with this file
+            # Next run with this file. Nothing is removed from the file of
+            # history, new records are written after the old ones.
             run_info = opt.run_info
+            with open(history_file, "rb") as fl:
+                content = fl.read()
             res = opt.optimize(rosenbrock, variables, maxiter=5,
                                save_file=save_file, **kwargs)
             assert_same_run(opt, opt.load(save_file), opt.run_info, msg)
+            with open(history_file, "rb") as fl:
+                new_content = fl.read()
+            self.assertTrue(len(new_content) > len(content), msg=msg)
+            self.assertEqual(new_content[:len(content)], content, msg=msg)
 
             # save file of the previous versions has the history inside
             info = opt._apply_transform_to_run_info(

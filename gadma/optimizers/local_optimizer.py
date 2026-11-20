@@ -438,13 +438,10 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
                 return
             # y is translated back by *(-1) we want correct comparison
             y = self.optimizer.sign * y
+            # The point and its value are added to the history of the run
+            # here, the history of the inner optimizer is not used.
             iter_callback(x, y, [x], [y])
-            opt_run_info = self.optimizer.run_info.result.X
-            self.run_info.result.X = [apply_transform(variables,
-                                                      self.inv_transform,
-                                                      x)
-                                      for x in opt_run_info]
-            self.run_info.result.Y = self.optimizer.run_info.result.Y
+            # Iterations are counted by the inner optimizer
             self.run_info.result.n_iter = (
                 n_iter_before + self.optimizer.run_info.result.n_iter
             )
@@ -462,15 +459,6 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
                                 maxiter=maxiter,
                                 maxeval=maxeval,
                                 callback=callback)
-        # Objective function was evaluated for the solutions that were
-        # corrected to satisfy the linear constrain, they should be in the
-        # history instead of the points of the inner optimizer.
-        if self.linear_constrain is not None:
-            self.run_info.result.X = [
-                self._fit_to_linear_constrain(
-                    variables, x, self.linear_constrain
-                )[0] for x in self.run_info.result.X
-            ]
         return self.run_info.result
 
     def optimize(self, f, variables, *args, **kwargs):
