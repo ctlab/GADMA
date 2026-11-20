@@ -368,6 +368,38 @@ class TestRestore(unittest.TestCase):
                 shutil.rmtree(outdir)
             os.remove(params_file)
 
+    def test_restore_without_file_for_initial_structure(self):
+        """
+        Run is not resumed when the saved file for the initial structure is
+        missing: the error is raised before any optimization.
+        """
+        import tempfile
+        finished_run_dir = os.path.join(DATA_PATH, 'my_example_run')
+        dirname = tempfile.mkdtemp()
+        resume_dir = os.path.join(dirname, 'my_example_run')
+        outdir = os.path.join(dirname, 'resumed')
+        shutil.copytree(finished_run_dir, resume_dir)
+        # initial structure is [2, 1] and final one is [3, 1]
+        os.remove(os.path.join(resume_dir, "1", "save_file_2_1"))
+        sys.argv = ['gadma', '--resume', resume_dir, '--output', outdir]
+        try:
+            settings, _ = get_settings_test()
+            settings.silence = True
+            shared_dict = gadma.shared_dict.SharedDictForCoreRun(
+                multiprocessing=False)
+            core_run = CoreRun(1, shared_dict, settings)
+            with self.assertRaises(ValueError) as context:
+                core_run.run()
+            message = str(context.exception)
+            self.assertTrue("initial structure is [2, 1]" in message,
+                            msg=message)
+            self.assertTrue("[3, 1]" in message, msg=message)
+            # the run with all files is resumed
+            core_run = CoreRun(2, shared_dict, settings)
+            core_run.run()
+        finally:
+            shutil.rmtree(dirname)
+
     def test_restore_models_from_finished_run(self):
         finished_run_dir = os.path.join(DATA_PATH, 'my_example_run')
         params_file = 'params'

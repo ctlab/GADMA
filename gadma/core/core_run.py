@@ -480,13 +480,15 @@ class CoreRun(object):
         options = self.get_run_options()
         restore_file, struct, only_models, x_transform = next(options)
         if struct is not None and struct != self.model.get_structure():
-            warnings.warn(f"Initial structure ({struct}) with saved file "
-                          f"of optimization from restored dir looks different "
-                          f"to current ({self.settings.initial_structure}). "
-                          f"It will be restored.")
-            self.settings.initial_structure = struct
-            self.model = self.model.from_structure(struct)
-            self.update_linear_constrain()
+            # Initial structure could not be changed in the resumed run, so
+            # the file of the first optimization is lost.
+            raise ValueError(
+                f"Saved files of optimization in {self.resume_dir} start "
+                f"from the structure {struct}, but the initial structure is "
+                f"{self.settings.initial_structure}: the saved file for the "
+                f"initial structure is missing. Run could not be resumed "
+                f"from this directory."
+            )
         self.optimize_kwargs['restore_file'] = restore_file
         self.optimize_kwargs['restore_points_only'] = only_models
         self.optimize_kwargs['global_x_transform'] = x_transform[0]
