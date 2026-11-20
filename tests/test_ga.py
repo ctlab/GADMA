@@ -571,6 +571,10 @@ class TestGeneticAlg(unittest.TestCase):
 
         finally:
             os.remove(output_file)
+            # history of the run is saved in another file
+            history_file = ga.get_history_file(output_file)
+            if os.path.exists(history_file):
+                os.remove(history_file)
 
 
 class TestInference(unittest.TestCase):

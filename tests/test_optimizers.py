@@ -259,6 +259,8 @@ class TestLocalOpt(TestBaseOptClass):
                 self.assertEqual(opt.valid_restore_file(output_file), True)
             finally:
                 os.remove(output_file)
+                # history of the run is saved in another file
+                os.remove(opt.get_history_file(output_file))
 
     def test_registered_local_optimizers_fails(self):
         self.assertRaises(ValueError, get_local_optimizer, 'some strange_id')
@@ -304,6 +306,10 @@ class TestLocalOpt(TestBaseOptClass):
             os.remove(eval_file)
         if os.path.isfile(save_file):
             os.remove(save_file)
+        # history of the run is saved in another file
+        history_file = Optimizer.get_history_file(save_file)
+        if os.path.isfile(history_file):
+            os.remove(history_file)
         if os.path.isfile(report_file):
             os.remove(report_file)
 
@@ -360,7 +366,8 @@ class TestLocalOpt(TestBaseOptClass):
 
             os.remove(eval_file)
             os.remove(save_file)
-            os.remove(report_file)        
+            os.remove(history_file)
+            os.remove(report_file)
 
 #    def get_yri_ceu_ll(self, x_dict, ns=[20,20]):
 #        def func(x_dict, ns, pts):
