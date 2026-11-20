@@ -491,6 +491,22 @@ def get_settings_test():
 
 
 class TestSFSWithoutData(unittest.TestCase):
+    @staticmethod
+    def write_sfs_file(filename, values, mask):
+        """
+        Writes SFS to the file in the format of dadi and moments: sizes,
+        entries and their mask in three lines.
+
+        Files are not written by `to_file` of moments here: on Windows it
+        ends lines with "\r\r\n" and such file is read back by moments
+        with all entries masked.
+        """
+        with open(filename, "w") as fl:
+            sizes = " ".join(str(size) for size in values.shape)
+            fl.write(f"{sizes} unfolded\n")
+            fl.write(" ".join(str(el) for el in values.flatten()) + "\n")
+            fl.write(" ".join(str(int(el)) for el in mask.flatten()) + "\n")
+
     def test_sfs_without_entries(self):
         """
         SFS data that has nothing to compare with a model is not read:
@@ -502,26 +518,28 @@ class TestSFSWithoutData(unittest.TestCase):
             for engine in all_engines():
                 if engine.id not in ["dadi", "moments"]:
                     continue
-                spectrum_cls = engine.base_module.Spectrum
                 values = np.arange(1, 26, dtype=float).reshape(5, 5)
+                # two corners are always masked
+                mask = np.zeros((5, 5), dtype=bool)
+                mask[0, 0], mask[4, 4] = True, True
                 # usual data
                 good_file = os.path.join(dirname, "good.fs")
-                spectrum_cls(values).to_file(good_file)
+                self.write_sfs_file(good_file, values, mask)
                 data = engine.read_data(SFSDataHolder(good_file))
-                self.assertTrue(data.sum() > 0)
+                self.assertEqual(data.sum(), np.sum(values[~mask]),
+                                 msg=engine.id)
                 # all entries are equal to zero
                 zeros_file = os.path.join(dirname, "zeros.fs")
-                spectrum_cls(np.zeros((5, 5))).to_file(zeros_file)
+                self.write_sfs_file(zeros_file, np.zeros((5, 5)), mask)
                 # there are values in the masked corners only
                 corners_file = os.path.join(dirname, "corners.fs")
                 corners = np.zeros((5, 5))
                 corners[0, 0], corners[4, 4] = 1000, 50
-                spectrum_cls(corners).to_file(corners_file)
+                self.write_sfs_file(corners_file, corners, mask)
                 # all entries are masked
                 masked_file = os.path.join(dirname, "masked.fs")
-                spectrum = spectrum_cls(values)
-                spectrum.mask[:] = True
-                spectrum.to_file(masked_file)
+                self.write_sfs_file(masked_file, values,
+                                    np.ones((5, 5), dtype=bool))
                 for filename in [zeros_file, corners_file, masked_file]:
                     with self.assertRaises(ValueError,
                                            msg=f"{engine.id}: {filename}"):
