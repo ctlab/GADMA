@@ -428,6 +428,9 @@ class TestCLI(unittest.TestCase):
         settings.max_m = 5
         self.assertTrue(list(MigrationVariable('v').domain) == [0, 5])
 
+        TimeVariable.default_domain = [1e-15, 5]  # going back
+        MigrationVariable.default_domain = [0, 10]  # going back
+
         no_lin = [0, "Exp"]
         settings.dynamics = no_lin
         self.assertRaises(ValueError, settings.__setattr__,

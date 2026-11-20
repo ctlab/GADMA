@@ -77,7 +77,8 @@ class TestEngines(unittest.TestCase):
         self.assertRaises(ValueError,
                           dadi_engine.set_and_evaluate, [], model, None)
 
-        engine.supported_models.append(EpochDemographicModel)
+        # the list of the class is not changed, it is common for engines
+        engine.supported_models = [EpochDemographicModel]
         engine.model = EpochDemographicModel()
         self.assertRaises(NotImplementedError, engine.get_N_ancestral, [])
 
