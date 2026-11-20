@@ -17,6 +17,22 @@ def f_sleep(x):
     return x
 
 
+class TestRandomGeneratorAfterSeed(unittest.TestCase):
+    """
+    A seed that is set in one test is not left for the next tests: they
+    should not get the same random values in every run of tests. The tests
+    of this class are run in the order of their names.
+    """
+    seed = 123
+
+    def test_1_set_seed(self):
+        np.random.seed(self.seed)
+
+    def test_2_generator_is_not_seeded(self):
+        value_after_seed = np.random.RandomState(self.seed).random_sample()
+        self.assertNotEqual(np.random.random_sample(), value_after_seed)
+
+
 class TestUtils(unittest.TestCase):
     def test_distributions(self):
         trunc_normal(1, 0.5, 0, 10)

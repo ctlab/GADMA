@@ -3,6 +3,7 @@ Fixtures that are common for all tests.
 """
 import copy
 
+import numpy as np
 import pytest
 
 import gadma
@@ -56,9 +57,15 @@ def restore_global_values():
     :func:`get_global_values`) back after every test. Otherwise a test that
     changes them, e.g. bounds of variables, changes them for all tests that
     are run after it.
+
+    The random generator of numpy is common for the process as well. A test
+    could set a seed for itself, and then all tests that are run after it
+    would get the same random values in every run. So the generator gets
+    a new random state after every test.
     """
     saved = [(owner, name, copy.deepcopy(value))
              for owner, name, value in get_global_values()]
     yield
     for owner, name, value in saved:
         setattr(owner, name, value)
+    np.random.seed()
