@@ -293,6 +293,69 @@ class TestEngines(unittest.TestCase):
             )
         self.assertFalse(np.isclose(ll_values[0], ll_values[1]))
 
+    def test_data_in_generated_code(self):
+        """
+        Generated code prepares the data in the same way as the engine:
+        population labels could be in other order than in the file or be
+        only some of them, and projections are given for these labels. So
+        the code has the same data and gives the same likelihood.
+        """
+        # file, population labels, projections, outgroup
+        cases = [
+            ("YRI_CEU.fs", ["CEU", "YRI"], [8, 12], True),
+            ("YRI_CEU.fs", ["CEU", "YRI"], [8, 12], False),
+            ("YRI_CEU_folded.fs", ["CEU", "YRI"], [8, 12], False),
+            ("3d_sfs.fs", ["CEU", "CHB", "YRI"], [4, 6, 8], True),
+            ("3d_sfs.fs", ["CHB", "CEU"], None, True),
+            ("3d_sfs.fs", ["CEU", "CHB"], [6, 8], True),
+            ("3d_sfs.fs", ["CEU", "CHB"], [6, 8], False),
+        ]
+        engine_ids = [engine.id for engine in all_available_engines()
+                      if engine.id in ["dadi", "moments"]]
+        for engine_id in engine_ids:
+            for filename, labels, projections, outgroup in cases:
+                msg = f"{engine_id}, {filename}, labels {labels}, " \
+                      f"projections {projections}, outgroup {outgroup}"
+                settings = SettingsStorage()
+                settings.engine = engine_id
+                settings.input_data = os.path.join(DATA_PATH, "DATA", "sfs",
+                                                   filename)
+                settings.population_labels = labels
+                if projections is not None:
+                    settings.projections = projections
+                settings.outgroup = outgroup
+                settings.initial_structure = [1 for _ in labels]
+                settings.only_sudden = True
+                settings.no_migrations = True
+                settings.read_data()
+                model = settings.get_model()
+                x = [0.2 if var.name.startswith("t") else 1.5
+                     for var in model.variables]
+                engine = get_engine(engine_id)
+                engine.set_data(settings.inner_data)
+                engine.set_model(model)
+                engine.data_holder = settings.data_holder
+                args = settings.get_engine_args()
+                ll_model = engine.evaluate(x, *args)
+
+                namespace = {}
+                exec(engine.generate_code(x, None, *args), namespace)
+                data = namespace["data"]
+                self.assertEqual(list(data.pop_ids), labels, msg=msg)
+                self.assertEqual(list(data.sample_sizes),
+                                 list(engine.inner_data.sample_sizes),
+                                 msg=msg)
+                self.assertEqual(data.folded, not outgroup, msg=msg)
+                self.assertTrue(
+                    np.ma.allclose(data, engine.inner_data) and
+                    np.all(data.mask == engine.inner_data.mask),
+                    msg=msg
+                )
+                self.assertTrue(
+                    np.isclose(ll_model, namespace["ll_model"]),
+                    msg=f"{ll_model} != {namespace['ll_model']} : {msg}"
+                )
+
     def test_selection_and_dominance_of_each_population(self):
         """
         Selection and dominance coefficients of every population are used

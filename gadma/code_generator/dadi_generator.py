@@ -5,6 +5,7 @@ from ..data import SFSDataHolder, VCFDataHolder
 import os
 import copy
 import inspect
+import numpy as np
 
 FUNCTION_NAME = 'model_func'
 
@@ -164,26 +165,40 @@ def _print_load_data(data_holder, is_fs, mode='dadi'):
         ret_str += f"projections={size}, "
         ret_str += f"polarized={outg})\n"
     else:
+        # Data is changed in the same order as engine does it when it reads
+        # the data: first populations (labels of data_holder could be in
+        # other order than in the file or could be only some of them), then
+        # projections, as they are given for populations of data_holder,
+        # and then folding.
         data = is_fs
+        labels = data_holder.population_labels
         ret_str += f"data = {mode}.Spectrum.from_file({repr(fname)})\n"
+        if data.pop_ids is None:
+            if labels is None:
+                data.pop_ids = [f"Pop{i}" for i in range(data.ndim)]
+            else:
+                data.pop_ids = labels
+            ret_str += f"data.pop_ids = {data.pop_ids}\n"
+        if labels is not None:
+            # populations of the file that are not used
+            not_used = [i for i, label in enumerate(data.pop_ids)
+                        if label not in labels]
+            if len(not_used) > 0:
+                data = data.marginalize(not_used)
+                ret_str += f"data = data.marginalize({not_used})\n"
+            if list(data.pop_ids) != list(labels):
+                d = {x: i for i, x in enumerate(data.pop_ids)}
+                d = [d[x] for x in labels]
+                data = np.transpose(data, d)
+                data.pop_ids = list(labels)
+                ret_str += "data = np.transpose(data, %s)\n" % (str(d))
+                ret_str += f"data.pop_ids = {list(labels)}\n"
         if (data_holder.projections is not None and
                 list(data.sample_sizes) != list(data_holder.projections)):
             size = data_holder.projections
             ret_str += "data = data.project(%s)\n" % (str(list(size)))
         if data.folded == data_holder.outgroup:
             ret_str += "data = data.fold()\n"
-        if data.pop_ids is None:
-            if data_holder.population_labels is None:
-                data.pop_ids = [f"Pop{i}" for i in range(data.ndim)]
-            else:
-                data.pop_ids = data_holder.population_labels
-            ret_str += f"data.pop_ids = {data.pop_ids}\n"
-        if (data_holder.population_labels is not None and
-                list(data.pop_ids) != list(data_holder.population_labels)):
-            d = {x: i for i, x in enumerate(data.pop_ids)}
-            d = [d[x] for x in data_holder.population_labels]
-            ret_str += "data = np.transpose(data, %s)\n" % (str(d))
-            ret_str += f"data.pop_ids = {data_holder.population_labels}\n"
     return ret_str
 
 
