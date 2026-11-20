@@ -1307,6 +1307,76 @@ class TestCLI(unittest.TestCase):
         d.get_models_in_group('log-likelihood', align_y_dict=True)
         d.get_models_in_group('log-likelihood', align_y_dict=False)
 
+    def test_engine_in_shared_dict(self):
+        """
+        Engine that is kept in the shared dictionary together with a model
+        has additional information (e.g. theta) for this model only, not for
+        every point that the engine of the run has evaluated.
+        """
+        import tempfile
+        import warnings
+        from gadma.utils import WeightedMetaArray
+        dirname = tempfile.mkdtemp()
+        try:
+            for engine_id in ["moments", "dadi"]:
+                settings = SettingsStorage()
+                settings.output_directory = os.path.join(dirname, engine_id)
+                settings.input_data = os.path.join(DATA_PATH, "DATA", "sfs",
+                                                   "YRI_CEU.fs")
+                settings.projections = [4, 4]
+                settings.engine = engine_id
+                settings.initial_structure = [1, 1]
+                settings.final_structure = [1, 1]
+                settings.read_data()
+                engine = get_engine(engine_id)
+                engine.set_data(settings.inner_data)
+                engine.data_holder = settings.data_holder
+                engine.set_model(settings.get_model())
+                args = settings.get_engine_args()
+                x, y = None, None
+                n_points = 10
+                for _ in range(n_points):
+                    new_x = [var.resample() for var in engine.model.variables]
+                    new_y = engine.evaluate(new_x, *args)
+                    if new_y is not None and (y is None or new_y > y):
+                        x, y = new_x, new_y
+                self.assertEqual(len(engine.saved_add_info), n_points)
+                self.assertTrue(y is not None)
+                theta = engine.get_theta(x, *args)
+
+                y_dict = {"log-likelihood": y}
+                shared_dict = SharedDictForCoreRun(multiprocessing=False)
+                shared_dict._put_new_model_for_process(
+                    1, "log-likelihood", (engine, x, y_dict))
+                x_with_metadata = WeightedMetaArray(x)
+                x_with_metadata.metadata = "m"
+                shared_dict.update_best_model_for_process(
+                    2, "log-likelihood", engine, x_with_metadata, y_dict)
+                shared_dict.add_model_for_process(
+                    3, "log-likelihood", engine, x, y_dict)
+                # engine of the run is not changed
+                self.assertEqual(len(engine.saved_add_info), n_points)
+
+                models = shared_dict.get_models_in_group("log-likelihood",
+                                                         align_y_dict=True)
+                self.assertEqual(len(models), 3)
+                for index, (saved_engine, saved_x, saved_y) in models:
+                    msg = f"engine {engine_id}, run {index}"
+                    self.assertEqual(len(saved_engine.saved_add_info), 1,
+                                     msg=msg)
+                    with warnings.catch_warnings(record=True) as caught:
+                        warnings.simplefilter("always")
+                        saved_theta = saved_engine.get_theta(saved_x, *args)
+                    # information for the model is taken, not evaluated
+                    self.assertEqual(
+                        [str(w.message) for w in caught
+                         if "Additional evaluation" in str(w.message)], [],
+                        msg=msg
+                    )
+                    self.assertEqual(saved_theta, theta, msg=msg)
+        finally:
+            shutil.rmtree(dirname)
+
     def test_get_variables_function(self):
 
         def check(variables):

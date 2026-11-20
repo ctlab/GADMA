@@ -267,9 +267,25 @@ class SharedDictForCoreRun(SharedDict):
             return sign * np.inf
         return sign * ff
 
+    @staticmethod
+    def _get_engine_for_x(engine, x):
+        """
+        Returns engine to put into the dictionary together with `x`. Engine
+        of the run has additional information (e.g. theta) for every point
+        that was evaluated. Only the information for `x` is used with the
+        model, so the rest of it is not copied and not sent between the
+        processes.
+        """
+        if not isinstance(engine, Engine):
+            return engine
+        # x could be already with its metadata (see construct_model)
+        values = x[0] if isinstance(x, tuple) else x
+        return engine.get_engine_for_values(values)
+
     def _put_new_model_for_process(self, process, group, model, key=None):
         if isinstance(model, tuple):
             engine, x, y = model
+        engine = self._get_engine_for_x(engine, x)
         model = self.construct_model(group, engine, x, y)
         r = super(SharedDictForCoreRun, self)._put_new_model_for_process(
             process, group, model)
@@ -277,12 +293,14 @@ class SharedDictForCoreRun(SharedDict):
 
     def update_best_model_for_process(self, process, group, engine, x, y):
         # print(x)
+        engine = self._get_engine_for_x(engine, x)
         model = self.construct_model(group, engine, x, y)
         r = super(SharedDictForCoreRun, self).update_best_model_for_process(
             process, group, model)
         return r
 
     def add_model_for_process(self, process, group, engine, x, y):
+        engine = self._get_engine_for_x(engine, x)
         model = self.construct_model(group, engine, x, y)
         r = super(SharedDictForCoreRun, self).add_model_for_process(
             process, group, model)

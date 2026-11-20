@@ -8,6 +8,7 @@ from ..data.data_utils import get_defaults_from_vcf_format, ploidy_from_vcf
 from ..data.data_utils import check_population_labels_vcf, \
                               check_projections_vcf
 
+import copy
 import importlib
 import warnings
 import os
@@ -121,12 +122,32 @@ class DadiOrMomentsEngine(Engine):
             grid_sizes
         )
 
-    def _get_key(self, x, grid_sizes):
+    def _get_key_of_values(self, x):
         var2value = self.model.var2value(x)
-        key = tuple(var2value[var] for var in self.model.variables)
+        return tuple(var2value[var] for var in self.model.variables)
+
+    def _get_key(self, x, grid_sizes):
+        key = self._get_key_of_values(x)
         if isinstance(grid_sizes, float):
             return (key, grid_sizes)
         return (key, tuple(grid_sizes))
+
+    def get_engine_for_values(self, values):
+        """
+        Returns copy of the engine that has additional information (theta
+        and failed part of numerics) for `values` only. Engine saves it for
+        every evaluated point, so there is a lot of it by the end of a run.
+        The engine itself is not changed.
+        """
+        if self.model is None:
+            return self
+        key = self._get_key_of_values(values)
+        engine = copy.copy(self)
+        engine.saved_add_info = {
+            full_key: info for full_key, info in self.saved_add_info.items()
+            if full_key[0] == key
+        }
+        return engine
 
     def _get_theta_from_sfs(self, values, model_sfs):
         optimal_theta = self.base_module.Inference.optimal_sfs_scaling(

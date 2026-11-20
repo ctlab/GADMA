@@ -199,6 +199,19 @@ class Engine(object):
             self.data_holder = None
         self.saved_add_info = {}
 
+    def get_engine_for_values(self, values):
+        """
+        Returns the engine to keep together with `values` of parameters of
+        the model, e.g. when they are sent to another process. Engine could
+        save some additional information (:attr:`saved_add_info`) for every
+        point it has evaluated, only the information for `values` is needed
+        then.
+
+        Base engine has no additional information that depends on values and
+        the engine itself is returned.
+        """
+        return self
+
     def update_data_holder_with_inner_data(self):
         raise NotImplementedError
 
