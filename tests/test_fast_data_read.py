@@ -4,7 +4,9 @@ import allel
 import shutil
 import pickle
 import pytest
+import tempfile
 import unittest
+from unittest import mock
 import moments.LD
 import numpy as np
 from os import listdir
@@ -230,6 +232,53 @@ class TestFastDataRead(unittest.TestCase):
         self.assertTrue(not Path(H5_FILE).exists())
         create_h5_file(vcf_file)
         self.assertTrue(Path(H5_FILE).exists())
+
+    @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
+    def test_h5_file_after_data_reading(self):
+        """
+        H5 file that is created to read LD statistics from VCF file is
+        removed in the end by the name it was created with. H5 file that
+        existed before the reading is kept.
+        """
+        from gadma.engines import moments_ld_engine
+        ld_engine = get_engine('momentsLD')
+        dirname = tempfile.mkdtemp()
+
+        def read_data(vcf_file):
+            """Reads data and returns h5 files that were used for it."""
+            h5_files = []
+
+            # evaluation of statistics takes time, we do not need it here
+            def one_job(args):
+                h5_files.append(sorted(name for name in os.listdir(dirname)
+                                       if name.endswith(".h5")))
+                return {str(args[0]): {}}
+
+            data_holder = VCFDataHolder(vcf_file=vcf_file,
+                                        popmap_file=POP_MAP,
+                                        bed_files_dir=BED_FILES_DIR)
+            with mock.patch.object(moments_ld_engine, "_read_data_one_job",
+                                   side_effect=one_job), \
+                    mock.patch("moments.LD.Parsing.bootstrap_data",
+                               side_effect=lambda stats: stats):
+                ld_engine.read_data(data_holder)
+            return h5_files[0]
+
+        try:
+            # h5 file has another name than VCF file without its extension
+            vcf_file = os.path.join(dirname, "x.vcf.filtered.vcf")
+            shutil.copy(VCF_DATA_LD, vcf_file)
+            self.assertEqual(read_data(vcf_file), ["x.h5"])
+            self.assertEqual(os.listdir(dirname), ["x.vcf.filtered.vcf"])
+
+            # h5 file that was created before
+            self.assertTrue(create_h5_file(vcf_file))
+            self.assertFalse(create_h5_file(vcf_file))
+            self.assertEqual(read_data(vcf_file), ["x.h5"])
+            self.assertEqual(sorted(os.listdir(dirname)),
+                             ["x.h5", "x.vcf.filtered.vcf"])
+        finally:
+            shutil.rmtree(dirname)
 
 
 class TestBedFilesCreation(unittest.TestCase):

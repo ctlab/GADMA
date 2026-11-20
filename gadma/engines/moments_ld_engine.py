@@ -42,10 +42,27 @@ def extract_rec_map_name_and_extension(rec_map):
     return rec_map_name, extension
 
 
+def get_h5_file_path(vcf_file):
+    """
+    Returns path of h5 file for the VCF file. It should be the same path
+    that moments uses when it reads data from the VCF file (see
+    ``moments.LD.Parsing``).
+    """
+    return vcf_file.split(".vcf")[0] + ".h5"
+
+
 def create_h5_file(vcf_file):
+    """
+    Creates h5 file for the VCF file if there is no such file. The file is
+    used by moments to read the data.
+
+    :returns: True if the file was created and False if it existed before.
+    """
     import allel
-    h5_file_path = vcf_file.split(".vcf")[0] + ".h5"
-    if not check_file_existence(h5_file_path):
+    h5_file_path = get_h5_file_path(vcf_file)
+    if check_file_existence(h5_file_path):
+        return False
+    try:
         allel.vcf_to_hdf5(
             vcf_file,
             h5_file_path,
@@ -53,6 +70,12 @@ def create_h5_file(vcf_file):
             exclude_fields=["calldata/GQ"],
             overwrite=True,
         )
+    except BaseException:
+        # the file that is not full should not be used the next time
+        if check_file_existence(h5_file_path):
+            os.remove(h5_file_path)
+        raise
+    return True
 
 
 class MomentsLdEngine(Engine):
@@ -170,17 +193,23 @@ class MomentsLdEngine(Engine):
             reg_num += 1
             all_kwargs.append([str(reg_num-1), parsing_kwargs])
 
-        create_h5_file(data_holder.filename)
-        n_processes = cls.n_processes
-        if n_processes == 1:
-            result = []
-            for args in all_kwargs:
-                result.append(_read_data_one_job(args))
-        else:
-            pool = multiprocessing.Pool(processes=n_processes)
-
-            result = pool.map(_read_data_one_job, all_kwargs)
-            pool.close()
+        # H5 file is created once for all regions and is removed in the end.
+        # The file that existed before is not ours, so it is kept.
+        h5_is_created = create_h5_file(data_holder.filename)
+        try:
+            n_processes = cls.n_processes
+            if n_processes == 1:
+                result = []
+                for args in all_kwargs:
+                    result.append(_read_data_one_job(args))
+            else:
+                # processes are stopped before the h5 file is removed
+                with multiprocessing.Pool(processes=n_processes) as pool:
+                    result = pool.map(_read_data_one_job, all_kwargs)
+        finally:
+            h5_file_path = get_h5_file_path(data_holder.filename)
+            if h5_is_created and check_file_existence(h5_file_path):
+                os.remove(h5_file_path)
         return dict(ChainMap(*result))
 
     @classmethod
@@ -195,8 +224,6 @@ class MomentsLdEngine(Engine):
         if data_holder.preprocessed_data is None:
             region_stats = cls._get_region_stats(data_holder)
             data = moments.LD.Parsing.bootstrap_data(region_stats)
-            # remove created h5 file
-            os.remove(os.path.splitext(data_holder.filename)[0] + ".h5")
         else:
             print("Read preprocessed data")
             with open(data_holder.preprocessed_data, "rb") as fin:

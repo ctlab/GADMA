@@ -5,7 +5,6 @@ from gadma.data.data import VCFDataHolder
 from gadma.engines.engine import get_engine
 from gadma.utils import ensure_dir_existence
 from gadma.cli import arg_parser
-import os
 import gadma
 gadma.cli.arg_parser.version = lambda: "GADMA module for data preprocessing "\
                                        "with momentsLD engine\n"
@@ -30,11 +29,6 @@ def main():
 
         regions = engine._get_region_stats(settings_storage.data_holder)
         data = moments.LD.Parsing.bootstrap_data(regions)
-
-        # remove created h5 file
-        os.remove(
-            os.path.splitext(settings_storage.data_holder.filename)[0] + ".h5"
-        )
 
         with open("./preprocessed_data.bp", "wb+") as fout:
             pickle.dump(tuple([regions, data]), fout)
