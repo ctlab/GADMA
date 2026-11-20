@@ -18,7 +18,7 @@ from ..utils import check_dir_existence, check_file_existence, abspath, \
 from ..utils import PopulationSizeVariable, \
     ContinuousVariable, DynamicVariable, GrowthRateVariable, \
     SelectionVariable, FractionVariable, DemographicVariable
-from ..data import extract_chromosomes_from_vcf
+from ..data import extract_chromosomes_from_vcf, is_vcf_file
 from ..data import create_recombination_maps_from_rate
 from ..data import create_bed_files_and_extract_chromosomes
 import warnings
@@ -496,13 +496,17 @@ class SettingsStorage(object):
                 assert n_files <= 2, "Input file could take maximum two "\
                                      "files: SFS file or VCF file with popmap"\
                                      f" file. Got {n_files} files: {files}"
-                extension = files[0][files[0].rfind('.'):].lower()
-                assert extension == ".vcf", "Input file was set to two files "\
-                                            "but the first one does not have "\
-                                            f".vcf extension: {value}"
+                # VCF file could be compressed
+                assert is_vcf_file(files[0]), "Input file was set to two "\
+                                              "files but the first one does "\
+                                              "not have .vcf or .vcf.gz "\
+                                              f"extension: {value}"
+                extension = ".vcf"
             else:
                 files = [value]
                 extension = value[value.rfind('.'):].lower()
+                if is_vcf_file(value):
+                    extension = ".vcf"
             if extension == ".vcf":
                 assert len(files) != 1, "VCF file should be set together with"\
                                         " popmap file. Popmap file is missed,"\

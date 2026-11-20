@@ -100,10 +100,20 @@ class MomiEngine(Engine):
                 verbose=True,
             )
             ind2pop = cls._get_ind2pop(data_holder)
-            data = momi.SnpAlleleCounts.read_vcf(
-                vcf_file=data_holder.filename,
-                ind2pop=ind2pop,
-            ).extract_sfs(n_blocks=100)
+            try:
+                data = momi.SnpAlleleCounts.read_vcf(
+                    vcf_file=data_holder.filename,
+                    ind2pop=ind2pop,
+                ).extract_sfs(n_blocks=100)
+            except NotImplementedError as e:
+                if not data_holder.filename.endswith(".gz"):
+                    raise
+                raise ValueError(
+                    f"momi failed to read compressed VCF file "
+                    f"{data_holder.filename} ({e}). It reads VCF files that "
+                    "are compressed with bgzip, file that is compressed "
+                    "with gzip should be unpacked or compressed with bgzip."
+                ) from e
             data = data.subset_populations(populations)
         else:
             raise ValueError("Unknown type of data_holder: "

@@ -5,6 +5,8 @@ from ..utils import DiscreteVariable, cache_func, bcolors
 from .. import SFSDataHolder, VCFDataHolder
 from ..code_generator import id2printfunc
 from ..data.data_utils import get_defaults_from_vcf_format, ploidy_from_vcf
+from ..data.data_utils import open_vcf, get_empty_lines_of_popmap, \
+    get_line_with_one_dot_genotype
 from ..data.data_utils import check_population_labels_vcf, \
                               check_projections_vcf
 
@@ -832,7 +834,7 @@ def read_vcf_data(module, data_holder):
     total_snp = 0
     positions2line_num = {}
     has_anc_allele = True
-    with open(data_holder.filename) as f:
+    with open_vcf(data_holder.filename) as f:
         for line_number, line in enumerate(f):
             if line.startswith("#"):
                 continue
@@ -905,12 +907,39 @@ def read_vcf_data(module, data_holder):
                          "contains AA field. It is not possible to create "
                          "SFS with outgroup without this information.")
     # Build sfs
-    dd = module.Misc.make_data_dict_vcf(
-        vcf_filename=data_holder.filename,
-        popinfo_filename=data_holder.popmap_file,
-        filter=True,
-        flanking_info=[None, None],
-    )
+    try:
+        dd = module.Misc.make_data_dict_vcf(
+            vcf_filename=data_holder.filename,
+            popinfo_filename=data_holder.popmap_file,
+            filter=True,
+            flanking_info=[None, None],
+        )
+    except Exception as e:
+        # dadi and moments read both files by themselves and they have
+        # their own restrictions on them (e.g. moments does not read popmap
+        # with empty lines and genotypes that are written as one dot). We
+        # try to tell what is wrong with the files.
+        reasons = []
+        empty_lines = get_empty_lines_of_popmap(data_holder.popmap_file)
+        if len(empty_lines) > 0:
+            reasons.append(f"popmap file has empty lines ({empty_lines}), "
+                           "they should be removed")
+        line_number = get_line_with_one_dot_genotype(
+            vcf_file=data_holder.filename,
+            popinfo_file=data_holder.popmap_file,
+        )
+        if line_number is not None:
+            reasons.append(f"genotype on line {line_number} of VCF file is "
+                           "written as one dot, missed genotype should be "
+                           "written as `./.`")
+        if len(reasons) == 0:
+            raise
+        raise ValueError(
+            f"{module.__name__} failed to read VCF file "
+            f"{data_holder.filename} with popmap file "
+            f"{data_holder.popmap_file} ({type(e).__name__}: {e}). Possible "
+            f"reason: {'; '.join(reasons)}."
+        ) from e
     if len(dd) == 0:
         raise ValueError("None SNP's were read from the VCF file "
                          f"{data_holder.filename}. Please check the VCF "

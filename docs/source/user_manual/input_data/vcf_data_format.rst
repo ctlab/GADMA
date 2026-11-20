@@ -23,6 +23,9 @@ VCF file
    Sometimes it is better to convert a VCF (.vcf) file into a SFS (.sfs) file.
    To do so use `easySFS <https://github.com/isaacovercast/easySFS>`_.
 
+VCF file could be compressed, then it should have ``.vcf.gz`` extension. The
+``momi2`` engine reads only files that are compressed with ``bgzip``.
+
 There are several conditions of successful reading of VCF file. SNP's will be
 taken to SFS data if:
 
@@ -48,8 +51,15 @@ It is a plain-text with two tab-separated columns: sample name and corresponding
     sample_4   Pop2
     sample_5   Pop2
 
+Empty lines and lines that begin with ``#`` are skipped, and only the first two columns are used.
+
 .. note::
     Popmap file can miss some samples from VCF file or have some extra - all of them will be ignored.
+    Population that has no samples in VCF file is not used.
+
+.. note::
+    The ``moments`` engine has its own restrictions: it does not read popmap file with empty lines
+    and VCF file where a missed genotype is written as one dot (``.``), it should be ``./.``.
 
 Examples
 ---------

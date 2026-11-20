@@ -7,9 +7,28 @@ from ..utils import ensure_dir_existence
 
 
 # function for working with VCF files
+def is_vcf_file(filename):
+    """
+    Returns True if `filename` is a name of VCF file: it has `.vcf`
+    extension and it could be compressed (`.vcf.gz`).
+    """
+    name = filename.strip().lower()
+    return name.endswith(".vcf") or name.endswith(".vcf.gz")
+
+
+def open_vcf(vcf_file):
+    """
+    Opens VCF file to read its lines. The file could be compressed (`.gz`).
+    """
+    if vcf_file.endswith(".gz"):
+        return gzip.open(vcf_file, 'rt')
+    return open(vcf_file, 'r')
+
+
 def ploidy_from_vcf(path):
     """
-    Calculate ploidy from .vcf file
+    Calculate ploidy from .vcf file. It is the ploidy of the first genotype
+    that is not missed. None is returned if there is no such genotype.
 
     This function was written by Artyom Ershov as part of internship test task.
     Was taken from repository: https://github.com/iam28th/intership_test_task
@@ -17,14 +36,14 @@ def ploidy_from_vcf(path):
     # chrom name whose count of copies differs from ploidity
     bad_chroms = {'Y', 'X', 'M', 'chrX', 'chrY', 'chrM'}
 
-    with open(path, 'r') as f:
+    with open_vcf(path) as f:
         for line in f:
             # skip comments and heading
             if line.startswith('#'):
                 continue
 
             # skip bad chroms
-            fields = line.split('\t')
+            fields = line.rstrip('\n').split('\t')
             chrom = fields[0]
             if chrom in bad_chroms:
                 continue
@@ -34,9 +53,18 @@ def ploidy_from_vcf(path):
 
             # find genotype field index
             index = fields[8].split(':').index('GT')
-            # we want to divide by either | or /
-            ploidy = len(re.split(r"\||/", fields[9].split(':')[index]))
-            return ploidy
+            for sample in fields[9:]:
+                sample_fields = sample.strip().split(':')
+                if len(sample_fields) <= index:
+                    continue
+                genotype = sample_fields[index]
+                # missed genotype could be written as one dot whatever the
+                # ploidy is, so it says nothing
+                if genotype == '.':
+                    continue
+                # we want to divide by either | or /
+                return len(re.split(r"\||/", genotype))
+    return None
 
 
 def read_popinfo(popinfo_file):
@@ -47,8 +75,18 @@ def read_popinfo(popinfo_file):
     populations = []
     sample2pop = {}
     with open(popinfo_file) as fl:
-        for line in fl:
-            sample, pop = line.strip().split()
+        for line_number, line in enumerate(fl, start=1):
+            # empty lines and comments are skipped
+            if len(line.strip()) == 0 or line.strip().startswith("#"):
+                continue
+            columns = line.split()
+            if len(columns) < 2:
+                raise ValueError(f"Line {line_number} of popmap file "
+                                 f"{popinfo_file} should have a name of "
+                                 "sample and a name of its population, got: "
+                                 f"{line.strip()}")
+            # only two first columns are used
+            sample, pop = columns[:2]
             if sample == "sample" and pop == 'pop':
                 continue
             if sample in sample2pop and pop != sample2pop[sample]:
@@ -61,12 +99,54 @@ def read_popinfo(popinfo_file):
     return sample2pop, populations
 
 
+def get_empty_lines_of_popmap(popinfo_file):
+    """
+    Returns numbers of empty lines of popmap file. Lines are counted from 1.
+    """
+    with open(popinfo_file) as fl:
+        return [line_number for line_number, line in enumerate(fl, start=1)
+                if len(line.strip()) == 0]
+
+
+def get_line_with_one_dot_genotype(vcf_file, popinfo_file):
+    """
+    Returns number of the first line of VCF file where genotype of a sample
+    from popmap file is written as one dot (`.`). Returns None if there is no
+    such line. Lines are counted from 1.
+    """
+    sample2pop, _ = read_popinfo(popinfo_file=popinfo_file)
+    columns = None
+    with open_vcf(vcf_file) as fl:
+        for line_number, line in enumerate(fl, start=1):
+            if line.startswith("##"):
+                continue
+            fields = line.split()
+            if line.startswith("#"):
+                # columns of the samples that are in popmap
+                columns = [i for i, name in enumerate(fields)
+                           if i >= 9 and name in sample2pop]
+                continue
+            if columns is None or len(fields) < 10:
+                continue
+            formats = fields[8].split(":")
+            if "GT" not in formats:
+                continue
+            index = formats.index("GT")
+            for i in columns:
+                if i >= len(fields):
+                    continue
+                sample_fields = fields[i].split(":")
+                if len(sample_fields) > index and sample_fields[index] == ".":
+                    return line_number
+    return None
+
+
 def get_list_of_names_from_vcf(vcf_file):
     """
     Returns list of sample names from vcf file.
     """
     header_line = ""
-    with open(vcf_file) as fl:
+    with open_vcf(vcf_file) as fl:
         for line in fl:
             # Skip metainformation
             if line.startswith("#"):
@@ -99,10 +179,22 @@ def get_defaults_from_vcf_format(vcf_file, popmap_file, verbose=False):
 
     # check popmap
     sample2pop, all_populations = read_popinfo(popinfo_file=popmap_file)
+    # population is presented if it has samples in vcf
     pop_is_pres = {pop: False for pop in all_populations}
     for sample in sample2pop:
-        pop_is_pres[sample2pop[sample]] = True
+        if sample in vcf_samples:
+            pop_is_pres[sample2pop[sample]] = True
     populations = [pop for pop in all_populations if pop_is_pres[pop]]
+    if len(populations) == 0:
+        raise ValueError(f"None of the samples of popmap file {popmap_file} "
+                         f"is presented in VCF file {vcf_file}. Samples of "
+                         f"VCF file: {vcf_samples}")
+    missed_populations = [pop for pop in all_populations
+                          if not pop_is_pres[pop]]
+    if len(missed_populations) > 0 and verbose:
+        warnings.warn("The following populations of popmap file have no "
+                      "samples in VCF file and they will not be used: "
+                      f"{missed_populations}")
 
     # check our lists
     # samples that are in popmap but not in vcf

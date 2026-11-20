@@ -490,6 +490,217 @@ def get_settings_test():
     return settings, args
 
 
+class TestVCFAndPopmapFiles(unittest.TestCase):
+    """
+    VCF and popmap files that are not written in the most usual way:
+    compressed VCF, missed genotype that is written as one dot, popmap with
+    empty lines, comments, additional columns and with populations that
+    have no samples in VCF.
+    """
+    def setUp(self):
+        import tempfile
+        self.dirname = tempfile.mkdtemp()
+        self.vcf_file = VCF_SIM_YRI_CEU_SMALL_DATA
+        self.popmap_file = os.path.join(
+            DATA_PATH, "vcf", "out_of_africa_chr22_sim_3pop.popmap")
+        with open(self.vcf_file) as fl:
+            self.vcf_lines = fl.readlines()
+        # index of the first line with variant
+        self.first = [line.startswith("#")
+                      for line in self.vcf_lines].index(False)
+        with open(self.popmap_file) as fl:
+            self.popmap_lines = [line.rstrip("\n") + "\n" for line in fl]
+
+    def tearDown(self):
+        # When moments fails to read files it leaves them opened until its
+        # exception is collected. Opened file could not be removed on
+        # Windows.
+        import gc
+        gc.collect()
+        shutil.rmtree(self.dirname, ignore_errors=True)
+
+    def write_file(self, name, lines, compress=False):
+        import gzip
+        filename = os.path.join(self.dirname, name)
+        open_func = gzip.open if compress else open
+        with open_func(filename, "wt") as fl:
+            fl.writelines(lines)
+        return filename
+
+    def get_vcf_lines(self, first_genotypes):
+        """Lines of VCF with other first genotypes of the first variant."""
+        lines = list(self.vcf_lines)
+        fields = lines[self.first].rstrip("\n").split("\t")
+        fields[9:9 + len(first_genotypes)] = first_genotypes
+        lines[self.first] = "\t".join(fields) + "\n"
+        return lines
+
+    def get_available_engines(self, ids):
+        available = [engine.id for engine in all_available_engines()]
+        return [get_engine(engine_id) for engine_id in ids
+                if engine_id in available]
+
+    def test_ploidy_from_vcf(self):
+        """
+        Ploidy is taken from the first genotype that is not missed: missed
+        genotype could be written as one dot for any ploidy.
+        """
+        from gadma.data import ploidy_from_vcf
+        self.assertEqual(ploidy_from_vcf(self.vcf_file), 2)
+        self.assertEqual(ploidy_from_vcf(ONE_PLOIDY_VCF), 1)
+        n_samples = len(self.vcf_lines[self.first].split("\t")) - 9
+        for genotypes, compress in [(["."], False),
+                                    (["."] * n_samples, False),
+                                    (["."] * n_samples, True)]:
+            name = "data.vcf.gz" if compress else "data.vcf"
+            vcf_file = self.write_file(name, self.get_vcf_lines(genotypes),
+                                       compress=compress)
+            self.assertEqual(ploidy_from_vcf(vcf_file), 2,
+                             msg=f"{genotypes}, compressed: {compress}")
+        # there are no genotypes at all
+        lines = self.get_vcf_lines(["."] * n_samples)
+        vcf_file = self.write_file("no_genotypes.vcf",
+                                   lines[:self.first + 1])
+        self.assertTrue(ploidy_from_vcf(vcf_file) is None)
+
+    def test_popmap_reading(self):
+        """
+        Empty lines and comments of popmap file are skipped, and only two
+        first columns of it are used.
+        """
+        from gadma.data import read_popinfo
+        expected = read_popinfo(self.popmap_file)
+        self.assertEqual(expected[1], ["YRI", "CEU", "CHB"])
+        lines = ["# samples of the study\n", "sample\tpop\n"]
+        for i, line in enumerate(self.popmap_lines):
+            lines.append(line.rstrip("\n") + "\tsome note\n")
+            if i == 1:
+                lines.extend(["\n", "  # one more comment\n"])
+        lines.extend(["\n", "\n"])
+        popmap_file = self.write_file("popmap", lines)
+        self.assertEqual(read_popinfo(popmap_file), expected)
+        # line without population
+        popmap_file = self.write_file("bad_popmap",
+                                      self.popmap_lines + ["sample\n"])
+        with self.assertRaises(ValueError) as context:
+            read_popinfo(popmap_file)
+        self.assertTrue(f"Line {len(self.popmap_lines) + 1}"
+                        in str(context.exception))
+
+    def test_population_without_samples_in_vcf(self):
+        """
+        Population of popmap file that has no samples in VCF file is not
+        used, and it is said with its name.
+        """
+        from gadma.data import get_defaults_from_vcf_format
+        expected = get_defaults_from_vcf_format(self.vcf_file,
+                                                self.popmap_file)
+        self.assertEqual(expected, (["YRI", "CEU", "CHB"], [4, 4, 4]))
+        popmap_file = self.write_file(
+            "popmap", self.popmap_lines + ["new_sample\tOTHER\n"])
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            result = get_defaults_from_vcf_format(self.vcf_file, popmap_file,
+                                                  verbose=True)
+        self.assertEqual(result, expected)
+        messages = [str(w.message) for w in caught
+                    if "have no samples in VCF file" in str(w.message)]
+        self.assertEqual(len(messages), 1)
+        self.assertTrue("['OTHER']" in messages[0])
+        # the same data as without this population
+        for engine in self.get_available_engines(["dadi", "moments"]):
+            data = engine.read_data(VCFDataHolder(
+                vcf_file=self.vcf_file, popmap_file=popmap_file))
+            self.assertEqual(list(data.pop_ids), ["YRI", "CEU", "CHB"],
+                             msg=engine.id)
+            # such population could not be asked
+            data_holder = VCFDataHolder(vcf_file=self.vcf_file,
+                                        popmap_file=popmap_file,
+                                        population_labels=["YRI", "OTHER"])
+            self.assertRaises(AssertionError, engine.read_data, data_holder)
+        # there are no samples of VCF file in popmap at all
+        popmap_file = self.write_file("other_popmap", ["a\tA\n", "b\tB\n"])
+        self.assertRaises(ValueError, get_defaults_from_vcf_format,
+                          self.vcf_file, popmap_file)
+
+    def test_compressed_vcf(self):
+        """
+        Compressed VCF file (`.vcf.gz`) is accepted and it gives the same
+        data as the file that is not compressed.
+        """
+        from gadma.data import is_vcf_file, get_list_of_names_from_vcf
+        for name in ["data.vcf", "data.VCF", "data.vcf.gz", " data.vcf "]:
+            self.assertTrue(is_vcf_file(name), msg=name)
+        for name in ["data.fs", "data.gz", "data.vcf.txt", "vcf"]:
+            self.assertFalse(is_vcf_file(name), msg=name)
+
+        vcf_gz_file = self.write_file("data.vcf.gz", self.vcf_lines,
+                                      compress=True)
+        self.assertEqual(get_list_of_names_from_vcf(vcf_gz_file),
+                         get_list_of_names_from_vcf(self.vcf_file))
+        settings = SettingsStorage()
+        settings.input_data = f"{vcf_gz_file}, {self.popmap_file}"
+        self.assertTrue(isinstance(settings.data_holder, VCFDataHolder))
+        self.assertEqual(settings.data_holder.filename, vcf_gz_file)
+        # VCF file needs popmap file
+        self.assertRaises(AssertionError, settings.__setattr__,
+                          "input_data", vcf_gz_file)
+
+        for engine in self.get_available_engines(["dadi", "moments"]):
+            data = engine.read_data(VCFDataHolder(
+                vcf_file=self.vcf_file, popmap_file=self.popmap_file))
+            data_gz = engine.read_data(VCFDataHolder(
+                vcf_file=vcf_gz_file, popmap_file=self.popmap_file))
+            self.assertTrue(data.S() > 0, msg=engine.id)
+            self.assertTrue(np.ma.allclose(data, data_gz) and
+                            np.all(data.mask == data_gz.mask), msg=engine.id)
+
+        # momi reads files that are compressed with bgzip only
+        for engine in self.get_available_engines(["momi2"]):
+            data_holder = VCFDataHolder(vcf_file=vcf_gz_file,
+                                        popmap_file=self.popmap_file)
+            with self.assertRaises(ValueError) as context:
+                engine.read_data(data_holder)
+            self.assertTrue("bgzip" in str(context.exception))
+
+    def test_messages_about_restrictions_of_engines(self):
+        """
+        dadi reads popmap file with empty lines and VCF file where a missed
+        genotype is written as one dot. moments does not, and then it is
+        said what is wrong with the files.
+        """
+        vcf_file = self.write_file("one_dot.vcf", self.get_vcf_lines(["."]))
+        popmap_file = self.write_file(
+            "popmap", self.popmap_lines[:2] + ["\n"] + self.popmap_lines[2:])
+        usual = VCFDataHolder(vcf_file=self.vcf_file,
+                              popmap_file=self.popmap_file)
+        with_one_dot = VCFDataHolder(vcf_file=vcf_file,
+                                     popmap_file=self.popmap_file)
+        with_empty_line = VCFDataHolder(vcf_file=self.vcf_file,
+                                        popmap_file=popmap_file)
+
+        for engine in self.get_available_engines(["dadi"]):
+            data = engine.read_data(usual)
+            # the variant with missed genotype is not used
+            self.assertEqual(engine.read_data(with_one_dot).S(),
+                             data.S() - 1)
+            self.assertEqual(engine.read_data(with_empty_line).S(), data.S())
+
+        for engine in self.get_available_engines(["moments"]):
+            with self.assertRaises(ValueError) as context:
+                engine.read_data(with_one_dot)
+            self.assertTrue(
+                f"genotype on line {self.first + 1} of VCF file is written "
+                "as one dot" in str(context.exception),
+                msg=str(context.exception)
+            )
+            with self.assertRaises(ValueError) as context:
+                engine.read_data(with_empty_line)
+            self.assertTrue("popmap file has empty lines ([3])"
+                            in str(context.exception),
+                            msg=str(context.exception))
+
+
 class TestSFSWithoutData(unittest.TestCase):
     @staticmethod
     def write_sfs_file(filename, values, mask):
