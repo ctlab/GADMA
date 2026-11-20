@@ -415,6 +415,63 @@ class TestEngines(unittest.TestCase):
                 msg=f"{ll_model} != {namespace['ll_model']} : {msg}"
             )
 
+    @pytest.mark.skipif(not gadma.momi_available, reason="No momi2")
+    def test_momi_leaves_no_file_in_current_directory(self):
+        """
+        Neither momi2 engine nor its generated code write a file to the
+        current directory when they read SFS data. By default momi writes
+        `.tmp.sfs` there and reads it back, so two runs that are started in
+        one directory at the same time could get data of each other.
+        """
+        import tempfile
+        sfs_dir = os.path.abspath(os.path.join(DATA_PATH, "DATA", "sfs"))
+        current_dir = os.getcwd()
+        dirname = tempfile.mkdtemp()
+        try:
+            os.chdir(dirname)
+            # engine reads file of dadi and file that is read through dadi
+            for filename in ["YRI_CEU.fs", "data.txt"]:
+                data = get_engine("momi2").read_data(
+                    SFSDataHolder(os.path.join(sfs_dir, filename)))
+                self.assertEqual(list(data.sampled_pops), ["YRI", "CEU"],
+                                 msg=filename)
+                self.assertEqual(os.listdir(dirname), [], msg=filename)
+
+            # generated code
+            settings = SettingsStorage()
+            settings.engine = "momi2"
+            settings.input_data = os.path.join(sfs_dir, "YRI_CEU.fs")
+            settings.mutation_rate = 1.25e-8
+            settings.sequence_length = 4.04e6
+            settings.initial_structure = [1, 1]
+            settings.only_sudden = True
+            settings.no_migrations = True
+            settings.ancestral_size_as_parameter = True
+            settings.read_data()
+            model = settings.get_model()
+            x = []
+            for var in model.variables:
+                if var.name == "Nanc":
+                    x.append(10000)
+                else:
+                    x.append(0.2 if var.name.startswith("t") else 1.5)
+            engine = get_engine("momi2")
+            engine.set_data(settings.inner_data)
+            engine.set_model(model)
+            engine.data_holder = settings.data_holder
+            ll_model = engine.evaluate(x)
+            code = engine.generate_code(x, None)
+            # we do not want to draw picture
+            code = code[:code.index("from matplotlib import pyplot")]
+            namespace = {}
+            exec(code, namespace)
+            self.assertTrue(np.isclose(ll_model, namespace["ll_model"]),
+                            msg=f"{ll_model} != {namespace['ll_model']}")
+            self.assertEqual(os.listdir(dirname), [])
+        finally:
+            os.chdir(current_dir)
+            shutil.rmtree(dirname)
+
     def test_generated_code_with_theta0_and_few_parameters(self):
         """
         Generated code is valid and gives the same likelihood as the engine

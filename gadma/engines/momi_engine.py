@@ -48,12 +48,27 @@ class MomiEngine(Engine):
         return ind2pop
 
     @classmethod
+    def _sfs_from_dadi(cls, sfs_file):
+        """
+        Returns data of momi from the file with SFS in the format of dadi.
+
+        momi writes the data to a file on its way and reads it back. If no
+        file is given then it is `.tmp.sfs` in the current directory, so
+        two runs that are started in one directory could get data of each
+        other. That is why momi is given a file in a temporary directory,
+        which is removed after reading.
+        """
+        with tempfile.TemporaryDirectory() as dirname:
+            return cls.base_module.sfs_from_dadi(
+                sfs_file, outfile=os.path.join(dirname, "momi_sfs"))
+
+    @classmethod
     def _read_data(cls, data_holder):
         momi = cls.base_module
         if isinstance(data_holder, SFSDataHolder):
             sfs_file = data_holder.filename
             if sfs_file.endswith(".fs") or sfs_file.endswith(".sfs"):
-                data = momi.sfs_from_dadi(sfs_file)
+                data = cls._sfs_from_dadi(sfs_file)
             elif (sfs_file.endswith(".txt") or sfs_file.endswith(".obs")):
                 if not dadi_available and not moments_available:
                     raise ValueError(
@@ -67,7 +82,7 @@ class MomiEngine(Engine):
                     with tempfile.TemporaryDirectory() as tmpdirname:
                         filename = os.path.join(tmpdirname, "dadi_sfs.fs")
                         readed_sfs.to_file(filename)
-                        data = momi.sfs_from_dadi(filename)
+                        data = cls._sfs_from_dadi(filename)
                 except Exception as e:
                     raise ValueError(
                         f"Failed to read given file {data_holder.filename} "

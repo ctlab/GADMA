@@ -599,7 +599,7 @@ class TestInference(unittest.TestCase):
                 if engine.id in ["dadi", "moments"]:
                     data = engine.base_module.Spectrum.from_file(EXAMPLE_DATA)
                 elif engine.id == 'momi2':
-                    data = engine.base_module.sfs_from_dadi(EXAMPLE_DATA)
+                    data = engine.read_data(SFSDataHolder(EXAMPLE_DATA))
                 elif engine.id == "momentsLD":
                     data = engine.read_data(EXAMPLE_DATA_LD)
                 else:

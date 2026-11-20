@@ -175,7 +175,17 @@ def print_data_reading(engine):
         is_dadi_fs = dadi_generator._is_fs_via_dadi(engine.data_holder)
         if is_dadi_fs is not None:
             filename = f"'{engine.data_holder.filename}'"
-            ret_str = f"data = momi.sfs_from_dadi({filename})\n"
+            # momi writes the data to a file during this reading: it is
+            # `.tmp.sfs` in the current directory if no file is given. Then
+            # scripts that are run in one directory at the same time could
+            # get data of each other, so a temporary file is given.
+            ret_str = "import os\nimport tempfile\n\n"
+            ret_str += "# momi writes the data to a file during reading, "\
+                       "it gets a temporary one here\n"
+            ret_str += "with tempfile.TemporaryDirectory() as dirname:\n"
+            ret_str += f"\tdata = momi.sfs_from_dadi(\n\t\t{filename},\n"
+            ret_str += "\t\toutfile=os.path.join(dirname, 'momi_sfs')\n"
+            ret_str += "\t)\n"
         else:
             # File is not in SFS format of dadi (e.g. it is in SNP format)
             # and it is read by GADMA. Engine reads such file with its
