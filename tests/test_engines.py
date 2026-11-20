@@ -729,9 +729,13 @@ class TestEngines(unittest.TestCase):
         self.assertEqual(len(n_calls), 1)
         engine.draw_data_comp_plot(vals, pts, save_file="plot.png")
         self.assertEqual(len(n_calls), 1)
-        # values that were not evaluated are simulated
+        # values that were not evaluated are simulated: the first value is
+        # changed so that it stays in the domain of its variable
         other_vals = list(vals)
-        other_vals[0] = 1.5 * other_vals[0]
+        other_vals[0] = 1.5 * vals[0]
+        if not dm.variables[0].correct_value(other_vals[0]):
+            other_vals[0] = vals[0] / 1.5
+        self.assertTrue(dm.variables[0].correct_value(other_vals[0]))
         engine.draw_data_comp_plot(other_vals, pts, save_file="plot.png")
         self.assertEqual(len(n_calls), 2)
         # saved SFS is not valid for new model or data
