@@ -356,6 +356,65 @@ class TestEngines(unittest.TestCase):
                     msg=f"{ll_model} != {namespace['ll_model']} : {msg}"
                 )
 
+    @pytest.mark.skipif(not gadma.momi_available, reason="No momi2")
+    def test_data_in_generated_code_of_momi(self):
+        """
+        Generated code of momi2 reads a file that is not in SFS format of
+        dadi with the same settings of data as the engine has: e.g. file in
+        SNP format is read with projections. So the code has the same data
+        and gives the same likelihood.
+        """
+        # population labels, projections, outgroup
+        cases = [
+            (["YRI", "CEU"], [8, 12], True),
+            (["CEU", "YRI"], [8, 12], True),
+            (["CEU", "YRI"], [8, 12], False),
+        ]
+        for labels, projections, outgroup in cases:
+            msg = f"labels {labels}, projections {projections}, " \
+                  f"outgroup {outgroup}"
+            settings = SettingsStorage()
+            settings.engine = "momi2"
+            settings.input_data = os.path.join(DATA_PATH, "DATA", "sfs",
+                                               "data.txt")
+            settings.population_labels = labels
+            settings.projections = projections
+            settings.outgroup = outgroup
+            settings.mutation_rate = 1.25e-8
+            settings.sequence_length = 4.04e6
+            settings.initial_structure = [1, 1]
+            settings.only_sudden = True
+            settings.no_migrations = True
+            settings.ancestral_size_as_parameter = True
+            settings.read_data()
+            model = settings.get_model()
+            x = []
+            for var in model.variables:
+                if var.name == "Nanc":
+                    x.append(10000)
+                else:
+                    x.append(0.2 if var.name.startswith("t") else 1.5)
+            engine = get_engine("momi2")
+            engine.set_data(settings.inner_data)
+            engine.set_model(model)
+            engine.data_holder = settings.data_holder
+            args = settings.get_engine_args()
+            ll_model = engine.evaluate(x, *args)
+
+            code = engine.generate_code(x, None, *args)
+            # we do not want to draw picture
+            code = code[:code.index("from matplotlib import pyplot")]
+            namespace = {}
+            exec(code, namespace)
+            data = namespace["data"]
+            self.assertEqual(list(data.sampled_pops), labels, msg=msg)
+            self.assertEqual(list(data.sampled_n), projections, msg=msg)
+            self.assertEqual(data.folded, not outgroup, msg=msg)
+            self.assertTrue(
+                np.isclose(ll_model, namespace["ll_model"]),
+                msg=f"{ll_model} != {namespace['ll_model']} : {msg}"
+            )
+
     def test_selection_and_dominance_of_each_population(self):
         """
         Selection and dominance coefficients of every population are used

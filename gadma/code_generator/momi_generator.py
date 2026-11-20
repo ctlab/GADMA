@@ -177,11 +177,27 @@ def print_data_reading(engine):
             filename = f"'{engine.data_holder.filename}'"
             ret_str = f"data = momi.sfs_from_dadi({filename})\n"
         else:
+            # File is not in SFS format of dadi (e.g. it is in SNP format)
+            # and it is read by GADMA. Engine reads such file with its
+            # settings of data: projections, population labels and outgroup.
+            # The same settings are given here to get the same data, nothing
+            # else should be done with the data after that.
+            data_holder = engine.data_holder
+            projections = data_holder.projections
+            if projections is not None:
+                projections = [int(size) for size in projections]
+            if populations is not None:
+                populations = [str(label) for label in populations]
             ret_str = "import gadma\n"
-            ret_str += "data_holder = gadma.SFSDataHolder("
-            ret_str += f"'{engine.data_holder.filename}')\n"
+            ret_str += "data_holder = gadma.SFSDataHolder(\n"
+            ret_str += f"\t{repr(data_holder.filename)},\n"
+            ret_str += f"\tprojections={projections},\n"
+            ret_str += f"\toutgroup={data_holder.outgroup},\n"
+            ret_str += f"\tpopulation_labels={populations},\n"
+            ret_str += ")\n"
             ret_str += "data = gadma.get_engine('momi2')"\
-                       ".read_data(data_holder)\n"
+                       ".read_data(data_holder)\n\n"
+            return ret_str
 
     if isinstance(engine.data_holder, VCFDataHolder):
         ind2pop = engine._get_ind2pop(engine.data_holder)
