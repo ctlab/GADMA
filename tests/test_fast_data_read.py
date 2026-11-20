@@ -1,5 +1,6 @@
 import os
 import sys
+import gzip
 import allel
 import shutil
 import pickle
@@ -16,6 +17,7 @@ import gadma
 from gadma.data.data import VCFDataHolder
 from gadma.engines.engine import get_engine
 from gadma.data.data_utils import create_bed_files_and_extract_chromosomes
+from gadma.data.data_utils import extract_chromosomes_from_vcf, get_chrom2len
 from gadma.precompute_ld_data import main
 from gadma.engines.moments_ld_engine import _read_data_one_job, create_h5_file
 from gadma.engines.moments_ld_engine import extract_rec_map_name_and_extension
@@ -277,6 +279,106 @@ class TestFastDataRead(unittest.TestCase):
             self.assertEqual(read_data(vcf_file), ["x.h5"])
             self.assertEqual(sorted(os.listdir(dirname)),
                              ["x.h5", "x.vcf.filtered.vcf"])
+        finally:
+            shutil.rmtree(dirname)
+
+
+class TestChromosomesOfVCF(unittest.TestCase):
+    def test_chromosomes_of_vcf(self):
+        """
+        Chromosomes are taken from the first column of VCF file and they are
+        the same as scikit-allel gives. The file could be compressed and
+        could have empty lines.
+        """
+        vcf_with_20_chr = os.path.join(
+            DATA_PATH, 'DATA', 'vcf_ld', "YRI_CEU_sim_data.vcf")
+        for vcf_file, n_chrom in [(VCF_DATA_LD, 1), (VCF_DATA_FEW_CHR, 2),
+                                  (vcf_with_20_chr, 20)]:
+            chromosomes = extract_chromosomes_from_vcf(vcf_file)
+            vcf_data = allel.read_vcf(vcf_file, fields=["variants/CHROM"])
+            self.assertEqual(chromosomes,
+                             sorted(set(vcf_data["variants/CHROM"])))
+            self.assertEqual(len(chromosomes), n_chrom)
+
+        with open(VCF_DATA_FEW_CHR, "rb") as fl:
+            lines = fl.readlines()
+        dirname = tempfile.mkdtemp()
+        try:
+            # compressed file
+            vcf_file = os.path.join(dirname, "data.vcf.gz")
+            with gzip.open(vcf_file, "wb") as fl:
+                fl.writelines(lines)
+            self.assertEqual(extract_chromosomes_from_vcf(vcf_file),
+                             ["1", "2"])
+            # empty lines are not chromosomes
+            vcf_file = os.path.join(dirname, "empty_lines.vcf")
+            with open(vcf_file, "wb") as fl:
+                fl.writelines(lines + [b"\n", b"\n"])
+            self.assertEqual(extract_chromosomes_from_vcf(vcf_file),
+                             ["1", "2"])
+            # file without variants
+            vcf_file = os.path.join(dirname, "no_variants.vcf")
+            with open(vcf_file, "wb") as fl:
+                fl.writelines(
+                    [line for line in lines if line.startswith(b"#")])
+            self.assertRaises(ValueError, extract_chromosomes_from_vcf,
+                              vcf_file)
+        finally:
+            shutil.rmtree(dirname)
+
+    def test_vcf_is_read_once_for_chromosomes(self):
+        """
+        Chromosomes of VCF file are remembered: the file is read for them
+        once and one more time only if it was changed. Genotypes are not
+        loaded to get lengths of chromosomes.
+        """
+        dirname = tempfile.mkdtemp()
+        vcf_file = os.path.join(dirname, "data.vcf")
+        opened = []
+        loaded_fields = []
+        builtin_open = open
+        read_vcf = allel.read_vcf
+
+        def open_and_remember(file, *args, **kwargs):
+            if file == vcf_file:
+                opened.append(file)
+            return builtin_open(file, *args, **kwargs)
+
+        def read_vcf_and_remember(*args, **kwargs):
+            vcf_data = read_vcf(*args, **kwargs)
+            loaded_fields.append(sorted(vcf_data.keys()))
+            return vcf_data
+
+        try:
+            shutil.copyfile(VCF_DATA_FEW_CHR, vcf_file)
+            with mock.patch("builtins.open", open_and_remember), \
+                    mock.patch("allel.read_vcf", read_vcf_and_remember):
+                for _ in range(3):
+                    chromosomes = extract_chromosomes_from_vcf(vcf_file)
+                    self.assertEqual(chromosomes, ["1", "2"])
+                    # change of the returned list changes nothing
+                    chromosomes.append("3")
+                self.assertEqual(len(opened), 1)
+
+                # lengths of chromosomes are checked by positions of
+                # variants, genotypes are not needed for it
+                lengths = {"1": 1000000, "2": 1000000}
+                data_holder = VCFDataHolder(
+                    vcf_file=vcf_file,
+                    popmap_file=POP_MAP,
+                    sequence_length=lengths,
+                )
+                self.assertEqual(get_chrom2len(data_holder), lengths)
+                self.assertEqual(loaded_fields,
+                                 [["variants/CHROM", "variants/POS"]])
+
+                # the file is changed, so it is read again
+                shutil.copyfile(VCF_DATA_LD, vcf_file)
+                n_opened = len(opened)
+                for _ in range(3):
+                    self.assertEqual(extract_chromosomes_from_vcf(vcf_file),
+                                     ["1"])
+                self.assertEqual(len(opened), n_opened + 1)
         finally:
             shutil.rmtree(dirname)
 

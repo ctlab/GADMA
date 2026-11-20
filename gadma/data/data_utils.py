@@ -1,4 +1,5 @@
 import re
+import gzip
 import warnings
 import os
 from .data import VCFDataHolder
@@ -190,21 +191,53 @@ def check_and_return_projections_and_labels(data_holder, verbose=False):
 
 
 # utils for moments ld
+
+# Chromosomes of VCF files that were already read:
+# {path: ((size of file, time of its last change), chromosomes)}
+_chromosomes_of_vcf = {}
+
+
 def extract_chromosomes_from_vcf(vcf_filename):
     """
     We read VCF and extract chromosomes presented there.
+
+    Only the first column of the file is read. Chromosomes are remembered
+    for the file, so it is read only once: next calls for the same file
+    return them without reading until the file is changed.
     """
-    import allel
-    read_vcf = allel.read_vcf(vcf_filename)
-    return sorted(list(set(read_vcf['variants/CHROM'])))
+    path = os.path.abspath(vcf_filename)
+    stat = os.stat(path)
+    file_stat = (stat.st_size, stat.st_mtime_ns)
+    saved = _chromosomes_of_vcf.get(path)
+    if saved is None or saved[0] != file_stat:
+        chromosomes = set()
+        # VCF file could be compressed
+        open_vcf = gzip.open if path.endswith("gz") else open
+        with open_vcf(path, "rb") as fl:
+            for line in fl:
+                # skip header
+                if line.startswith(b"#"):
+                    continue
+                # chromosome is the first column, empty lines are skipped
+                chrom = line.split(b"\t", 1)[0].strip()
+                if len(chrom) > 0:
+                    chromosomes.add(chrom)
+        if len(chromosomes) == 0:
+            raise ValueError("There are no variants in VCF file "
+                             f"{vcf_filename}")
+        chromosomes = sorted(chrom.decode() for chrom in chromosomes)
+        saved = (file_stat, chromosomes)
+        _chromosomes_of_vcf[path] = saved
+    return list(saved[1])
 
 
 def get_chrom2len(data_holder):
     import allel
     vcf_file = data_holder.filename
 
-    # Read VCF
-    read_vcf = allel.read_vcf(vcf_file)
+    # Read VCF, only chromosomes and positions are needed
+    read_vcf = allel.read_vcf(vcf_file,
+                              fields=["variants/CHROM", "variants/POS"])
     # get list of chromosomes
     chromosome_names = extract_chromosomes_from_vcf(vcf_file)
 
