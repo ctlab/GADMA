@@ -223,6 +223,56 @@ class TestConfidenceIntervals(unittest.TestCase):
                 finally:
                     shutil.rmtree(output_dir)
 
+    def test_message_about_normality(self):
+        """
+        Message about normality corresponds to the result of the test: data
+        looks normal if normality is not rejected (p-value is not small) and
+        it does not look normal if normality is rejected.
+        """
+        import contextlib
+        import io
+        import tempfile
+        import numpy as np
+        import pandas as pd
+        from scipy import stats
+
+        # Quantiles of normal distribution is a sample that is normal for
+        # sure, its exponent is log-normal and exponent of the exponent is
+        # neither normal nor log-normal.
+        size = 100
+        sample = stats.norm.ppf((np.arange(size) + 0.5) / size)
+        table = pd.DataFrame({
+            "normal": 10 + sample,
+            "lognormal": np.exp(sample),
+            "neither": np.exp(np.exp(sample)),
+        })
+        looks = "data looks {} (fail to reject H0)"
+        does_not_look = "data does not look {} (reject H0)"
+        # arguments, message for each column
+        cases = [
+            ([], {"normal": looks.format("normal"),
+                  "lognormal": does_not_look.format("normal"),
+                  "neither": does_not_look.format("normal")}),
+            (["--log"], {"lognormal": looks.format("log-normal"),
+                         "neither": does_not_look.format("log-normal")}),
+        ]
+        dirname = tempfile.mkdtemp()
+        try:
+            filename = os.path.join(dirname, "result_table.csv")
+            table.to_csv(filename)
+            for args, messages in cases:
+                sys.argv = ["gadma-get_confidence_intervals", filename] + args
+                output = io.StringIO()
+                with contextlib.redirect_stdout(output):
+                    gadma.get_confidence_intervals.main()
+                lines = {line.split(":")[0]: line
+                         for line in output.getvalue().strip().split("\n")}
+                for name, message in messages.items():
+                    self.assertTrue(message in lines[name],
+                                    msg=f"{args}: {lines[name]}")
+        finally:
+            shutil.rmtree(dirname)
+
     def test_missed_lines_and_failures(self):
         load_parameters_from_python_file(None)
         not_valid_file = os.path.join(DATA_DIR, 'params_file')

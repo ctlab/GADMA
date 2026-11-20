@@ -51,8 +51,10 @@ def main():
         if args.log:
             low = np.exp(low)
             upp = np.exp(upp)
+        # H0 of the test is that data is normal, it is rejected if p-value
+        # is small
         k2, p = stats.normaltest(x)
-        if p < 0.05:
+        if p >= 0.05:
             normtest_str = 'data looks '
             if args.log:
                 normtest_str += 'log-normal (fail to reject H0)'
