@@ -11,6 +11,7 @@ import sys
 from datetime import datetime
 import multiprocessing
 from multiprocessing import Pool
+import signal
 import time
 import traceback
 
@@ -44,6 +45,42 @@ def job(index, shared_dict, settings):
               f"{bcolors.ENDC}", file=sys.stderr)
         print(traceback.format_exc(), file=sys.stderr)
         raise e
+
+
+def get_failed_processes(processes):
+    """
+    Remembers child processes that are alive now and returns those of all
+    remembered processes that have stopped with an error. It happens, for
+    example, when the system kills the process as there is not enough memory.
+    Pool of processes does not notice it: it starts new process instead of
+    the stopped one, but the run is lost and its result is never ready.
+
+    :param processes: Child processes that were remembered before. New ones
+                      are added to it.
+    :type processes: set
+    """
+    processes.update(multiprocessing.active_children())
+    failed = []
+    for process in processes:
+        try:
+            exitcode = process.exitcode
+        except ValueError:  # process object is closed
+            continue
+        if exitcode is not None and exitcode != 0:
+            failed.append(process)
+    return sorted(failed, key=lambda process: process.pid)
+
+
+def exitcode_to_str(exitcode):
+    """
+    Returns description of exit code of the process.
+    """
+    if exitcode < 0:
+        try:
+            return f"killed by signal {signal.Signals(-exitcode).name}"
+        except ValueError:
+            return f"killed by signal {-exitcode}"
+    return f"exit code {exitcode}"
 
 
 def main():
@@ -126,6 +163,11 @@ def main():
 
         pool.close()
 
+        # We remember processes of the pool to check that they are not
+        # stopped by somebody else
+        processes = set()
+        get_failed_processes(processes)
+
         check_time = time.time()
         time_diff = 60 * settings_storage.time_to_print_summary
         time_bias = 0
@@ -150,6 +192,23 @@ def main():
                     sys.exit(1)
             if all_finished:
                 break
+            failed_processes = get_failed_processes(processes)
+            if len(failed_processes) > 0:
+                pool.terminate()
+                print(f"{bcolors.FAIL}Main run failed as its process was "
+                      f"stopped:{bcolors.ENDC}", file=sys.stderr)
+                for process in failed_processes:
+                    print(f"{process.name} (pid {process.pid}): "
+                          f"{exitcode_to_str(process.exitcode)}",
+                          file=sys.stderr)
+                print("The run that was in this process is lost. Usually the "
+                      "system kills a process when there is not enough "
+                      "memory. One can continue with --resume option.",
+                      file=sys.stderr)
+                print(SUPPORT_STRING)
+                sys.stdout = saved_stdout
+                sys.stderr = saved_stderr
+                sys.exit(1)
             if (time.time() - check_time) >= time_diff:
                 check_time = time.time()
                 print_runs_summary(start_time, shared_dict, settings_storage)

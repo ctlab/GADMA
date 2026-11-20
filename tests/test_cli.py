@@ -763,6 +763,90 @@ class TestCLI(unittest.TestCase):
             core.CoreRun = core_run_cls
             set_options(defaults)
 
+    def test_run_with_killed_process(self):
+        """
+        Main process stops with an error when the process of some run is
+        killed, for example, by the system when there is not enough memory.
+        Pool of processes waits for the result of such run forever.
+        """
+        import signal
+        import subprocess
+        import tempfile
+        import time
+        if not hasattr(signal, "SIGKILL") or not hasattr(os, "killpg"):
+            self.skipTest("Process could not be killed in this system.")
+        dirname = tempfile.mkdtemp()
+        model_file = os.path.join(dirname, "model.py")
+        params_file = os.path.join(dirname, "params")
+        err_filename = os.path.join(dirname, "stderr")
+        with open(model_file, "w") as fl:
+            fl.write(
+                "import os\n"
+                "import signal\n"
+                "import multiprocessing\n"
+                "import moments\n"
+                "\n\n"
+                "def model_func(params, ns):\n"
+                "    nuB, nuF, TB, TF = params\n"
+                "    # process of the run is killed at the first evaluation\n"
+                "    name = multiprocessing.current_process().name\n"
+                "    if name != 'MainProcess':\n"
+                "        os.kill(os.getpid(), signal.SIGKILL)\n"
+                "    sts = moments.LinearSystem_1D.steady_state_1D(ns[0])\n"
+                "    fs = moments.Spectrum(sts)\n"
+                "    fs.integrate(tf=TB, Npop=[nuB])\n"
+                "    fs.integrate(tf=TF, Npop=[nuF])\n"
+                "    return fs\n"
+            )
+        data_file = os.path.join(DATA_PATH, "DATA", "sfs", "small_1pop.fs")
+        with open(params_file, "w") as fl:
+            fl.write(f"Input data: {data_file}\n"
+                     f"Output directory: {os.path.join(dirname, 'out')}\n"
+                     "Engine: moments\n"
+                     f"Custom filename: {model_file}\n"
+                     "Number of repeats: 2\n"
+                     "Number of processes: 2\n"
+                     "Silence: True\n")
+        code = ("import sys\n"
+                "from gadma.core import main\n"
+                f"sys.argv = ['gadma', '-p', {params_file!r}]\n"
+                "main()\n")
+        env = dict(os.environ)
+        repo_dir = os.path.dirname(os.path.dirname(gadma.__file__))
+        env["PYTHONPATH"] = os.pathsep.join(
+            [repo_dir] + [el for el in [env.get("PYTHONPATH")] if el])
+        try:
+            with open(err_filename, "w") as err_file:
+                # all processes of the run are in one group to stop them
+                # together
+                proc = subprocess.Popen(
+                    [sys.executable, "-c", code], stdout=subprocess.DEVNULL,
+                    stderr=err_file, env=env, start_new_session=True
+                )
+                try:
+                    returncode = proc.wait(timeout=600)
+                except subprocess.TimeoutExpired:
+                    returncode = None
+                finally:
+                    # pool could start new processes instead of the stopped
+                    # ones, so we stop the group until it is empty
+                    for _ in range(100):
+                        try:
+                            os.killpg(proc.pid, signal.SIGKILL)
+                        except OSError:
+                            break
+                        time.sleep(0.1)
+                    proc.wait()
+            with open(err_filename) as fl:
+                err = fl.read()
+            self.assertIsNotNone(
+                returncode, msg="Main process waits for the killed run.")
+            self.assertEqual(returncode, 1, msg=err[-2000:])
+            self.assertTrue("killed by signal SIGKILL" in err,
+                            msg=err[-2000:])
+        finally:
+            shutil.rmtree(dirname)
+
     def test_bounds_of_split_time_in_settings(self):
         """
         Bounds of split times could be used for the model with structure
