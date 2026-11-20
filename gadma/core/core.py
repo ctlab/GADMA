@@ -211,15 +211,7 @@ def main():
                 sys.exit(1)
             if (time.time() - check_time) >= time_diff:
                 check_time = time.time()
-                # Summary is a report only, runs go on if it fails
-                try:
-                    print_runs_summary(start_time, shared_dict,
-                                       settings_storage)
-                except Exception:
-                    print(f"{bcolors.WARNING}Failed to print summary of the "
-                          f"runs due to following exception:{bcolors.ENDC}",
-                          file=sys.stderr)
-                    print(traceback.format_exc(), file=sys.stderr)
+                print_runs_summary(start_time, shared_dict, settings_storage)
                 time_bias = time.time() - check_time
                 time_bias %= get_time
 

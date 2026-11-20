@@ -938,51 +938,6 @@ class TestCLI(unittest.TestCase):
         finally:
             shutil.rmtree(dirname)
 
-    def test_run_when_summary_fails(self):
-        """
-        Runs are not stopped when the summary of the runs could not be
-        printed during them.
-        """
-        import tempfile
-        from unittest import mock
-        from gadma.core import core
-        dirname = tempfile.mkdtemp()
-        params_file = os.path.join(dirname, "params")
-        data_file = os.path.join(DATA_PATH, "DATA", "sfs", "small_1pop.fs")
-        with open(params_file, "w") as fl:
-            fl.write(f"Input data: {data_file}\n"
-                     f"Output directory: {os.path.join(dirname, 'out')}\n"
-                     "Engine: moments\n"
-                     "Initial structure: 1\n"
-                     "Final structure: 1\n"
-                     "Time to print summary: 0.02\n"
-                     "global_maxiter: 1\n"
-                     "local_maxiter: 1\n"
-                     "Silence: True\n")
-        calls = []
-        original_summary = core.print_runs_summary
-
-        def summary(*args, **kwargs):
-            calls.append(1)
-            if len(calls) == 1:
-                raise RuntimeError("Summary could not be printed")
-            return original_summary(*args, **kwargs)
-
-        sys.argv = ['gadma', '-p', params_file]
-        try:
-            with mock.patch.object(core, "print_runs_summary",
-                                   side_effect=summary):
-                core.main()
-            # the first summary was during the run and the last is final
-            self.assertTrue(len(calls) > 1)
-            log_file = os.path.join(dirname, "out", "GADMA.log")
-            with open(log_file) as fl:
-                log = fl.read()
-            self.assertTrue("Summary could not be printed" in log)
-            self.assertTrue("Finish pipeline" in log)
-        finally:
-            shutil.rmtree(dirname)
-
     def test_bounds_of_split_time_in_settings(self):
         """
         Bounds of split times could be used for the model with structure
