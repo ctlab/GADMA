@@ -339,10 +339,15 @@ def print_runs_summary(start_time, shared_dict, settings):
                 if not engine.model.has_anc_size and Nanc is not None:
                     model_str += f" [Nanc = {int(Nanc)}] "
                 # In some cases dadi and moments fail to generate SFS
-                # and Nanc size become <0. In that case we ignore such
-                # solutions (ll is None) and do not translate values
-                if engine.id in ['dadi', 'moments'] and Nanc < 0:
-                    model_str += "[WARNING Nanc < 0!]"
+                # and Nanc size is unknown or become <0. In that case we
+                # ignore such solutions (ll is None) and do not translate
+                # values
+                if (engine.id in ['dadi', 'moments'] and
+                        (Nanc is None or Nanc < 0)):
+                    if Nanc is None:
+                        model_str += "[WARNING Nanc is unknown!]"
+                    else:
+                        model_str += "[WARNING Nanc < 0!]"
                     x_translated = x
                     units = "genetic"
                 else:

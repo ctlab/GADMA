@@ -186,7 +186,7 @@ class DadiEngine(DadiOrMomentsEngine):
                 raise e
             # We should write None for theta if we failed to evaluate
             key = self._get_key(values, pts)
-            self.saved_add_info[key] = None
+            self.saved_add_info[key] = {"theta": None, "failed_f": 1.}
             return None
 
     def generate_code(self, values, filename, pts,

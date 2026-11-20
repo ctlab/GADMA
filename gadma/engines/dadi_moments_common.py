@@ -56,6 +56,15 @@ class DadiOrMomentsEngine(Engine):
         else:
             assert isinstance(data_holder, VCFDataHolder)
             data = read_vcf_data(cls.base_module, data_holder)
+        # Model could not be compared with the data that has no entries:
+        # evaluation of log-likelihood fails for any values of parameters
+        is_not_masked = np.logical_not(np.ma.getmaskarray(data))
+        if np.sum(data.data[is_not_masked]) <= 0:
+            raise ValueError(
+                f"There is nothing to work with in the SFS data "
+                f"({data_holder.filename}): all its entries are masked or "
+                f"equal to zero."
+            )
         return data
 
     def update_data_holder_with_inner_data(self):

@@ -490,6 +490,46 @@ def get_settings_test():
     return settings, args
 
 
+class TestSFSWithoutData(unittest.TestCase):
+    def test_sfs_without_entries(self):
+        """
+        SFS data that has nothing to compare with a model is not read:
+        log-likelihood could not be evaluated for it for any model.
+        """
+        import tempfile
+        dirname = tempfile.mkdtemp()
+        try:
+            for engine in all_engines():
+                if engine.id not in ["dadi", "moments"]:
+                    continue
+                spectrum_cls = engine.base_module.Spectrum
+                values = np.arange(1, 26, dtype=float).reshape(5, 5)
+                # usual data
+                good_file = os.path.join(dirname, "good.fs")
+                spectrum_cls(values).to_file(good_file)
+                data = engine.read_data(SFSDataHolder(good_file))
+                self.assertTrue(data.sum() > 0)
+                # all entries are equal to zero
+                zeros_file = os.path.join(dirname, "zeros.fs")
+                spectrum_cls(np.zeros((5, 5))).to_file(zeros_file)
+                # there are values in the masked corners only
+                corners_file = os.path.join(dirname, "corners.fs")
+                corners = np.zeros((5, 5))
+                corners[0, 0], corners[4, 4] = 1000, 50
+                spectrum_cls(corners).to_file(corners_file)
+                # all entries are masked
+                masked_file = os.path.join(dirname, "masked.fs")
+                spectrum = spectrum_cls(values)
+                spectrum.mask[:] = True
+                spectrum.to_file(masked_file)
+                for filename in [zeros_file, corners_file, masked_file]:
+                    with self.assertRaises(ValueError,
+                                           msg=f"{engine.id}: {filename}"):
+                        engine.read_data(SFSDataHolder(filename))
+        finally:
+            shutil.rmtree(dirname)
+
+
 class TestSettingStorageLDStats(unittest.TestCase):
     def tearDown(self):
         if Path(f"{TEST_OUTPUT}/_bed_files/").exists():

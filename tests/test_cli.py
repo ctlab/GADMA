@@ -847,6 +847,142 @@ class TestCLI(unittest.TestCase):
         finally:
             shutil.rmtree(dirname)
 
+    def test_summary_with_failed_evaluation(self):
+        """
+        Summary of the runs is printed when the best point of some run is
+        the point where evaluation of log-likelihood failed.
+        """
+        import contextlib
+        import io
+        import tempfile
+        from datetime import datetime
+        from unittest import mock
+        from gadma.core import print_runs_summary
+        from gadma.engines.dadi_moments_common import DadiOrMomentsEngine
+        dirname = tempfile.mkdtemp()
+
+        def get_summary(settings, models):
+            """Returns lines of summary for the best models of the runs."""
+            shared_dict = SharedDictForCoreRun(multiprocessing=False)
+            for i, model in enumerate(models):
+                shared_dict._put_new_model_for_process(
+                    i + 1, "log-likelihood", model)
+            stream = io.StringIO()
+            with contextlib.redirect_stdout(stream):
+                print_runs_summary(datetime.now(), shared_dict, settings)
+            return stream.getvalue().split("\n")
+
+        try:
+            for engine_id in ["moments", "dadi"]:
+                settings = SettingsStorage()
+                settings.output_directory = os.path.join(dirname, engine_id)
+                settings.input_data = os.path.join(DATA_PATH, "DATA", "sfs",
+                                                   "YRI_CEU.fs")
+                settings.projections = [4, 4]
+                settings.engine = engine_id
+                settings.initial_structure = [1, 1]
+                settings.final_structure = [1, 1]
+                # values could be translated to physical units
+                settings.mutation_rate = 1.25e-8
+                settings.sequence_length = 4.04e6
+                settings.read_data()
+                engine = get_engine(engine_id)
+                engine.set_data(settings.inner_data)
+                engine.data_holder = settings.data_holder
+                engine.set_model(settings.get_model())
+                args = settings.get_engine_args()
+
+                def get_x():
+                    return [var.resample() for var in engine.model.variables]
+
+                # usual best point of a run
+                y = None
+                while y is None:
+                    x = get_x()
+                    y = engine.evaluate(x, *args)
+                good_model = (engine, x, {"log-likelihood": y})
+
+                # 1. numerics of engine failed for all entries of SFS
+                x = get_x()
+                original_simulate = engine.simulate
+
+                def masked_simulate(*args, **kwargs):
+                    sfs = original_simulate(*args, **kwargs)
+                    sfs.mask[:] = True
+                    return sfs
+
+                with mock.patch.object(engine, "simulate",
+                                       side_effect=masked_simulate):
+                    self.assertIsNone(engine.evaluate(x, *args))
+                failed_models = [(engine, x, {"log-likelihood": -np.inf})]
+                # 2. error that could happen in dadi
+                if engine_id == "dadi":
+                    x = get_x()
+                    error = AttributeError(
+                        "'MaskedArray' object has no attribute 'folded'")
+                    with mock.patch.object(DadiOrMomentsEngine, "evaluate",
+                                           side_effect=error):
+                        self.assertIsNone(engine.evaluate(x, *args))
+                    self.assertIsNone(engine.get_theta(x, *args))
+                    failed_models.append(
+                        (engine, x, {"log-likelihood": -np.inf}))
+
+                for failed_model in failed_models:
+                    for models in [[good_model, failed_model],
+                                   [failed_model]]:
+                        lines = get_summary(settings, models)
+                        line = [line for line in lines
+                                if line.startswith(f"Run {len(models)}")]
+                        self.assertEqual(len(line), 1, msg=str(lines))
+                        self.assertTrue("-inf" in line[0], msg=line[0])
+        finally:
+            shutil.rmtree(dirname)
+
+    def test_run_when_summary_fails(self):
+        """
+        Runs are not stopped when the summary of the runs could not be
+        printed during them.
+        """
+        import tempfile
+        from unittest import mock
+        from gadma.core import core
+        dirname = tempfile.mkdtemp()
+        params_file = os.path.join(dirname, "params")
+        data_file = os.path.join(DATA_PATH, "DATA", "sfs", "small_1pop.fs")
+        with open(params_file, "w") as fl:
+            fl.write(f"Input data: {data_file}\n"
+                     f"Output directory: {os.path.join(dirname, 'out')}\n"
+                     "Engine: moments\n"
+                     "Initial structure: 1\n"
+                     "Final structure: 1\n"
+                     "Time to print summary: 0.02\n"
+                     "global_maxiter: 1\n"
+                     "local_maxiter: 1\n"
+                     "Silence: True\n")
+        calls = []
+        original_summary = core.print_runs_summary
+
+        def summary(*args, **kwargs):
+            calls.append(1)
+            if len(calls) == 1:
+                raise RuntimeError("Summary could not be printed")
+            return original_summary(*args, **kwargs)
+
+        sys.argv = ['gadma', '-p', params_file]
+        try:
+            with mock.patch.object(core, "print_runs_summary",
+                                   side_effect=summary):
+                core.main()
+            # the first summary was during the run and the last is final
+            self.assertTrue(len(calls) > 1)
+            log_file = os.path.join(dirname, "out", "GADMA.log")
+            with open(log_file) as fl:
+                log = fl.read()
+            self.assertTrue("Summary could not be printed" in log)
+            self.assertTrue("Finish pipeline" in log)
+        finally:
+            shutil.rmtree(dirname)
+
     def test_bounds_of_split_time_in_settings(self):
         """
         Bounds of split times could be used for the model with structure
