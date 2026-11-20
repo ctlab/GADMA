@@ -225,6 +225,13 @@ class ScipyOptimizer(LocalOptimizer, ContinuousOptimizer):
         """
         Run Scipy optimization.
         """
+        # In case of resume some iterations and evaluations are already
+        # made, so we have what is left of the limits
+        if maxiter is not None:
+            maxiter = max(0, maxiter - max(0, self.run_info.result.n_iter))
+        if maxeval is not None:
+            maxeval = max(0, maxeval - self.run_info.result.n_eval)
+
         x0 = np.array(x0, dtype=np.float64)
         y = f(x0)
         iter_callback(x0, y, [x0], [y])
@@ -413,6 +420,13 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
         # in case of restore something can be already done
         if self.run_info.result.success:
             return self.run_info
+        # Inner optimizer starts from the beginning, so in case of resume
+        # it gets what is left of the limits
+        n_iter_before = max(0, self.run_info.result.n_iter)
+        if maxiter is not None:
+            maxiter = max(0, maxiter - n_iter_before)
+        if maxeval is not None:
+            maxeval = max(0, maxeval - self.run_info.result.n_eval)
         vars_in_opt = copy.deepcopy(variables)
         if isinstance(self.optimizer, UnconstrainedOptimizer):
             for i in range(len(vars_in_opt)):
@@ -431,7 +445,9 @@ class ManuallyConstrOptimizer(LocalOptimizer, ConstrainedOptimizer):
                                                       x)
                                       for x in opt_run_info]
             self.run_info.result.Y = self.optimizer.run_info.result.Y
-            self.run_info.result.n_iter = self.optimizer.run_info.result.n_iter
+            self.run_info.result.n_iter = (
+                n_iter_before + self.optimizer.run_info.result.n_iter
+            )
 
         # Dadi and moments use eps equal to 1e-3. It turned out to be good
         # value. So we want to use it in our optimizers.

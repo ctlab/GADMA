@@ -780,7 +780,15 @@ class GeneticAlgorithm(GlobalOptimizer, ConstrainedOptimizer):
                             # we should be sure about our X_out and Y_out
                             run_info.result.X_out = list(run_info.result.X)
                             run_info.result.Y_out = list(run_info.result.Y)
-                            return run_info
+                            # Other optimizer knows nothing about mutations
+                            # and improvements of genetic algorithm, so it
+                            # starts with initial values of them
+                            ga_run_info = self._create_run_info()
+                            ga_run_info.result = run_info.result
+                            ga_run_info.n_impr_gen = max(
+                                0, run_info.result.n_iter
+                            )
+                            return ga_run_info
         return super(GeneticAlgorithm, self).load(save_file)
 
     def _optimize(self, f, variables, X_init, Y_init, maxiter, maxeval,

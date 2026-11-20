@@ -382,8 +382,14 @@ class Optimizer(object):
                 d = {}
             d[self.id] = copy.copy(info)
             info = d
-        with open(save_file, 'wb') as fl:
+        # Information is written to another file that replaces the old one
+        # afterwards. Otherwise the save file is damaged when the run is
+        # stopped during the writing.
+        dirname, basename = os.path.split(save_file)
+        tmp_file = os.path.join(dirname, "tmp_" + basename)
+        with open(tmp_file, 'wb') as fl:
             pickle.dump(info, fl)
+        os.replace(tmp_file, save_file)
 
     def valid_restore_file(self, save_file):
         """
@@ -556,16 +562,6 @@ class Optimizer(object):
         # prepare variables and transform their domain
         vars_in_opt = self._prepare_variables(variables)
 
-        # Prepare function to use it.
-        # Fix args and cache
-        prepared_f = self._prepare_f_for_opt(
-            f, args, eval_file, maxeval=maxeval
-        )
-        # wrap for automatic transform of x's and multiplication by sign of y's
-        f_in_opt = partial(self.evaluate, prepared_f, vars_in_opt)
-        # Fix linear constrain as extra args
-        f_in_opt = fix_args(f_in_opt, (), linear_constrain)
-
         # Restore run_info
         if restore_file is not None and self.valid_restore_file(restore_file):
             restored_run_info = self.load(restore_file)
@@ -586,6 +582,24 @@ class Optimizer(object):
             self.run_info.result.message += "(RESTORED)"
             # We should save
             self.save(self.run_info, save_file)
+
+        # Evaluations of the run that is resumed are counted, so this run
+        # has what is left of `maxeval`. If only points were restored then
+        # the counter starts from zero.
+        n_eval_before = self.run_info.result.n_eval
+        maxeval_left = maxeval
+        if maxeval is not None:
+            maxeval_left = max(0, maxeval - n_eval_before)
+
+        # Prepare function to use it.
+        # Fix args and cache
+        prepared_f = self._prepare_f_for_opt(
+            f, args, eval_file, maxeval=maxeval_left
+        )
+        # wrap for automatic transform of x's and multiplication by sign of y's
+        f_in_opt = partial(self.evaluate, prepared_f, vars_in_opt)
+        # Fix linear constrain as extra args
+        f_in_opt = fix_args(f_in_opt, (), linear_constrain)
 
         # We believe that optimizer will understand that the run was finished
         # Otherwise there are problems when we want to run additional x iters
@@ -624,7 +638,7 @@ class Optimizer(object):
             if x_best is None or self.sign * y < self.sign * y_best:
                 x_best = x
                 y_best = y
-            n_eval = prepared_f.cache_info.misses
+            n_eval = n_eval_before + prepared_f.cache_info.misses
             self.run_info = self._update_run_info(
                 run_info=self.run_info,
                 x_best=x_best,

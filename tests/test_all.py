@@ -1,4 +1,5 @@
 import unittest
+from unittest import mock
 
 from .test_data import YRI_CEU_DATA
 from .test_cli import get_settings_test, check_output_files
@@ -70,6 +71,161 @@ class TestRestore(unittest.TestCase):
 
         self.assertEqual(res1.y, res3.y, msg=f"{res1}\n{res3}")
         self.assertTrue(res1.y >= res2.y, msg=f"{res1}\n{res2}")
+
+    def test_evaluations_of_resumed_run(self):
+        """
+        Resume of the terminated run continues it: evaluations that were
+        made before are counted and the run has what is left of `maxeval`.
+        If only points of the previous run are restored then evaluations
+        are counted from zero.
+        """
+        class Terminated(Exception):
+            pass
+
+        def get_f_and_calls():
+            calls = []
+
+            def f(x):
+                calls.append(x)
+                return rosenbrock(x)
+            return f, calls
+
+        # positive domain because we check log scaling optimizations too
+        variables = [ContinuousVariable('var1', [0.1, 20]),
+                     ContinuousVariable('var2', [0.1, 20])]
+        save_file = "save_file"
+        maxeval = 60
+        optimizers = [(get_global_optimizer("Genetic_algorithm"), {}),
+                      (get_local_optimizer("BFGS_log"), {"x0": [15, 0.5]}),
+                      (get_local_optimizer("L-BFGS-B"), {"x0": [15, 0.5]})]
+        for opt, kwargs in optimizers:
+            # run is terminated after 20 evaluations
+            f, calls = get_f_and_calls()
+
+            def callback(x, y):
+                if len(calls) >= 20:
+                    raise Terminated()
+
+            self.assertRaises(Terminated, opt.optimize, f, variables,
+                              maxeval=maxeval, save_file=save_file,
+                              callback=callback, **kwargs)
+            n_eval = opt.load(save_file).result.n_eval
+            self.assertTrue(0 < n_eval <= len(calls), msg=f"{opt.id}")
+
+            # the run is continued
+            f, calls = get_f_and_calls()
+            res = opt.optimize(f, variables, maxeval=maxeval,
+                               restore_file=save_file, **kwargs)
+            msg = f"{opt.id}: {n_eval} evaluations were saved, "\
+                  f"{len(calls)} new ones, result has {res.n_eval}."
+            self.assertEqual(res.n_eval, n_eval + len(calls), msg=msg)
+            self.assertTrue(res.n_eval <= maxeval, msg=msg)
+            if opt.id == "Genetic_algorithm":
+                self.assertEqual(res.n_eval, maxeval, msg=msg)
+
+            # only points are taken from the previous run
+            f, calls = get_f_and_calls()
+            res = opt.optimize(f, variables, maxeval=maxeval,
+                               restore_file=save_file,
+                               restore_points_only=True, **kwargs)
+            msg = f"{opt.id}: {len(calls)} new evaluations, result has "\
+                  f"{res.n_eval}."
+            self.assertEqual(res.n_eval, len(calls), msg=msg)
+            self.assertTrue(res.n_eval <= maxeval, msg=msg)
+            if opt.id == "Genetic_algorithm":
+                self.assertEqual(res.n_eval, maxeval, msg=msg)
+
+    def test_save_file_after_stop_during_saving(self):
+        """
+        The save file of the previous iteration is kept when the run is
+        stopped during the writing of the new one.
+        """
+        ga = get_global_optimizer("Genetic_algorithm")
+        variables = [ContinuousVariable('var1', [-1, 2]),
+                     ContinuousVariable('var2', [-2, 3])]
+        save_file = "save_file"
+        ga.optimize(rosenbrock, variables, maxiter=3, save_file=save_file)
+        with open(save_file, "rb") as fl:
+            content = fl.read()
+        files_before = set(os.listdir("."))
+
+        def stopped_dump(obj, fl, *args, **kwargs):
+            fl.write(pickle.dumps(obj)[:10])
+            raise KeyboardInterrupt()
+
+        try:
+            with mock.patch("pickle.dump", side_effect=stopped_dump):
+                self.assertRaises(KeyboardInterrupt, ga.save, ga.run_info,
+                                  save_file)
+            with open(save_file, "rb") as fl:
+                self.assertEqual(fl.read(), content)
+            self.assertTrue(ga.valid_restore_file(save_file))
+        finally:
+            for filename in set(os.listdir(".")) - files_before:
+                os.remove(filename)
+
+    def test_ga_restore_after_other_optimizer(self):
+        """
+        Genetic algorithm continues the terminated run of Bayesian
+        optimization: it takes its points and count of evaluations.
+        """
+        import numpy as np
+        from gadma.optimizers import GlobalOptimizer, GeneticAlgorithm
+        from gadma.optimizers import global_optimizer
+        from gadma.optimizers.global_optimizer import \
+            register_global_optimizer
+        from gadma.optimizers.bayesian_optimization import \
+            SMACBOKernelCombination
+        bo_id = "SMAC_BO_combination"
+        self.assertTrue(
+            bo_id in GeneticAlgorithm.ga_could_be_restored_after)
+
+        class BOWithoutSMAC(SMACBOKernelCombination):
+            """Run information is the same and SMAC is not required."""
+            def __init__(self):
+                GlobalOptimizer.__init__(self)
+
+        registered = global_optimizer._registered_global_optimizers
+        is_registered = bo_id in registered
+        if not is_registered:
+            register_global_optimizer(bo_id, BOWithoutSMAC)
+        try:
+            variables = [ContinuousVariable('var1', [-1, 2]),
+                         ContinuousVariable('var2', [-2, 3])]
+            save_file = "save_file"
+            # save file of the terminated run of other optimizer
+            bo = get_global_optimizer(bo_id)
+            X = [[var.resample() for var in variables] for _ in range(20)]
+            Y = [rosenbrock(x) for x in X]
+            run_info = bo.run_info
+            for i in [0, 10]:
+                i_best = int(np.argmin(Y[:i + 10]))
+                run_info = bo._update_run_info(
+                    run_info, x_best=X[i_best], y_best=Y[i_best],
+                    X=X[i: i + 10], Y=Y[i: i + 10], n_eval=10)
+            self.assertFalse(run_info.result.success)
+            bo.save(run_info, save_file)
+
+            calls = []
+
+            def f(x):
+                calls.append(x)
+                return rosenbrock(x)
+
+            ga = get_global_optimizer("Genetic_algorithm")
+            self.assertTrue(ga.valid_restore_file(save_file))
+            maxeval = 60
+            res = ga.optimize(f, variables, maxeval=maxeval,
+                              restore_file=save_file, save_file=save_file)
+            self.assertEqual(len(calls), maxeval - 20)
+            self.assertEqual(res.n_eval, maxeval)
+            self.assertTrue(res.y <= min(Y))
+            # the next resume is the usual resume of genetic algorithm
+            self.assertTrue(ga.valid_restore_file(save_file))
+            self.assertEqual(ga.load(save_file).result.n_eval, maxeval)
+        finally:
+            if not is_registered:
+                del registered[bo_id]
 
 #    def test_bo_restore(self):
 #        bo = get_global_optimizer("GPyOpt_Bayesian_optimization")

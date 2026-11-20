@@ -599,6 +599,15 @@ class CoreRun(object):
                 only_models.append(False)
                 if not gs or not ls:
                     some_file_not_valid = True
+                # There is something in the file but it is not the run of
+                # our optimizer. Empty file means that nothing was saved.
+                if not gs and os.path.getsize(restore_files[i]) > 0:
+                    warnings.warn(
+                        f"Optimization could not be restored from the file "
+                        f"{restore_files[i]}: it is damaged or it was saved "
+                        f"by another optimizer. Optimization for it will be "
+                        f"run from the beginning."
+                    )
             # If we resume run and want to take models only
             # we need one additional round of optimization.
             # We will retore previous run (or finish it) and then use
