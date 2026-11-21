@@ -415,6 +415,15 @@ def ensure_dir_existence(path_to_dir, check_emptiness=False):
     return dirname
 
 
+def get_files_of_directory(dirname):
+    """
+    Returns sorted names of files of the directory. Hidden files (e.g.
+    `.DS_Store`) are not taken.
+    """
+    return sorted(name for name in os.listdir(dirname)
+                  if not name.startswith("."))
+
+
 def module_name_from_path(path):
     """
     Returns name for module that will be imported from given path.

@@ -3,7 +3,7 @@ import gzip
 import warnings
 import os
 from .data import VCFDataHolder
-from ..utils import ensure_dir_existence
+from ..utils import ensure_dir_existence, get_files_of_directory
 
 
 # function for working with VCF files
@@ -16,13 +16,16 @@ def is_vcf_file(filename):
     return name.endswith(".vcf") or name.endswith(".vcf.gz")
 
 
-def open_vcf(vcf_file):
+def open_vcf(vcf_file, binary=False):
     """
     Opens VCF file to read its lines. The file could be compressed (`.gz`).
+
+    :param binary: If True then lines are read as bytes.
     """
+    mode = "rb" if binary else "rt"
     if vcf_file.endswith(".gz"):
-        return gzip.open(vcf_file, 'rt')
-    return open(vcf_file, 'r')
+        return gzip.open(vcf_file, mode)
+    return open(vcf_file, mode)
 
 
 def ploidy_from_vcf(path):
@@ -97,6 +100,24 @@ def read_popinfo(popinfo_file):
             if pop not in populations:
                 populations.append(pop)
     return sample2pop, populations
+
+
+def check_popmap_for_moments_ld(popmap_file):
+    """
+    Checks that popmap file could be read by moments.LD: it takes names of
+    its columns from the first line of the file and needs columns `sample`
+    and `pop`.
+    """
+    with open(popmap_file) as fl:
+        for line in fl:
+            if len(line.strip()) == 0:
+                continue
+            if "sample" in line.split() and "pop" in line.split():
+                return
+            break
+    raise ValueError(f"Popmap file {popmap_file} could not be used for "
+                     "momentsLD: its first line should have names of the "
+                     "columns `sample` and `pop`, for example: sample\tpop")
 
 
 def get_empty_lines_of_popmap(popinfo_file):
@@ -303,9 +324,8 @@ def extract_chromosomes_from_vcf(vcf_filename):
     saved = _chromosomes_of_vcf.get(path)
     if saved is None or saved[0] != file_stat:
         chromosomes = set()
-        # VCF file could be compressed
-        open_vcf = gzip.open if path.endswith("gz") else open
-        with open_vcf(path, "rb") as fl:
+        # bytes are read as it is faster
+        with open_vcf(path, binary=True) as fl:
             for line in fl:
                 # skip header
                 if line.startswith(b"#"):
@@ -431,3 +451,52 @@ def create_recombination_maps_from_rate(
             f.write(f"Pos\t{chrom}\n")
             f.write("0\t0\n")
             f.write(f"{chrom2len[chrom]}\t{rec_dist}\n")
+
+
+def extract_rec_map_name_and_extension(rec_map):
+    rec_map_name, extension = os.path.splitext(rec_map)
+    extension = extension[1:]
+    rec_map_name = "_".join(rec_map_name.split('_')[:-1])
+    return rec_map_name, extension
+
+
+def get_chromosome_of_bed_file(bed_file):
+    """
+    Returns name of chromosome of the region in bed file: it is the first
+    column of the file. Name of chromosome is not taken from the name of
+    the file as it could have any symbols, e.g. `_`.
+    """
+    with open(bed_file) as fl:
+        for line in fl:
+            if len(line.strip()) > 0:
+                return line.split()[0]
+    raise ValueError(f"There are no regions in bed file {bed_file}")
+
+
+def get_rec_map_file(rec_maps_dir, chrom):
+    """
+    Returns file with recombination map for chromosome `chrom` from the
+    directory with maps.
+
+    If there is one file in the directory then it has maps for all
+    chromosomes. Otherwise each chromosome has its file with the name
+    `<name>_<chromosome>.<extension>`. Name of chromosome could have any
+    symbols, e.g. `_` and `.`.
+    """
+    files = get_files_of_directory(rec_maps_dir)
+    if len(files) == 1:
+        return os.path.join(rec_maps_dir, files[0])
+    found = []
+    for name in files:
+        name_without_ext = os.path.splitext(name)[0]
+        if (name_without_ext == chrom or
+                name_without_ext.endswith("_" + chrom)):
+            found.append(name)
+    if len(found) == 0:
+        raise ValueError(f"There is no recombination map for chromosome "
+                         f"{chrom} in {rec_maps_dir}. Name of its file "
+                         f"should be like `rec_map_{chrom}.txt`, files of "
+                         f"the directory: {files}")
+    # e.g. files map_1.txt and map_chr_1.txt fit to chromosome `1`, but the
+    # second one is for chromosome `chr_1`
+    return os.path.join(rec_maps_dir, min(found, key=len))

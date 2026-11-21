@@ -1,13 +1,13 @@
 from ..models import CustomDemographicModel, EpochDemographicModel, \
-    Epoch, Split, BinaryOperation
-from ..utils import DiscreteVariable, DynamicVariable, Variable
-from .dadi_generator import FUNCTION_NAME, _print_p0, _print_main, \
-                            _print_load_data, _print_bounds, \
-                            _print_unpacking_of_params
-import numpy as np
+    Epoch, Split
+from ..utils import DiscreteVariable
+from .dadi_generator import _print_p0, _print_main, _print_load_data, \
+    _print_bounds
+from .generator import FUNCTION_NAME, _value_to_code, _read_fs_or_none, \
+    _get_variables_of_function, _print_unpacking_of_params, \
+    _print_custom_model_import, _print_size_functions, \
+    _print_integration_kwargs
 import copy
-import os
-import inspect
 
 
 def _print_moments_func(model, values, dt_fac):
@@ -22,28 +22,14 @@ def _print_moments_func(model, values, dt_fac):
     from ..engines import MomentsEngine  # to avoid cross import
 
     if isinstance(model, CustomDemographicModel):
-        # the module of the function could be not among loaded modules,
-        # e.g. in the process of a run, so file is taken from the function
-        path_repr = repr(os.path.abspath(inspect.getfile(model.function)))
-        ret_str = "import importlib.util\n\n"
-        ret_str += "spec = importlib.util.spec_from_file_location('module', "\
-                   f"{path_repr})\n"
-        ret_str += "module = importlib.util.module_from_spec(spec)\n"
-        ret_str += "spec.loader.exec_module(module)\n"
-        ret_str += f"{FUNCTION_NAME} = module.model_func\n\n"
-        return ret_str
+        return _print_custom_model_import(model)
 
     assert isinstance(model, EpochDemographicModel)
 
     var2value = model.var2value(values)  # OrderedDict
 
-    f_vars = [x for x in model.variables
-              if not isinstance(x, DiscreteVariable)]
-    if model.has_anc_size:
-        if isinstance(model.Nanc_size, Variable):
-            f_vars.pop(f_vars.index(model.Nanc_size))
     ret_str = f"def {FUNCTION_NAME}(params, ns):\n"
-    ret_str += _print_unpacking_of_params(f_vars)
+    ret_str += _print_unpacking_of_params(_get_variables_of_function(model))
     # Not very good solution !
     if not model.has_anc_size:
         ret_str += "\t_Nanc_size"
@@ -67,79 +53,14 @@ def _print_moments_func(model, values, dt_fac):
 
     for ind, event in enumerate(model.events):
         if event.__class__ is Epoch:
-            all_sudden = True
-            func_names = []
-            if event.dyn_args is not None:
-                for i in range(event.n_pop):
-                    dyn_arg = event.dyn_args[i]
-                    value = var2value.get(dyn_arg, dyn_arg)
-                    if value != 'Sud':
-                        all_sudden = False
-                        func = DynamicVariable._help_dict[value]
-                        y1 = event.init_size_args[i]
-                        y2 = event.size_args[i]
-                        x_diff = event.time_arg
-                        if isinstance(y1, Variable):
-                            y1 = y1.name
-                        elif isinstance(y1, BinaryOperation):
-                            y1 = f"({y1.name})"
-                        if isinstance(y2, Variable):
-                            y2 = y2.name
-                        elif isinstance(y2, BinaryOperation):
-                            y2 = f"({y2.name})"
-                        if isinstance(x_diff, Variable):
-                            x_diff = x_diff.name
-                        elif isinstance(x_diff, BinaryOperation):
-                            x_diff = f"({x_diff.name})"
-                        funcstr = func.func_str(y1, y2, x_diff)
-                        ret_str += "\tnu%d_func = %s\n" % (i+1, funcstr)
-                        func_names.append("nu%d_func" % (i+1))
+            funcs_str, func_names = _print_size_functions(event, var2value,
+                                                          indent="\t")
+            ret_str += funcs_str
             kwargs_with_vars = MomentsEngine._get_kwargs(event, var2value)
-            kwargs = {}
-            for x, y in kwargs_with_vars.items():
-                if isinstance(y, np.ndarray):  # migration
-                    rows = []
-                    for i in range(y.shape[0]):
-                        elems = []
-                        for j in range(y.shape[1]):
-                            if i == j:
-                                elems.append("0")
-                                continue
-                            yel = y[i][j]
-                            if isinstance(yel, Variable):
-                                elems.append(yel.name)
-                            else:
-                                elems.append(str(yel))
-                        rows.append(f"[{', '.join(elems)}]")
-                    ret_str += f"\tmigs = np.array([{', '.join(rows)}])\n"
-                    kwargs[x] = 'migs'
-                elif isinstance(y, list):  # pop. sizes, selection, dynamics
-                    varnames = [var.name
-                                if isinstance(var, (Variable,
-                                                    BinaryOperation))
-                                else str(var) for var in y]
-                    if x == 'Npop':  # pop size
-                        if all_sudden:
-                            kwargs[x] = f"[{', '.join(varnames)}]"
-                        else:
-                            strs = []
-                            for y1 in y:
-                                if isinstance(y1, (Variable,
-                                                   BinaryOperation)):
-                                    strs.append(y1.name)
-                                else:
-                                    if y1 in func_names:
-                                        strs.append(y1 + "(t)")
-                                    else:
-                                        strs.append(str(y1))
-                            kwargs[x] = f"lambda t: [{', '.join(strs)}]"
-                    else:
-                        kwargs[x] = f"[{','.join(varnames)}]"
-                else:  # time
-                    kwargs[x] = y.name if isinstance(
-                        y, (Variable, BinaryOperation)) else y
-
-            kwargs = [f"{key}={value}" for key, value in kwargs.items()]
+            migs_str, kwargs = _print_integration_kwargs(
+                kwargs_with_vars, size_key="Npop", func_names=func_names,
+                indent="\t")
+            ret_str += migs_str
             ret_str += f"\tfs.integrate({', '.join(kwargs)}, "\
                        f"dt_fac={dt_fac})\n"
         elif event.__class__ is Split:
@@ -161,24 +82,8 @@ def _print_moments_func(model, values, dt_fac):
     return ret_str
 
 
-def _is_fs_via_moments(data_holder):
-    """
-    Check that data is allele frequency spectrum saved for moments.
-
-    :param data_holder: Data holder with data.
-    :type data_holder: :class:`gadma.data.data_holder.DataHolder`
-    """
-
-    import moments
-    try:
-        data = moments.Spectrum.from_file(data_holder.filename)
-        return data
-    except Exception:
-        return None
-
-
 def _print_moments_load_data(data_holder):
-    is_fs = _is_fs_via_moments(data_holder)
+    is_fs = _read_fs_or_none("moments", data_holder)
     return _print_load_data(data_holder, is_fs, mode='moments')
 
 
@@ -213,7 +118,8 @@ def _print_model_plotting(engine, nanc, gen_time, gen_time_units):
     ret_str += f"                             save_file='{filename}',\n"
     ret_str += f"                             fig_title='{fig_title}',\n"
     ret_str += f"                             draw_scale={draw_scale},\n"
-    ret_str += f"                             pop_labels={pop_ids},\n"
+    ret_str += "                             pop_labels=" \
+               f"{_value_to_code(pop_ids)},\n"
     ret_str += f"                             nref={nanc},\n"
     ret_str += f"                             gen_time={gen_time},\n"
     ret_str += f"                             gen_time_units='{units}',\n"

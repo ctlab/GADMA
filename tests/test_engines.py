@@ -472,6 +472,49 @@ class TestEngines(unittest.TestCase):
             os.chdir(current_dir)
             shutil.rmtree(dirname)
 
+    @pytest.mark.skipif(not gadma.momi_available, reason="No momi2")
+    def test_values_in_generated_code_of_momi(self):
+        """
+        Values are written in generated code of momi2 as code of Python:
+        path of the file is escaped (a quote here, backslashes of paths of
+        Windows) and names of non-ascertained populations are strings.
+        """
+        import tempfile
+        with tempfile.TemporaryDirectory() as dirname:
+            sfs_file = os.path.join(dirname, "it's_YRI_CEU.fs")
+            shutil.copy(os.path.join(DATA_PATH, "DATA", "sfs", "YRI_CEU.fs"),
+                        sfs_file)
+            settings = SettingsStorage()
+            settings.engine = "momi2"
+            settings.input_data = sfs_file
+            settings.non_ascertained_pops = ["CEU"]
+            settings.mutation_rate = 1.25e-8
+            settings.sequence_length = 4.04e6
+            settings.initial_structure = [1, 1]
+            settings.only_sudden = True
+            settings.no_migrations = True
+            settings.ancestral_size_as_parameter = True
+            settings.read_data()
+            model = settings.get_model()
+            x = []
+            for var in model.variables:
+                if var.name == "Nanc":
+                    x.append(10000)
+                else:
+                    x.append(0.2 if var.name.startswith("t") else 1.5)
+            engine = get_engine("momi2")
+            engine.set_data(settings.inner_data)
+            engine.set_model(model)
+            engine.data_holder = settings.data_holder
+            ll_model = engine.evaluate(x)
+            code = engine.generate_code(x, None)
+            # we do not want to draw picture
+            code = code[:code.index("from matplotlib import pyplot")]
+            namespace = {}
+            exec(code, namespace)
+            self.assertTrue(np.isclose(ll_model, namespace["ll_model"]),
+                            msg=f"{ll_model} != {namespace['ll_model']}")
+
     def test_generated_code_with_theta0_and_few_parameters(self):
         """
         Generated code is valid and gives the same likelihood as the engine

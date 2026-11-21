@@ -14,7 +14,8 @@ from ..models import StructureDemographicModel, CustomDemographicModel, \
 from ..optimizers import get_local_optimizer, get_global_optimizer
 from ..optimizers import LinearConstrain
 from ..utils import check_dir_existence, check_file_existence, abspath, \
-    module_name_from_path, custom_generator, ensure_dir_existence
+    module_name_from_path, custom_generator, ensure_dir_existence, \
+    get_files_of_directory
 from ..utils import PopulationSizeVariable, \
     ContinuousVariable, DynamicVariable, GrowthRateVariable, \
     SelectionVariable, FractionVariable, DemographicVariable
@@ -1011,7 +1012,7 @@ class SettingsStorage(object):
         all_boot = []
         set_of_seen_files = set()
         filenames = []
-        for filename in os.listdir(dirname):
+        for filename in get_files_of_directory(dirname):
             filename_without_ext = '.'.join(filename.split('.')[:-1])
             if filename_without_ext in set_of_seen_files:
                 continue

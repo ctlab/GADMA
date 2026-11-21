@@ -20,7 +20,7 @@ from gadma.data.data_utils import create_bed_files_and_extract_chromosomes
 from gadma.data.data_utils import extract_chromosomes_from_vcf, get_chrom2len
 from gadma.precompute_ld_data import main
 from gadma.engines.moments_ld_engine import _read_data_one_job, create_h5_file
-from gadma.engines.moments_ld_engine import extract_rec_map_name_and_extension
+from gadma.data.data_utils import extract_rec_map_name_and_extension
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
 
@@ -444,8 +444,8 @@ class TestMomentsLDData(unittest.TestCase):
         is taken from its bed file and recombination maps are found by the
         names of chromosomes.
         """
-        from gadma.engines.moments_ld_engine import \
-            get_chromosome_of_bed_file, get_rec_map_file
+        from gadma.data.data_utils import get_chromosome_of_bed_file, \
+            get_rec_map_file
         self.assertEqual(extract_rec_map_name_and_extension("map_chr1.1.txt"),
                          ("map", "txt"))
         names = ["chr_1", "chr1.2"]
@@ -521,8 +521,7 @@ class TestMomentsLDData(unittest.TestCase):
         moments.LD takes names of columns of popmap from its first line,
         popmap without them is not used for momentsLD.
         """
-        from gadma.engines.moments_ld_engine import \
-            check_popmap_for_moments_ld
+        from gadma.data.data_utils import check_popmap_for_moments_ld
         with open(POP_MAP) as fl:
             lines = fl.readlines()
         self.assertEqual(lines[0].split(), ["sample", "pop"])

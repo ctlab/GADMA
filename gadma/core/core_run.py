@@ -2,7 +2,7 @@ from ..engines import get_engine
 from ..utils import sort_by_other_list, ensure_dir_existence, \
                     ensure_file_existence, check_file_existence, \
                     check_dir_existence
-from ..utils import WeightedMetaArray
+from ..utils import WeightedMetaArray, get_files_of_directory
 from ..optimizers import GlobalOptimizerAndLocalOptimizer
 from ..utils import get_aic_score, get_claic_score, ident_transform, bcolors
 from ..models import StructureDemographicModel
@@ -322,9 +322,7 @@ class CoreRun(object):
                 engine=self.engine,
                 settings=self.settings,
             )
-            for engine_id in os.listdir(self.code_dir):
-                if engine_id.startswith("."):
-                    continue
+            for engine_id in get_files_of_directory(self.code_dir):
                 engine = get_engine(engine_id)
                 save_file = os.path.join(self.code_dir, engine.id,
                                          filename)

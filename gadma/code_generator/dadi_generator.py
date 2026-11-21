@@ -1,32 +1,12 @@
 from ..models import CustomDemographicModel, EpochDemographicModel, \
     Epoch, Split, BinaryOperation
-from ..utils import Variable, DiscreteVariable, DynamicVariable
+from ..utils import Variable, DiscreteVariable
 from ..data import SFSDataHolder, VCFDataHolder
-import os
+from .generator import FUNCTION_NAME, _value_to_code, _read_fs_or_none, \
+    _get_variables_of_function, _print_unpacking_of_params, \
+    _print_custom_model_import, _print_size_functions
 import copy
-import inspect
 import numpy as np
-
-FUNCTION_NAME = 'model_func'
-
-
-def _print_unpacking_of_params(variables, indent="\t"):
-    """
-    Returns line of code that takes values of `variables` from `params` in
-    the beginning of the function of demographic model.
-
-    The line is empty if there are no variables. For one variable it is
-    `name, = params`, as `name = params` is the whole list and not the value.
-
-    :param variables: Variables which values are parameters of the function.
-    :param indent: Indent of the line.
-    """
-    if len(variables) == 0:
-        return ""
-    names = ", ".join([var.name for var in variables])
-    if len(variables) == 1:
-        names += ","
-    return f"{indent}{names} = params\n"
 
 
 def _print_dadi_func(model, values):
@@ -40,26 +20,14 @@ def _print_dadi_func(model, values):
     """
     from ..engines import DadiEngine  # to avoid cross import
     if isinstance(model, CustomDemographicModel):
-        path_repr = repr(os.path.abspath(inspect.getfile(model.function)))
-        ret_str = "import importlib.util\n\n"
-        ret_str += "spec = importlib.util.spec_from_file_location('module', "\
-                   f"{path_repr})\n"
-        ret_str += "module = importlib.util.module_from_spec(spec)\n"
-        ret_str += "spec.loader.exec_module(module)\n"
-        ret_str += f"{FUNCTION_NAME} = module.model_func\n\n"
-        return ret_str
+        return _print_custom_model_import(model)
 
     assert isinstance(model, EpochDemographicModel)
 
     var2value = model.var2value(values)  # OrderedDict
 
-    f_vars = [x for x in model.variables
-              if not isinstance(x, DiscreteVariable)]
-    if model.has_anc_size:
-        if isinstance(model.Nanc_size, Variable):
-            f_vars.pop(f_vars.index(model.Nanc_size))
     ret_str = f"def {FUNCTION_NAME}(params, ns, pts):\n"
-    ret_str += _print_unpacking_of_params(f_vars)
+    ret_str += _print_unpacking_of_params(_get_variables_of_function(model))
     # Not very good solution !
     if not model.has_anc_size:
         ret_str += "\t_Nanc_size"
@@ -72,29 +40,7 @@ def _print_dadi_func(model, values):
 
     for ind, event in enumerate(model.events):
         if event.__class__ is Epoch:
-            if event.dyn_args is not None:
-                for i in range(event.n_pop):
-                    dyn_arg = event.dyn_args[i]
-                    value = var2value.get(dyn_arg, dyn_arg)
-                    if value != 'Sud':
-                        func = DynamicVariable._help_dict[value]
-                        y1 = event.init_size_args[i]
-                        y2 = event.size_args[i]
-                        x_diff = event.time_arg
-                        if isinstance(y1, Variable):
-                            y1 = y1.name
-                        elif isinstance(y1, BinaryOperation):
-                            y1 = f"({y1.name})"
-                        if isinstance(y2, Variable):
-                            y2 = y2.name
-                        elif isinstance(y2, BinaryOperation):
-                            y2 = f"({y2.name})"
-                        if isinstance(x_diff, Variable):
-                            x_diff = x_diff.name
-                        elif isinstance(x_diff, BinaryOperation):
-                            x_diff = f"({x_diff.name})"
-                        funcstr = func.func_str(y1, y2, x_diff)
-                        ret_str += "\tnu%d_func = %s\n" % (i+1, funcstr)
+            ret_str += _print_size_functions(event, var2value, indent="\t")[0]
             kwargs_with_vars = DadiEngine._get_kwargs(event, var2value)
             str_kwargs = ["%s=%s" % (k, v.name
                                      if isinstance(v, (Variable,
@@ -137,21 +83,6 @@ def _print_dadi_func(model, values):
     return ret_str
 
 
-def _is_fs_via_dadi(data_holder):
-    """
-    Check that data is allele frequency spectrum saved for dadi.
-
-    :param data_holder: Data holder with data.
-    :type data_holder: :class:`gadma.data.data_holder.DataHolder`
-    """
-    import dadi
-    try:
-        data = dadi.Spectrum.from_file(data_holder.filename)
-        return data
-    except Exception:
-        return None
-
-
 def _print_load_data(data_holder, is_fs, mode='dadi'):
     """
     Returns strings for code that loads data for analysis.
@@ -177,8 +108,8 @@ def _print_load_data(data_holder, is_fs, mode='dadi'):
                 data_holder.outgroup is None):
             raise ValueError("Please specify data_holder carefully. "
                              "Some attribute is None.")
-        lbls = list(data_holder.population_labels)
-        size = list(data_holder.projections)
+        lbls = _value_to_code(list(data_holder.population_labels))
+        size = _value_to_code(list(data_holder.projections))
         outg = data_holder.outgroup
         ret_str += f"(dd, pop_ids={lbls}, "
         ret_str += f"projections={size}, "
@@ -197,7 +128,7 @@ def _print_load_data(data_holder, is_fs, mode='dadi'):
                 data.pop_ids = [f"Pop{i}" for i in range(data.ndim)]
             else:
                 data.pop_ids = labels
-            ret_str += f"data.pop_ids = {data.pop_ids}\n"
+            ret_str += f"data.pop_ids = {_value_to_code(data.pop_ids)}\n"
         if labels is not None:
             # populations of the file that are not used
             not_used = [i for i, label in enumerate(data.pop_ids)
@@ -211,11 +142,11 @@ def _print_load_data(data_holder, is_fs, mode='dadi'):
                 data = np.transpose(data, d)
                 data.pop_ids = list(labels)
                 ret_str += "data = np.transpose(data, %s)\n" % (str(d))
-                ret_str += f"data.pop_ids = {list(labels)}\n"
+                ret_str += f"data.pop_ids = {_value_to_code(list(labels))}\n"
         if (data_holder.projections is not None and
                 list(data.sample_sizes) != list(data_holder.projections)):
-            size = data_holder.projections
-            ret_str += "data = data.project(%s)\n" % (str(list(size)))
+            size = list(data_holder.projections)
+            ret_str += f"data = data.project({_value_to_code(size)})\n"
         if data.folded == data_holder.outgroup:
             ret_str += "data = data.fold()\n"
     return ret_str
@@ -227,7 +158,7 @@ def _print_dadi_load_data(data_holder):
     Checks that `data_holder` is in AFS format of dadi and runs
     :func:`_print_load_data` with 'dadi' mode.
     """
-    is_fs = _is_fs_via_dadi(data_holder)
+    is_fs = _read_fs_or_none("dadi", data_holder)
     return _print_load_data(data_holder, is_fs, mode='dadi')
 
 
@@ -241,20 +172,15 @@ def _print_p0(engine, values):
     if not engine.multinom:
         if isinstance(engine.model.Nanc_size, Variable):
             p0.pop(engine.model.variables.index(engine.model.Nanc_size))
-    return "p0 = [%s]\n" % ", ".join([str(x) for x in p0])
+    return f"p0 = {_value_to_code(p0)}\n"
 
 
 def _print_bounds(engine):
-    lower_bound = []
-    upper_bound = []
-    for var in engine.model.variables:
-        if isinstance(var, DiscreteVariable):
-            continue
-        lower_bound.append(str(var.domain[0]))
-        upper_bound.append(str(var.domain[1]))
-    lower_bound = ", ".join(lower_bound)
-    upper_bound = ", ".join(upper_bound)
-    return f"lower_bound = [{lower_bound}]\nupper_bound = [{upper_bound}]\n"
+    variables = [var for var in engine.model.variables
+                 if not isinstance(var, DiscreteVariable)]
+    lower_bound = _value_to_code([var.domain[0] for var in variables])
+    upper_bound = _value_to_code([var.domain[1] for var in variables])
+    return f"lower_bound = {lower_bound}\nupper_bound = {upper_bound}\n"
 
 
 def _print_dadi_simulation(engine):

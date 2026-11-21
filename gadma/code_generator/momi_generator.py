@@ -5,7 +5,8 @@ from ..utils import TimeVariable, PopulationSizeVariable, FractionVariable
 from ..models import Operation, BinaryOperation, UnaryOperation
 from ..data import SFSDataHolder, VCFDataHolder
 from ..models import Leaf, PopulationSizeChange, LineageMovement
-from . import dadi_generator
+from .generator import FUNCTION_NAME, _value_to_code, _read_fs_or_none, \
+    _print_unpacking_of_params, _print_custom_model_import
 from ..data import read_popinfo
 import copy
 import numpy as np
@@ -92,8 +93,7 @@ def get_anc_model(original_model, values, nanc):
 def print_momi_model(engine, values, nanc, gen_time):
     # Begin to generate model code
     if isinstance(engine.model, CustomDemographicModel):
-        ret_str = dadi_generator._print_dadi_func(engine.model, values)
-        return "import momi\n" + ret_str
+        return "import momi\n" + _print_custom_model_import(engine.model)
 
     model, model_values = get_anc_model(engine.model, values, nanc)
 
@@ -106,8 +106,8 @@ def print_momi_model(engine, values, nanc, gen_time):
     ret_str = "import momi\n"
     ret_str += "import numpy as np\n\n"
 
-    ret_str += "def model_func(params):\n"
-    ret_str += dadi_generator._print_unpacking_of_params(model.variables)
+    ret_str += f"def {FUNCTION_NAME}(params):\n"
+    ret_str += _print_unpacking_of_params(model.variables)
     ret_str += "\n"
 
     ret_str += "\tmodel = momi.DemographicModel(\n"
@@ -172,9 +172,9 @@ def print_data_reading(engine):
     ret_str = ""
     populations = engine.data_holder.population_labels
     if isinstance(engine.data_holder, SFSDataHolder):
-        is_dadi_fs = dadi_generator._is_fs_via_dadi(engine.data_holder)
+        is_dadi_fs = _read_fs_or_none("dadi", engine.data_holder)
         if is_dadi_fs is not None:
-            filename = f"'{engine.data_holder.filename}'"
+            filename = _value_to_code(engine.data_holder.filename)
             # momi writes the data to a file during this reading: it is
             # `.tmp.sfs` in the current directory if no file is given. Then
             # scripts that are run in one directory at the same time could
@@ -200,10 +200,11 @@ def print_data_reading(engine):
                 populations = [str(label) for label in populations]
             ret_str = "import gadma\n"
             ret_str += "data_holder = gadma.SFSDataHolder(\n"
-            ret_str += f"\t{repr(data_holder.filename)},\n"
-            ret_str += f"\tprojections={projections},\n"
-            ret_str += f"\toutgroup={data_holder.outgroup},\n"
-            ret_str += f"\tpopulation_labels={populations},\n"
+            ret_str += f"\t{_value_to_code(data_holder.filename)},\n"
+            ret_str += f"\tprojections={_value_to_code(projections)},\n"
+            ret_str += f"\toutgroup={_value_to_code(data_holder.outgroup)},\n"
+            ret_str += "\tpopulation_labels="\
+                       f"{_value_to_code(populations)},\n"
             ret_str += ")\n"
             ret_str += "data = gadma.get_engine('momi2')"\
                        ".read_data(data_holder)\n\n"
@@ -211,12 +212,9 @@ def print_data_reading(engine):
 
     if isinstance(engine.data_holder, VCFDataHolder):
         ind2pop = engine._get_ind2pop(engine.data_holder)
-        str_list = []
-        for key, value in ind2pop.items():
-            str_list.append(f"'{key}': '{value}'")
-        ret_str += "ind2pop = {" + ", ".join(str_list) + "}\n"
+        ret_str += f"ind2pop = {_value_to_code(ind2pop)}\n"
         ret_str += f"data = momi.SnpAlleleCounts.read_vcf("\
-                   f"'{engine.data_holder.filename}', "\
+                   f"{_value_to_code(engine.data_holder.filename)}, "\
                    "ind2pop=ind2pop).extract_sfs(n_blocks=100)\n"
         _, pops = read_popinfo(engine.data_holder.popmap_file)
         if populations is None or not set(populations) != set(pops):
@@ -224,7 +222,8 @@ def print_data_reading(engine):
     if engine.data_holder.outgroup is False:
         ret_str += "data = data.fold()\n"
     if populations is not None:
-        ret_str += f"data = data.subset_populations({list(populations)})\n"
+        ret_str += "data = data.subset_populations("\
+                   f"{_value_to_code(list(populations))})\n"
     ret_str += "\n"
     return ret_str
 
@@ -249,8 +248,8 @@ def print_main_part(engine, values, nanc):
             time_in_generations=True,
         )
 
-    ret_str = f"params = {values_phys}\n"
-    ret_str += "model = model_func(params)\n"
+    ret_str = f"params = {_value_to_code(values_phys)}\n"
+    ret_str += f"model = {FUNCTION_NAME}(params)\n"
     if isinstance(engine.model, CustomDemographicModel):
         ret_str += "model.gen_time = 1\n"
         ret_str += f"model.muts_per_gen = {engine.model.mutation_rate}\n"
@@ -260,8 +259,8 @@ def print_main_part(engine, values, nanc):
     add_kwargs = ""
     sfs_data = isinstance(engine.data_holder, SFSDataHolder)
     if sfs_data and engine.data_holder.non_ascertained_pops is not None:
-        pop_list = ", ".join(engine.data_holder.non_ascertained_pops)
-        add_kwargs = f", non_ascertained_pops=[{pop_list}]"
+        pop_list = list(engine.data_holder.non_ascertained_pops)
+        add_kwargs = f", non_ascertained_pops={_value_to_code(pop_list)}"
 
     ret_str += f"model.set_data(data, length={length}{add_kwargs})\n"
     ret_str += "ll_model = model.log_likelihood()\n"

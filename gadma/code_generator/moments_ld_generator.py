@@ -1,13 +1,12 @@
 from ..models import CustomDemographicModel, EpochDemographicModel, \
-    Epoch, Split, BinaryOperation, StructureDemographicModel
-from ..utils import DiscreteVariable, DynamicVariable, Variable
-from .dadi_generator import _print_unpacking_of_params
+    Epoch, Split, StructureDemographicModel
+from ..utils import DiscreteVariable, Variable
+from .generator import FUNCTION_NAME, _value_to_code, \
+    _get_variables_of_function, _print_unpacking_of_params, \
+    _print_custom_model_import, _print_size_functions, \
+    _print_integration_kwargs
 import numpy as np
 import copy
-import os
-import inspect
-
-FUNCTION_NAME = "model_func"
 
 
 def _print_p0(engine, values, nanc):
@@ -19,12 +18,9 @@ def _print_p0(engine, values, nanc):
 
     f_vars = [x for x in engine.model.variables
               if not isinstance(x, DiscreteVariable)]
-    for variable in f_vars:
-        if variable.name == "Nanc":
-            Nanc_index = f_vars.index(variable)
-            values.pop(Nanc_index)
-    p0 = copy.copy(values)
-    return "p0 = [%s]\n" % ", ".join([str(x) for x in p0])
+    p0 = [value for variable, value in zip(f_vars, values)
+          if variable.name != "Nanc"]
+    return f"p0 = {_value_to_code(p0)}\n"
 
 
 def _print_momentsLD_func(engine, values):
@@ -41,35 +37,15 @@ def _print_momentsLD_func(engine, values):
     model = engine.model
     pops = engine.data_holder.population_labels
     if isinstance(model, CustomDemographicModel):
-        # the module of the function could be not among loaded modules,
-        # e.g. in the process of a run, so file is taken from the function
-        path_repr = repr(os.path.abspath(inspect.getfile(model.function)))
-        path_repr = path_repr.replace("\\", "\\\\")
-        ret_str = "import importlib.util\n\n"
-        ret_str += "spec = importlib.util.spec_from_file_location('module', " \
-                   f"{path_repr})\n"
-        ret_str += "module = importlib.util.module_from_spec(spec)\n"
-        ret_str += "spec.loader.exec_module(module)\n"
-        ret_str += f"{FUNCTION_NAME} = module.model_func\n\n"
-        return ret_str
+        return _print_custom_model_import(model)
 
     assert isinstance(model, EpochDemographicModel)
 
     var2value = model.var2value(values)  # OrderedDict
 
-    f_vars = [x for x in model.variables
-              if not isinstance(x, DiscreteVariable)]
-    if model.has_anc_size:
-        if isinstance(model, CustomDemographicModel):
-            for variable in f_vars:
-                if variable.name == "Nanc":
-                    f_vars.pop(f_vars.index(variable))
-        elif isinstance(model, StructureDemographicModel):
-            if isinstance(model.Nanc_size, Variable):
-                f_vars.pop(f_vars.index(model.Nanc_size))
-
     ret_str = f"def {FUNCTION_NAME}(params, rho=None, theta=0.001):\n"
-    ret_str += _print_unpacking_of_params(f_vars, indent="    ")
+    ret_str += _print_unpacking_of_params(_get_variables_of_function(model),
+                                          indent="    ")
     # Not very good solution !
     if not model.has_anc_size:
         ret_str += "    _Nanc_size"
@@ -87,84 +63,20 @@ def _print_momentsLD_func(engine, values):
     else:
         ret_str += "(rho=rho, theta=theta)\n"
 
-    ret_str += f"    Y = moments.LD.LDstats(Y, num_pops=1, pop_ids={pops})\n"
+    ret_str += "    Y = moments.LD.LDstats(Y, num_pops=1, " \
+               f"pop_ids={_value_to_code(pops)})\n"
     n_split = 0
 
     for ind, event in enumerate(model.events):
         if event.__class__ is Epoch:
-            all_sudden = True
-            func_names = []
-            if event.dyn_args is not None:
-                for i in range(event.n_pop):
-                    dyn_arg = event.dyn_args[i]
-                    value = var2value.get(dyn_arg, dyn_arg)
-                    if value != 'Sud':
-                        all_sudden = False
-                        func = DynamicVariable._help_dict[value]
-                        y1 = event.init_size_args[i]
-                        y2 = event.size_args[i]
-                        x_diff = event.time_arg
-                        if isinstance(y1, Variable):
-                            y1 = y1.name
-                        elif isinstance(y1, BinaryOperation):
-                            y1 = f"({y1.name})"
-                        if isinstance(y2, Variable):
-                            y2 = y2.name
-                        elif isinstance(y2, BinaryOperation):
-                            y2 = f"({y2.name})"
-                        if isinstance(x_diff, Variable):
-                            x_diff = x_diff.name
-                        elif isinstance(x_diff, BinaryOperation):
-                            x_diff = f"({x_diff.name})"
-                        funcstr = func.func_str(y1, y2, x_diff)
-                        ret_str += "    nu%d_func = %s\n" % (i + 1, funcstr)
-                        func_names.append("nu%d_func" % (i + 1))
+            funcs_str, func_names = _print_size_functions(event, var2value,
+                                                          indent="    ")
+            ret_str += funcs_str
             kwargs_with_vars = MomentsLdEngine._get_kwargs(event, var2value)
-            kwargs = {}
-            for x, y in kwargs_with_vars.items():
-                if isinstance(y, np.ndarray):  # migration
-                    rows = []
-                    for i in range(y.shape[0]):
-                        elems = []
-                        for j in range(y.shape[1]):
-                            if i == j:
-                                elems.append("0")
-                                continue
-                            yel = y[i][j]
-                            if isinstance(yel, Variable):
-                                elems.append(yel.name)
-                            else:
-                                elems.append(str(yel))
-                        rows.append(f"[{', '.join(elems)}]")
-                    ret_str += f"    migs = np.array([{', '.join(rows)}])\n"
-                    kwargs[x] = 'migs'
-                elif isinstance(y, list):  # pop. sizes, selection, dynamics
-                    varnames = [var.name
-                                if isinstance(var, (Variable,
-                                                    BinaryOperation))
-                                else str(var) for var in y]
-                    if x == 'nu':  # pop size
-                        if all_sudden:
-                            kwargs[x] = f"[{', '.join(varnames)}]"
-                        else:
-                            strs = []
-                            for y1 in y:
-                                if isinstance(y1, (Variable,
-                                                   BinaryOperation)):
-                                    strs.append(y1.name)
-                                else:
-                                    if y1 in func_names:
-                                        strs.append(y1 + "(t)")
-                                    else:
-                                        strs.append(str(y1))
-                            kwargs[x] = f"lambda t: [{', '.join(strs)}]"
-                    else:
-                        kwargs[x] = f"[{','.join(varnames)}]"
-                else:  # time
-                    kwargs[x] = y.name if isinstance(
-                        y, (Variable, BinaryOperation)) else y
-
-            kwargs = [f"{key}={value}" for key, value in kwargs.items()]
+            migs_str, kwargs = _print_integration_kwargs(
+                kwargs_with_vars, size_key="nu", func_names=func_names,
+                indent="    ")
+            ret_str += migs_str
             ret_str += f"    Y.integrate({', '.join(kwargs)}, " \
                        f"rho=rho, theta=theta)\n"
         elif event.__class__ is Split:
@@ -172,20 +84,6 @@ def _print_momentsLD_func(engine, values):
             n_split += 1
     ret_str += "    return Y\n\n"
     return ret_str
-
-
-def _value_to_code(value):
-    """
-    Returns code of the value: numpy arrays and numbers are written as lists
-    and numbers of Python.
-    """
-    if isinstance(value, np.ndarray):
-        value = value.tolist()
-    if isinstance(value, (list, tuple)):
-        return "[" + ", ".join(_value_to_code(el) for el in value) + "]"
-    if isinstance(value, np.generic):
-        value = value.item()
-    return repr(value)
 
 
 def _print_momentsLD_load_data(engine, data_holder):
@@ -250,7 +148,7 @@ def _print_momentsLD_simulation(engine, nanc):
     r_bins = engine.get_r_bins()
     if nanc is not None:
         ret_str += f"Nanc = {nanc}\n"
-    ret_str += f"r_bins = {[ii for ii in r_bins]}\n"
+    ret_str += f"r_bins = {_value_to_code(r_bins)}\n"
     ret_str += f"mu = {engine.model.mutation_rate}\n"
     ret_str += "rhos = 4 * Nanc * np.array(r_bins)\n"
     ret_str += "theta = 4 * Nanc * mu\n\n"
@@ -275,7 +173,7 @@ def _print_LdCurves(engine):
     ret_str += "    model_for_plot,\n"
     ret_str += "    data['means'][:-1],\n"
     ret_str += "    data['varcovs'][:-1],\n"
-    ret_str += f"    rs=np.array({[ii for ii in r_bins]}),\n"
+    ret_str += f"    rs=np.array({_value_to_code(r_bins)}),\n"
     ret_str += "    stats_to_plot=stats_to_plot,\n"
     ret_str += "    fig_size=(len(stats_to_plot), 7),\n"
     ret_str += "    cols=round(len(stats_to_plot) / 3),\n"
@@ -405,28 +303,35 @@ def generate_file_for_ci_evaluation(engine, values, nanc, ci_filename):
     ret_str += extract_opt_params(engine, values, nanc)
     ret_str += f"rs = {_value_to_code(engine.get_r_bins())}\n"
 
-    f_vars = [x for x in engine.model.variables
-              if not isinstance(x, DiscreteVariable)]
-    for variable in f_vars:
-        if variable.name == "Nanc":
-            f_vars.pop(f_vars.index(variable))
-            f_vars.append(variable)
-    ret_str += f"param_names = {[x.name for x in f_vars]}"
+    param_names = [x.name for x in _get_variables_for_ci(engine.model)]
+    ret_str += f"param_names = {_value_to_code(param_names)}"
 
     with open(ci_filename, "w") as file:
         file.write(ret_str)
 
 
-def extract_opt_params(engine, values, nanc):
+def _get_variables_for_ci(model):
+    """
+    Returns variables of the model that are parameters in the file for
+    confidence intervals, `opt_params` and `param_names` are in this order.
+    Size of ancestral population is the last one as the tool for confidence
+    intervals takes it from there.
+    """
+    f_vars = [x for x in model.variables
+              if not isinstance(x, DiscreteVariable)]
+    return ([x for x in f_vars if x.name != "Nanc"] +
+            [x for x in f_vars if x.name == "Nanc"])
 
+
+def extract_opt_params(engine, values, nanc):
     var2value = engine.model.var2value(values)
-    values = [var2value[var] for var in engine.model.variables
-              if not isinstance(var, DiscreteVariable)]
-    p0 = copy.copy(values)
-    p0 = p0[1:]
-    p0.append(values[0])
-    p0[-1] = int(p0[-1] * nanc)
-    return "opt_params = [%s]\n" % ", ".join([str(x) for x in p0])
+    p0 = []
+    for variable in _get_variables_for_ci(engine.model):
+        if variable.name == "Nanc":
+            p0.append(int(var2value[variable] * nanc))
+        else:
+            p0.append(var2value[variable])
+    return f"opt_params = {_value_to_code(p0)}\n"
 
 
 def _get_variables_of_arg(arg):

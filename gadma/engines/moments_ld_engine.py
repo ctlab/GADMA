@@ -10,7 +10,9 @@ from ..models import CustomDemographicModel, Epoch, Split
 from .. import VCFDataHolder, moments_LD_available, matplotlib_available
 from ..utils import DynamicVariable, get_correct_dtype, check_file_existence
 from ..code_generator import id2printfunc
-from ..data import check_and_return_projections_and_labels
+from ..data import check_and_return_projections_and_labels, \
+    check_popmap_for_moments_ld, get_chromosome_of_bed_file, get_rec_map_file
+from ..utils import get_files_of_directory
 import multiprocessing
 import os
 if matplotlib_available:
@@ -32,82 +34,6 @@ def _read_data_one_job(args):
             )
     }
     return results
-
-
-def extract_rec_map_name_and_extension(rec_map):
-    rec_map_name, extension = os.path.splitext(rec_map)
-    extension = extension[1:]
-    rec_map_name = "_".join(rec_map_name.split('_')[:-1])
-    return rec_map_name, extension
-
-
-def get_files_of_directory(dirname):
-    """
-    Returns sorted names of files of the directory with bed files or with
-    recombination maps. Hidden files (e.g. `.DS_Store`) are not taken.
-    """
-    return sorted(name for name in os.listdir(dirname)
-                  if not name.startswith("."))
-
-
-def get_chromosome_of_bed_file(bed_file):
-    """
-    Returns name of chromosome of the region in bed file: it is the first
-    column of the file. Name of chromosome is not taken from the name of
-    the file as it could have any symbols, e.g. `_`.
-    """
-    with open(bed_file) as fl:
-        for line in fl:
-            if len(line.strip()) > 0:
-                return line.split()[0]
-    raise ValueError(f"There are no regions in bed file {bed_file}")
-
-
-def get_rec_map_file(rec_maps_dir, chrom):
-    """
-    Returns file with recombination map for chromosome `chrom` from the
-    directory with maps.
-
-    If there is one file in the directory then it has maps for all
-    chromosomes. Otherwise each chromosome has its file with the name
-    `<name>_<chromosome>.<extension>`. Name of chromosome could have any
-    symbols, e.g. `_` and `.`.
-    """
-    files = get_files_of_directory(rec_maps_dir)
-    if len(files) == 1:
-        return os.path.join(rec_maps_dir, files[0])
-    found = []
-    for name in files:
-        name_without_ext = os.path.splitext(name)[0]
-        if (name_without_ext == chrom or
-                name_without_ext.endswith("_" + chrom)):
-            found.append(name)
-    if len(found) == 0:
-        raise ValueError(f"There is no recombination map for chromosome "
-                         f"{chrom} in {rec_maps_dir}. Name of its file "
-                         f"should be like `rec_map_{chrom}.txt`, files of "
-                         f"the directory: {files}")
-    # e.g. files map_1.txt and map_chr_1.txt fit to chromosome `1`, but the
-    # second one is for chromosome `chr_1`
-    return os.path.join(rec_maps_dir, min(found, key=len))
-
-
-def check_popmap_for_moments_ld(popmap_file):
-    """
-    Checks that popmap file could be read by moments.LD: it takes names of
-    its columns from the first line of the file and needs columns `sample`
-    and `pop`.
-    """
-    with open(popmap_file) as fl:
-        for line in fl:
-            if len(line.strip()) == 0:
-                continue
-            if "sample" in line.split() and "pop" in line.split():
-                return
-            break
-    raise ValueError(f"Popmap file {popmap_file} could not be used for "
-                     "momentsLD: its first line should have names of the "
-                     "columns `sample` and `pop`, for example: sample\tpop")
 
 
 def get_h5_file_path(vcf_file):
