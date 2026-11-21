@@ -334,7 +334,8 @@ class CoreRun(object):
                 engine.set_model(self.engine.model)
                 try:
                     if engine.id == "momentsLD":
-                        args = None
+                        # momentsLD has one argument that is not used
+                        args = (None,)
                     engine.generate_code(x, save_file, *args, Nanc,
                                          gen_time=gen_time,
                                          gen_time_units=gen_time_units)

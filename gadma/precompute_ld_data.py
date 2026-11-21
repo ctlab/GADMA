@@ -1,4 +1,5 @@
 import moments.LD
+import os
 import shutil
 import pickle
 from gadma.data.data import VCFDataHolder
@@ -30,11 +31,24 @@ def main():
         regions = engine._get_region_stats(settings_storage.data_holder)
         data = moments.LD.Parsing.bootstrap_data(regions)
 
-        with open("./preprocessed_data.bp", "wb+") as fout:
+        preprocessed_data = os.path.abspath("preprocessed_data.bp")
+        with open(preprocessed_data, "wb+") as fout:
             pickle.dump(tuple([regions, data]), fout)
 
+        # The file with data is set in the params file. It is set once: the
+        # line of the previous run is replaced, as the params file could
+        # not be read with two such lines.
         params_file = vars(args)["params"]
-        with open(f"{params_file}", "a") as params:
-            params.write("\npreprocessed_data: ./preprocessed_data.bp\n")
+        with open(params_file) as fl:
+            lines = [line for line in fl
+                     if not line.strip().lower().replace(" ", "_").startswith(
+                         "preprocessed_data")]
+        while len(lines) > 0 and len(lines[-1].strip()) == 0:
+            lines.pop()
+        if len(lines) > 0 and not lines[-1].endswith("\n"):
+            lines[-1] += "\n"
+        lines.append(f"\npreprocessed_data: {preprocessed_data}\n")
+        with open(params_file, "w") as fl:
+            fl.writelines(lines)
     finally:
         shutil.rmtree(settings_storage.output_directory)

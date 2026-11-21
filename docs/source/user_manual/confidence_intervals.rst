@@ -98,7 +98,9 @@ for confidence intervals (CI) evaluation for momentsLD engine ``gadma-get_confid
 file ``data_for_ci.py`` containing all necessary information for CI evaluation.
 
 Use ``gadma-get_confidence_intervals`` with input data ``data_for_ci.py``. GADMA will calculate CI for parameters
-print results and save them in the csv file.
+print results and save them in the csv file ``ci_results.csv`` next to the input file.
+LD statistics are taken from the file with preprocessed data (``data_file``). If the statistics were computed
+during the run, they were not saved: please compute them with ``gadma-precompute_ld_data`` and set the file as ``data_file``.
 
 .. code-block:: none
 
@@ -107,7 +109,7 @@ print results and save them in the csv file.
     def model_func(params, rho=None, theta=0.001):
         ...
 
-    rep_data_file = binary file with parsed ld_stats
+    data_file = binary file with parsed ld_stats
     opt_params = list with optimal values of parameters for the model
     rs = list with recombination rate bins
     param_names = list with names of parameters

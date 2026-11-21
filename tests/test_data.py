@@ -813,7 +813,18 @@ class TestSettingStorageLDStats(unittest.TestCase):
             sys.argv = ['gadma', '-p', param_file]
             settings, _ = get_settings_test()
             try:
-                data_gadma = settings.read_data()
+                if case == 'without_rec_map':
+                    # Without recombination statistics are computed for bins
+                    # of distance and they could not be compared with the
+                    # model, so engine does not read such data.
+                    self.assertRaises(ValueError, settings.read_data)
+                    import moments.LD
+                    settings._prepare_for_moments_ld()
+                    engine = get_engine("momentsLD")
+                    data_gadma = moments.LD.Parsing.bootstrap_data(
+                        engine._get_region_stats(settings.data_holder))
+                else:
+                    data_gadma = settings.read_data()
 
                 preprocessed_test_data = os.path.join(
                     DATA_PATH, 'vcf_ld',

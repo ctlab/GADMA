@@ -371,8 +371,10 @@ def create_bed_files_and_extract_chromosomes(
     # create dir to save bed_files
     ensure_dir_existence(output_dir, check_emptiness=True)
 
+    # every chromosome has at least one region, even if it is shorter than
+    # half of the length of a region
     region_num = sum(
-        [int(round(chrom2len[ii] / region_len)) for ii in chrom2len]
+        [max(1, int(round(chrom2len[ii] / region_len))) for ii in chrom2len]
     )
     total_len = sum([int(chrom2len[ii]) for ii in chrom2len])
 
@@ -391,7 +393,7 @@ def create_bed_files_and_extract_chromosomes(
     chrom2parts = {}
     for chrom in chrom2len:
         stop_position = 0
-        number_of_chrom_parts = round(chrom2len[chrom] / region_len)
+        number_of_chrom_parts = max(1, round(chrom2len[chrom] / region_len))
         n_pos = len(str(number_of_chrom_parts))
         for num in range(1, number_of_chrom_parts + 1):
             num_with_zeros = f"%0{n_pos}d" % num
@@ -402,6 +404,9 @@ def create_bed_files_and_extract_chromosomes(
             ) as fl:
                 start_position = stop_position
                 stop_position = min(int(region_len * num), chrom2len[chrom])
+                # the last region ends where the chromosome ends
+                if num == number_of_chrom_parts:
+                    stop_position = chrom2len[chrom]
                 fl.write(f"{chrom}\t{start_position}\t{stop_position}")
         chrom2parts[chrom] = number_of_chrom_parts
 

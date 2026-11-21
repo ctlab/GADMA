@@ -1,13 +1,11 @@
 from ..models import CustomDemographicModel, EpochDemographicModel, \
     Epoch, Split, BinaryOperation, StructureDemographicModel
 from ..utils import DiscreteVariable, DynamicVariable, Variable
-from ..data import extract_chromosomes_from_vcf
 from .dadi_generator import _print_unpacking_of_params
 import numpy as np
 import copy
 import os
 import inspect
-from os import listdir
 
 FUNCTION_NAME = "model_func"
 
@@ -176,107 +174,80 @@ def _print_momentsLD_func(engine, values):
     return ret_str
 
 
+def _value_to_code(value):
+    """
+    Returns code of the value: numpy arrays and numbers are written as lists
+    and numbers of Python.
+    """
+    if isinstance(value, np.ndarray):
+        value = value.tolist()
+    if isinstance(value, (list, tuple)):
+        return "[" + ", ".join(_value_to_code(el) for el in value) + "]"
+    if isinstance(value, np.generic):
+        value = value.item()
+    return repr(value)
+
+
 def _print_momentsLD_load_data(engine, data_holder):
     """
     Returns strings for code that loads data for analysis.
 
+    If data was not preprocessed then LD statistics are computed for the
+    same regions and with the same arguments as engine computes them.
+
     :param data_holder: Data holder with data.
     """
-    from ..engines import extract_rec_map_name_and_extension
     ret_str = ""
+    ret_str += f"vcf_file = {repr(data_holder.filename)}\n"
+    ret_str += f"pop_map = {repr(data_holder.popmap_file)}\n"
+    ret_str += f"preprocessed_data = {repr(data_holder.preprocessed_data)}\n"
 
-    path = f"{data_holder.bed_files_dir}".replace("\\", "\\\\")
-    ret_str += f"bed_files = \"{path}\"\n"
-    ret_str += "reg_num = 0\n" \
-               "region_stats = {}\n"
-    if data_holder.filename is not None:
-        chromosomes = extract_chromosomes_from_vcf(data_holder.filename)
-        ret_str += f"chromosomes = {chromosomes}\n"
-    else:
-        ret_str += "chromosomes = None\n"
-    kwargs = engine.get_kwargs()
-    rec_maps = data_holder.recombination_maps
-    pops = data_holder.population_labels
-    if rec_maps is not None:
-        if kwargs["r_bins"] is None:
-            kwargs["r_bins"] = engine.r_bins
-        kwargs["bp_bins"] = None
-        if len(listdir(rec_maps)) == len(chromosomes):
-            rec_map, extension = extract_rec_map_name_and_extension(
-                listdir(rec_maps)[0]
-            )
-            ret_str += f"extension = \"{extension}\"\n"
-            ret_str += f"rec_map_name = \"{rec_map}\"\n"
-        else:
-            rec_map = listdir(rec_maps)[0]
-            ret_str += f"rec_map = \"{rec_map}\"\n"
-    else:
-        if kwargs["bp_bins"] is None:
-            kwargs["r_bins"] = engine.bp_bins
-        kwargs["r_bins"] = None
+    if data_holder.preprocessed_data is not None:
+        ret_str += "with open(preprocessed_data, \"rb\") as fin:\n"
+        ret_str += "    region_stats, data = pickle.load(fin)\n\n"
+        return ret_str
 
+    # LD statistics are computed for each region (bed file)
+    all_kwargs = engine.get_kwargs_of_regions(data_holder)
+    own_keys = ["vcf_file", "pop_file", "pops", "bed_file", "chromosome",
+                "rec_map_file", "map_name"]
+    kwargs = {key: value for key, value in all_kwargs[0].items()
+              if key not in own_keys}
+    ret_str += f"pops = {_value_to_code(all_kwargs[0]['pops'])}\n"
     ret_str += "kwargs = {\n"
-    if kwargs["r_bins"] is not None:
-        ret_str += f"    \"r_bins\": {[ii for ii in kwargs['r_bins']]},\n"
-    ret_str += f"    \"report\": {kwargs['report']},\n"
-    if kwargs["bp_bins"] is not None:
-        ret_str += f"    \"bp_bins\": {[ii for ii in kwargs['bp_bins']]},\n"
-    ret_str += f"    \"use_genotypes\": {kwargs['use_genotypes']},\n"
-    ret_str += f"    \"cM\": {kwargs['cM']},\n"
+    for key, value in kwargs.items():
+        ret_str += f"    {repr(key)}: {_value_to_code(value)},\n"
     ret_str += "}\n"
-
-    vcf_path = data_holder.filename.replace("\\", "\\\\")
-    popmap_path = data_holder.popmap_file.replace("\\", "\\\\")
-    ret_str += f"vcf_file = \"{vcf_path}\"\n"
-    ret_str += f"pop_map = \"{popmap_path}\"\n"
-    if rec_maps is not None:
-        rec_maps_path = rec_maps.replace('\\', '\\\\')
-        ret_str += f"rec_maps = \"{rec_maps_path}\"\n"
-
-    prep_path = data_holder.preprocessed_data.replace("\\", "\\\\")
-    ret_str += f"preprocessed_data = \"{prep_path}\"\n"
-
-    ret_str += "if preprocessed_data is not None:\n"
-    ret_str += "    with open(preprocessed_data, \"rb\") as fin:\n"
-    ret_str += "        region_stats, data = pickle.load(fin)\n"
-    ret_str += "else:\n"
-    ret_str += "    for bed_file in sorted(os.listdir(bed_files)):\n"
-    ret_str += "        chrom = bed_file.split('_')[-2]\n"
-    ret_str += "        region_stats.update({\n"
-    ret_str += "            f\"{reg_num}\":\n" \
-               "                moments.LD." \
-               "Parsing.compute_ld_statistics(\n"
-    ret_str += "                    vcf_file=vcf_file,\n"
-    if rec_maps is not None:
-        ret_str += f"                    rec_map_file=" \
-                   f"f\"{rec_maps}/\"\n"
-        if len(listdir(rec_maps)) == len(chromosomes):
-            ret_str += "                    " \
-                       "f\"{rec_map_name}_{chrom}.{extension}\",\n"
-        else:
-            ret_str += "                    " \
-                       "f\"{rec_map}\",\n"
-            ret_str += "                    " \
-                       "map_name=f\"{chrom}\",\n"
-            ret_str += "                    " \
-                       "chromosome=f\"{chrom}\",\n"
-    ret_str += "                    pop_file=pop_map,\n"
-    bed_path = "os.path.join(bed_files, bed_file)"
-    ret_str += f"                    bed_file={bed_path},\n"
-    ret_str += f"                    pops={pops},\n"
-    ret_str += "                    **kwargs\n"
-    ret_str += "                )\n"
-    ret_str += "        })\n"
-    ret_str += "        reg_num += 1\n"
-    ret_str += "    data = moments.LD.Parsing.bootstrap_data(region_stats)\n\n"
+    ret_str += "# Regions: bed file, chromosome and its recombination map\n"
+    ret_str += "regions = [\n"
+    for region_kwargs in all_kwargs:
+        region = (region_kwargs["bed_file"], region_kwargs["chromosome"],
+                  region_kwargs.get("rec_map_file", None))
+        ret_str += f"    {_value_to_code(region)},\n"
+    ret_str += "]\n"
+    ret_str += "region_stats = {}\n"
+    ret_str += "for reg_num, (bed_file, chrom, rec_map_file) in " \
+               "enumerate(regions):\n"
+    ret_str += "    region_kwargs = dict(kwargs)\n"
+    ret_str += "    if rec_map_file is not None:\n"
+    ret_str += "        region_kwargs[\"rec_map_file\"] = rec_map_file\n"
+    ret_str += "        region_kwargs[\"map_name\"] = chrom\n"
+    ret_str += "    region_stats[str(reg_num)] = " \
+               "moments.LD.Parsing.compute_ld_statistics(\n"
+    ret_str += "        vcf_file,\n"
+    ret_str += "        bed_file=bed_file,\n"
+    ret_str += "        chromosome=chrom,\n"
+    ret_str += "        pop_file=pop_map,\n"
+    ret_str += "        pops=pops,\n"
+    ret_str += "        **region_kwargs\n"
+    ret_str += "    )\n"
+    ret_str += "data = moments.LD.Parsing.bootstrap_data(region_stats)\n\n"
     return ret_str
 
 
 def _print_momentsLD_simulation(engine, nanc):
     ret_str = ""
-    r_bins = engine.get_kwargs()['r_bins']
-    if r_bins is None:
-        r_bins = engine.r_bins
+    r_bins = engine.get_r_bins()
     if nanc is not None:
         ret_str += f"Nanc = {nanc}\n"
     ret_str += f"r_bins = {[ii for ii in r_bins]}\n"
@@ -295,9 +266,7 @@ def _print_momentsLD_simulation(engine, nanc):
 
 
 def _print_LdCurves(engine):
-    r_bins = engine.get_kwargs()["r_bins"]
-    if r_bins is None:
-        r_bins = engine.r_bins
+    r_bins = engine.get_r_bins()
     ret_str = "stats_to_plot = [\n"
     ret_str += "    [name] for name in model.names()[:-1][0] " \
                "if name != 'pi2_0_0_0_0'\n"
@@ -427,12 +396,14 @@ def print_moments_ld_code(engine, values, filename, args=None,
 def generate_file_for_ci_evaluation(engine, values, nanc, ci_filename):
     ret_str = "import moments.LD\nimport numpy as np\n\n"
     ret_str += _print_momentsLD_func(engine, values)
-    ret_str += f"rep_data_file = \"{engine.data_holder.preprocessed_data}\"\n"
+    data_file = engine.data_holder.preprocessed_data
+    if data_file is None:
+        ret_str += "# LD statistics were computed during the run and they "\
+                   "were not saved.\n# Please save them with "\
+                   "gadma-precompute_ld_data and set the file here.\n"
+    ret_str += f"data_file = {repr(data_file)}\n"
     ret_str += extract_opt_params(engine, values, nanc)
-    if engine.data_holder.recombination_maps:
-        ret_str += f"rs = {[ii for ii in engine.get_kwargs()['r_bins']]}\n"
-    else:
-        ret_str += "\n# You need recombination map if you wont to compute CI\n"
+    ret_str += f"rs = {_value_to_code(engine.get_r_bins())}\n"
 
     f_vars = [x for x in engine.model.variables
               if not isinstance(x, DiscreteVariable)]
@@ -458,46 +429,78 @@ def extract_opt_params(engine, values, nanc):
     return "opt_params = [%s]\n" % ", ".join([str(x) for x in p0])
 
 
-def remove_fraction_variable_for_two_sudden_children(engine, values):
+def _get_variables_of_arg(arg):
+    """
+    Returns variables that are used in argument of event: it could be
+    variable, combination of variables, number, string or list of them.
+    """
+    if isinstance(arg, Variable):
+        return [arg]
+    if isinstance(arg, (list, tuple, np.ndarray)):
+        variables = []
+        for el in arg:
+            variables.extend(_get_variables_of_arg(el))
+        return variables
+    return list(getattr(arg, "variables", []))
 
+
+def remove_fraction_variable_for_two_sudden_children(engine, values):
+    """
+    If both populations after a split have sudden change of size then their
+    sizes right after the split (fraction of the split or sizes) do not
+    change the model of momentsLD. Such variables are fixed to their values:
+    they should not be among parameters of the code, e.g. for confidence
+    intervals, as the Fisher information matrix is singular with them.
+
+    :returns: copy of engine with fixed variables, values of not fixed
+              variables of its model and names of the fixed variables.
+    """
     # Just in case to avoid errors we will copy engine
     engine = copy.deepcopy(engine)
-    var2value = engine.model.var2value(values)
+    model = engine.model
+    var2value = model.var2value(values)
 
-    dyn_vars_list = []
-    split_num = 1
-    for event in engine.model.events:
-        if isinstance(event, Split):
-            dyn_vars_list.append([
-                f"dyn{split_num}{event.pop_to_div + 1}",
-                f"dyn{split_num}{event.n_pop + 1}"
-            ])
-            split_num += 1
+    vars_to_fix = []
+    for i, event in enumerate(model.events):
+        if not isinstance(event, Split) or i + 1 >= len(model.events):
+            continue
+        next_event = model.events[i + 1]
+        if not isinstance(next_event, Epoch):
+            continue
+        # populations after the split: the divided one and the new last one
+        children = [event.pop_to_div, event.n_pop]
+        if next_event.dyn_args is not None:
+            dyns = [model.get_value_from_var2value(
+                        var2value, next_event.dyn_args[child])
+                    for child in children]
+            if any(dyn != "Sud" for dyn in dyns):
+                continue
+        candidates = _get_variables_of_arg(
+            [event.size_args[child] for child in children])
+        # variables that are used in other places of the model
+        used = []
+        for j, other_event in enumerate(model.events):
+            if j == i:
+                continue
+            if j == i + 1:
+                for name in ["time_arg", "size_args", "mig_args",
+                             "dyn_args", "sel_args", "dom_args"]:
+                    used.extend(_get_variables_of_arg(
+                        getattr(other_event, name, None)))
+                continue
+            used.extend(other_event.variables)
+        # size of ancestral population is not in events but it is used
+        used.append(getattr(model, "Nanc_size", None))
+        for variable in candidates:
+            if (variable in model.variables and variable not in used and
+                    variable not in vars_to_fix):
+                vars_to_fix.append(variable)
 
-    fraction_vars_to_fix_list = []
-
-    for split_dyn_vars_sublist in dyn_vars_list:
-        split_num = 1
-        first_dyn_sudden = False
-        second_dyn_sudden = False
-        for variable in var2value:
-            if all([
-                variable.name == split_dyn_vars_sublist[0],
-                var2value[variable] == "Sud"
-            ]):
-                first_dyn_sudden = True
-            elif all([
-                variable.name == split_dyn_vars_sublist[1],
-                var2value[variable] == "Sud"
-            ]):
-                second_dyn_sudden = True
-        if first_dyn_sudden and second_dyn_sudden:
-            fraction_vars_to_fix_list.append(f"s{split_num}")
-
-    for ii, variable in enumerate(engine.model._variables):
+    fraction_vars_to_fix_list = [variable.name for variable in vars_to_fix]
+    for ii, variable in enumerate(model._variables):
         if variable.name in fraction_vars_to_fix_list:
-            engine.model.fix_variable(engine.model._variables[ii], 0.5)
+            model.fix_variable(model._variables[ii], var2value[variable])
 
-    values = [var2value[var] for var in engine.model.variables]
+    values = [var2value[var] for var in model.variables]
 
     return engine, values, fraction_vars_to_fix_list

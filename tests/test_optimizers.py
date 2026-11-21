@@ -812,6 +812,10 @@ class TestCoreRun(unittest.TestCase):
         parameter or it is fixed) then optimizers get bounds of the split
         time: solutions out of bounds are moved to the bounds and are not
         skipped. Result is inside of the bounds.
+
+        A random solution could not be moved to the bounds sometimes: when
+        its times would leave their domains. Such solution is not evaluated,
+        its value is infinite.
         """
         lower_bound, upper_bound = 2000, 3000
         for is_fixed, structure in [(False, [1, 1]), (True, [1, 2])]:
@@ -860,9 +864,15 @@ class TestCoreRun(unittest.TestCase):
                 engine.get_linear_constrain_for_optimizers() is not None,
                 msg=msg
             )
-            # Final models are inside of the bounds
+            # Final models that were evaluated are inside of the bounds
             A, b = model.get_involved_for_split_time_vars(1)
-            for x in [result.x] + list(result.X_out):
+            self.assertTrue(np.isfinite(result.y), msg=msg)
+            self.assertEqual(len(result.X_out), len(result.Y_out), msg=msg)
+            solutions = [(result.x, result.y)]
+            solutions.extend(zip(result.X_out, result.Y_out))
+            for x, y in solutions:
+                if not np.isfinite(y):
+                    continue
                 self.assertTrue(engine.fits_linear_constrain(x),
                                 msg=f"{x}. {msg}")
                 Nanc = engine.get_N_ancestral(x, *settings.get_engine_args())

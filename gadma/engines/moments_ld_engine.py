@@ -12,7 +12,6 @@ from ..utils import DynamicVariable, get_correct_dtype, check_file_existence
 from ..code_generator import id2printfunc
 from ..data import check_and_return_projections_and_labels
 import multiprocessing
-from collections import ChainMap
 import os
 if matplotlib_available:
     from matplotlib import pyplot as plt
@@ -36,10 +35,79 @@ def _read_data_one_job(args):
 
 
 def extract_rec_map_name_and_extension(rec_map):
-    extension = rec_map.split(".")[1]
-    rec_map_name = rec_map.split(".")[0]
+    rec_map_name, extension = os.path.splitext(rec_map)
+    extension = extension[1:]
     rec_map_name = "_".join(rec_map_name.split('_')[:-1])
     return rec_map_name, extension
+
+
+def get_files_of_directory(dirname):
+    """
+    Returns sorted names of files of the directory with bed files or with
+    recombination maps. Hidden files (e.g. `.DS_Store`) are not taken.
+    """
+    return sorted(name for name in os.listdir(dirname)
+                  if not name.startswith("."))
+
+
+def get_chromosome_of_bed_file(bed_file):
+    """
+    Returns name of chromosome of the region in bed file: it is the first
+    column of the file. Name of chromosome is not taken from the name of
+    the file as it could have any symbols, e.g. `_`.
+    """
+    with open(bed_file) as fl:
+        for line in fl:
+            if len(line.strip()) > 0:
+                return line.split()[0]
+    raise ValueError(f"There are no regions in bed file {bed_file}")
+
+
+def get_rec_map_file(rec_maps_dir, chrom):
+    """
+    Returns file with recombination map for chromosome `chrom` from the
+    directory with maps.
+
+    If there is one file in the directory then it has maps for all
+    chromosomes. Otherwise each chromosome has its file with the name
+    `<name>_<chromosome>.<extension>`. Name of chromosome could have any
+    symbols, e.g. `_` and `.`.
+    """
+    files = get_files_of_directory(rec_maps_dir)
+    if len(files) == 1:
+        return os.path.join(rec_maps_dir, files[0])
+    found = []
+    for name in files:
+        name_without_ext = os.path.splitext(name)[0]
+        if (name_without_ext == chrom or
+                name_without_ext.endswith("_" + chrom)):
+            found.append(name)
+    if len(found) == 0:
+        raise ValueError(f"There is no recombination map for chromosome "
+                         f"{chrom} in {rec_maps_dir}. Name of its file "
+                         f"should be like `rec_map_{chrom}.txt`, files of "
+                         f"the directory: {files}")
+    # e.g. files map_1.txt and map_chr_1.txt fit to chromosome `1`, but the
+    # second one is for chromosome `chr_1`
+    return os.path.join(rec_maps_dir, min(found, key=len))
+
+
+def check_popmap_for_moments_ld(popmap_file):
+    """
+    Checks that popmap file could be read by moments.LD: it takes names of
+    its columns from the first line of the file and needs columns `sample`
+    and `pop`.
+    """
+    with open(popmap_file) as fl:
+        for line in fl:
+            if len(line.strip()) == 0:
+                continue
+            if "sample" in line.split() and "pop" in line.split():
+                return
+            break
+    raise ValueError(f"Popmap file {popmap_file} could not be used for "
+                     "momentsLD: its first line should have names of the "
+                     "columns `sample` and `pop`, for example: sample\tpop")
 
 
 def get_h5_file_path(vcf_file):
@@ -130,7 +198,8 @@ class MomentsLdEngine(Engine):
 
     @classmethod
     def get_kwargs(cls):
-        kwargs = cls.kwargs
+        # it is a copy, so default kwargs of the class are not changed
+        kwargs = dict(cls.kwargs)
         if cls.ld_kwargs is not None:
             for key in cls.ld_kwargs:
                 try:
@@ -140,44 +209,39 @@ class MomentsLdEngine(Engine):
         return kwargs
 
     @classmethod
-    def _get_region_stats(cls, data_holder):
+    def get_kwargs_of_regions(cls, data_holder):
+        """
+        Returns list of kwargs of
+        :func:`moments.LD.Parsing.compute_ld_statistics` for each region
+        (bed file) of the data.
+        """
         rec_map_exist = data_holder.recombination_maps is not None
-        if rec_map_exist:
-            first_rec_map = os.listdir(data_holder.recombination_maps)[0]
-            prefix, extension = extract_rec_map_name_and_extension(
-                first_rec_map
-            )
-            one_map = len(os.listdir(data_holder.recombination_maps)) == 1
-            first_rec_map = os.path.join(
-                data_holder.recombination_maps, first_rec_map
-            )
+        check_popmap_for_moments_ld(data_holder.popmap_file)
+
+        # Populations are taken from VCF and popmap files if they are not set
+        pops = data_holder.population_labels
+        if pops is None:
+            _, pops = check_and_return_projections_and_labels(data_holder)
 
         # We construct correct kwargs for each region
         initial_kwargs = cls.get_kwargs()
         all_kwargs = []
-        reg_num = 0
         assert data_holder.bed_files_dir is not None, "Bed files were not "\
                                                       "auto generated"
-        for filename in sorted(os.listdir(data_holder.bed_files_dir)):
-            chrom = filename.split("_")[-2]  # chromosome is next to the last
+        for filename in get_files_of_directory(data_holder.bed_files_dir):
+            bed_file = os.path.join(data_holder.bed_files_dir, filename)
+            chrom = get_chromosome_of_bed_file(bed_file)
             parsing_kwargs = dict(initial_kwargs)
             parsing_kwargs["vcf_file"] = data_holder.filename
             parsing_kwargs["pop_file"] = data_holder.popmap_file
-            parsing_kwargs["pops"] = data_holder.population_labels
-            parsing_kwargs["bed_file"] = os.path.join(
-                data_holder.bed_files_dir,
-                filename
-            )
+            parsing_kwargs["pops"] = list(pops)
+            parsing_kwargs["bed_file"] = bed_file
             parsing_kwargs["chromosome"] = chrom
 
             if rec_map_exist:
-                if one_map:
-                    parsing_kwargs["rec_map_file"] = first_rec_map
-                else:
-                    parsing_kwargs["rec_map_file"] = os.path.join(
-                        data_holder.recombination_maps,
-                        f"{prefix}_{chrom}.{extension}"
-                    )
+                parsing_kwargs["rec_map_file"] = get_rec_map_file(
+                    data_holder.recombination_maps, chrom
+                )
                 parsing_kwargs["map_name"] = chrom
                 # Check for r_bins
                 if parsing_kwargs["r_bins"] is None:
@@ -190,8 +254,16 @@ class MomentsLdEngine(Engine):
                 # that values were from Stas
                 parsing_kwargs["bp_bins"] = cls.bp_bins
                 parsing_kwargs["r_bins"] = None
-            reg_num += 1
-            all_kwargs.append([str(reg_num-1), parsing_kwargs])
+            all_kwargs.append(parsing_kwargs)
+        return all_kwargs
+
+    @classmethod
+    def _get_region_stats(cls, data_holder):
+        all_kwargs = [
+            [str(reg_num), parsing_kwargs]
+            for reg_num, parsing_kwargs in enumerate(
+                cls.get_kwargs_of_regions(data_holder))
+        ]
 
         # H5 file is created once for all regions and is removed in the end.
         # The file that existed before is not ours, so it is kept.
@@ -210,7 +282,21 @@ class MomentsLdEngine(Engine):
             h5_file_path = get_h5_file_path(data_holder.filename)
             if h5_is_created and check_file_existence(h5_file_path):
                 os.remove(h5_file_path)
-        return dict(ChainMap(*result))
+        # regions are kept in their order, as generated code computes them
+        region_stats = {}
+        for region_result in result:
+            region_stats.update(region_result)
+        return region_stats
+
+    @classmethod
+    def get_r_bins(cls):
+        """
+        Returns bins of recombination rate that are used for LD statistics.
+        """
+        r_bins = cls.get_kwargs()["r_bins"]
+        if r_bins is None:
+            r_bins = cls.r_bins
+        return np.array(r_bins)
 
     @classmethod
     def _read_data(cls, data_holder):
@@ -222,12 +308,33 @@ class MomentsLdEngine(Engine):
         """
         # If we have no preprocessed data then we create it
         if data_holder.preprocessed_data is None:
+            # Without recombination LD statistics are computed for bins of
+            # distance in base pairs. Model is computed for bins of
+            # recombination rate, so such data could not be used.
+            if data_holder.recombination_maps is None:
+                raise ValueError(
+                    "momentsLD engine needs recombination maps or "
+                    "recombination rate to compute LD statistics from VCF "
+                    "file. Please set `Recombination maps` or `Recombination "
+                    "rate` option."
+                )
             region_stats = cls._get_region_stats(data_holder)
             data = moments.LD.Parsing.bootstrap_data(region_stats)
         else:
             print("Read preprocessed data")
             with open(data_holder.preprocessed_data, "rb") as fin:
                 _, data = pickle.load(fin)
+        # The last means and varcovs are for heterozygosity, others are for
+        # bins of recombination rate
+        n_bins = len(cls.get_r_bins()) - 1
+        if len(data["means"]) - 1 != n_bins:
+            raise ValueError(
+                f"LD statistics of the data are computed for "
+                f"{len(data['means']) - 1} bins, while the model is computed "
+                f"for {n_bins} bins of recombination rate "
+                f"({list(cls.get_r_bins())}). Data should be computed with "
+                "recombination maps or rate and with the same `r_bins`."
+            )
         return data
 
     @staticmethod
@@ -358,10 +465,7 @@ class MomentsLdEngine(Engine):
         var2value = self.model.var2value(values)
 
         # get r_bins
-        kwargs = self.get_kwargs()
-        r_bins = self.r_bins
-        if kwargs["r_bins"] is not None:
-            r_bins = kwargs["r_bins"]
+        r_bins = self.get_r_bins()
 
         # get Nanc and corresponding values_list for model_func function
         if isinstance(self.model, CustomDemographicModel):
@@ -479,7 +583,7 @@ class MomentsLdEngine(Engine):
             model,
             data["means"][:-1],
             data["varcovs"][:-1],
-            rs=np.array(self.r_bins),
+            rs=self.get_r_bins(),
             stats_to_plot=stats_to_plot,
             labels=labels_to_plot,
             fig_size=fig_size,

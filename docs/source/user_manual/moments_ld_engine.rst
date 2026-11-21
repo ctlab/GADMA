@@ -14,7 +14,7 @@ LD statistics from data. In this case, GADMA has the option of precomputing data
 
 ``gadma-precompute_ld_data`` script reads, precomputes, and saves preprocessed data.
 Use this script with the same parameters file as always and GADMA will automatically start data parsing using
-a number of processes specified in the parameters file. GADMA will save precomputed data in binary format for further work and update parameters file. The usage is the following:
+a number of processes specified in the parameters file. GADMA will save precomputed data in binary format to the file ``preprocessed_data.bp`` in the current directory and set its full path as ``preprocessed_data`` in the parameters file (the previous value of this option is replaced). The usage is the following:
 
 .. code-block:: console
 
@@ -54,6 +54,9 @@ GADMA will read statistics and bootstrap regions from this file.
 
 For correct GADMA work please specify the correct VCF file and population map if you use precomputed data. They will not be used for evaluations, but GADMA needs them for correct work (code generation).
 
+.. note::
+    ``moments.LD`` takes names of columns of the popmap file from its first line, so the popmap file should start with the line ``sample pop`` for the ``momentsLD`` engine.
+
 
 Region length and bed files generation
 --------------------------------------
@@ -82,6 +85,7 @@ Recombination maps
 -------------------
 
 Usually recombination rate for the whole sequence is used in GADMA. In that case recombinations maps for chromosomes are generated automatically. However, it is possible to specify maps directly.
+Either ``Recombination rate`` or ``Recombination maps`` is required to compute LD statistics from VCF file: the model is evaluated for bins of recombination rate.
 
 A recombination map - is a genetic map that measures the probability of crossing over at each position
 in the genome. As default GADMA takes recombination maps in cM (centiMorgans).
@@ -103,6 +107,8 @@ Files in the given  directory should be names according the following example:
     Example:
     rec_map_chrom1.txt
     rec_map_chrom2.txt
+
+Names of chromosomes could have any symbols, e.g. ``chr_1`` or ``scaffold1.2``.
 
 
 If you have a few recombination maps united into one file,

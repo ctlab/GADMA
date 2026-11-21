@@ -195,8 +195,22 @@ class TestFastDataRead(unittest.TestCase):
                 f'ld_data_parsings_params_{case}'
             )
             sys.argv = ['gadma-parsing_ld_stats', '-p', param_file]
+            with open(param_file) as fl:
+                original_params = fl.read()
             try:
                 main()
+                if case == 'with_rec_map':
+                    # the second run sets the file again, there is one line
+                    # with the file in params file and it could be read
+                    main()
+                with open(param_file) as fl:
+                    lines = [line.strip() for line in fl
+                             if line.startswith("preprocessed_data")]
+                self.assertEqual(
+                    lines,
+                    ["preprocessed_data: "
+                     f"{os.path.abspath('preprocessed_data.bp')}"]
+                )
                 self.assertTrue(Path('./preprocessed_data.bp').exists())
                 with open('./preprocessed_data.bp', 'rb') as fin:
                     region_stats_evaluated, data_evaluated = pickle.load(fin)
@@ -224,7 +238,8 @@ class TestFastDataRead(unittest.TestCase):
                             )
                         )
             finally:
-                rewrite_params_file(param_file)
+                with open(param_file, "w") as fl:
+                    fl.write(original_params)
 
     @pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
     def test_h5_creation(self):
@@ -260,10 +275,8 @@ class TestFastDataRead(unittest.TestCase):
                                         popmap_file=POP_MAP,
                                         bed_files_dir=BED_FILES_DIR)
             with mock.patch.object(moments_ld_engine, "_read_data_one_job",
-                                   side_effect=one_job), \
-                    mock.patch("moments.LD.Parsing.bootstrap_data",
-                               side_effect=lambda stats: stats):
-                ld_engine.read_data(data_holder)
+                                   side_effect=one_job):
+                ld_engine._get_region_stats(data_holder)
             return h5_files[0]
 
         try:
@@ -381,6 +394,180 @@ class TestChromosomesOfVCF(unittest.TestCase):
                 self.assertEqual(len(opened), n_opened + 1)
         finally:
             shutil.rmtree(dirname)
+
+
+@pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
+class TestMomentsLDData(unittest.TestCase):
+    """
+    Reading of data for momentsLD: names of chromosomes, regions of short
+    chromosomes, recombination maps, popmap and recombination.
+    """
+    def setUp(self):
+        self.dirname = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.dirname, ignore_errors=True)
+
+    def write_vcf_with_chromosomes(self, names, max_pos=None):
+        """
+        Writes VCF with two chromosomes where they have names `names`. If
+        `max_pos` is set then the second chromosome has only variants with
+        positions up to it.
+        """
+        vcf_file = os.path.join(self.dirname, "data.vcf")
+        with open(VCF_DATA_FEW_CHR) as fl, open(vcf_file, "w") as out:
+            for line in fl:
+                if not line.startswith("#"):
+                    chrom, pos, rest = line.split("\t", 2)
+                    if (chrom == "2" and max_pos is not None and
+                            int(pos) > max_pos):
+                        continue
+                    line = "\t".join([names[int(chrom) - 1], pos, rest])
+                out.write(line)
+        return vcf_file
+
+    def get_settings(self, vcf_file, lengths, recombination=True):
+        settings = gadma.SettingsStorage()
+        settings.output_directory = os.path.join(self.dirname, "out")
+        settings.input_data = f"{vcf_file}, {POP_MAP}"
+        settings.engine = "momentsLD"
+        settings.sequence_length = lengths
+        settings.mutation_rate = 2.35e-8
+        if recombination:
+            settings.recombination_rate = 1e-8
+        settings.ld_kwargs = {"report": False}
+        return settings
+
+    def test_names_of_chromosomes(self):
+        """
+        Names of chromosomes could have `_` and `.`: chromosome of a region
+        is taken from its bed file and recombination maps are found by the
+        names of chromosomes.
+        """
+        from gadma.engines.moments_ld_engine import \
+            get_chromosome_of_bed_file, get_rec_map_file
+        self.assertEqual(extract_rec_map_name_and_extension("map_chr1.1.txt"),
+                         ("map", "txt"))
+        names = ["chr_1", "chr1.2"]
+        vcf_file = self.write_vcf_with_chromosomes(names)
+        settings = self.get_settings(
+            vcf_file, {name: 1000000 for name in names})
+        data = settings.read_data()
+        self.assertEqual(len(data["means"]), 11)
+        bed_dir = settings.data_holder.bed_files_dir
+        chromosomes = [get_chromosome_of_bed_file(os.path.join(bed_dir, el))
+                       for el in sorted(os.listdir(bed_dir))]
+        self.assertEqual(sorted(set(chromosomes)), sorted(names))
+        # maps are generated from the rate, there is a map for each one
+        maps_dir = settings.data_holder.recombination_maps
+        for name in names:
+            self.assertEqual(
+                os.path.basename(get_rec_map_file(maps_dir, name)),
+                f"auto_map_{name}.txt"
+            )
+
+        # map of chromosome `1` is not the map of chromosome `chr_1`
+        maps_dir = os.path.join(self.dirname, "maps")
+        os.makedirs(maps_dir)
+        for name in ["1", "chr_1", "chr1.2"]:
+            open(os.path.join(maps_dir, f"map_{name}.txt"), "w").close()
+        for name in ["1", "chr_1", "chr1.2"]:
+            self.assertEqual(
+                os.path.basename(get_rec_map_file(maps_dir, name)),
+                f"map_{name}.txt"
+            )
+        self.assertRaises(ValueError, get_rec_map_file, maps_dir, "2")
+        # one file with maps of all chromosomes
+        os.makedirs(os.path.join(self.dirname, "one_map"))
+        one_map = os.path.join(self.dirname, "one_map", "maps.txt")
+        open(one_map, "w").close()
+        self.assertEqual(get_rec_map_file(os.path.dirname(one_map), "2"),
+                         one_map)
+
+    def test_regions_of_short_chromosome(self):
+        """
+        Chromosome that is shorter than half of a region has its region and
+        the last region of a chromosome ends where the chromosome ends.
+        """
+        vcf_file = self.write_vcf_with_chromosomes(["1", "2"],
+                                                   max_pos=20000)
+        data_holder = VCFDataHolder(
+            vcf_file=vcf_file,
+            popmap_file=POP_MAP,
+            sequence_length={"1": 1000000, "2": 20000},
+        )
+        output_dir = os.path.join(self.dirname, "bed_files")
+        chrom2parts = create_bed_files_and_extract_chromosomes(
+            data_holder=data_holder,
+            output_dir=output_dir,
+            region_len=70000,
+        )
+        self.assertEqual(chrom2parts["2"], 1)
+        regions = {}
+        for filename in os.listdir(output_dir):
+            with open(os.path.join(output_dir, filename)) as fl:
+                chrom, start, end = fl.readline().split()
+            regions.setdefault(chrom, []).append((int(start), int(end)))
+        self.assertEqual(regions["2"], [(0, 20000)])
+        # regions go one after another up to the end of chromosome
+        regions_1 = sorted(regions["1"])
+        self.assertEqual(regions_1[0][0], 0)
+        self.assertEqual(regions_1[-1][1], 1000000)
+        for (_, end), (start, _) in zip(regions_1[:-1], regions_1[1:]):
+            self.assertEqual(end, start)
+
+    def test_popmap_for_moments_ld(self):
+        """
+        moments.LD takes names of columns of popmap from its first line,
+        popmap without them is not used for momentsLD.
+        """
+        from gadma.engines.moments_ld_engine import \
+            check_popmap_for_moments_ld
+        with open(POP_MAP) as fl:
+            lines = fl.readlines()
+        self.assertEqual(lines[0].split(), ["sample", "pop"])
+        check_popmap_for_moments_ld(POP_MAP)
+        popmap = os.path.join(self.dirname, "popmap")
+        for wrong_lines in [lines[1:], ["# samples\n"] + lines]:
+            with open(popmap, "w") as fl:
+                fl.writelines(wrong_lines)
+            self.assertRaises(ValueError, check_popmap_for_moments_ld,
+                              popmap)
+        with open(popmap, "w") as fl:
+            fl.writelines(["\n"] + lines)
+        check_popmap_for_moments_ld(popmap)
+
+    def test_data_without_recombination(self):
+        """
+        Without recombination maps or rate LD statistics are computed for
+        bins of distance, while model is computed for bins of recombination
+        rate. Such data is not read.
+        """
+        settings = self.get_settings(VCF_DATA_LD, 1000000,
+                                     recombination=False)
+        with self.assertRaises(ValueError) as context:
+            settings.read_data()
+        self.assertTrue("recombination" in str(context.exception))
+        # the same data computed before
+        settings.preprocessed_data = os.path.join(
+            DATA_PATH, "DATA", "vcf_ld",
+            "parsing_test_data_without_rec_map.bp")
+        with self.assertRaises(ValueError) as context:
+            settings.read_data()
+        self.assertTrue("bins" in str(context.exception))
+
+    def test_kwargs_of_engine_are_not_changed(self):
+        """
+        Options of user do not change default options of the engine.
+        """
+        engine_cls = get_engine("momentsLD").__class__
+        default_kwargs = copy.deepcopy(engine_cls.kwargs)
+        engine_cls.ld_kwargs = {"report": "True", "r_bins": "[0, 1e-5]"}
+        kwargs = engine_cls.get_kwargs()
+        self.assertEqual(kwargs["report"], True)
+        self.assertEqual(kwargs["r_bins"], [0, 1e-5])
+        self.assertEqual(list(engine_cls.get_r_bins()), [0, 1e-5])
+        self.assertEqual(engine_cls.kwargs, default_kwargs)
 
 
 class TestBedFilesCreation(unittest.TestCase):

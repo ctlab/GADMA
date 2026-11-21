@@ -171,7 +171,7 @@ class TestConfidenceIntervals(unittest.TestCase):
                         module='.*\.stats', lineno=1604)
         for engine in all_engines():
             if engine.id == "momentsLD":
-                results = os.path.join(DATA_DIR, "ci_test_ld", "ci_results.xlsx")
+                results = os.path.join(DATA_DIR, "ci_test_ld", "ci_results.csv")
                 incorrect_data_for_ci_ld = os.path.join(
                     DATA_DIR, "ci_test_ld", "ci_test_incorrect_file.py"
                 )
@@ -271,6 +271,88 @@ class TestConfidenceIntervals(unittest.TestCase):
                     self.assertTrue(message in lines[name],
                                     msg=f"{args}: {lines[name]}")
         finally:
+            shutil.rmtree(dirname)
+
+    @unittest.skipIf(not gadma.moments_LD_available, "No momentsLD")
+    def test_ci_for_ld_from_generated_file(self):
+        """
+        File for confidence intervals that GADMA generates for momentsLD
+        could be used by gadma-get_confidence_intervals_for_ld. Files of
+        older versions with `rep_data_file` are read as well.
+        """
+        import contextlib
+        import io
+        import tempfile
+        import moments.LD
+        ld_dir = os.path.join(DATA_DIR, "DATA", "vcf_ld")
+        data_file = os.path.join(DATA_DIR, "ci_test_ld", "preprocessed_data.bp")
+        dirname = tempfile.mkdtemp()
+        try:
+            settings = SettingsStorage()
+            settings.output_directory = os.path.join(dirname, "out")
+            settings.input_data = (f"{os.path.join(ld_dir, 'vcf_data.vcf')}, "
+                                   f"{os.path.join(ld_dir, 'pop_map.txt')}")
+            settings.engine = "momentsLD"
+            settings.sequence_length = 1000000
+            settings.mutation_rate = 2.35e-8
+            settings.recombination_maps = os.path.join(ld_dir, "rec_maps")
+            settings.preprocessed_data = data_file
+            settings.ancestral_size_as_parameter = True
+            settings.initial_structure = [1, 1]
+            settings.split_fractions = False
+            settings.symmetric_migrations = True
+            settings.only_sudden = True
+            data = settings.read_data()
+            model = settings.get_model()
+            # values of the model in tests/test_data/ci_test_ld
+            values = {"Nanc": 10773, "nu_1": 1.0, "nu_2": 1.0,
+                      "t1": 0.07224855484916312, "nu11": 1.0536252967417892,
+                      "nu12": 2.2336162670631126, "m1_12": 0.9291254115918008}
+            x = [values.get(var.name, "Sud") for var in model.variables]
+            engine = get_engine("momentsLD")
+            engine.set_data(data)
+            engine.data_holder = settings.data_holder
+            engine.set_model(model)
+            engine.generate_code(x, os.path.join(dirname, "code.py"), None,
+                                 values["Nanc"])
+            ci_file = os.path.join(dirname, "codedata_for_CI.py")
+            namespace = {}
+            with open(ci_file) as fl:
+                ci_code = fl.read()
+            exec(ci_code, namespace)
+            # sizes right after the split do not change the model
+            self.assertEqual(namespace["param_names"],
+                             ["t1", "nu11", "nu12", "m1_12", "Nanc"])
+            self.assertEqual(namespace["data_file"], data_file)
+
+            sys.argv = ["gadma-get_confidence_intervals_for_ld", ci_file]
+            moments.LD.Inference._varcov_inv_cache = {}
+            with contextlib.redirect_stdout(io.StringIO()):
+                gadma.get_confidence_intervals_for_ld.main()
+            self.assertTrue(os.path.exists(os.path.join(dirname,
+                                                        "ci_results.csv")))
+
+            # file of older versions
+            old_file = os.path.join(dirname, "old_data_for_CI.py")
+            with open(old_file, "w") as fl:
+                fl.write(ci_code.replace("data_file =", "rep_data_file ="))
+            sys.argv = ["gadma-get_confidence_intervals_for_ld", old_file]
+            moments.LD.Inference._varcov_inv_cache = {}
+            with contextlib.redirect_stdout(io.StringIO()):
+                gadma.get_confidence_intervals_for_ld.main()
+
+            # data was not saved
+            no_data_file = os.path.join(dirname, "no_data_for_CI.py")
+            with open(no_data_file, "w") as fl:
+                fl.write(ci_code.replace(f"data_file = {data_file!r}",
+                                         "data_file = None"))
+            sys.argv = ["gadma-get_confidence_intervals_for_ld", no_data_file]
+            with self.assertRaises(ValueError) as context:
+                gadma.get_confidence_intervals_for_ld.main()
+            self.assertTrue("gadma-precompute_ld_data"
+                            in str(context.exception))
+        finally:
+            moments.LD.Inference._varcov_inv_cache = {}
             shutil.rmtree(dirname)
 
     def test_missed_lines_and_failures(self):

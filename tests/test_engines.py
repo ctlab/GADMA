@@ -1621,6 +1621,168 @@ class TestModelSimulation(unittest.TestCase):
                 'engine and momentsLD')
 
 
+@pytest.mark.skipif(not gadma.moments_LD_available, reason="No momentsLD")
+class TestMomentsLDCode(unittest.TestCase):
+    """
+    Generated code of momentsLD gives the same likelihood as the engine.
+    """
+    def setUp(self):
+        import tempfile
+        self.dirname = tempfile.mkdtemp()
+
+    def tearDown(self):
+        moments.LD.Inference._varcov_inv_cache = {}
+        shutil.rmtree(self.dirname, ignore_errors=True)
+
+    def get_settings(self, vcf_file, popmap, structure, lengths=1000000,
+                     preprocessed_data=None, split_fractions=True):
+        import tempfile
+        settings = SettingsStorage()
+        settings.output_directory = os.path.join(
+            tempfile.mkdtemp(dir=self.dirname), "out")
+        settings.input_data = f"{vcf_file}, {popmap}"
+        settings.engine = "momentsLD"
+        settings.sequence_length = lengths
+        settings.mutation_rate = 2.35e-8
+        settings.recombination_rate = 1e-8
+        settings.ld_kwargs = {"report": False}
+        settings.ancestral_size_as_parameter = True
+        settings.initial_structure = structure
+        settings.final_structure = structure
+        settings.split_fractions = split_fractions
+        if preprocessed_data is not None:
+            settings.preprocessed_data = preprocessed_data
+        return settings
+
+    def run_script(self, filename):
+        with open(filename) as fl:
+            code = fl.read()
+        # we do not want to draw LD curves
+        code = code[:code.index("stats_to_plot = [")]
+        namespace = {}
+        moments.LD.Inference._varcov_inv_cache = {}
+        exec(code, namespace)
+        return namespace
+
+    def test_code_for_data_computed_in_run(self):
+        """
+        Code is generated when LD statistics were computed during the run:
+        it computes them for the same regions with the same arguments.
+        """
+        settings = self.get_settings(VCF_DATA_LD, POP_MAP, [1, 1])
+        # bootstrap of statistics is random, the same seed gives the same
+        np.random.seed(1)
+        data = settings.read_data()
+        model = settings.get_model()
+        x = [10000 if var.name == "Nanc" else
+             ("Exp" if var.name.startswith("dyn") else var.resample())
+             for var in model.variables]
+        engine = get_engine("momentsLD")
+        engine.set_data(data)
+        engine.data_holder = settings.data_holder
+        engine.set_model(model)
+        ll_model = engine.evaluate(x)
+
+        filename = os.path.join(self.dirname, "code.py")
+        engine.generate_code(x, filename, None, 10000)
+        np.random.seed(1)
+        namespace = self.run_script(filename)
+        self.assertTrue(np.isclose(ll_model, namespace["ll_model"]),
+                        msg=f"{ll_model} != {namespace['ll_model']}")
+        # file for confidence intervals says that data is not saved
+        ci_file = os.path.join(self.dirname, "codedata_for_CI.py")
+        with open(ci_file) as fl:
+            self.assertTrue("data_file = None" in fl.read())
+
+    def test_code_with_sudden_children_of_split(self):
+        """
+        When both populations after a split change their size suddenly,
+        their sizes right after the split do not change the model. They are
+        not parameters of the code, but the code gives the same likelihood.
+        """
+        vcf_file = os.path.join(DATA_PATH, "DATA", "vcf_ld", "fake_data.vcf")
+        popmap = os.path.join(DATA_PATH, "DATA", "vcf_ld",
+                              "fake_data_pop_map.txt")
+        preprocessed_data = os.path.join(DATA_PATH, "DATA", "vcf_ld",
+                                         "preprocessed_data_model1.bp")
+        lengths = {str(i): 200000 for i in range(1, 21)}
+        # dynamics: only the populations after the second split are sudden
+        cases = [(True, ["Exp", "Exp", "Sud", "Sud", "Sud"], ["s2"]),
+                 (True, ["Sud", "Sud", "Exp", "Exp", "Exp"], ["s1"]),
+                 (False, ["Exp", "Exp", "Sud", "Sud", "Sud"],
+                  ["nu12_1", "nu12_2"])]
+        for split_fractions, dyns, fixed in cases:
+            msg = f"split fractions {split_fractions}, dynamics {dyns}"
+            settings = self.get_settings(
+                vcf_file, popmap, [1, 1, 1], lengths=lengths,
+                preprocessed_data=preprocessed_data,
+                split_fractions=split_fractions)
+            data = settings.read_data()
+            model = settings.get_model()
+            np.random.seed(2)
+            x, dyn_values = [], list(dyns)
+            for var in model.variables:
+                if var.name == "Nanc":
+                    x.append(10000)
+                elif var.name.startswith("dyn"):
+                    x.append(dyn_values.pop(0))
+                else:
+                    x.append(var.resample())
+            engine = get_engine("momentsLD")
+            engine.set_data(data)
+            engine.data_holder = settings.data_holder
+            engine.set_model(model)
+            moments.LD.Inference._varcov_inv_cache = {}
+            ll_model = engine.evaluate(x)
+
+            filename = os.path.join(self.dirname, "code.py")
+            engine.generate_code(x, filename, None, 10000)
+            namespace = self.run_script(filename)
+            self.assertTrue(np.isclose(ll_model, namespace["ll_model"]),
+                            msg=f"{ll_model} != {namespace['ll_model']}. "
+                                f"{msg}")
+            # model of engine is not changed
+            self.assertEqual(len(model.variables), len(x), msg=msg)
+            # parameters for confidence intervals
+            namespace = {}
+            with open(os.path.join(self.dirname,
+                                   "codedata_for_CI.py")) as fl:
+                exec(fl.read(), namespace)
+            names = [var.name for var in model.variables
+                     if not isinstance(var, DiscreteVariable)]
+            expected = [name for name in names
+                        if name != "Nanc" and name not in fixed] + ["Nanc"]
+            self.assertEqual(namespace["param_names"], expected, msg=msg)
+            self.assertEqual(len(namespace["opt_params"]), len(expected),
+                             msg=msg)
+
+    def test_code_of_iterations(self):
+        """
+        Code of momentsLD is written at iterations of the run when it is
+        asked.
+        """
+        from gadma.core import SharedDictForCoreRun
+        from gadma.core.core_run import CoreRun
+        preprocessed_data = os.path.join(DATA_PATH, "DATA", "vcf_ld",
+                                         "preprocessed_data_YRI_CEU.bp")
+        settings = self.get_settings(VCF_DATA_LD, POP_MAP, [1, 1],
+                                     preprocessed_data=preprocessed_data)
+        settings.print_models_code_every_n_iteration = 1
+        settings.draw_models_every_n_iteration = 0
+        settings.silence = True
+        core_run = CoreRun(1, SharedDictForCoreRun(multiprocessing=False),
+                           settings)
+        self.assertTrue("momentsLD" in os.listdir(core_run.code_dir))
+        model = core_run.model
+        x = [10000 if var.name == "Nanc" else
+             ("Sud" if var.name.startswith("dyn") else var.resample())
+             for var in model.variables]
+        core_run.code_iter_callback(x, -100)
+        code_dir = os.path.join(core_run.code_dir, "momentsLD")
+        self.assertTrue("iteration_0.py" in os.listdir(code_dir),
+                        msg=f"{os.listdir(code_dir)}")
+
+
 class TestModelEvaluation(unittest.TestCase):
 
     def tearDown(self):
