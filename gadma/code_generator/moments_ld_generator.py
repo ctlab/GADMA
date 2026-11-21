@@ -324,13 +324,19 @@ def _get_variables_for_ci(model):
 
 
 def extract_opt_params(engine, values, nanc):
+    """
+    Returns code with `opt_params` for the file for confidence intervals.
+
+    :param values: Values of the model parameters in genetic units.
+    :param nanc: Size of ancestral population in physical units. The tool
+                 for confidence intervals takes it as Ne, so it is written
+                 instead of the value of Nanc: the value is 1.0 for models
+                 of GADMA and the physical size for custom models as their
+                 values are not translated.
+    """
     var2value = engine.model.var2value(values)
-    p0 = []
-    for variable in _get_variables_for_ci(engine.model):
-        if variable.name == "Nanc":
-            p0.append(int(var2value[variable] * nanc))
-        else:
-            p0.append(var2value[variable])
+    p0 = [int(nanc) if variable.name == "Nanc" else var2value[variable]
+          for variable in _get_variables_for_ci(engine.model)]
     return f"opt_params = {_value_to_code(p0)}\n"
 
 

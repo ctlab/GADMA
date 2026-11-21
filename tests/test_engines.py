@@ -1799,6 +1799,43 @@ class TestMomentsLDCode(unittest.TestCase):
             self.assertEqual(len(namespace["opt_params"]), len(expected),
                              msg=msg)
 
+    def test_ci_file_of_custom_model(self):
+        """
+        Values of custom models are not translated, so their size of
+        ancestral population is physical. The file for confidence intervals
+        has it as it is in the last place, the tool for confidence intervals
+        takes Ne from there.
+        """
+        preprocessed_data = os.path.join(DATA_PATH, "DATA", "vcf_ld",
+                                         "preprocessed_data_YRI_CEU.bp")
+        settings = self.get_settings(VCF_DATA_LD, POP_MAP, [1, 1],
+                                     preprocessed_data=preprocessed_data)
+        settings.custom_filename = os.path.join(
+            DATA_PATH, "MODELS", "demographic_model_momentsLD_YRI_CEU.py")
+        settings.parameter_identifiers = ["nu1F", "nu2B", "nu2F", "m", "Tp",
+                                          "T"]
+        settings.lower_bound = [1e-2, 1e-2, 1e-2, 0, 1e-3, 1e-3]
+        settings.upper_bound = [100, 100, 100, 10, 5, 5]
+        data = settings.read_data()
+        model = settings.get_model()
+        self.assertTrue(isinstance(model, CustomDemographicModel))
+        values = {"Nanc": 10000, "nu1F": 2.0, "nu2B": 0.5, "nu2F": 3.0,
+                  "m": 1.0, "Tp": 0.2, "T": 0.1}
+        x = [values[var.name] for var in model.variables]
+        engine = get_engine("momentsLD")
+        engine.set_data(data)
+        engine.data_holder = settings.data_holder
+        engine.set_model(model)
+        engine.generate_code(x, os.path.join(self.dirname, "code.py"), None,
+                             10000)
+        namespace = {}
+        with open(os.path.join(self.dirname, "codedata_for_CI.py")) as fl:
+            exec(fl.read(), namespace)
+        names = ["nu1F", "nu2B", "nu2F", "m", "Tp", "T", "Nanc"]
+        self.assertEqual(namespace["param_names"], names)
+        self.assertEqual(namespace["opt_params"],
+                         [values[name] for name in names])
+
     def test_code_of_iterations(self):
         """
         Code of momentsLD is written at iterations of the run when it is
